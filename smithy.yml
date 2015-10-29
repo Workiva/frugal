@@ -1,0 +1,8 @@
+project: golang
+language: golang
+
+script:
+    - ./build.sh
+
+artifacts:
+    - ./frugal

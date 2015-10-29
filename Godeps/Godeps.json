@@ -1,0 +1,14 @@
+{
+	"ImportPath": "github.com/Workiva/frugal",
+	"GoVersion": "go1.4",
+	"Deps": [
+		{
+			"ImportPath": "github.com/edmodo/frugal/parser",
+			"Rev": "8b738c8c3d754e5c066cff85420a1f87050ead95"
+		},
+		{
+			"ImportPath": "gopkg.in/yaml.v2",
+			"Rev": "53feefa2559fb8dfa8d81baad31be332c97d6c77"
+		}
+	]
+}
