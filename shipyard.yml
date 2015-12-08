@@ -30,6 +30,6 @@ after_install:
 volumes:
   - 'data'
 
-workdir: /frugal/bin
+workdir: ../..
 
 cmd: ["/frugal/bin/frugal"]
