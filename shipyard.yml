@@ -14,7 +14,7 @@ apt:
     - golang
 
 after_install:
-  - export PATH=$PATH:/usr/local/go/bin:/frugal/bin
+  - export PATH=$PATH:/usr/local/go/bin
   - git clone https://git-wip-us.apache.org/repos/asf/thrift.git
   - cd thrift
   - ./bootstrap.sh
@@ -26,10 +26,11 @@ after_install:
   - mkdir -p /frugal/bin
   - cp /build/smithy/frugal /frugal/bin
   - chmod 755 /frugal/bin/frugal
+  - export PATH=$PATH:/frugal/bin
 
 volumes:
   - 'data'
 
 workdir: ../../data
 
-cmd: ["/frugal/bin/frugal"]
+cmd: ["frugal"]
