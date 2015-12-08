@@ -14,7 +14,7 @@ apt:
     - golang
 
 after_install:
-  - export PATH=$PATH:/usr/local/go/bin
+  - export PATH=$PATH:/usr/local/go/bin:/frugal/bin
   - git clone https://git-wip-us.apache.org/repos/asf/thrift.git
   - cd thrift
   - ./bootstrap.sh
