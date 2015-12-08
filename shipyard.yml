@@ -23,10 +23,8 @@ after_install:
   - make install
   - cd ..
   - rm -rf thrift
-  - mkdir -p /frugal/bin
-  - cp /build/smithy/frugal /frugal/bin
-  - chmod 755 /frugal/bin/frugal
-  - export PATH=$PATH:/frugal/bin
+  - cp /build/smithy/frugal /bin
+  - chmod 755 /bin/frugal
 
 volumes:
   - 'data'
