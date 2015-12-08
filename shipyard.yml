@@ -23,13 +23,12 @@ after_install:
   - make install
   - cd ..
   - rm -rf thrift
-  - mkdir -p /frugal/bin
-  - cp /build/smithy/frugal /frugal/bin
-  - chmod 755 /frugal/bin/frugal
+  - cp /build/smithy/frugal /bin
+  - chmod 755 /bin/frugal
 
 volumes:
   - 'data'
 
-workdir: /frugal/bin
+workdir: ../../data
 
-cmd: ["/frugal/bin/frugal"]
+cmd: ["frugal"]
