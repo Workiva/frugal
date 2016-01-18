@@ -115,6 +115,18 @@ func (f *Frugal) ReferencedIncludes() []string {
 	return includes
 }
 
+func (f *Frugal) UnderlyingType(t *Type) string {
+	typedefIndex := f.Thrift.typedefIndex
+	include := t.IncludeName()
+	if include != "" {
+		typedefIndex = f.ParsedIncludes[include].Thrift.typedefIndex
+	}
+	if typedef, ok := typedefIndex[t.ParamName()]; ok {
+		return typedef.Type.Name
+	}
+	return t.Name
+}
+
 func (f *Frugal) assignFrugal() {
 	for _, scope := range f.Scopes {
 		scope.assignScope()

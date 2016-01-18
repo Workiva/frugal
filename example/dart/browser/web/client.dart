@@ -48,11 +48,13 @@ class EventUI {
       var timeout = new Duration(seconds: 1);
       frugal.TNatsTransportFactory.New(nats, "foo", timeout, timeout).then((TSocketTransport T) {
         var transport = new frugal.FMultiplexedTransport(T);
-        transport.open().then((_){
+        transport.open().then((_) {
           var protocolFactory = new frugal.FProtocolFactory(new TBinaryProtocolFactory());
           frugal.FServiceProvider provider = new frugal.FServiceProvider(transport, protocolFactory);
           _fFooClient = new event.FFooClient(provider);
         });
+      }).catchError((e) {
+        window.alert("Could not connect to server! Is it running?. ${e.toString()}");
       });
     });
   }
@@ -138,6 +140,9 @@ class EventUI {
   }
 
   void _onPingClick(MouseEvent e) {
+    if (_fFooClient == null) {
+      window.alert("Not connected to server");
+    }
     var ctx = new frugal.FContext(correlationId:"some-sweet-correlation");
     _fFooClient.ping(ctx).catchError( (e) {
       window.alert("Ping errored! ${e.toString()}");
@@ -145,6 +150,9 @@ class EventUI {
   }
 
   void _onBlahClick(MouseEvent e) {
+    if (_fFooClient == null) {
+      window.alert("Not connected to server");
+    }
     var ctx = new frugal.FContext(correlationId: "some-other-correlation");
     InputElement blahMsg = querySelector("#blahMsg");
     var num = int.parse(blahMsg.value);

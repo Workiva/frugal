@@ -768,7 +768,7 @@ func (g *Generator) generateServerOutputArgs(args []*parser.Field) string {
 }
 
 func (g *Generator) getGoTypeFromThriftType(t *parser.Type) string {
-	typeName := g.Frugal.Thrift.UnderlyingType(t.Name)
+	typeName := g.Frugal.UnderlyingType(t)
 	switch typeName {
 	case "bool":
 		return "bool"

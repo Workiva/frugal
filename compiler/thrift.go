@@ -48,7 +48,7 @@ func generateThriftIDL(dir string, frugal *parser.Frugal) (string, error) {
 		return "", err
 	}
 	contents += includes
-	contents += generateConstants(thrift)
+	contents += generateConstants(frugal)
 	contents += generateTypedefs(thrift.Typedefs)
 	contents += generateEnums(thrift.Enums)
 	contents += generateStructLikes(thrift.Structs, structLikeStruct)
@@ -97,13 +97,13 @@ func generateIncludes(frugal *parser.Frugal) (string, error) {
 	return contents, nil
 }
 
-func generateConstants(thrift *parser.Thrift) string {
+func generateConstants(frugal *parser.Frugal) string {
 	contents := ""
-	complexConstants := make([]*parser.Constant, 0, len(thrift.Constants))
+	complexConstants := make([]*parser.Constant, 0, len(frugal.Thrift.Constants))
 
-	for _, constant := range thrift.Constants {
+	for _, constant := range frugal.Thrift.Constants {
 		value := constant.Value
-		typeName := thrift.UnderlyingType(constant.Type.Name)
+		typeName := frugal.UnderlyingType(constant.Type)
 		if isThriftPrimitive(typeName) {
 			if typeName == "string" {
 				value = fmt.Sprintf(`"%s"`, value)

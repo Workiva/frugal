@@ -162,13 +162,6 @@ type Thrift struct {
 	namespaceIndex map[string]*Namespace
 }
 
-func (t *Thrift) UnderlyingType(typeName string) string {
-	if typedef, ok := t.typedefIndex[typeName]; ok {
-		typeName = typedef.Type.Name
-	}
-	return typeName
-}
-
 func (t *Thrift) Namespace(scope string) (string, bool) {
 	namespace, ok := t.namespaceIndex[scope]
 	value := ""

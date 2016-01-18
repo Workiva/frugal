@@ -556,7 +556,7 @@ func (g *Generator) generateErrors(method *parser.Method) string {
 }
 
 func (g *Generator) getDartTypeFromThriftType(t *parser.Type) string {
-	typeName := g.Frugal.Thrift.UnderlyingType(t.Name)
+	typeName := g.Frugal.UnderlyingType(t)
 	switch typeName {
 	case "bool":
 		return "bool"
