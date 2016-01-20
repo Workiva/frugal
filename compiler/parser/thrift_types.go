@@ -114,7 +114,7 @@ func (s *Service) ReferencedIncludes() []string {
 	for _, method := range s.Methods {
 		for _, arg := range method.Arguments {
 			if strings.Contains(arg.Type.Name, ".") {
-				reducedStr := arg.Name[0:strings.Index(arg.Type.Name, ".")]
+				reducedStr := arg.Type.Name[0:strings.Index(arg.Type.Name, ".")]
 				if _, ok := includesSet[reducedStr]; !ok {
 					includesSet[reducedStr] = true
 					includes = append(includes, reducedStr)

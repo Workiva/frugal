@@ -21,8 +21,6 @@ import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TTransport;
 
 import javax.annotation.Generated;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -221,7 +219,7 @@ public class FBlah {
 
 		private static final Object WRITE_LOCK = new Object();
 
-		private Map<String, FProcessorFunction> processorMap = new HashMap<>();
+		private java.util.Map<String, FProcessorFunction> processorMap = new java.util.HashMap<>();
 
 		public Processor(Iface handler) {
 			this.processorMap.put("ping", new Ping(handler));

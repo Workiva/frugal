@@ -116,6 +116,9 @@ func (f *Frugal) ReferencedIncludes() []string {
 }
 
 func (f *Frugal) UnderlyingType(t *Type) string {
+	if t == nil {
+		panic("frugal: Attempted to get underlying type of nil type")
+	}
 	typedefIndex := f.Thrift.typedefIndex
 	include := t.IncludeName()
 	if include != "" {

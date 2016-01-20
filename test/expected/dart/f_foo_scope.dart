@@ -74,31 +74,27 @@ class FooSubscriber {
     var op = "Foo";
     var prefix = "foo.bar.${baz}.qux.";
     var topic = "${prefix}Foo${delimiter}${op}";
-    var tp = provider.newTransportProtocol();
-    await tp.fTransport.subscribe(topic);
-    tp.fTransport.signalRead.listen((_) {
-      var ctx = tp.fProtocol.readRequestHeader();
-      onThing(ctx, _recvFoo(op, tp.fProtocol));
-    });
-    var sub = new frugal.FSubscription(topic, tp.fTransport);
-    tp.fTransport.error.listen((Error e) {;
-      sub.signal(e);
-    });
-    return sub;
+    var transport = provider.fTransportFactory.getTransport();
+    await transport.subscribe(topic, _recvFoo(op, provider.fProtocolFactory, onThing));
+    return new frugal.FSubscription(topic, transport);
   }
 
-  t_thing.Thing _recvFoo(String op, frugal.FProtocol iprot) {
-    var tMsg = iprot.readMessageBegin();
-    if (tMsg.name != op) {
-      thrift.TProtocolUtil.skip(iprot, thrift.TType.STRUCT);
+  _recvFoo(String op, frugal.FProtocolFactory protocolFactory, onThing(t_thing.Thing req)) {
+    callbackFoo(thrift.TTransport transport) {
+      var iprot = protocolFactory.getProtocol(transport);
+      var tMsg = iprot.readMessageBegin();
+      if (tMsg.name != op) {
+        thrift.TProtocolUtil.skip(iprot, thrift.TType.STRUCT);
+        iprot.readMessageEnd();
+        throw new thrift.TApplicationError(
+        thrift.TApplicationErrorType.UNKNOWN_METHOD, tMsg.name);
+      }
+      var req = new t_thing.Thing();
+      req.read(iprot);
       iprot.readMessageEnd();
-      throw new thrift.TApplicationError(
-      thrift.TApplicationErrorType.UNKNOWN_METHOD, tMsg.name);
+      onThing(req);
     }
-    var req = new t_thing.Thing();
-    req.read(iprot);
-    iprot.readMessageEnd();
-    return req;
+    return callbackFoo;
   }
 
 
@@ -106,31 +102,27 @@ class FooSubscriber {
     var op = "Bar";
     var prefix = "foo.bar.${baz}.qux.";
     var topic = "${prefix}Foo${delimiter}${op}";
-    var tp = provider.newTransportProtocol();
-    await tp.fTransport.subscribe(topic);
-    tp.fTransport.signalRead.listen((_) {
-      var ctx = tp.fProtocol.readRequestHeader();
-      onStuff(ctx, _recvBar(op, tp.fProtocol));
-    });
-    var sub = new frugal.FSubscription(topic, tp.fTransport);
-    tp.fTransport.error.listen((Error e) {;
-      sub.signal(e);
-    });
-    return sub;
+    var transport = provider.fTransportFactory.getTransport();
+    await transport.subscribe(topic, _recvBar(op, provider.fProtocolFactory, onStuff));
+    return new frugal.FSubscription(topic, transport);
   }
 
-  t_stuff.Stuff _recvBar(String op, frugal.FProtocol iprot) {
-    var tMsg = iprot.readMessageBegin();
-    if (tMsg.name != op) {
-      thrift.TProtocolUtil.skip(iprot, thrift.TType.STRUCT);
+  _recvBar(String op, frugal.FProtocolFactory protocolFactory, onStuff(t_stuff.Stuff req)) {
+    callbackBar(thrift.TTransport transport) {
+      var iprot = protocolFactory.getProtocol(transport);
+      var tMsg = iprot.readMessageBegin();
+      if (tMsg.name != op) {
+        thrift.TProtocolUtil.skip(iprot, thrift.TType.STRUCT);
+        iprot.readMessageEnd();
+        throw new thrift.TApplicationError(
+        thrift.TApplicationErrorType.UNKNOWN_METHOD, tMsg.name);
+      }
+      var req = new t_stuff.Stuff();
+      req.read(iprot);
       iprot.readMessageEnd();
-      throw new thrift.TApplicationError(
-      thrift.TApplicationErrorType.UNKNOWN_METHOD, tMsg.name);
+      onStuff(req);
     }
-    var req = new t_stuff.Stuff();
-    req.read(iprot);
-    iprot.readMessageEnd();
-    return req;
+    return callbackBar;
   }
 }
 

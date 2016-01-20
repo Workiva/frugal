@@ -365,32 +365,29 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 		subscribers += fmt.Sprintf(tabtab+"var op = \"%s\";\n", op.Name)
 		subscribers += fmt.Sprintf(tabtab+"var prefix = \"%s\";\n", generatePrefixStringTemplate(scope))
 		subscribers += tabtab + "var topic = \"${prefix}" + strings.Title(scope.Name) + "${delimiter}${op}\";\n"
-		subscribers += tabtab + "var tp = provider.newTransportProtocol();\n"
-		subscribers += tabtab + "await tp.fTransport.subscribe(topic);\n"
-		subscribers += tabtab + "tp.fTransport.signalRead.listen((_) {\n"
-		subscribers += tabtabtab + "var ctx = tp.fProtocol.readRequestHeader();\n"
-		subscribers += fmt.Sprintf(tabtabtab+"on%s(ctx, _recv%s(op, tp.fProtocol));\n", op.ParamName(), op.Name)
-		subscribers += tabtab + "});\n"
-		subscribers += tabtab + "var sub = new frugal.FSubscription(topic, tp.fTransport);\n"
-		subscribers += tabtab + "tp.fTransport.error.listen((Error e) {;\n"
-		subscribers += tabtabtab + "sub.signal(e);\n"
-		subscribers += tabtab + "});\n"
-		subscribers += tabtab + "return sub;\n"
+		subscribers += tabtab + "var transport = provider.fTransportFactory.getTransport();\n"
+		subscribers += fmt.Sprintf(tabtab+"await transport.subscribe(topic, _recv%s(op, provider.fProtocolFactory, on%s));\n",
+			op.Name, op.ParamName())
+		subscribers += tabtab + "return new frugal.FSubscription(topic, transport);\n"
 		subscribers += tab + "}\n\n"
 
-		subscribers += fmt.Sprintf(tab+"%s _recv%s(String op, frugal.FProtocol iprot) {\n",
-			g.qualifiedParamName(op), op.Name)
-		subscribers += tabtab + "var tMsg = iprot.readMessageBegin();\n"
-		subscribers += tabtab + "if (tMsg.name != op) {\n"
-		subscribers += tabtabtab + "thrift.TProtocolUtil.skip(iprot, thrift.TType.STRUCT);\n"
+		subscribers += fmt.Sprintf(tab+"_recv%s(String op, frugal.FProtocolFactory protocolFactory, on%s(%s req)) {\n",
+			op.Name, op.ParamName(), g.qualifiedParamName(op))
+		subscribers += fmt.Sprintf(tabtab+"callback%s(thrift.TTransport transport) {\n", op.Name)
+		subscribers += tabtabtab + "var iprot = protocolFactory.getProtocol(transport);\n"
+		subscribers += tabtabtab + "var tMsg = iprot.readMessageBegin();\n"
+		subscribers += tabtabtab + "if (tMsg.name != op) {\n"
+		subscribers += tabtabtabtab + "thrift.TProtocolUtil.skip(iprot, thrift.TType.STRUCT);\n"
+		subscribers += tabtabtabtab + "iprot.readMessageEnd();\n"
+		subscribers += tabtabtabtab + "throw new thrift.TApplicationError(\n"
+		subscribers += tabtabtabtab + "thrift.TApplicationErrorType.UNKNOWN_METHOD, tMsg.name);\n"
+		subscribers += tabtabtab + "}\n"
+		subscribers += fmt.Sprintf(tabtabtab+"var req = new %s();\n", g.qualifiedParamName(op))
+		subscribers += tabtabtab + "req.read(iprot);\n"
 		subscribers += tabtabtab + "iprot.readMessageEnd();\n"
-		subscribers += tabtabtab + "throw new thrift.TApplicationError(\n"
-		subscribers += tabtabtab + "thrift.TApplicationErrorType.UNKNOWN_METHOD, tMsg.name);\n"
+		subscribers += fmt.Sprintf(tabtabtab+"on%s(req);\n", op.ParamName())
 		subscribers += tabtab + "}\n"
-		subscribers += fmt.Sprintf(tabtab+"var req = new %s();\n", g.qualifiedParamName(op))
-		subscribers += tabtab + "req.read(iprot);\n"
-		subscribers += tabtab + "iprot.readMessageEnd();\n"
-		subscribers += tabtab + "return req;\n"
+		subscribers += fmt.Sprintf(tabtab+"return callback%s;\n", op.Name)
 		subscribers += tab + "}\n"
 	}
 
@@ -556,6 +553,9 @@ func (g *Generator) generateErrors(method *parser.Method) string {
 }
 
 func (g *Generator) getDartTypeFromThriftType(t *parser.Type) string {
+	if t == nil {
+		return "void"
+	}
 	typeName := g.Frugal.UnderlyingType(t)
 	switch typeName {
 	case "bool":

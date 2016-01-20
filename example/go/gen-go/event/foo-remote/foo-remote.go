@@ -4,10 +4,10 @@
 package main
 
 import (
-	"event"
 	"flag"
 	"fmt"
 	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/Workiva/frugal/example/go/gen-go/event"
 	"math"
 	"net"
 	"net/url"

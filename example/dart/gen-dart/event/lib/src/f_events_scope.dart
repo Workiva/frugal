@@ -20,9 +20,8 @@ class EventsPublisher {
   frugal.FProtocol fProtocol;
   int seqId;
   EventsPublisher(frugal.FScopeProvider provider) {
-    var tp = provider.newTransportProtocol();
-    fTransport = tp.fTransport;
-    fProtocol = tp.fProtocol;
+    fTransport = provider.fTransportFactory.getTransport();
+    fProtocol = provider.fProtocolFactory.getProtocol(fTransport);
     seqId = 0;
   }
 
@@ -64,32 +63,27 @@ class EventsSubscriber {
     var op = "EventCreated";
     var prefix = "foo.${user}.";
     var topic = "${prefix}Events${delimiter}${op}";
-    var tp = provider.newTransportProtocol();
-    await tp.fTransport.subscribe(topic);
-    tp.fTransport.signalRead.listen((_) {
-      frugal.FContext ctx = new frugal.FContext();
-      tp.fProtocol.readResponseHeader(ctx);
-      onEvent(ctx, _recvEventCreated(op, tp.fProtocol));
-    });
-    var sub = new frugal.FSubscription(topic, tp.fTransport);
-    tp.fTransport.error.listen((Error e) {;
-      sub.signal(e);
-    });
-    return sub;
+    var transport = provider.fTransportFactory.getTransport();
+    await transport.subscribe(topic, _recvEventCreated(op, provider.fProtocolFactory, onEvent));
+    return new frugal.FSubscription(topic, transport);
   }
 
-  t_event.Event _recvEventCreated(String op, frugal.FProtocol iprot) {
-    var tMsg = iprot.readMessageBegin();
-    if (tMsg.name != op) {
-      thrift.TProtocolUtil.skip(iprot, thrift.TType.STRUCT);
+  _recvEventCreated(String op, frugal.FProtocolFactory protocolFactory, onEvent(t_event.Event req)) {
+    callbackEventCreated(thrift.TTransport transport) {
+      var iprot = protocolFactory.getProtocol(transport);
+      var tMsg = iprot.readMessageBegin();
+      if (tMsg.name != op) {
+        thrift.TProtocolUtil.skip(iprot, thrift.TType.STRUCT);
+        iprot.readMessageEnd();
+        throw new thrift.TApplicationError(
+        thrift.TApplicationErrorType.UNKNOWN_METHOD, tMsg.name);
+      }
+      var req = new t_event.Event();
+      req.read(iprot);
       iprot.readMessageEnd();
-      throw new thrift.TApplicationError(
-      thrift.TApplicationErrorType.UNKNOWN_METHOD, tMsg.name);
+      onEvent(req);
     }
-    var req = new t_event.Event();
-    req.read(iprot);
-    iprot.readMessageEnd();
-    return req;
+    return callbackEventCreated;
   }
 }
 
