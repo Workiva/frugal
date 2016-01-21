@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"unicode"
 
 	"gopkg.in/yaml.v2"
 
@@ -454,6 +455,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	servLower := strings.ToLower(service.Name)
 	nameTitle := strings.Title(method.Name)
 	nameLower := strings.ToLower(method.Name)
+	nameFirstLower := lowercaseFirstLetter(method.Name)
 
 	contents := ""
 	if method.Comment != nil {
@@ -469,7 +471,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	contents += fmt.Sprintf(tabtabtab+"oprot.writeMessageBegin(new thrift.TMessage(\"%s\", thrift.TMessageType.CALL, 0));\n",
 		nameLower)
 	contents += fmt.Sprintf(tabtabtab+"t_%s.%s_args args = new t_%s.%s_args();\n",
-		servLower, nameLower, servLower, nameLower)
+		servLower, nameFirstLower, servLower, nameFirstLower)
 	for _, arg := range method.Arguments {
 		argLower := strings.ToLower(arg.Name)
 		contents += fmt.Sprintf(tabtabtab+"args.%s = %s;\n", argLower, argLower)
@@ -497,7 +499,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	contents += tabtabtabtab + "}\n\n"
 
 	contents += fmt.Sprintf(tabtabtabtab+"t_%s.%s_result result = new t_%s.%s_result();\n",
-		servLower, nameLower, servLower, nameLower)
+		servLower, nameFirstLower, servLower, nameFirstLower)
 	contents += tabtabtabtab + "result.read(iprot);\n"
 	contents += tabtabtabtab + "iprot.readMessageEnd();\n"
 	if method.ReturnType == nil {
@@ -618,9 +620,15 @@ func (g *Generator) qualifiedParamName(op *parser.Operation) string {
 		namespace = toLibraryName(namespace)
 		param = fmt.Sprintf("t_%s.%s", strings.ToLower(namespace), param)
 	} else {
-		param = fmt.Sprintf("t_%s.%s", strings.ToLower(param), param)
+		param = fmt.Sprintf("t_%s.%s", strings.ToLower(g.Frugal.Name), param)
 	}
 	return param
+}
+
+func lowercaseFirstLetter(str string) string {
+	runes := []rune(str)
+	runes[0] = unicode.ToLower(runes[0])
+	return string(runes)
 }
 
 func toLibraryName(name string) string {
