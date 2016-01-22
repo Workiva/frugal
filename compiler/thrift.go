@@ -10,6 +10,7 @@ import (
 
 	"github.com/Workiva/frugal/compiler/globals"
 	"github.com/Workiva/frugal/compiler/parser"
+	"errors"
 )
 
 type structLike string
@@ -31,12 +32,32 @@ var thriftTypes = map[string]bool{
 	"binary": true,
 }
 
-func generateThriftIDL(dir string, frugal *parser.Frugal) (string, error) {
-	file := filepath.Join(dir, fmt.Sprintf("%s.thrift", frugal.Name))
+func generateIntermediateFile(dir string, name string, count int) (*os.File, error) {
+	var file string;
+	if count > 10 {
+		return nil, errors.New("Could not generate intermediate file")
+	}
+	if count > 0 {
+		file = filepath.Join(dir, fmt.Sprintf("%s~%d.thrift", name, count))
+	} else {
+		file = filepath.Join(dir, fmt.Sprintf("%s.thrift", name))
+	}
+
+	// Test if the file exists before risking accidental truncation
+	if _, err := os.Stat(file); err == nil {
+		return generateIntermediateFile(dir, name, count+1)
+	}
 	f, err := os.Create(file)
+	return f, err
+}
+
+func generateThriftIDL(dir string, frugal *parser.Frugal) (string, error) {
+	f, err := generateIntermediateFile(dir, frugal.Name, 0)
+
 	if err != nil {
 		return "", err
 	}
+
 	defer f.Close()
 
 	contents := ""
@@ -57,7 +78,7 @@ func generateThriftIDL(dir string, frugal *parser.Frugal) (string, error) {
 	contents += generateServices(thrift.Services)
 
 	_, err = f.WriteString(contents)
-	return file, err
+	return f.Name(), err
 }
 
 func generateNamespaces(namespaces []*parser.Namespace) string {
