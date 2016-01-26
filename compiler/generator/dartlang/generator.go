@@ -246,7 +246,11 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	}
 
 	// Import same package.
-	pkgLower := strings.ToLower(g.Frugal.Name)
+	pkgName, ok := g.Frugal.Thrift.Namespace(lang)
+	if !ok {
+		pkgName = g.Frugal.Name
+	}
+	pkgLower := strings.ToLower(pkgName)
 	imports += fmt.Sprintf("import 'package:%s/%s.dart' as t_%s;\n", pkgLower, pkgLower, pkgLower)
 
 	// Import thrift package for method args
@@ -272,7 +276,11 @@ func (g *Generator) GenerateScopeImports(file *os.File, s *parser.Scope) error {
 	}
 
 	// Import same package.
-	pkgLower := strings.ToLower(g.Frugal.Name)
+	pkgName, ok := g.Frugal.Thrift.Namespace(lang)
+	if !ok {
+		pkgName = g.Frugal.Name
+	}
+	pkgLower := strings.ToLower(pkgName)
 	imports += fmt.Sprintf("import 'package:%s/%s.dart' as t_%s;\n", pkgLower, pkgLower, pkgLower)
 
 	_, err := file.WriteString(imports)
