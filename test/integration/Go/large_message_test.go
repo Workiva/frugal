@@ -6,19 +6,19 @@ import (
 	"github.com/nats-io/nats"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/Workiva/frugal/lib/go"
 )
 
-func TestPublishSubscribe(t *testing.T) {
+func TestLargeMessage(t *testing.T) {
+	CheckShort(t)
 
 	protocolFactories := map[string]thrift.TProtocolFactory{
-		"TCompactProtocolFactory":       thrift.NewTCompactProtocolFactory(),
+		"TCompactProtocolFactory": thrift.NewTCompactProtocolFactory(),
+		// "TSimpleJSONProtocolFactory":    thrift.NewTSimpleJSONProtocolFactory(),
 		"TJSONProtocolFactory":          thrift.NewTJSONProtocolFactory(),
 		"TBinaryProtocolFactoryDefault": thrift.NewTBinaryProtocolFactoryDefault(),
 	}
-	transportFactories := map[string]thrift.TTransportFactory{
-		"TBufferedTransportFactory": thrift.NewTBufferedTransportFactory(8192),
-		"TTransportFactory":         thrift.NewTTransportFactory(),
-	}
+	ftransportFactory := frugal.NewFMuxTransportFactory(5)
 
 	natsOptions := nats.DefaultOptions
 	natsOptions.Servers = []string{nats.DefaultURL}
@@ -29,10 +29,8 @@ func TestPublishSubscribe(t *testing.T) {
 	}
 	defer conn.Close()
 
-	for pf, protocolFactory := range protocolFactories {
-		for tf, transportFactory := range transportFactories {
-			name := pf + " " + tf
-			PublishSubscribe(t, protocolFactory, transportFactory, conn, name)
-		}
+	for name, protocolFactory := range protocolFactories {
+		fprotocolFactory := frugal.NewFProtocolFactory(protocolFactory)
+		LargeMessage(t, fprotocolFactory, ftransportFactory, conn, name)
 	}
 }

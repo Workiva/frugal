@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"github.com/Workiva/frugal/example/go/gen-go/event"
+	"github.com/Workiva/frugal/lib/go"
 	"github.com/stretchr/testify/assert"
 )
 
 type expectedMessages struct {
 	sync.RWMutex
-	messageList map[string]bool
+	messageList map[event.Event]bool
 }
 
 func CheckShort(t *testing.T) {
@@ -23,7 +24,7 @@ func CheckShort(t *testing.T) {
 
 func messageHandler(
 	t *testing.T,
-	subscriber *event.EventsSubscriber,
+	subscriber event.EventsSubscriber,
 	// Channel closed once the subscriber is started
 	started chan bool,
 	// Channel closed after waiting for messages
@@ -50,12 +51,9 @@ func messageHandler(
 
 	t.Logf("Testing with %v", name)
 
-	_, err := subscriber.SubscribeEventCreated(name, func(e *event.Event) {
-
-		expectedMsgKey := e.GetMessage()
-
+	sub, err := subscriber.SubscribeEventCreated(name, func(ctx *frugal.FContext, e *event.Event) {
 		expected.RLock()
-		expectedMsg, ok := expected.messageList[expectedMsgKey]
+		expectedMsg, ok := expected.messageList[*e]
 		if !ok {
 			t.Errorf(`unexpected message on %v`, name)
 			return
@@ -66,20 +64,21 @@ func messageHandler(
 		}
 
 		expected.Lock()
-		expected.messageList[expectedMsgKey] = true
+		expected.messageList[*e] = true
 		expected.Unlock()
 
 		for _, hasBeenReceived := range expected.messageList {
-			if hasBeenReceived == false{
+			if hasBeenReceived == false {
 				return
 			}
 		}
-			wait <- true
+		wait <- true
 
 	})
 	if err != nil {
 		panic(err)
 	}
+	defer sub.Unsubscribe()
 
 	select {
 	case <-wait:

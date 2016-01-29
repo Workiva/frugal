@@ -1,6 +1,3 @@
-requires: 
-  Workiva/frugal: binary
-
 run:
   when-branch-name-is:
     - .+
@@ -19,22 +16,25 @@ scripts:
   - export PATH=$PATH:$GOPATH/bin
   - mkdir -p $GOPATH/src/github.com/Workiva
   - cp -r $testing $GOPATH/src/github.com/Workiva/frugal
+
   - cd $GOPATH/src/github.com/Workiva/frugal
+  - export GOPATH=$GOPATH:$PWD
+  - go get -d ./compiler .
+  - go install
+
   - frugal=$PWD
-  - go get bitbucket.org/tebeka/go2xunit
-  - go get -v github.com/tools/godep
-  - godep go install
+  - go get -d -t ./lib/go .
+  - go build ./lib/go
   - rm -rf $frugal/example/go/gen-go
   - cd $frugal/example
-  - frugal -gen=go event.frugal
-  - frugal -gen go:package_prefix=github.com/Workiva/frugal/example/gen-go/ event.frugal
-  - mv gen-go go
+  - frugal --gen go:package_prefix=github.com/Workiva/frugal/example/go/gen-go/ -r --out='go/gen-go' event.frugal
 
   # Start nats server
   - cd $testing
   - go get github.com/nats-io/gnatsd
   - gnatsd &
 
+  # recycle the Godeps (frugal-go) from lib/go
   - cd $frugal
   - ./scripts/run_tests_skynet.sh
 

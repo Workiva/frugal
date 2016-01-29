@@ -18,3 +18,5 @@ packages
 *.js.map
 
 pubspec.lock
+
+skynet.Dockerfile

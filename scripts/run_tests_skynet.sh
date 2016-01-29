@@ -2,11 +2,13 @@
 
 set -eo pipefail
 
+go get bitbucket.org/tebeka/go2xunit
+
 # Set the outfile
 outfile=$PWD/gotest.out
 
-echo "Running integration tests"
-godep go test -race -v github.com/Workiva/frugal/test/integration | tee $outfile
+echo "Running go integration tests"
+go test -race -v github.com/Workiva/frugal/test/integration/Go | tee $outfile
 
 # Convert the out file to xml
-go2xunit -input $outfile -output /testing/reports/integration_tests.xml
+go2xunit -input $outfile -output /testing/reports/go_integration_tests.xml
