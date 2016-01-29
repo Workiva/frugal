@@ -1,8 +1,13 @@
 package com.workiva.frugal;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import org.jose4j.jwk.HttpsJwks;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.consumer.JwtConsumer;
+import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.jwt.consumer.JwtContext;
+import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -208,5 +213,120 @@ public class FContext {
 
     private static String generateCorrelationId() {
         return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    // Auth related stuff
+
+    private static JwtConsumer jwtConsumer;
+    private Long membershipId = null;
+    private String membershipRid = null;
+    private Long userId = null;
+    private String userRid = null;
+    private Long accountId = null;
+    private String accountRid = null;
+    final private static String
+            AUTH_HEADER_NAME = "Authorization",
+            AUTH_HEADER_PREFIX = "Bearer ";
+
+
+    private String getAuthToken() throws Exception {
+        String authToken = requestHeaders.get(AUTH_HEADER_NAME);
+        if (authToken == null || authToken.equals("")) {
+            throw new Exception(AUTH_HEADER_NAME + " header not present");
+        }
+        if (authToken.equals("")) {
+            throw new Exception(AUTH_HEADER_NAME + " header is empty");
+        }
+        return authToken.replaceAll("^" + AUTH_HEADER_PREFIX, "");
+    }
+
+    /**
+     * Sets the auth token on a context and returns itself
+     */
+    public FContext setAuthToken(String authToken) {
+        this.requestHeaders.put(AUTH_HEADER_NAME, AUTH_HEADER_PREFIX + authToken);
+        return this;
+    }
+
+    private static synchronized JwtConsumer getJwtConsumer() throws Exception {
+        if (jwtConsumer == null) {
+            String authHost = System.getenv("OAUTH2_HOST");
+            if (authHost == null || authHost.equals("")) {
+                throw new Exception("Env OAUTH2_HOST must be declared, e.g. https://wk-dev.wdesk.org");
+            }
+            authHost = authHost.replaceAll("/$", ""); // Remove trailing slash
+            jwtConsumer = new JwtConsumerBuilder()
+                    .setExpectedIssuer(authHost)
+                    .setVerificationKeyResolver(new HttpsJwksVerificationKeyResolver(new HttpsJwks(authHost + "/iam/oauth2/v2.0/certs")))
+                    .setRequireExpirationTime()
+                    .setAllowedClockSkewInSeconds(10)
+                    .setExpectedAudience(false)
+                    .setSkipDefaultAudienceValidation()
+                    .build();
+        }
+        return jwtConsumer;
+    }
+
+    /**
+     * Verifies that a context's access token has a valid signature, issuer, timestamp, scopes, etc.
+     */
+    public FContext verifyAuthToken(String... requiredScopes) throws Exception {
+        // Check the signature, issuer, expiration
+        JwtContext jwtContext = getJwtConsumer().process(getAuthToken());
+        JwtClaims jwtClaims = jwtContext.getJwtClaims();
+
+        // Check the version
+        if (jwtClaims.getClaimValue("ver", Long.class) < 2) {
+            throw new Exception("Token version must be at least 2");
+        }
+
+        // Check scopes
+        List<String> possessedScopes = (ArrayList<String>) jwtClaims.getClaimValue("scp");
+        for (String requiredScope : requiredScopes) {
+            boolean hasRequiredScope = false;
+            for (String possessedScope : possessedScopes) {
+                if (possessedScope.equals(requiredScope)) {
+                    hasRequiredScope = true;
+                    break;
+                }
+            }
+            if (!hasRequiredScope) {
+                throw new Exception(String.format("Required scope (%s) not in list (%s)", requiredScope, possessedScopes));
+            }
+        }
+
+        // Set the appropriate fields from the claims
+        membershipId = jwtClaims.getClaimValue("mem", Long.class);
+        membershipRid = jwtClaims.getClaimValue("mrid", String.class);
+        userId = jwtClaims.getClaimValue("usr", Long.class);
+        userRid = jwtClaims.getClaimValue("urid", String.class);
+        accountId = jwtClaims.getClaimValue("acc", Long.class);
+        accountRid = jwtClaims.getClaimValue("arid", String.class);
+
+        return this;
+    }
+
+    public Long getMembershipId() {
+        return membershipId;
+    }
+
+    public String getMembershipRid() {
+        return membershipRid;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public String getUserRid() {
+        return userRid;
+    }
+
+    public Long getAccountId() {
+        return accountId;
+    }
+
+    public String getAccountRid() {
+        return accountRid;
     }
 }
