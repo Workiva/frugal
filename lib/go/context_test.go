@@ -16,7 +16,7 @@ func TestOpID(t *testing.T) {
 	corid := "fooid"
 	opid := "12345"
 	ctx := NewFContext(corid)
-	ctx.(*context).requestHeaders[opID] = opid
+	ctx.requestHeaders[opID] = opid
 	assert.Equal(t, uint64(12345), ctx.OpID())
 }
 

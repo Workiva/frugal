@@ -48,8 +48,11 @@ type FTransport interface {
 	// Unregister a callback for the given Context.
 	Unregister(*FContext)
 
-	// Closed channel is closed when the FTransport is closed.
-	Closed() <-chan bool
+	// SetMonitor starts a monitor that can watch the health of, and reopen, the transport.
+	SetMonitor(FTransportMonitor)
+
+	// Closed channel receives the cause of an FTransport close (nil if clean close).
+	Closed() <-chan error
 }
 
 // FTransportFactory produces FTransports which are used by services.
@@ -74,13 +77,14 @@ func (f *fMuxTransportFactory) GetTransport(tr thrift.TTransport) FTransport {
 
 type fMuxTransport struct {
 	*thrift.TFramedTransport
-	registry   FRegistry
-	numWorkers uint
-	workC      chan []byte
-	open       bool
-	registryC  chan struct{}
-	mu         sync.Mutex
-	closed     chan bool
+	registry            FRegistry
+	numWorkers          uint
+	workC               chan []byte
+	open                bool
+	registryC           chan struct{}
+	mu                  sync.Mutex
+	closed              chan error
+	monitorClosedSignal chan<- error
 }
 
 // NewFMuxTransport wraps the given TTransport in a multiplexed FTransport. The
@@ -96,6 +100,24 @@ func NewFMuxTransport(tr thrift.TTransport, numWorkers uint) FTransport {
 		workC:            make(chan []byte, numWorkers),
 		registryC:        make(chan struct{}),
 	}
+}
+
+func (f *fMuxTransport) SetMonitor(monitor FTransportMonitor) {
+	// Stop the previous monitor, if any
+	select {
+	case f.monitorClosedSignal <- nil:
+	default:
+	}
+
+	// Start the new monitor
+	monitorClosedSignal := make(chan error, 1)
+	runner := &monitorRunner{
+		monitor:       monitor,
+		transport:     f,
+		closedChannel: monitorClosedSignal,
+	}
+	f.monitorClosedSignal = monitorClosedSignal
+	go runner.run()
 }
 
 // SetRegistry sets the Registry on the FTransport.
@@ -133,7 +155,7 @@ func (f *fMuxTransport) Open() error {
 		return errors.New("frugal: transport already open")
 	}
 
-	f.closed = make(chan bool)
+	f.closed = make(chan error, 1)
 
 	if err := f.TFramedTransport.Open(); err != nil {
 		return err
@@ -143,7 +165,7 @@ func (f *fMuxTransport) Open() error {
 		for {
 			frame, err := f.readFrame()
 			if err != nil {
-				defer f.Close()
+				defer f.close(err)
 				if err, ok := err.(thrift.TTransportException); ok && err.TypeId() == thrift.END_OF_FILE {
 					return
 				}
@@ -167,8 +189,17 @@ func (f *fMuxTransport) Open() error {
 
 // Close will close the underlying TTransport and stops all goroutines.
 func (f *fMuxTransport) Close() error {
+	return f.close(nil)
+}
+
+func (f *fMuxTransport) close(cause error) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+
+	select {
+	case f.monitorClosedSignal <- cause:
+	default:
+	}
 
 	if !f.open {
 		return errors.New("frugal: transport not open")
@@ -177,13 +208,17 @@ func (f *fMuxTransport) Close() error {
 	err := f.TFramedTransport.Close()
 	if err == nil {
 		f.open = false
+		select {
+		case f.closed <- cause:
+		default:
+		}
 		close(f.closed)
 	}
 	return err
 }
 
 // Closed channel is closed when the FTransport is closed.
-func (f *fMuxTransport) Closed() <-chan bool {
+func (f *fMuxTransport) Closed() <-chan error {
 	return f.closed
 }
 
@@ -218,7 +253,7 @@ func (f *fMuxTransport) startWorkers() {
 					if err := f.registry.Execute(frame); err != nil {
 						// An error here indicates an unrecoverable error, teardown transport.
 						log.Println("frugal: transport error, closing transport", err)
-						f.Close()
+						f.close(err)
 						return
 					}
 				}
