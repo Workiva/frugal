@@ -40,6 +40,7 @@ func (l *eventsPublisher) Open() error {
 }
 
 func (l *eventsPublisher) Close() error {
+	l.transport.Flush()
 	return l.transport.Close()
 }
 

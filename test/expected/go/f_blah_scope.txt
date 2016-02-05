@@ -37,6 +37,7 @@ func (l *blahPublisher) Open() error {
 }
 
 func (l *blahPublisher) Close() error {
+	l.transport.Flush()
 	return l.transport.Close()
 }
 

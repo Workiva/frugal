@@ -17,8 +17,6 @@ import (
 	"strings"
 )
 
-var _ = base.GoUnusedProtection__
-
 func Usage() {
 	fmt.Fprintln(os.Stderr, "Usage of ", os.Args[0], " [-h host:port] [-u url] [-f[ramed]] function [arg1 [arg2...]]:")
 	flag.PrintDefaults()
