@@ -329,8 +329,9 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	publishers += tabtab + "return fTransport.open();\n"
 	publishers += tab + "}\n\n"
 
-	publishers += tab + "Future close() {\n"
-	publishers += tabtab + "return fTransport.close();\n"
+	publishers += tab + "Future close() async {\n"
+	publishers += tabtab + "await fTransport.flush();\n"
+	publishers += tabtab + "await fTransport.close();\n"
 	publishers += tab + "}\n\n"
 
 	args := ""

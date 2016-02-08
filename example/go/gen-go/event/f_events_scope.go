@@ -40,6 +40,9 @@ func (l *eventsPublisher) Open() error {
 }
 
 func (l *eventsPublisher) Close() error {
+	if err := l.transport.Flush(); err != nil {
+		return err
+	}
 	return l.transport.Close()
 }
 

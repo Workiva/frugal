@@ -168,6 +168,7 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	publisher += tab + "}\n\n"
 
 	publisher += tab + "public void close() throws TException {\n"
+	publisher += tabtab + "transport.flush();\n"
 	publisher += tabtab + "transport.close();\n"
 	publisher += tab + "}\n\n"
 

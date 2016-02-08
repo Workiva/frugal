@@ -25,8 +25,9 @@ class BlahPublisher {
     return fTransport.open();
   }
 
-  Future close() {
-    return fTransport.close();
+  Future close() async {
+    await fTransport.flush();
+    await fTransport.close();
   }
 
   Future publishDoStuff(frugal.FContext ctx, t_valid.Thing req) async {

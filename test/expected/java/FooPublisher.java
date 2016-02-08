@@ -46,6 +46,7 @@ public class FooPublisher {
 	}
 
 	public void close() throws TException {
+		transport.flush();
 		transport.close();
 	}
 

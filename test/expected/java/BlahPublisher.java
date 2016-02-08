@@ -43,6 +43,7 @@ public class BlahPublisher {
 	}
 
 	public void close() throws TException {
+		transport.flush();
 		transport.close();
 	}
 

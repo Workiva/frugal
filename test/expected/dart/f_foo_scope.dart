@@ -26,8 +26,9 @@ class FooPublisher {
     return fTransport.open();
   }
 
-  Future close() {
-    return fTransport.close();
+  Future close() async {
+    await fTransport.flush();
+    await fTransport.close();
   }
 
   /// This is an operation docstring.

@@ -219,6 +219,9 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	publisher += "}\n\n"
 
 	publisher += fmt.Sprintf("func (l *%sPublisher) Close() error {\n", scopeLower)
+	publisher += "\tif err := l.transport.Flush(); err != nil {\n"
+	publisher += "\t\treturn err\n"
+	publisher += "\t}\n"
 	publisher += "\treturn l.transport.Close()\n"
 	publisher += "}\n\n"
 
