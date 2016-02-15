@@ -203,16 +203,12 @@ public class TNatsServiceTransport extends TTransport {
 
     private Message handshakeRequest(byte[] handshakeBytes) throws TimeoutException, IOException {
         String inbox = newFrugalInbox();
-        Message m = null;
         try (SyncSubscription s = conn.subscribeSync(inbox, null))
         {
             s.autoUnsubscribe(1);
             conn.publish(this.connectionSubject, inbox, handshakeBytes);
-            m = s.nextMessage(this.connectionTimeout, TimeUnit.MILLISECONDS);
-        } catch (IOException | TimeoutException e) {
-            throw(e);
+            return s.nextMessage(this.connectionTimeout, TimeUnit.MILLISECONDS);
         }
-        return m;
     }
 
 
@@ -258,7 +254,7 @@ public class TNatsServiceTransport extends TTransport {
             try {
                 heartbeatSub.unsubscribe();
             } catch (IOException e) {
-                LOGGER.warning("could not unsubscribe from heartbeat subscription. " + e.getMessage());
+                LOGGER.warning("close: could not unsubscribe from heartbeat subscription. " + e.getMessage());
             }
             heartbeatSub = null;
         }
@@ -270,14 +266,23 @@ public class TNatsServiceTransport extends TTransport {
         try {
             sub.unsubscribe();
         } catch (IOException e) {
-            LOGGER.warning("could not unsubscribe from inbox subscription. " + e.getMessage());
+            LOGGER.warning("close: could not unsubscribe from inbox subscription. " + e.getMessage());
         }
         sub = null;
+
+        // Flush the NATS connection to avoid an edge case where the program exits after closing the transport. This is
+        // because NATS asynchronously flushes in the background, so explicitly flushing prevents us from losing
+        // anything buffered when we exit.
+        try {
+            conn.flush();
+        } catch (Exception e) {
+            LOGGER.warning("close: could not flush NATS connection. " + e.getMessage());
+        }
 
         try {
             writer.close();
         } catch (IOException e) {
-            LOGGER.warning("could not close write buffer. " + e.getMessage());
+            LOGGER.warning("close: could not close write buffer. " + e.getMessage());
         }
         isOpen = false;
     }

@@ -11,7 +11,7 @@ dependencies:
   frugal:
     git:
       url: git@github.com:Workiva/frugal-dart.git
-      ref: 1.0.0-RC2
+      ref: 1.0.0
   thrift:
     git:
       url: git@github.com:Workiva/thrift-dart.git

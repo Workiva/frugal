@@ -249,6 +249,13 @@ func (n *natsServiceTTransport) Close() error {
 			return thrift.NewTTransportExceptionFromError(err)
 		}
 	}
+
+	// Flush the NATS connection to avoid an edge case where the program exits
+	// after closing the transport. This is because NATS asynchronously flushes
+	// in the background, so explicitly flushing prevents us from losing
+	// anything buffered when we exit.
+	n.conn.Flush()
+
 	n.sub = nil
 	n.heartbeatSub = nil
 	close(n.closed)
