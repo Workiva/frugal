@@ -13,10 +13,10 @@ class FProtocol(TProtocolBase):
         super(FProtocol, self).__init__(trans)
 
     def write_request_header(self, context):
-        self._write_header(context.get_request_headers())
+        self._write_headers(context.get_request_headers())
 
     def read_request_header(self):
-        headers = self._read_header(self.trans)
+        headers = self._read_headers(self.trans)
 
         context = FContext()
 
@@ -25,14 +25,22 @@ class FProtocol(TProtocolBase):
 
         op_id = headers['_opid']
         context.set_response_op_id(op_id)
+        return context
 
     def write_response_header(self, context):
-        self._write_header(context.get_response_headers())
+        self._write_headers(context.get_response_headers())
 
     def read_response_header(self):
-        pass
+        headers = self._read_headers(self.trans)
 
-    def _write_header(self, headers):
+        context = FContext(headers['_cid'])
+
+        for key, value in headers.iteritems():
+            context.put_response_header(key, value)
+
+        return context
+
+    def _write_headers(self, headers):
         size = 0
         for key, value in headers.iteritems():
             size = size + 8 + len(key) + len(value)
@@ -61,7 +69,7 @@ class FProtocol(TProtocolBase):
         # self.trans.write(buff)
         return buff
 
-    def _read_header(self, buff):
+    def _read_headers(self, buff):
         parsed_headers = {}
 
         version = struct.unpack_from('>s', buff, 0)[0]

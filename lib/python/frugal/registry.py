@@ -1,4 +1,15 @@
 from frugal.exceptions import FException
+from threading import Lock
+
+NEXT_OP_ID = 0
+
+
+def increment_and_get_next_op_id():
+    lock = Lock()
+    lock.acquire()
+    op_id = NEXT_OP_ID + 1
+    lock.release()
+    return op_id
 
 
 class FRegistry(object):
@@ -57,11 +68,10 @@ class FClientRegistry(FRegistry):
         self._handlers = {}
 
     def register(self, context, callback):
-        op_id = context.get_op_id()
-
-        if op_id in self._handlers:
+        if context.get_op_id() in self._handlers:
             raise FException("context already registered")
 
+        op_id = increment_and_get_next_op_id()
         self._handlers[op_id] = callback
 
     def unregister(self, context):
@@ -71,10 +81,4 @@ class FClientRegistry(FRegistry):
         pass
 
     def close(self):
-        pass
-
-
-class FAsyncCallback(object):
-
-    def on_message(transport):
         pass
