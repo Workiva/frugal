@@ -1,15 +1,8 @@
-from frugal.exceptions import FException
 from threading import Lock
 
-NEXT_OP_ID = 0
+from thrift.transport.TTransport import TMemoryBuffer
 
-
-def increment_and_get_next_op_id():
-    lock = Lock()
-    lock.acquire()
-    op_id = NEXT_OP_ID + 1
-    lock.release()
-    return op_id
+from frugal.exceptions import FException
 
 
 class FRegistry(object):
@@ -17,6 +10,7 @@ class FRegistry(object):
     Registry is responsible for multiplexing received
     messages to the appropriate callback.
     """
+
     def register(self, context):
         pass
 
@@ -26,9 +20,6 @@ class FRegistry(object):
     def execute(self, frame):
         pass
 
-    def close(self):
-        pass
-
 
 class FServerRegistry(FRegistry):
     """
@@ -36,26 +27,33 @@ class FServerRegistry(FRegistry):
     This is only to be used by generated code.
     """
 
-    def __init__(self, processor, inputProtocolFactory, outputProtocol):
+    def __init__(self, processor, input_protocol_factory, output_protocol):
+        """Initialize FServerRegistry.
+
+        Args:
+            processor: FProcessor is the server request processor.
+            input_protocol_factory: FProtocolFactory used for creating input
+                                    protocols.
+            output_protocol: output FProtocol.
+        """
         self._processor = processor
-        self._inputProtocolFactory = inputProtocolFactory
-        self._outputProtocol = outputProtocol
+        self._input_protocol_factory = input_protocol_factory
+        self._output_protocol = output_protocol
 
     def register(self, context, callback):
+        # No-op in server.
         pass
 
     def unregister(self, context):
+        # No-op in server.
         pass
 
     def execute(self, frame):
+        tr = TMemoryBuffer(frame)
         self._processor.process(
-            #TODO add the TMemoryProtocol
-            self._inputProtocolFactory.get_protocol(),
+            self._inputProtocolFactory.get_protocol(tr),
             self._outputProtocol
         )
-
-    def close(self):
-        pass
 
 
 class FClientRegistry(FRegistry):
@@ -66,19 +64,30 @@ class FClientRegistry(FRegistry):
 
     def __init__(self):
         self._handlers = {}
+        self._handlers_lock = Lock()
+        self._next_opid = 0
+        self._opid_lock = Lock()
 
     def register(self, context, callback):
-        if context.get_op_id() in self._handlers:
-            raise FException("context already registered")
+        with self._handlers_lock:
+            if context.get_op_id() in self._handlers:
+                raise FException("context already registered")
 
-        op_id = increment_and_get_next_op_id()
-        self._handlers[op_id] = callback
+        op_id = self._increment_and_get_next_op_id()
+        with self._handlers_lock:
+            self._handlers[op_id] = callback
 
     def unregister(self, context):
-        self._handlers.pop(context.get_op_id(), None)
+        with self._handlers_lock:
+            self._handlers.pop(context.get_op_id(), None)
 
     def execute(self, frame):
+        # TODO
         pass
 
-    def close(self):
-        pass
+    def _increment_and_get_next_op_id(self):
+        with self._opid_lock:
+            self._next_opid += 1
+            op_id = self._next_opid
+        return op_id
+

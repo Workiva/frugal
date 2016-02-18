@@ -2,6 +2,7 @@ from thrift.Thrift import TBaseTransport
 
 
 class FScopeTransport(TBaseTransport):
+    # TODO: docstrings
 
     def lock_topic(topic):
         pass

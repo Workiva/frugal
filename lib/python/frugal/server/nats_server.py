@@ -3,6 +3,8 @@ from . import FServer
 
 logger = logging.getLogger(__name__)
 
+# TODO: implement this.
+
 
 class FNatsServer(FServer):
 
@@ -10,6 +12,6 @@ class FNatsServer(FServer):
         logger.exception()
 
     def serve(self):
+        pass
         # self.connection.QueueSubscribe(self.subject, queue, callback)
-
 

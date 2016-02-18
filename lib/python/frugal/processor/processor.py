@@ -12,12 +12,14 @@ class FProcessor(object):
 class FBaseProcessor(FProcessor):
 
     def __init__(self, processor_function_map):
-        self.processor_function_map = processor_function_map
+        self._processor_function_map = processor_function_map
 
     def process(self, iprot, oprot):
         context = iprot.read_request_header()
         message = iprot.read_message_begin()
-        processor = self.processor_function_map[message.name]
-        if (processor is not None):
+        processor = self._processor_function_map.get(message.name)
+        if processor:
             processor.process(context, iprot, oprot)
             return
+
+        # TODO

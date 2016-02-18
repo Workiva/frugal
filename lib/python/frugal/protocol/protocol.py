@@ -1,5 +1,7 @@
 import struct
+
 from thrift.protocol.TProtocol import TProtocolBase
+
 from frugal.context import FContext
 from frugal.exceptions import FrugalVersionException
 
@@ -10,6 +12,11 @@ class FProtocol(TProtocolBase):
     """
 
     def __init__(self, trans):
+        """Initialize FProtocol.
+
+        Args:
+            trans: wrapped FTransport.
+        """
         super(FProtocol, self).__init__(trans)
 
     def write_request_header(self, context):
@@ -47,7 +54,8 @@ class FProtocol(TProtocolBase):
 
         buff = bytearray(size + 5)
 
-        struct.pack_into('>c', buff, 0, '0')
+        # TODO: use V0 constant.
+        struct.pack_into('>B', buff, 0, 0)
         struct.pack_into('>I', buff, 1, size)
 
         offset = 5
@@ -66,15 +74,15 @@ class FProtocol(TProtocolBase):
                              offset, value)
             offset += len(value)
 
-        # self.trans.write(buff)
-        return buff
+        self.trans.write(buff)
 
     def _read_headers(self, buff):
         parsed_headers = {}
 
-        version = struct.unpack_from('>s', buff, 0)[0]
+        version = struct.unpack_from('>B', buff, 0)[0]
 
-        if version is not '0':
+        # TODO: use constant.
+        if version is not 0:
             raise FrugalVersionException("Wrong Frugal version.")
 
         size = struct.unpack_from('>I', buff, 1)[0]
@@ -85,11 +93,17 @@ class FProtocol(TProtocolBase):
             key_size = struct.unpack_from('>I', buff, offset)[0]
             offset += 4
 
+            # TODO: Check bounds.
+
             key = struct.unpack_from('>{0}s'.format(key_size), buff, offset)[0]
             offset += len(key)
 
+            # TODO: Check bounds.
+
             val_size = struct.unpack_from('>I', buff, offset)[0]
             offset += 4
+
+            # TODO: Check bounds.
 
             val = struct.unpack_from('>{0}s'.format(val_size), buff, offset)[0]
             offset += len(val)

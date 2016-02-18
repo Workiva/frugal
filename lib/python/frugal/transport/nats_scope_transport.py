@@ -1,4 +1,4 @@
-from threading import RLock
+from threading import Lock
 from . import FScopeTransport
 from frugal.exceptions import FException
 
@@ -8,7 +8,8 @@ class FNatsScopeTransport(FScopeTransport):
     def __init__(self, conn=None):
         self._conn = conn
         self._subject = ""
-        self._lock = RLock()
+        self._lock = Lock()
+        self._pull = False
 
     def lock_topic(self, topic):
         if self._pull:
@@ -21,8 +22,8 @@ class FNatsScopeTransport(FScopeTransport):
         if self._pull:
             raise FException("Subscriber cannot unlock topic.")
 
-        self._lock.release()
         self._subject = ""
+        self._lock.release()
 
     def subscribe(self, topic):
         self._pull = True
@@ -30,4 +31,5 @@ class FNatsScopeTransport(FScopeTransport):
         self.open()
 
     def open():
+        # TODO
         pass

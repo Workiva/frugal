@@ -3,6 +3,8 @@ from thrift.transport.TTransport import TTransportBase
 
 class FTransport(TTransportBase):
 
+    # TODO: implement.
+
     def __init__(self, registry=None):
         self._registry = registry
 
