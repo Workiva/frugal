@@ -20,3 +20,11 @@ packages
 pubspec.lock
 
 skynet.Dockerfile
+
+# python specific
+.python_version
+*.pyc
+.coverage
+.build/
+.ropeproject/
+unit_tests.xml

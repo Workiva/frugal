@@ -21,6 +21,11 @@ cd $ROOT/lib/go
 go get -d ./go .
 go build
 
+# Compile the python library code
+cd $ROOT/lib/python
+make deps
+make unit
+
 # Run the generator tests
 cd $ROOT
 go get -d ./compiler .
