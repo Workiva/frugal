@@ -1,4 +1,4 @@
-from . import FProtocol
+from .protocol import FProtocol
 
 
 class FProtocolFactory(object):

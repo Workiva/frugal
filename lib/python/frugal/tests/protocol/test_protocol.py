@@ -1,24 +1,31 @@
 import unittest
-from frugal.protocol.protocol import FProtocol
+
+from thrift.protocol.TBinaryProtocol import TBinaryProtocolFactory
+from thrift.transport.TTransport import TMemoryBuffer
+
+from frugal.protocol.protocol_factory import FProtocolFactory
 from frugal.context import FContext
-from thrift.transport.TTransport import TTransportBase
 
 
 class TestFProtocol(unittest.TestCase):
 
     def test_write_header(self):
 
-        trans = TTransportBase()
-        protocol = FProtocol(trans)
+        t_protocol_factory = TBinaryProtocolFactory()
+        f_protocol_factory = FProtocolFactory(t_protocol_factory)
+
+        transport = TMemoryBuffer()
+
+        protocol = f_protocol_factory.get_protocol(transport)
+
         context = FContext("fooid")
-        context.put_request_header("foo", "bar")
+        context.set_request_header("foo", "bar")
 
         headers = context.get_request_headers()
 
-        buff = protocol._write_header(headers)
+        protocol._write_headers(headers)
 
-        parsed_headers = protocol._read_header(buff)
+        parsed_headers = protocol._read_headers(transport.getvalue())
 
         self.assertEquals("fooid", parsed_headers['_cid'])
-        self.assertEquals("1", parsed_headers['_opid'])
         self.assertEquals("bar", parsed_headers['foo'])

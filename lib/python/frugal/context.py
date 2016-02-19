@@ -1,6 +1,6 @@
 import uuid
 from copy import copy
-
+from frugal.exceptions import FContextHeaderException
 
 _C_ID = "_cid"
 _OP_ID = "_opid"
@@ -15,6 +15,7 @@ class FContext(object):
 
         Args:
             correlation_id: string identifier for distributed tracing purposes.
+            timeout: number of milliseconds before request times out.
         """
         self._request_headers = {}
         self._response_headers = {}
@@ -40,7 +41,7 @@ class FContext(object):
         implementation detail.
         """
 
-        return self._request_headers[_OP_ID]
+        return self._request_headers.get(_OP_ID)
 
     def _set_op_id(self, op_id):
         self._request_headers[_OP_ID] = op_id
@@ -53,9 +54,16 @@ class FContext(object):
         headers dict.
         """
 
-        return self._request_headers[key]
+        return self._request_headers.get(key)
 
-    def put_request_header(self, key, value):
+    def set_request_header(self, key, value):
+        if key in (_OP_ID, _C_ID):
+            raise FContextHeaderException(
+                "Not allowed to overwrite internal _cid or _opid.")
+
+        self._set_request_header(key, value)
+
+    def _set_request_header(self, key, value):
         self._check_string(key)
         self._check_string(value)
 
@@ -67,7 +75,14 @@ class FContext(object):
     def get_response_header(self, key):
         return self._response_headers.get(key)
 
-    def put_response_header(self, key, value):
+    def set_response_header(self, key, value):
+        if key in (_OP_ID, _C_ID):
+            raise FContextHeaderException(
+                "Not allowed to overwrite internal _cid or _opid")
+
+        self._set_response_header(key, value)
+
+    def _set_response_header(self, key, value):
         self._check_string(key)
         self._check_string(value)
 

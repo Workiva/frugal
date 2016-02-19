@@ -8,6 +8,11 @@ class FServerTransport(object):
         pass
 
     def accept(self):
+        """Accept connection
+
+        Retruns:
+            FTranpsort
+        """
         pass
 
     def close(self):

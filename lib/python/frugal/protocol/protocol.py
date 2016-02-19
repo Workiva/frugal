@@ -2,48 +2,51 @@ import struct
 
 from thrift.protocol.TProtocol import TProtocolBase
 
-from frugal.context import FContext
+from frugal.context import FContext, _OP_ID
 from frugal.exceptions import FrugalVersionException
 
 
-class FProtocol(TProtocolBase):
+_V0 = 0
+
+
+class FProtocol(TProtocolBase, object):
     """
     FProtocol is an extension of thrift TProtocol with the addition of headers
     """
 
-    def __init__(self, trans):
+    def __init__(self, wrapped_protocol):
         """Initialize FProtocol.
 
         Args:
-            trans: wrapped FTransport.
+            wrapped_protocol: wrapped thrift protocol extending TProtocolBase.
         """
-        super(FProtocol, self).__init__(trans)
+        super(FProtocol, self).__init__(wrapped_protocol.trans)
 
-    def write_request_header(self, context):
+    def write_request_headers(self, context):
         self._write_headers(context.get_request_headers())
 
-    def read_request_header(self):
+    def read_request_headers(self):
         headers = self._read_headers(self.trans)
 
         context = FContext()
 
         for key, value in headers.iteritems():
-            context.put_request_header(key, value)
+            context._set_request_header(key, value)
 
-        op_id = headers['_opid']
+        op_id = headers[_OP_ID]
         context.set_response_op_id(op_id)
         return context
 
-    def write_response_header(self, context):
+    def write_response_headers(self, context):
         self._write_headers(context.get_response_headers())
 
-    def read_response_header(self):
+    def read_response_headers(self):
         headers = self._read_headers(self.trans)
 
-        context = FContext(headers['_cid'])
+        context = FContext()
 
         for key, value in headers.iteritems():
-            context.put_response_header(key, value)
+            context._set_response_header(key, value)
 
         return context
 
@@ -54,8 +57,7 @@ class FProtocol(TProtocolBase):
 
         buff = bytearray(size + 5)
 
-        # TODO: use V0 constant.
-        struct.pack_into('>B', buff, 0, 0)
+        struct.pack_into('>B', buff, 0, _V0)
         struct.pack_into('>I', buff, 1, size)
 
         offset = 5
@@ -81,9 +83,11 @@ class FProtocol(TProtocolBase):
 
         version = struct.unpack_from('>B', buff, 0)[0]
 
-        # TODO: use constant.
-        if version is not 0:
-            raise FrugalVersionException("Wrong Frugal version.")
+        if version is not _V0:
+            raise FrugalVersionException(
+                "Wrong Frugal version.  Found version {0}.  Wanted version {1}"
+                .format(version, _V0)
+            )
 
         size = struct.unpack_from('>I', buff, 1)[0]
 

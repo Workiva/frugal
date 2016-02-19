@@ -11,13 +11,29 @@ class FRegistry(object):
     messages to the appropriate callback.
     """
 
-    def register(self, context):
+    def register(self, context, callback):
+        """Register a callback for a given FContext.
+
+        Args:
+            context: FContext to register.
+            callback: function to register.
+        """
         pass
 
     def unregister(self, context):
+        """Unregister the callback for a given FContext.
+
+        Args:
+            context: FContext to unregister.
+        """
         pass
 
     def execute(self, frame):
+        """Dispatch a single Frugal message frame.
+
+        Args:
+            frame: an entire Frugal message frame.
+        """
         pass
 
 
@@ -49,6 +65,11 @@ class FServerRegistry(FRegistry):
         pass
 
     def execute(self, frame):
+        """Dispatch a single Frugal message frame.
+
+        Args:
+            frame: an entire Frugal message frame.
+        """
         tr = TMemoryBuffer(frame)
         self._processor.process(
             self._inputProtocolFactory.get_protocol(tr),
@@ -69,8 +90,14 @@ class FClientRegistry(FRegistry):
         self._opid_lock = Lock()
 
     def register(self, context, callback):
+        """Register a callback for a given FContext.
+
+        Args:
+            context: FContext to register.
+            callback: function to register.
+        """
         with self._handlers_lock:
-            if context.get_op_id() in self._handlers:
+            if context._get_op_id() in self._handlers:
                 raise FException("context already registered")
 
         op_id = self._increment_and_get_next_op_id()
@@ -78,10 +105,20 @@ class FClientRegistry(FRegistry):
             self._handlers[op_id] = callback
 
     def unregister(self, context):
+        """Unregister the callback for a given FContext.
+
+        Args:
+            context: FContext to unregister.
+        """
         with self._handlers_lock:
-            self._handlers.pop(context.get_op_id(), None)
+            self._handlers.pop(context._get_op_id(), None)
 
     def execute(self, frame):
+        """Dispatch a single Frugal message frame.
+
+        Args:
+            frame: an entire Frugal message frame.
+        """
         # TODO
         pass
 
