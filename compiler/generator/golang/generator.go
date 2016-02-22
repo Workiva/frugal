@@ -2,10 +2,13 @@ package golang
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
+
+	"golang.org/x/tools/imports"
 
 	"github.com/Workiva/frugal/compiler/generator"
 	"github.com/Workiva/frugal/compiler/globals"
@@ -41,6 +44,19 @@ func (g *Generator) GetOutputDir(dir string) string {
 
 func (g *Generator) DefaultOutputDir() string {
 	return defaultOutputDir
+}
+
+// PostProcess file runs gofmt and goimports on the given file.
+func (g *Generator) PostProcess(f *os.File) error {
+	contents, err := ioutil.ReadFile(f.Name())
+	if err != nil {
+		return err
+	}
+	contents, err = imports.Process(f.Name(), contents, nil)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(f.Name(), contents, 0)
 }
 
 func (g *Generator) GenerateDependencies(dir string) error {

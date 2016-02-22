@@ -50,6 +50,8 @@ func (g *Generator) DefaultOutputDir() string {
 	return defaultOutputDir
 }
 
+func (g *Generator) PostProcess(f *os.File) error { return nil }
+
 func (g *Generator) GenerateDependencies(dir string) error {
 	return nil
 }

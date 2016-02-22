@@ -28,6 +28,7 @@ public class TNatsServiceTransport extends TTransport {
     public static final String FRUGAL_PREFIX = "frugal.";
 
     private static final String DISCONNECT = "DISCONNECT";
+    private static final long HEARTBEAT_GRACE_PERIOD = 5 * 1000;
 
     private Connection conn;
     private PipedOutputStream writer;
@@ -92,12 +93,13 @@ public class TNatsServiceTransport extends TTransport {
     }
 
     @Override
-    public synchronized boolean isOpen() { return conn.getState() == Constants.ConnState.CONNECTED && isOpen; }
+    public synchronized boolean isOpen() {
+        return conn.getState() == Constants.ConnState.CONNECTED && isOpen;
+    }
 
     /**
      * Opens the transport for reading/writing.
      * Performs a handshake with the server if this is a client transport.
-     *
      *
      * @throws TTransportException if the transport could not be opened
      */
@@ -171,12 +173,12 @@ public class TNatsServiceTransport extends TTransport {
             throw new TTransportException(TTransportException.TIMED_OUT, "Handshake timed out", e);
         }
         String reply = message.getReplyTo();
-        if (reply == null || reply.isEmpty() ) {
+        if (reply == null || reply.isEmpty()) {
             throw new TTransportException("No reply subject on connect.");
         }
 
         String[] subjects = new String(message.getData()).split(" ");
-        if (subjects.length != 3 ) {
+        if (subjects.length != 3) {
             throw new TTransportException("Invalid connect message.");
         }
 
@@ -203,8 +205,7 @@ public class TNatsServiceTransport extends TTransport {
 
     private Message handshakeRequest(byte[] handshakeBytes) throws TimeoutException, IOException {
         String inbox = newFrugalInbox();
-        try (SyncSubscription s = conn.subscribeSync(inbox, null))
-        {
+        try (SyncSubscription s = conn.subscribeSync(inbox, null)) {
             s.autoUnsubscribe(1);
             conn.publish(this.connectionSubject, inbox, handshakeBytes);
             return s.nextMessage(this.connectionTimeout, TimeUnit.MILLISECONDS);
@@ -223,7 +224,7 @@ public class TNatsServiceTransport extends TTransport {
             public void run() {
                 missedHeartbeat();
             }
-        }, heartbeatInterval);
+        }, heartbeatTimeoutPeriod());
     }
 
     private void missedHeartbeat() {
@@ -336,6 +337,11 @@ public class TNatsServiceTransport extends TTransport {
         }
         conn.publish(writeTo, data);
         writeBuffer.clear();
+    }
+
+    private long heartbeatTimeoutPeriod() {
+        // The server is expected to heartbeat at every heartbeatInterval. Add an additional grace period.
+        return heartbeatInterval + HEARTBEAT_GRACE_PERIOD;
     }
 
     static TTransportException getClosedConditionException(Connection conn, String prefix) {

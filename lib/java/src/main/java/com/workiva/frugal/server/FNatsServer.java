@@ -29,12 +29,13 @@ public class FNatsServer implements FServer {
 
     private static final int DEFAULT_MAX_MISSED_HEARTBEATS = 3;
     private static final long MIN_HEARTBEAT_INTERVAL = 20 * 1000;
+    private static final long HEARTBEAT_GRACE_PERIOD = 5 * 1000;
     private static final String QUEUE = "rpc";
 
     private Connection conn;
     private String subject;
     private String heartbeatSubject;
-    private final long heartbeatDeadline;
+    private final long heartbeatInterval;
     private final int maxMissedHeartbeats;
     private ConcurrentHashMap<String, Client> clients;
     private FProcessorFactory processorFactory;
@@ -47,14 +48,14 @@ public class FNatsServer implements FServer {
 
     private static Logger LOGGER = Logger.getLogger(FNatsServer.class.getName());
 
-    public FNatsServer(Connection conn, String subject, long heartbeatDeadline,
+    public FNatsServer(Connection conn, String subject, long heartbeatInterval,
                        FProcessor processor, FTransportFactory transportFactory,
                        FProtocolFactory protocolFactory) {
         this.conn = conn;
         this.subject = subject;
         this.heartbeatSubject = conn.newInbox();
-        this.heartbeatDeadline = heartbeatDeadline < MIN_HEARTBEAT_INTERVAL ?
-                MIN_HEARTBEAT_INTERVAL : heartbeatDeadline;
+        this.heartbeatInterval = heartbeatInterval < MIN_HEARTBEAT_INTERVAL ?
+                MIN_HEARTBEAT_INTERVAL : heartbeatInterval;
         this.maxMissedHeartbeats = DEFAULT_MAX_MISSED_HEARTBEATS;
         this.clients = new ConcurrentHashMap<>();
         this.processorFactory = new FProcessorFactory(processor);
@@ -62,14 +63,14 @@ public class FNatsServer implements FServer {
         this.protocolFactory = protocolFactory;
     }
 
-    public FNatsServer(Connection conn, String subject, long heartbeatDeadline, int maxMissedHeartbeats,
+    public FNatsServer(Connection conn, String subject, long heartbeatInterval, int maxMissedHeartbeats,
                        FProcessorFactory processorFactory, FTransportFactory transportFactory,
                        FProtocolFactory protocolFactory) {
         this.conn = conn;
         this.subject = subject;
         this.heartbeatSubject = conn.newInbox();
-        this.heartbeatDeadline = heartbeatDeadline < MIN_HEARTBEAT_INTERVAL ?
-                MIN_HEARTBEAT_INTERVAL : heartbeatDeadline;
+        this.heartbeatInterval = heartbeatInterval < MIN_HEARTBEAT_INTERVAL ?
+                MIN_HEARTBEAT_INTERVAL : heartbeatInterval;
         this.maxMissedHeartbeats = maxMissedHeartbeats;
         this.clients = new ConcurrentHashMap<>();
         this.processorFactory = processorFactory;
@@ -141,7 +142,7 @@ public class FNatsServer implements FServer {
                 }
 
                 // Connect message consists of "[heartbeat subject] [heartbeat reply subject] [expected interval ms]"
-                String connectMsg = heartbeatSubject + " " + heartbeat + " " + heartbeatDeadline;
+                String connectMsg = heartbeatSubject + " " + heartbeat + " " + heartbeatInterval;
                 try {
                     conn.publish(reply, listenTo, connectMsg.getBytes());
                 } catch (Exception e) {
@@ -159,8 +160,8 @@ public class FNatsServer implements FServer {
         }
 
         if (isHeartbeating()) {
-            heartbeatExecutor.scheduleAtFixedRate(new MakeHeartbeatRunnable(), heartbeatDeadline,
-                    heartbeatDeadline, TimeUnit.MILLISECONDS);
+            heartbeatExecutor.scheduleAtFixedRate(new MakeHeartbeatRunnable(), heartbeatInterval,
+                    heartbeatInterval, TimeUnit.MILLISECONDS);
         }
         try {
             shutdown.take();
@@ -262,7 +263,7 @@ public class FNatsServer implements FServer {
             running = true;
             while (running) {
                 try {
-                    Object ret = heartbeatQueue.poll(heartbeatDeadline, TimeUnit.MILLISECONDS);
+                    Object ret = heartbeatQueue.poll(heartbeatInterval + HEARTBEAT_GRACE_PERIOD, TimeUnit.MILLISECONDS);
                     if (ret == null) {
                         missed++;
                     } else {
@@ -285,7 +286,7 @@ public class FNatsServer implements FServer {
     }
 
     private boolean isHeartbeating() {
-        return (heartbeatDeadline > 0);
+        return (heartbeatInterval > 0);
     }
 
     private class ClientRemover implements FClosedCallback {

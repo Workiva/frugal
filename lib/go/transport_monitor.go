@@ -32,6 +32,17 @@ type BaseFTransportMonitor struct {
 	MaxWait           time.Duration
 }
 
+// NewDefaultFTransportMonitor creates a new FTransportMonitor with default
+// reconnect options (attempts to reconnect 60 times with 2 seconds between
+// each attempt).
+func NewDefaultFTransportMonitor() FTransportMonitor {
+	return &BaseFTransportMonitor{
+		MaxReopenAttempts: 60,
+		InitialWait:       2 * time.Second,
+		MaxWait:           2 * time.Second,
+	}
+}
+
 func (m *BaseFTransportMonitor) OnClosedUncleanly(cause error) (bool, time.Duration) {
 	return m.MaxReopenAttempts > 0, m.InitialWait
 }

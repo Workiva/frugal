@@ -1,7 +1,10 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
+	"os/exec"
+	"regexp"
 	"strings"
 )
 
@@ -311,6 +314,28 @@ func (t *Thrift) validate() error {
 	}
 	if err := t.validateServices(); err != nil {
 		return err
+	}
+	if err := t.validateVersion(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *Thrift) validateVersion() error {
+
+	cmd := exec.Command("thrift", "--version")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("Error validating Thrift. Do you have Thrift installed?")
+	}
+
+	re := regexp.MustCompile("[0-9]+.[0-9]+.[0-9]+")
+	thriftVersion := re.FindString(out.String())
+
+	if string(thriftVersion[0]) == "0" {
+		return fmt.Errorf("Your current version of thrift does not support dart bindings. Current version: %s. Supported version: 1.0.0+", thriftVersion)
 	}
 	return nil
 }

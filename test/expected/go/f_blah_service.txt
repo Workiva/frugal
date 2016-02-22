@@ -58,8 +58,7 @@ func (f *FBlahClient) Ping(ctx *frugal.FContext) (err error) {
 		f.mu.Unlock()
 		return
 	}
-	args := BlahPingArgs{
-	}
+	args := BlahPingArgs{}
 	if err = args.Write(f.oprot); err != nil {
 		f.mu.Unlock()
 		return
@@ -337,31 +336,36 @@ func (p *blahFPing) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol
 			blahWriteApplicationError(ctx, oprot, frugal.RESPONSE_TOO_LARGE, "ping", "response too large: "+err2.Error())
 			return nil
 		}
-		err = err2	}
+		err = err2
+	}
 	if err2 = oprot.WriteMessageBegin("ping", thrift.REPLY, 0); err2 != nil {
 		if err2 == frugal.ErrTooLarge {
 			blahWriteApplicationError(ctx, oprot, frugal.RESPONSE_TOO_LARGE, "ping", "response too large: "+err2.Error())
 			return nil
 		}
-		err = err2	}
+		err = err2
+	}
 	if err2 = result.Write(oprot); err == nil && err2 != nil {
 		if err2 == frugal.ErrTooLarge {
 			blahWriteApplicationError(ctx, oprot, frugal.RESPONSE_TOO_LARGE, "ping", "response too large: "+err2.Error())
 			return nil
 		}
-		err = err2	}
+		err = err2
+	}
 	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
 		if err2 == frugal.ErrTooLarge {
 			blahWriteApplicationError(ctx, oprot, frugal.RESPONSE_TOO_LARGE, "ping", "response too large: "+err2.Error())
 			return nil
 		}
-		err = err2	}
+		err = err2
+	}
 	if err2 = oprot.Flush(); err == nil && err2 != nil {
 		if err2 == frugal.ErrTooLarge {
 			blahWriteApplicationError(ctx, oprot, frugal.RESPONSE_TOO_LARGE, "ping", "response too large: "+err2.Error())
 			return nil
 		}
-		err = err2	}
+		err = err2
+	}
 	return err
 }
 
@@ -405,31 +409,36 @@ func (p *blahFBleh) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol
 			blahWriteApplicationError(ctx, oprot, frugal.RESPONSE_TOO_LARGE, "bleh", "response too large: "+err2.Error())
 			return nil
 		}
-		err = err2	}
+		err = err2
+	}
 	if err2 = oprot.WriteMessageBegin("bleh", thrift.REPLY, 0); err2 != nil {
 		if err2 == frugal.ErrTooLarge {
 			blahWriteApplicationError(ctx, oprot, frugal.RESPONSE_TOO_LARGE, "bleh", "response too large: "+err2.Error())
 			return nil
 		}
-		err = err2	}
+		err = err2
+	}
 	if err2 = result.Write(oprot); err == nil && err2 != nil {
 		if err2 == frugal.ErrTooLarge {
 			blahWriteApplicationError(ctx, oprot, frugal.RESPONSE_TOO_LARGE, "bleh", "response too large: "+err2.Error())
 			return nil
 		}
-		err = err2	}
+		err = err2
+	}
 	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
 		if err2 == frugal.ErrTooLarge {
 			blahWriteApplicationError(ctx, oprot, frugal.RESPONSE_TOO_LARGE, "bleh", "response too large: "+err2.Error())
 			return nil
 		}
-		err = err2	}
+		err = err2
+	}
 	if err2 = oprot.Flush(); err == nil && err2 != nil {
 		if err2 == frugal.ErrTooLarge {
 			blahWriteApplicationError(ctx, oprot, frugal.RESPONSE_TOO_LARGE, "bleh", "response too large: "+err2.Error())
 			return nil
 		}
-		err = err2	}
+		err = err2
+	}
 	return err
 }
 
@@ -441,4 +450,3 @@ func blahWriteApplicationError(ctx *frugal.FContext, oprot *frugal.FProtocol, ty
 	oprot.WriteMessageEnd()
 	oprot.Flush()
 }
-

@@ -50,6 +50,7 @@ type LanguageGenerator interface {
 	GenerateNewline(*os.File, int) error
 	GetOutputDir(dir string) string
 	DefaultOutputDir() string
+	PostProcess(*os.File) error
 
 	// Service-specific methods
 	GenerateServicePackage(*os.File, *parser.Service) error
@@ -148,7 +149,7 @@ func (o *programGenerator) generateServiceFile(service *parser.Service, outputDi
 		return err
 	}
 
-	return nil
+	return o.PostProcess(file)
 }
 
 func (o *programGenerator) generateScopeFile(scope *parser.Scope, outputDir string, fileType FileType) error {
@@ -212,7 +213,7 @@ func (o *programGenerator) generateScopeFile(scope *parser.Scope, outputDir stri
 		return err
 	}
 
-	return nil
+	return o.PostProcess(file)
 }
 
 // GetOutputDir returns the full output directory for generated code.

@@ -11,8 +11,6 @@ import (
 	"github.com/Workiva/frugal/lib/go"
 )
 
-
-
 type BlahPublisher interface {
 	Open() error
 	Close() error
