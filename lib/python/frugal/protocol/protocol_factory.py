@@ -2,6 +2,7 @@ from .protocol import FProtocol
 
 
 class FProtocolFactory(object):
+    """FProtocolFactory creates FProtocols."""
 
     def __init__(self, t_protocol_factory):
         """Initialize FProtocolFactory.

@@ -1,8 +1,6 @@
 import unittest
 from mock import patch
 
-from thrift.protocol.TBinaryProtocol import TBinaryProtocol
-
 from frugal.transport.transport import FTransport
 from frugal.protocol.protocol import FProtocol
 from frugal.provider import FScopeProvider
