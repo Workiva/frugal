@@ -2,6 +2,10 @@ run:
   when-branch-name-is:
     - .+
 
+also-run:
+  Workiva/messaging-sdk:
+    on-pull-request: true
+
 image: "docker.webfilings.org/wlayout/smithy-runner-thrift:1.5"
 
 env:
