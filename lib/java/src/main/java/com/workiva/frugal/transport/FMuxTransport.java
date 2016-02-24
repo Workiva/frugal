@@ -169,7 +169,7 @@ public class FMuxTransport extends FTransport {
                 } catch (TException e) {
                     // An exception here indicates an unrecoverable exception,
                     // tear down transport.
-                    LOGGER.severe("registry error during execution " + e.getMessage() + " Closing transport.");
+                    LOGGER.severe("closing transport due to unrecoverable error processing frame: " + e.getMessage());
                     close();
                     return;
                 }

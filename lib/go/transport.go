@@ -185,7 +185,7 @@ func (f *fMuxTransport) Open() error {
 
 			select {
 			case f.workC <- frame:
-			case <-f.closed:
+			case <-f.closedChan():
 				return
 			}
 		}
@@ -206,30 +206,33 @@ func (f *fMuxTransport) close(cause error) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
+	if !f.open {
+		return errors.New("frugal: transport not open")
+	}
+
+	if err := f.TFramedTransport.Close(); err != nil {
+		return err
+	}
+
+	f.open = false
+	select {
+	case f.closed <- cause:
+	default:
+	}
+	close(f.closed)
+
+	// Signal transport monitor of close.
 	select {
 	case f.monitorClosedSignal <- cause:
 	default:
 	}
 
-	if !f.open {
-		return errors.New("frugal: transport not open")
-	}
-
-	err := f.TFramedTransport.Close()
-	if err == nil {
-		f.open = false
-		select {
-		case f.closed <- cause:
-		default:
-		}
-		close(f.closed)
-	}
-	return err
+	return nil
 }
 
 // Closed channel is closed when the FTransport is closed.
 func (f *fMuxTransport) Closed() <-chan error {
-	return f.closed
+	return f.closedChan()
 }
 
 func (f *fMuxTransport) readFrame() ([]byte, error) {
@@ -251,18 +254,18 @@ func (f *fMuxTransport) startWorkers() {
 			// Start processing once registry is set.
 			select {
 			case <-f.registryC:
-			case <-f.closed:
+			case <-f.closedChan():
 				return
 			}
 
 			for {
 				select {
-				case <-f.closed:
+				case <-f.closedChan():
 					return
 				case frame := <-f.workC:
 					if err := f.registry.Execute(frame); err != nil {
 						// An error here indicates an unrecoverable error, teardown transport.
-						log.Println("frugal: transport error, closing transport", err)
+						log.Println("frugal: closing transport due to unrecoverable error processing frame:", err)
 						f.close(err)
 						return
 					}
@@ -270,4 +273,10 @@ func (f *fMuxTransport) startWorkers() {
 			}
 		}()
 	}
+}
+
+func (f *fMuxTransport) closedChan() <-chan error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.closed
 }

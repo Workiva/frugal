@@ -161,7 +161,7 @@ public class FNatsScopeTransport extends FScopeTransport {
     @Override
     public int read(byte[] bytes, int off, int len) throws TTransportException {
         if (!isOpen()) {
-            throw TNatsServiceTransport.getClosedConditionException(conn, "read:");
+            throw new TTransportException(TTransportException.END_OF_FILE);
         }
         try {
             int bytesRead = reader.read(bytes, off, len);
@@ -210,7 +210,11 @@ public class FNatsScopeTransport extends FScopeTransport {
         byte[] frame = new byte[data.length + 4];
         ProtocolUtils.writeInt(data.length, frame, 0);
         System.arraycopy(data, 0, frame, 4, data.length);
-        conn.publish(getFormattedSubject(), frame);
+        try {
+            conn.publish(getFormattedSubject(), frame);
+        } catch (IOException e) {
+            throw new TTransportException("flush: unable to publish data: " + e.getMessage());
+        }
         writeBuffer.clear();
     }
 

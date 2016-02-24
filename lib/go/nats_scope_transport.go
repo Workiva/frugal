@@ -163,7 +163,7 @@ func (n *fNatsScopeTransport) Close() error {
 
 func (n *fNatsScopeTransport) Read(p []byte) (int, error) {
 	if !n.IsOpen() {
-		return 0, n.getClosedConditionError("read:")
+		return 0, thrift.NewTTransportExceptionFromError(io.EOF)
 	}
 	num, err := n.reader.Read(p)
 	return num, thrift.NewTTransportExceptionFromError(err)
