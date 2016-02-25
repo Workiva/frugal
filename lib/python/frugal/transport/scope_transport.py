@@ -2,14 +2,28 @@ from thrift.Thrift import TBaseTransport
 
 
 class FScopeTransport(TBaseTransport):
-    # TODO: docstrings
 
-    def lock_topic(topic):
+    def lock_topic(self, topic):
+        """Sets the publish topic and locks the transport for exclusive access.
+
+        Args:
+            topic: string pub/sub topic to publish on
+        """
+
         pass
 
-    def unlock_topic():
+    def unlock_topic(self):
+        """Unsets the publish topic and unlocks the transport.
+        """
+
         pass
 
-    def subscribe(topic):
+    def subscribe(self, topic):
+        """Opens the transport to receive messages on the subscription.
+
+        Args:
+            topic: string pub/sub topic to subscribe to.
+        """
+
         pass
 
