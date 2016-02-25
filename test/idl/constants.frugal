@@ -12,8 +12,8 @@ struct SchemaProperty {
 }
 
 struct Schema {
-    1:string foo,
-    2:list<SchemaProperty> properties,
+    1:required string foo,
+    2:optional list<SchemaProperty> properties,
 }
 
 const list<map<i64,string>> COMPLEX_LIST = [{1: "foo"}]

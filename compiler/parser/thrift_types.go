@@ -16,6 +16,14 @@ var thriftTypes = map[string]bool{
 	"binary": true,
 }
 
+// Thrift Field Modifiers
+type FieldModifier int
+const (
+	Required FieldModifier = iota
+	Optional
+	Default
+)
+
 func IsThriftPrimitive(typ *Type) bool {
 	_, ok := thriftTypes[typ.Name]
 	return ok
@@ -95,7 +103,7 @@ type Field struct {
 	Comment  []string
 	ID       int
 	Name     string
-	Optional bool
+	Modifier FieldModifier
 	Type     *Type
 	Default  interface{}
 }

@@ -103,13 +103,13 @@ const set<string> SIMPLE_SET_STRING = [
 typedef string System
 
 struct SchemaProperty {
-	1: required string id,
-	2: required string title,
-	3: required bool inScope,
+	1: string id,
+	2: string title,
+	3: bool inScope,
 }
 
 struct Schema {
 	1: required string foo,
-	2: required list<SchemaProperty> properties,
+	2: optional list<SchemaProperty> properties,
 }
 

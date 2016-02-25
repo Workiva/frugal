@@ -66,7 +66,7 @@
     func unionToStruct(u union) *Struct {
         st := (*Struct)(u)
         for _, f := range st.Fields {
-            f.Optional = true
+            f.Modifier = Optional
         }
         return st
     }
@@ -254,7 +254,7 @@ FieldList ← fields:(Field __)* {
     return flds, nil
 }
 
-Field ← docstr:(DocString __)? id:IntConstant _ ':' _ req:FieldReq? _ typ:FieldType _ name:Identifier __ def:('=' _ ConstValue)? ListSeparator? {
+Field ← docstr:(DocString __)? id:IntConstant _ ':' _ mod:FieldModifier? _ typ:FieldType _ name:Identifier __ def:('=' _ ConstValue)? ListSeparator? {
     f := &Field{
         ID:   int(id.(int64)),
         Name: string(name.(Identifier)),
@@ -264,17 +264,24 @@ Field ← docstr:(DocString __)? id:IntConstant _ ':' _ req:FieldReq? _ typ:Fiel
         raw := docstr.([]interface{})[0].(string)
         f.Comment = rawCommentToDocStr(raw)
     }
-    if req != nil && !req.(bool) {
-        f.Optional = true
+    if mod != nil {
+        f.Modifier = mod.(FieldModifier)
+    } else {
+        f.Modifier = Default
     }
+
     if def != nil {
         f.Default = def.([]interface{})[2]
     }
     return f, nil
 }
 
-FieldReq ← ("required" / "optional") {
-    return !bytes.Equal(c.text, []byte("optional")), nil
+FieldModifier ← ("required" / "optional") {
+    if bytes.Equal(c.text, []byte("required")) {
+        return Required, nil
+    } else {
+        return Optional, nil
+    }
 }
 
 Service ← "service" _ name:Identifier _ extends:("extends" __ Identifier __)? __ '{' __ methods:(Function __)* ('}' / EndOfServiceError) EOS {
@@ -318,7 +325,7 @@ Function ← docstr:(DocString __)? oneway:("oneway" __)? typ:FunctionType __ na
     if exceptions != nil {
         m.Exceptions = exceptions.([]*Field)
         for _, e := range m.Exceptions {
-            e.Optional = true
+            e.Modifier = Optional
         }
     }
     return m, nil

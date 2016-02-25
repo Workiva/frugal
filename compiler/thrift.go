@@ -258,9 +258,9 @@ func generateStructLikes(structs []*parser.Struct, typ structLike) string {
 				contents += generateThriftDocString(field.Comment, "\t")
 			}
 			contents += fmt.Sprintf("\t%d: ", field.ID)
-			if field.Optional {
+			if field.Modifier == parser.Optional {
 				contents += "optional "
-			} else {
+			} else if field.Modifier == parser.Required {
 				contents += "required "
 			}
 			contents += fmt.Sprintf("%s %s", field.Type.String(), field.Name)
@@ -309,9 +309,11 @@ func generateServices(services []*parser.Service) string {
 			contents += fmt.Sprintf("%s(", method.Name)
 			prefix := ""
 			for _, arg := range method.Arguments {
-				modifier := "required"
-				if arg.Optional {
+				modifier := ""
+				if arg.Modifier == parser.Optional {
 					modifier = "optional"
+				} else if arg.Modifier == parser.Required {
+					modifier = "required"
 				}
 				contents += fmt.Sprintf("%s%d:%s %s %s", prefix, arg.ID,
 					modifier, arg.Type.String(), arg.Name)
