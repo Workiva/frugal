@@ -2,9 +2,14 @@ from .transport_factory import FTransportFactory
 
 
 class FScopeTransportFactory(FTransportFactory):
-    # TODO: docstrings
 
-    def get_transport():
+    def get_transport(self):
+        """ Get a new FScopeTransport instance.
+
+        Returns:
+            FScopeTransport
+        """
+
         pass
 
 
