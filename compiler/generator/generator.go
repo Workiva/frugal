@@ -22,7 +22,7 @@ const (
 // it supports.
 var Languages = map[string][]string{
 	"go":   []string{"thrift_import", "frugal_import", "package_prefix"},
-	"java": nil,
+	"java": []string{"generated_annotations"},
 	"dart": []string{"library_prefix"},
 }
 

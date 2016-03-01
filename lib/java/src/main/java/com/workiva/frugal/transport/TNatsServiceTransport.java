@@ -362,6 +362,6 @@ public class TNatsServiceTransport extends TTransport {
                     String.format("%s NATS client not connected (has status %s)", prefix, conn.getState().name()));
         }
         return new TTransportException(TTransportException.NOT_OPEN,
-                String.format("%s NATS FScopeTransport not open", prefix));
+                String.format("%s NATS TTransport not open", prefix));
     }
 }

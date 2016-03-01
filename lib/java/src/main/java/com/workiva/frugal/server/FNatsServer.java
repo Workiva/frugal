@@ -235,6 +235,7 @@ public class FNatsServer implements FServer {
 
         AcceptHeartbeatThread(Client client) {
             this.client = client;
+            setName("heartbeat-accept");
         }
 
         public void kill() {

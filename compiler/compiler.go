@@ -157,7 +157,11 @@ func cleanGenParam(gen string) (lang string, options map[string]string) {
 		}
 		for _, option := range optionArray {
 			s := strings.Split(option, "=")
-			options[s[0]] = s[1]
+			if len(s) == 1 {
+				options[s[0]] = ""
+			} else {
+				options[s[0]] = s[1]
+			}
 		}
 	}
 	return

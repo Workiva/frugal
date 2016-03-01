@@ -56,6 +56,7 @@ public class FSimpleServer implements FServer {
 
         ProcessorThread(FTransport client) {
             this.client = client;
+            setName("processor");
         }
 
         public void run()  {

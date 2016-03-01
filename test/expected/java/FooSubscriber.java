@@ -73,7 +73,7 @@ public class FooSubscriber {
 					}
 				}
 			}
-		}).start();
+		}, "subscription").start();
 
 		return sub;
 	}
@@ -127,7 +127,7 @@ public class FooSubscriber {
 					}
 				}
 			}
-		}).start();
+		}, "subscription").start();
 
 		return sub;
 	}

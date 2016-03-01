@@ -75,7 +75,7 @@ public class EventsSubscriber {
 					}
 				}
 			}
-		}).start();
+		}, "subscription").start();
 
 		return sub;
 	}

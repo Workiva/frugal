@@ -62,11 +62,6 @@ public class FMuxTransport extends FTransport {
             return;
         }
         this.registry = registry;
-        for (int i = 0; i < workerThreads.length; i++) {
-            WorkerThread workerThread = new WorkerThread();
-            workerThread.start();
-            workerThreads[i] = workerThread;
-        }
     }
 
     public synchronized boolean isOpen() {
@@ -80,9 +75,14 @@ public class FMuxTransport extends FTransport {
         framedTransport.open();
         processorThread = new ProcessorThread();
         processorThread.start();
+        startWorkers();
     }
 
     public synchronized void close() {
+        close(null);
+    }
+
+    private synchronized void close(Exception cause) {
         if (registry == null) {
             return;
         }
@@ -91,9 +91,7 @@ public class FMuxTransport extends FTransport {
         for (WorkerThread workerThread : workerThreads) {
             workerThread.kill();
         }
-        if (closedCallback != null) {
-            closedCallback.onClose();
-        }
+        signalClose(cause);
         registry.close();
     }
 
@@ -109,9 +107,21 @@ public class FMuxTransport extends FTransport {
         framedTransport.flush();
     }
 
+    private void startWorkers() {
+        for (int i = 0; i < workerThreads.length; i++) {
+            WorkerThread workerThread = new WorkerThread();
+            workerThread.start();
+            workerThreads[i] = workerThread;
+        }
+    }
+
     private class ProcessorThread extends Thread {
 
         private volatile boolean running;
+
+        public ProcessorThread() {
+            setName("processor");
+        }
 
         public void kill() {
             if (this != Thread.currentThread()) {
@@ -130,7 +140,7 @@ public class FMuxTransport extends FTransport {
                     if (e.getType() != TTransportException.END_OF_FILE) {
                         LOGGER.warning("error reading frame, closing transport " + e.getMessage());
                     }
-                    close();
+                    close(e);
                     return;
                 }
 
@@ -146,6 +156,10 @@ public class FMuxTransport extends FTransport {
     private class WorkerThread extends Thread {
 
         private volatile boolean running;
+
+        public WorkerThread() {
+            setName("worker");
+        }
 
         public void kill() {
             if (this != Thread.currentThread()) {
@@ -170,7 +184,7 @@ public class FMuxTransport extends FTransport {
                     // An exception here indicates an unrecoverable exception,
                     // tear down transport.
                     LOGGER.severe("closing transport due to unrecoverable error processing frame: " + e.getMessage());
-                    close();
+                    close(e);
                     return;
                 }
             }

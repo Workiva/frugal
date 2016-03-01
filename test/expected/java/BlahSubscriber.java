@@ -67,7 +67,7 @@ public class BlahSubscriber {
 					}
 				}
 			}
-		}).start();
+		}, "subscription").start();
 
 		return sub;
 	}
