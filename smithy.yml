@@ -1,8 +1,6 @@
 project: frugal
 language: golang
 
-runner_image: docker.webfilings.org/wlayout/smithy-runner-thrift:1.5
-
 script:
     - ./scripts/smithy.sh
 
