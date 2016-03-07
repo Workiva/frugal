@@ -994,6 +994,13 @@ func (g *Generator) qualifiedTypeName(t *parser.Type) string {
 		}
 		param = fmt.Sprintf("%s.%s", namespace, param)
 	}
+
+	// The Thrift generator uses a convention of appending a suffix of '_'
+	// if the argument starts with 'New', ends with 'Result' or ends with 'Args'.
+	// This effort must be duplicated to correctly reference Thrift generated code.
+	if strings.HasPrefix(param, "New") || strings.HasSuffix(param, "Result") || strings.HasSuffix(param, "Args") {
+		param += "_"
+	}
 	return param
 }
 

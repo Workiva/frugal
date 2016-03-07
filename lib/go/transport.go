@@ -91,7 +91,6 @@ type fMuxTransport struct {
 	numWorkers          uint
 	workC               chan []byte
 	open                bool
-	registryC           chan struct{}
 	mu                  sync.Mutex
 	closed              chan error
 	monitorClosedSignal chan<- error
@@ -108,7 +107,6 @@ func NewFMuxTransport(tr thrift.TTransport, numWorkers uint) FTransport {
 		TFramedTransport: NewTFramedTransport(tr),
 		numWorkers:       numWorkers,
 		workC:            make(chan []byte, numWorkers),
-		registryC:        make(chan struct{}),
 	}
 }
 
@@ -142,7 +140,6 @@ func (f *fMuxTransport) SetRegistry(registry FRegistry) {
 	}
 	f.registry = registry
 	f.mu.Unlock()
-	close(f.registryC)
 }
 
 // Register a callback for the given Context. Only called by generated code.
@@ -251,13 +248,6 @@ func (f *fMuxTransport) readFrame() ([]byte, error) {
 func (f *fMuxTransport) startWorkers() {
 	for i := uint(0); i < f.numWorkers; i++ {
 		go func() {
-			// Start processing once registry is set.
-			select {
-			case <-f.registryC:
-			case <-f.closedChan():
-				return
-			}
-
 			for {
 				select {
 				case <-f.closedChan():
