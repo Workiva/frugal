@@ -1,3 +1,4 @@
+from .transport import FMuxTransport
 
 
 class FTransportFactory(object):
@@ -13,3 +14,30 @@ class FTransportFactory(object):
         """
         pass
 
+
+class FScopeTransportFactory(FTransportFactory):
+    """Factory Interface for creating FScopeTransports"""
+
+    def get_transport(self):
+        """ Get a new FScopeTransport instance.
+
+        Returns:
+            FScopeTransport
+        """
+
+        pass
+
+
+class FMuxTransportFactory(FTransportFactory):
+    """Factory for creating FMuxTransports."""
+
+    def get_transport(self, thrift_transport):
+        """ Returns a new FMuxTransport wrapping the given TTransport
+
+        Args:
+            thrift_transport: TTransport to wrap
+        Returns:
+            new FTransport
+        """
+
+        return FMuxTransport(thrift_transport)

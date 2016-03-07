@@ -1,37 +1,52 @@
-import fastbinary
+from threading import Lock
 
-from thrift.Thrift import TType, TMessageType, TException, TApplicationException
-from thrift.protocol import TBinaryProtocol
-import base.BaseFoo
+from gen_py.base import f_base_foo, base_foo
 
-from thrift.transport import TTransport
+from frugal.registry import FClientRegistry
+from thrift.Thrift import TType, TMessageType
 
 
-class Iface(base.BaseFoo.Iface):
+class Iface(f_base_foo.Iface):
 
     def one_way(self, id, req):
         pass
 
 
-class Client(base.BaseFoo.Client, Iface):
+class Client(f_base_foo.Client, Iface):
 
-    def __init__(self, transport, iprot_factory, oprot_factory=None):
-        base.BaseFoo.Client.__init__(self, transport,
-                                     iprot_factory, oprot_factory)
+    def __init__(self, transport, protocol_factory):
+        """Initialize a Client with a transport and protocol factory creating a
+        new FClientRegistry
 
-    def one_way(self, id, req):
-        self._seqid += 1
-        self.send_one_way(id, req)
+            Args:
+                transport: FTransport
+                protocol_factory: FProtocolFactory
+        """
+        f_base_foo.Client.__init__(self, transport, protocol_factory)
+        self._transport = transport
+        self._transport.set_registry(FClientRegistry())
+        self._protocol_factory = protocol_factory
+        self._iprot = self._protocol_factory.get_protocol(self._transport)
+        self._oprot = self._protocol_factory.get_protocol(self._transport)
+        self._write_lock = Lock()
 
-    def send_one_way(self, id, req):
-        oprot = self._oprot_factory.get_protocol(self._transport)
-        oprot.writeMessageBegin('oneWay', TMessageType.ONEWAY, self._seqid)
-        args = one_way_args()
-        args.id = id
-        args.req = req
-        args.write(oprot)
-        oprot.writeMessageEnd()
-        oprot.trans.flush()
+    def one_way(self, ctx, id, req):
+        """ oneway methods don't receive a response from the server
+
+        Args:
+            ctx: FContext
+            req: dict key values to send (will be converted to JSON string)
+        """
+        oprot = self._oprot
+        with self._write_lock:
+            oprot.write_request_headers(ctx)
+            oprot.writeMessageBegin("one_way", TMessageType.ONEWAY, 0)
+            args = one_way_args()
+            args.id = id
+            args.req = req
+            args.write(oprot)
+            oprot.writeMessageEnd()
+            oprot.get_transport().flush()
 
 
 class one_way_args(object):
@@ -47,17 +62,6 @@ class one_way_args(object):
         self.req = req
 
     def read(self, iprot):
-        if (iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and
-                isinstance(iprot.trans, TTransport.CReadableTransport) and
-                self.thrift_spec is not None and
-                fastbinary is not None):
-
-            fastbinary.decode_binary(
-                self,
-                iprot.trans,
-                (self.__class__, self.thrift_spec))
-            return
-
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -85,15 +89,6 @@ class one_way_args(object):
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if (oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and
-                self.thrift_spec is not None and
-                fastbinary is not None):
-
-            oprot.trans.wrte(fastbinary.encode_binary(
-                self,
-                (self.__class__, self.thrift_spec)))
-            return
-
         oprot.writeStructBegin('one_way_args')
         if self.id is not None:
             oprot.writeFieldBegin('id', TType.I64, 1)
@@ -130,3 +125,4 @@ class one_way_args(object):
 
     def __ne__(self, other):
         return not (self == other)
+
