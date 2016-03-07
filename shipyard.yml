@@ -31,7 +31,4 @@ volumes:
 
 workdir: ../../data
 
-add:
-  bin/thrift: /usr/local/bin/thrift
-
 cmd: ["frugal"]
