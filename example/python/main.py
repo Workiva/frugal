@@ -1,6 +1,6 @@
 import logging
 
-from thrift.protocol.TBinaryProtocol import TBinaryProtocolFactory
+from thrift.protocol import TBinaryProtocol
 from thrift.transport import TTransport
 
 from tornado import ioloop
@@ -37,7 +37,7 @@ def main():
         logging.error(ex)
         raise gen.Return()
 
-    protocol_factory = FProtocolFactory(TBinaryProtocolFactory())
+    protocol_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
 
     foo_client = FFooClient(transport, protocol_factory)
 

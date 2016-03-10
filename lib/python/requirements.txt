@@ -1,1 +1,3 @@
 thrift==0.9.3
+tornado==4.2
+-e git://github.com/nats-io/python-nats.git#egg=nats-client

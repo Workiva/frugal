@@ -3,11 +3,11 @@ from threading import Lock
 from thrift.transport.TTransport import TTransportBase, TFramedTransport
 
 
-class FTransport(TTransportBase):
+class FTransport(TTransportBase, object):
     """FTranpsort is a Thrift TTransport for services."""
 
-    def __init__(self, registry=None):
-        self._registry = registry
+    def __init__(self):
+        self._registry = None
 
     def set_registry(self, registry):
         """Set the FRegistry for the transport
@@ -39,6 +39,8 @@ class FMuxTransport(FTransport):
         Args:
             thrift_transport: TTransport to wrap
         """
+        super(FTransport, self).__init__()
+        self._registry = None
         self._framed_transport = TFramedTransport(thrift_transport)
         self._lock = Lock()
 

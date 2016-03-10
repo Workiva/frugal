@@ -86,6 +86,7 @@ class TNatsServiceTransport(TTransportBase):
         pass
 
     def flush(self):
+        """flush publishes whatever is in the buffer to NATS"""
         pass
 
     def _new_frugal_inbox(self):

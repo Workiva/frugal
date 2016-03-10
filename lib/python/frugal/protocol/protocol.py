@@ -22,6 +22,9 @@ class FProtocol(TProtocolBase, object):
         """
         super(FProtocol, self).__init__(wrapped_protocol.trans)
 
+    def get_transport(self):
+        return self.trans
+
     def write_request_headers(self, context):
         self._write_headers(context.get_request_headers())
 
