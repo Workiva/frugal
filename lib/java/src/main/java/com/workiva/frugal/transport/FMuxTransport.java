@@ -72,7 +72,14 @@ public class FMuxTransport extends FTransport {
         if (isOpen()) {
             throw new TTransportException("transport already open");
         }
-        framedTransport.open();
+        try {
+            framedTransport.open();
+        } catch (TTransportException e) {
+            // It's OK if the underlying transport is already open.
+            if (e.getType() != TTransportException.ALREADY_OPEN) {
+                throw e;
+            }
+        }
         processorThread = new ProcessorThread();
         processorThread.start();
         startWorkers();

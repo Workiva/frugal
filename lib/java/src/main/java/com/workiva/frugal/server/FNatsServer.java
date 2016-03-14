@@ -8,10 +8,7 @@ import com.workiva.frugal.processor.FProcessorFactory;
 import com.workiva.frugal.protocol.FProtocol;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.protocol.FServerRegistry;
-import com.workiva.frugal.transport.FClosedCallback;
-import com.workiva.frugal.transport.FTransport;
-import com.workiva.frugal.transport.FTransportFactory;
-import com.workiva.frugal.transport.TNatsServiceTransport;
+import com.workiva.frugal.transport.*;
 import io.nats.client.Connection;
 import io.nats.client.Message;
 import io.nats.client.MessageHandler;
@@ -28,8 +25,6 @@ import java.util.logging.Logger;
 public class FNatsServer implements FServer {
 
     private static final int DEFAULT_MAX_MISSED_HEARTBEATS = 3;
-    private static final long MIN_HEARTBEAT_INTERVAL = 20 * 1000;
-    private static final long HEARTBEAT_GRACE_PERIOD = 5 * 1000;
     private static final String QUEUE = "rpc";
 
     private Connection conn;
@@ -51,16 +46,8 @@ public class FNatsServer implements FServer {
     public FNatsServer(Connection conn, String subject, long heartbeatInterval,
                        FProcessor processor, FTransportFactory transportFactory,
                        FProtocolFactory protocolFactory) {
-        this.conn = conn;
-        this.subject = subject;
-        this.heartbeatSubject = conn.newInbox();
-        this.heartbeatInterval = heartbeatInterval < MIN_HEARTBEAT_INTERVAL ?
-                MIN_HEARTBEAT_INTERVAL : heartbeatInterval;
-        this.maxMissedHeartbeats = DEFAULT_MAX_MISSED_HEARTBEATS;
-        this.clients = new ConcurrentHashMap<>();
-        this.processorFactory = new FProcessorFactory(processor);
-        this.transportFactory = transportFactory;
-        this.protocolFactory = protocolFactory;
+        this(conn, subject, heartbeatInterval, DEFAULT_MAX_MISSED_HEARTBEATS,
+                new FProcessorFactory(processor), transportFactory, protocolFactory);
     }
 
     public FNatsServer(Connection conn, String subject, long heartbeatInterval, int maxMissedHeartbeats,
@@ -69,8 +56,7 @@ public class FNatsServer implements FServer {
         this.conn = conn;
         this.subject = subject;
         this.heartbeatSubject = conn.newInbox();
-        this.heartbeatInterval = heartbeatInterval < MIN_HEARTBEAT_INTERVAL ?
-                MIN_HEARTBEAT_INTERVAL : heartbeatInterval;
+        this.heartbeatInterval = heartbeatInterval;
         this.maxMissedHeartbeats = maxMissedHeartbeats;
         this.clients = new ConcurrentHashMap<>();
         this.processorFactory = processorFactory;
@@ -116,7 +102,7 @@ public class FNatsServer implements FServer {
                 Gson gson = new Gson();
                 try {
                     connProtocol = gson.fromJson(new String(message.getData(), "UTF-8"), NatsConnectionProtocol.class);
-                    if(connProtocol.getVersion() != NatsConnectionProtocol.NATS_V0){
+                    if (connProtocol.getVersion() != NatsConnectionProtocol.NATS_V0) {
                         LOGGER.severe(String.format("%d not a supported connect version", connProtocol.getVersion()));
                         return;
                     }
@@ -126,7 +112,7 @@ public class FNatsServer implements FServer {
                 }
 
                 String heartbeat = conn.newInbox();
-                String listenTo = newFrugalInbox();
+                String listenTo = newFrugalInbox(message.getReplyTo());
                 TTransport transport;
                 try {
                     transport = accept(listenTo, reply, heartbeat);
@@ -151,13 +137,6 @@ public class FNatsServer implements FServer {
                 }
             }
         });
-
-        // TODO: Remove when subscription bug is resolved.
-        try {
-            conn.flush();
-        } catch (Exception e) {
-            throw new TException(e);
-        }
 
         if (isHeartbeating()) {
             heartbeatExecutor.scheduleAtFixedRate(new MakeHeartbeatRunnable(), heartbeatInterval,
@@ -190,18 +169,26 @@ public class FNatsServer implements FServer {
         }
     }
 
-    private String newFrugalInbox() {
-        return TNatsServiceTransport.FRUGAL_PREFIX + conn.newInbox();
+    private String newFrugalInbox(String prefix) {
+        String[] tokens = prefix.split("\\.");
+        tokens[tokens.length-1] = conn.newInbox(); // Always at least 1 token
+        String inbox = "";
+        String pre = "";
+        for (String token : tokens) {
+            inbox += pre + token;
+            pre = ".";
+        }
+        return inbox;
     }
 
     private TTransport accept(String listenTo, String replyTo, String heartbeatSubject) throws TException {
         TTransport client = TNatsServiceTransport.server(conn, listenTo, replyTo);
         FTransport transport = transportFactory.getTransport(client);
         transport.setClosedCallback(new ClientRemover(heartbeatSubject));
-        transport.open();
         FProcessor processor = processorFactory.getProcessor(transport);
         FProtocol protocol = protocolFactory.getProtocol(transport);
         transport.setRegistry(new FServerRegistry(processor, protocolFactory, protocol));
+        transport.open();
         return client;
     }
 
@@ -254,17 +241,11 @@ public class FNatsServer implements FServer {
                 }
             });
 
-            // TODO: Remove when subscription bug is resolved.
-            try {
-                conn.flush();
-            } catch (Exception e) {
-                LOGGER.warning("error flushing in AcceptHeartbeatThread " + e.getMessage());
-            }
-
             running = true;
             while (running) {
+                long wait = maxMissedHeartbeats > 1 ? heartbeatInterval : heartbeatInterval + heartbeatInterval / 4;
                 try {
-                    Object ret = heartbeatQueue.poll(heartbeatInterval + HEARTBEAT_GRACE_PERIOD, TimeUnit.MILLISECONDS);
+                    Object ret = heartbeatQueue.poll(wait, TimeUnit.MILLISECONDS);
                     if (ret == null) {
                         missed++;
                     } else {
@@ -290,14 +271,14 @@ public class FNatsServer implements FServer {
         return (heartbeatInterval > 0);
     }
 
-    private class ClientRemover implements FClosedCallback {
+    private class ClientRemover implements FTransportClosedCallback {
         private String heartbeat;
 
         ClientRemover(String heartbeat) {
             this.heartbeat = heartbeat;
         }
 
-        public void onClose() {
+        public void onClose(Exception cause) {
             remove(this.heartbeat);
         }
     }

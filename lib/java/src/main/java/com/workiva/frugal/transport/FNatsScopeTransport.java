@@ -181,11 +181,11 @@ public class FNatsScopeTransport extends FScopeTransport {
         }
         // Include 4 bytes for frame size.
         if (writeBuffer.remaining() < len + 4) {
+            int size = 4 + len + TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE - writeBuffer.remaining();
             writeBuffer.clear();
             throw new FMessageSizeException(
                     String.format("Message exceeds %d bytes, was %d bytes",
-                            TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE,
-                            len + TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE - writeBuffer.remaining()));
+                            TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE, size));
         }
         writeBuffer.put(bytes, off, len);
     }
@@ -205,7 +205,7 @@ public class FNatsScopeTransport extends FScopeTransport {
         if (data.length + 4 > TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE) {
             throw new FMessageSizeException(String.format(
                     "Message exceeds %d bytes, was %d bytes",
-                    TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE, data.length));
+                    TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE, 4 + data.length));
         }
         byte[] frame = new byte[data.length + 4];
         ProtocolUtils.writeInt(data.length, frame, 0);

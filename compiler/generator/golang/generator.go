@@ -20,7 +20,6 @@ const (
 	defaultOutputDir = "gen-go"
 	serviceSuffix    = "_service"
 	scopeSuffix      = "_scope"
-	asyncSuffix      = "_async"
 )
 
 type Generator struct {
@@ -108,6 +107,7 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	imports := "import (\n"
 	imports += "\t\"bytes\"\n"
 	imports += "\t\"fmt\"\n"
+	imports += "\t\"log\"\n"
 	imports += "\t\"sync\"\n"
 	if len(s.TwowayMethods()) > 0 {
 		// Only non-oneway methods require the time package.
@@ -696,51 +696,55 @@ func (g *Generator) generateProcessor(service *parser.Service) string {
 	contents += "\treturn p\n"
 	contents += "}\n\n"
 
-	if service.Extends == "" {
-		contents += fmt.Sprintf(
-			"func (p *F%sProcessor) AddToProcessorMap(key string, proc frugal.FProcessorFunction) {\n",
-			servTitle)
-		contents += "\tp.processorMap[key] = proc\n"
-		contents += "}\n\n"
-
-		contents += fmt.Sprintf("func (p *F%sProcessor) GetProcessorFunction(key string) "+
-			"(processor frugal.FProcessorFunction, ok bool) {\n", servTitle)
-		contents += "\tprocessor, ok = p.processorMap[key]\n"
-		contents += "\treturn\n"
-		contents += "}\n\n"
-
-		contents += fmt.Sprintf("func (p *F%sProcessor) GetWriteMutex() *sync.Mutex {\n", servTitle)
-		contents += "\treturn p.writeMu\n"
-		contents += "}\n\n"
+	if service.Extends != "" {
+		return contents
 	}
 
-	if service.Extends == "" {
-		contents += fmt.Sprintf(
-			"func (p *F%sProcessor) Process(iprot, oprot *frugal.FProtocol) error {\n", servTitle)
-		contents += "\tctx, err := iprot.ReadRequestHeader()\n"
-		contents += "\tif err != nil {\n"
-		contents += "\t\treturn err\n"
-		contents += "\t}\n"
-		contents += "\tname, _, _, err := iprot.ReadMessageBegin()\n"
-		contents += "\tif err != nil {\n"
-		contents += "\t\treturn err\n"
-		contents += "\t}\n"
-		contents += "\tif processor, ok := p.GetProcessorFunction(name); ok {\n"
-		contents += "\t\treturn processor.Process(ctx, iprot, oprot)\n"
-		contents += "\t}\n"
-		contents += "\tiprot.Skip(thrift.STRUCT)\n"
-		contents += "\tiprot.ReadMessageEnd()\n"
-		contents += "\tx3 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, \"Unknown function \"+name)\n"
-		contents += "\tp.writeMu.Lock()\n"
-		contents += "\toprot.WriteResponseHeader(ctx)\n"
-		contents += "\toprot.WriteMessageBegin(name, thrift.EXCEPTION, 0)\n"
-		contents += "\tx3.Write(oprot)\n"
-		contents += "\toprot.WriteMessageEnd()\n"
-		contents += "\toprot.Flush()\n"
-		contents += "\tp.writeMu.Unlock()\n"
-		contents += "\treturn x3\n"
-		contents += "}\n\n"
-	}
+	contents += fmt.Sprintf(
+		"func (p *F%sProcessor) AddToProcessorMap(key string, proc frugal.FProcessorFunction) {\n",
+		servTitle)
+	contents += "\tp.processorMap[key] = proc\n"
+	contents += "}\n\n"
+
+	contents += fmt.Sprintf("func (p *F%sProcessor) GetProcessorFunction(key string) "+
+		"(processor frugal.FProcessorFunction, ok bool) {\n", servTitle)
+	contents += "\tprocessor, ok = p.processorMap[key]\n"
+	contents += "\treturn\n"
+	contents += "}\n\n"
+
+	contents += fmt.Sprintf("func (p *F%sProcessor) GetWriteMutex() *sync.Mutex {\n", servTitle)
+	contents += "\treturn p.writeMu\n"
+	contents += "}\n\n"
+
+	contents += fmt.Sprintf(
+		"func (p *F%sProcessor) Process(iprot, oprot *frugal.FProtocol) error {\n", servTitle)
+	contents += "\tctx, err := iprot.ReadRequestHeader()\n"
+	contents += "\tif err != nil {\n"
+	contents += "\t\treturn err\n"
+	contents += "\t}\n"
+	contents += "\tname, _, _, err := iprot.ReadMessageBegin()\n"
+	contents += "\tif err != nil {\n"
+	contents += "\t\treturn err\n"
+	contents += "\t}\n"
+	contents += "\tif processor, ok := p.GetProcessorFunction(name); ok {\n"
+	contents += "\t\terr := processor.Process(ctx, iprot, oprot)\n"
+	contents += "\t\tif err != nil {\n"
+	contents += "\t\t\tlog.Printf(\"frugal: Error processing request with correlationID %s: %s\\n\", ctx.CorrelationID(), err.Error())\n"
+	contents += "\t\t}\n"
+	contents += "\t\treturn err\n"
+	contents += "\t}\n"
+	contents += "\tiprot.Skip(thrift.STRUCT)\n"
+	contents += "\tiprot.ReadMessageEnd()\n"
+	contents += "\tx3 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, \"Unknown function \"+name)\n"
+	contents += "\tp.writeMu.Lock()\n"
+	contents += "\toprot.WriteResponseHeader(ctx)\n"
+	contents += "\toprot.WriteMessageBegin(name, thrift.EXCEPTION, 0)\n"
+	contents += "\tx3.Write(oprot)\n"
+	contents += "\toprot.WriteMessageEnd()\n"
+	contents += "\toprot.Flush()\n"
+	contents += "\tp.writeMu.Unlock()\n"
+	contents += "\treturn x3\n"
+	contents += "}\n\n"
 
 	return contents
 }

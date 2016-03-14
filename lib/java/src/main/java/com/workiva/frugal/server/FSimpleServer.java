@@ -4,40 +4,42 @@ import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.processor.FProcessorFactory;
 import com.workiva.frugal.protocol.FProtocol;
 import com.workiva.frugal.protocol.FProtocolFactory;
-import com.workiva.frugal.transport.FServerTransport;
+import com.workiva.frugal.protocol.FServerRegistry;
 import com.workiva.frugal.transport.FTransport;
 import com.workiva.frugal.transport.FTransportFactory;
 import org.apache.thrift.TException;
+import org.apache.thrift.transport.TServerTransport;
+import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
 import java.util.logging.Logger;
 
 /**
- * Simple single-threaded server.
+ * Simple multi-threaded server.
  */
 public class FSimpleServer implements FServer {
 
     private FProcessorFactory fProcessorFactory;
-    private FServerTransport fServerTransport;
+    private TServerTransport tServerTransport;
     private FTransportFactory fTransportFactory;
     private FProtocolFactory fProtocolFactory;
-    private boolean stopped;
+    private volatile boolean stopped;
 
     private static Logger LOGGER = Logger.getLogger(FSimpleServer.class.getName());
 
-    public FSimpleServer(FProcessorFactory fProcessorFactory, FServerTransport fServerTransport,
+    public FSimpleServer(FProcessorFactory fProcessorFactory, TServerTransport fServerTransport,
                          FTransportFactory fTransportFactory, FProtocolFactory fProtocolFactory) {
         this.fProcessorFactory = fProcessorFactory;
-        this.fServerTransport = fServerTransport;
+        this.tServerTransport = fServerTransport;
         this.fTransportFactory = fTransportFactory;
         this.fProtocolFactory = fProtocolFactory;
     }
 
     public void acceptLoop() throws TException {
         while (!stopped) {
-            FTransport client;
+            TTransport client;
             try {
-                client = fServerTransport.accept();
+                client = tServerTransport.accept();
             } catch (TException e) {
                 if (stopped) {
                     return;
@@ -52,16 +54,16 @@ public class FSimpleServer implements FServer {
     }
 
     private class ProcessorThread extends Thread {
-        FTransport client;
+        TTransport client;
 
-        ProcessorThread(FTransport client) {
+        ProcessorThread(TTransport client) {
             this.client = client;
             setName("processor");
         }
 
         public void run()  {
             try {
-                processRequests(client);
+                accept(client);
             } catch (TTransportException ttx) {
                 // Client died, just move on
             } catch (TException tx) {
@@ -76,11 +78,12 @@ public class FSimpleServer implements FServer {
         }
     }
 
-    protected void processRequests(FTransport client) throws TException {
+    protected void accept(TTransport client) throws TException {
         FProcessor processor = fProcessorFactory.getProcessor(client);
         FTransport transport = fTransportFactory.getTransport(client);
         FProtocol protocol = fProtocolFactory.getProtocol(transport);
-        // TODO: Set server registry here
+        transport.setRegistry(new FServerRegistry(processor, fProtocolFactory, protocol));
+        transport.open();
     }
 
     public void serve() throws TException {
@@ -89,6 +92,6 @@ public class FSimpleServer implements FServer {
 
     public void stop() throws TException{
         stopped = true;
-        fServerTransport.interrupt();
+        tServerTransport.interrupt();
     }
 }

@@ -2,9 +2,9 @@ package frugal
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,8 +15,6 @@ import (
 const (
 	queue                      = "rpc"
 	defaultMaxMissedHeartbeats = 3
-	minHeartbeatInterval       = 20 * time.Second
-	frugalPrefix               = "frugal."
 )
 
 type client struct {
@@ -25,8 +23,16 @@ type client struct {
 	heartbeat     string
 }
 
-func newFrugalInbox() string {
-	return fmt.Sprintf("%s%s", frugalPrefix, nats.NewInbox())
+func newInbox(prefix string) string {
+	tokens := strings.Split(prefix, ".")
+	tokens[len(tokens)-1] = nats.NewInbox() // Always at least 1 token
+	inbox := ""
+	pre := ""
+	for _, token := range tokens {
+		inbox += pre + token
+		pre = "."
+	}
+	return inbox
 }
 
 // FNatsServer implements FServer by using NATS as the underlying transport.
@@ -74,10 +80,6 @@ func NewFNatsServerFactory(
 	transportFactory FTransportFactory,
 	protocolFactory *FProtocolFactory) FServer {
 
-	if heartbeatInterval < minHeartbeatInterval {
-		heartbeatInterval = minHeartbeatInterval
-	}
-
 	return &FNatsServer{
 		conn:                conn,
 		subject:             subject,
@@ -110,7 +112,7 @@ func (n *FNatsServer) Serve() error {
 		}
 		var (
 			heartbeatReply = nats.NewInbox()
-			listenTo       = newFrugalInbox()
+			listenTo       = newInbox(msg.Reply)
 			tr, err        = n.accept(listenTo, msg.Reply, heartbeatReply)
 		)
 		if err != nil {
@@ -127,7 +129,7 @@ func (n *FNatsServer) Serve() error {
 
 		// Connect message consists of "[heartbeat subject] [heartbeat reply subject] [expected interval ms]"
 		connectMsg := n.heartbeatSubject + " " + heartbeatReply + " " +
-			strconv.FormatInt(int64(n.heartbeatInterval.Seconds())*1000, 10)
+			strconv.FormatInt(int64(n.heartbeatInterval/time.Millisecond), 10)
 		if err := n.conn.PublishRequest(msg.Reply, listenTo, []byte(connectMsg)); err != nil {
 			log.Println("frugal: error publishing transport inbox:", err)
 			tr.Close()
@@ -206,9 +208,15 @@ func (n *FNatsServer) acceptHeartbeat(client *client) {
 	}
 	defer sub.Unsubscribe()
 
+	var wait <-chan time.Time
 	for {
+		if n.maxMissedHeartbeats > 1 {
+			wait = time.After(n.heartbeatInterval)
+		} else {
+			wait = time.After(n.heartbeatInterval + n.heartbeatInterval/4)
+		}
 		select {
-		case <-time.After(n.heartbeatInterval + heartbeatGracePeriod):
+		case <-wait:
 			missed++
 			if missed >= n.maxMissedHeartbeats {
 				log.Println("frugal: client heartbeat expired")
@@ -228,13 +236,12 @@ func (n *FNatsServer) acceptHeartbeat(client *client) {
 func (n *FNatsServer) accept(listenTo, replyTo, heartbeat string) (FTransport, error) {
 	client := newNatsServiceTTransportServer(n.conn, listenTo, replyTo)
 	transport := n.transportFactory.GetTransport(client)
-	if err := transport.Open(); err != nil {
-		return nil, err
-	}
-
 	processor := n.processorFactory.GetProcessor(transport)
 	protocol := n.protocolFactory.GetProtocol(transport)
 	transport.SetRegistry(NewServerRegistry(processor, n.protocolFactory, protocol))
+	if err := transport.Open(); err != nil {
+		return nil, err
+	}
 
 	// Cleanup heartbeat when client disconnects.
 	go func() {

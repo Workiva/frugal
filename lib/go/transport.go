@@ -165,7 +165,10 @@ func (f *fMuxTransport) Open() error {
 	f.closed = make(chan error, 1)
 
 	if err := f.TFramedTransport.Open(); err != nil {
-		return err
+		// It's OK if the underlying transport is already open.
+		if e, ok := err.(thrift.TTransportException); !(ok && e.TypeId() == thrift.ALREADY_OPEN) {
+			return err
+		}
 	}
 
 	go func() {
@@ -174,6 +177,11 @@ func (f *fMuxTransport) Open() error {
 			if err != nil {
 				defer f.close(err)
 				if err, ok := err.(thrift.TTransportException); ok && err.TypeId() == thrift.END_OF_FILE {
+					// EOF indicates remote peer disconnected.
+					return
+				}
+				if !f.IsOpen() {
+					// Indicates the transport was closed.
 					return
 				}
 				log.Println("frugal: error reading protocol frame, closing transport:", err)

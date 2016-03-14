@@ -10,6 +10,12 @@ struct Thing {}
 /** This is not a docstring. */
 struct Stuff {}
 
+// Exception
+exception InvalidOperation {
+    1: i32 whatOp,
+    2: string why
+}
+
 // This is a service. It has the same name as a scope. And that's ok.
 service Blah {
     /**@ Use this to ping the server. */
@@ -40,8 +46,3 @@ DoStuff :   Thing}
 //    Blah: Stuff
 //}
 
-// Exception
-exception InvalidOperation {
-    1: i32 whatOp,
-    2: string why
-}
