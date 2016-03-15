@@ -33,7 +33,6 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 }
 
 func (g *Generator) InitializeGenerator(outputDir string) error {
-	// TODO need to create ttypes file
 	t, err := g.GenerateFile("", outputDir, generator.TypeFile)
 	if err != nil {
 		return err
@@ -105,7 +104,7 @@ func (g *Generator) GenerateFile(name, outputDir string, fileType generator.File
 	case generator.CombinedScopeFile:
 		return g.CreateFile(strings.ToLower(name)+scopeSuffix, outputDir, lang, true)
 	case generator.TypeFile:
-		return g.CreateFile("ttypes", outputDir, lang, true)
+		return g.CreateFile("types", outputDir, lang, true)
 	default:
 		return nil, fmt.Errorf("Bad file type for golang generator: %s", fileType)
 	}
@@ -163,10 +162,6 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 }
 
 func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, name string) string {
-	// TODO not done
-	// this doesn't work
-//	return fmt.Sprintf("%#v", constant.Value)
-
 	trueType := g.Frugal.UnderlyingType(t)
 
 	if parser.IsThriftPrimitive(trueType) {
@@ -180,7 +175,6 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, nam
 		case "string":
 			return fmt.Sprintf("\"%s\"", value)
 		case "binary":
-			// TODO double check this
 			return fmt.Sprintf("%q", value)
 		default:
 			panic("no entry for type: " + trueType.Name)
@@ -400,13 +394,10 @@ func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
 		if field.Modifier == parser.Optional || isPointer {
 			contents += fmt.Sprintf("var %s_%s_DEFAULT %s", s.Name, field.Name, goType)
 			if field.Default != nil {
-				// TODO stringify this correctly?
-				contents += fmt.Sprintf(" = %s", field.Default)
+				contents += fmt.Sprintf(" = %s", g.generateConstantValue(field.Type, field.Default, field.Name))
 			}
 			contents += "\n\n"
 
-			// TODO something else may have to be done
-			// TODO unions need to be generated
 			contents += fmt.Sprintf("func (p *%s) IsSet%s() bool {\n", s.Name, field.Name)
 			contents += fmt.Sprintf("\treturn p.%s != nil\n", field.Name)
 			contents += "}\n\n"
@@ -560,8 +551,6 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, prefix string, dec
 	goType := g.getGoTypeFromThriftTypeOpt(g.Frugal.UnderlyingType(field.Type), false)
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 
-
-	// TODO use indent
 	isEnum := g.Frugal.IsEnum(underlyingType)
 	if parser.IsThriftPrimitive(underlyingType) || isEnum {
 		// Enums are basically typedefs of ints, just a light wrapper around ints
@@ -618,7 +607,6 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, prefix string, dec
 
 		contents += "\t}\n"
 	} else if g.Frugal.IsStruct(underlyingType) {
-		// TODO This should be actual structs and exceptions, might need to change
 		// All structs should start with a pointer
 		contents += fmt.Sprintf("\t%s%s %s New%s()\n", prefix, field.Name, eq, goType[1:])
 		contents += fmt.Sprintf("\tif err := %s%s.Read(iprot); err != nil {\n", prefix, field.Name)
@@ -796,6 +784,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 }
 
 func (g *Generator) GenerateTypesImports(file *os.File) error {
+	// TODO need to get includes and stuff
 	contents := ""
 	contents += "import (\n"
 	contents += "\t\"bytes\"\n"
