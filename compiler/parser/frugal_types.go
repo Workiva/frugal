@@ -132,10 +132,35 @@ func (f *Frugal) UnderlyingType(t *Type) *Type {
 	return t
 }
 
+func (f *Frugal) FieldFromType(t *Type, name string) *Field {
+	return &Field{
+		Comment: nil,
+		ID: 0,
+		Name: name,
+		Modifier: Required,
+		Type: t,
+		Default: nil,
+	}
+}
+
+func (f *Frugal) ConstantFromField(field *Field, value interface{}) *Constant {
+//	type Constant struct {
+//		Comment []string
+//		Name    string
+//		Type    *Type
+//		Value   interface{}
+//	}
+	return &Constant{
+		Name: field.Name,
+		Type: field.Type,
+		Value: value,
+	}
+}
+
 // IsStruct indicates if the underlying Type is a struct.
 func (f *Frugal) IsStruct(t *Type) bool {
 	t = f.UnderlyingType(t)
-	if _, ok := thriftTypes[t.Name]; ok {
+	if _, ok := thriftBaseTypes[t.Name]; ok {
 		return false
 	}
 	return t.KeyType == nil && t.ValueType == nil && !f.IsEnum(t)

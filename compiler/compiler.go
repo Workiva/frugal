@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/Workiva/frugal/compiler/generator"
-	"github.com/Workiva/frugal/compiler/generator/dartlang"
+	//"github.com/Workiva/frugal/compiler/generator/dartlang"
 	"github.com/Workiva/frugal/compiler/generator/golang"
-	"github.com/Workiva/frugal/compiler/generator/java"
+	//"github.com/Workiva/frugal/compiler/generator/java"
 	"github.com/Workiva/frugal/compiler/globals"
 	"github.com/Workiva/frugal/compiler/parser"
 )
@@ -68,7 +68,7 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		gen    = globals.Gen
 		out    = globals.Out
 		dryRun = globals.DryRun
-		dir    = filepath.Dir(file)
+		//dir    = filepath.Dir(file)
 	)
 
 	// Ensure Frugal file exists.
@@ -83,11 +83,11 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 	var g generator.ProgramGenerator
 	switch lang {
 	case "dart":
-		g = generator.NewProgramGenerator(dartlang.NewGenerator(options), false)
+		//g = generator.NewProgramGenerator(dartlang.NewGenerator(options), false)
 	case "go":
 		g = generator.NewProgramGenerator(golang.NewGenerator(options), false)
 	case "java":
-		g = generator.NewProgramGenerator(java.NewGenerator(options), true)
+		//g = generator.NewProgramGenerator(java.NewGenerator(options), true)
 	default:
 		return nil, fmt.Errorf("Invalid gen value %s", gen)
 	}
@@ -107,27 +107,27 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		return nil, err
 	}
 
-	// Generate intermediate Thrift IDL for Frugal. If this is already a
-	// .thrift file, do not generate an intermediate IDL.
-	if !isThrift {
-		logv(fmt.Sprintf("Generating intermediate Thrift file %s",
-			filepath.Join(dir, fmt.Sprintf("%s.thrift", frugal.Name))))
-		idlFile, err := generateThriftIDL(dir, frugal)
-		if err != nil {
-			return nil, err
-		}
-		file = idlFile
-	}
+//	// Generate intermediate Thrift IDL for Frugal. If this is already a
+//	// .thrift file, do not generate an intermediate IDL.
+//	if !isThrift {
+//		logv(fmt.Sprintf("Generating intermediate Thrift file %s",
+//			filepath.Join(dir, fmt.Sprintf("%s.thrift", frugal.Name))))
+//		idlFile, err := generateThriftIDL(dir, frugal)
+//		if err != nil {
+//			return nil, err
+//		}
+//		file = idlFile
+//	}
 
 	if dryRun || !generate {
 		return frugal, nil
 	}
 
-	// Generate Thrift code.
-	logv(fmt.Sprintf("Generating \"%s\" Thrift code for %s", lang, file))
-	if err := generateThrift(frugal, dir, file, out, gen); err != nil {
-		return nil, err
-	}
+//	// Generate Thrift code.
+//	logv(fmt.Sprintf("Generating \"%s\" Thrift code for %s", lang, file))
+//	if err := generateThrift(frugal, dir, file, out, gen); err != nil {
+//		return nil, err
+//	}
 
 	// Generate Frugal code.
 	logv(fmt.Sprintf("Generating \"%s\" Frugal code for %s", lang, frugal.File))

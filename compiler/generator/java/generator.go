@@ -32,12 +32,12 @@ type Generator struct {
 	time time.Time
 }
 
-func NewGenerator(options map[string]string) generator.LanguageGenerator {
-	return &Generator{
-		&generator.BaseGenerator{Options: options},
-		globals.Now,
-	}
-}
+//func NewGenerator(options map[string]string) generator.LanguageGenerator {
+//	return &Generator{
+//		&generator.BaseGenerator{Options: options},
+//		globals.Now,
+//	}
+//}
 
 func (g *Generator) GetOutputDir(dir string) string {
 	if pkg, ok := g.Frugal.Thrift.Namespace(lang); ok {

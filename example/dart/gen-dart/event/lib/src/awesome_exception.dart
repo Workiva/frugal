@@ -138,10 +138,6 @@ class AwesomeException extends Error implements TBase {
     iprot.readStructEnd();
 
     // check for required fields of primitive type, which can't be checked in the validate method
-    if (!__isset_iD) {
-        throw new TProtocolError(TProtocolErrorType.UNKNOWN, "Required field 'iD' was not found in serialized data! Struct: " + toString());
-    }
-
     validate();
   }
 
@@ -182,10 +178,6 @@ class AwesomeException extends Error implements TBase {
 
   validate() {
     // check for required fields
-    // alas, we cannot check 'iD' because it's a primitive and you chose the non-beans generator.
-    if (reason == null) {
-      throw new TProtocolError(TProtocolErrorType.UNKNOWN, "Required field 'reason' was not present! Struct: " + toString());
-    }
     // check that fields of type enum have valid values
   }
 

@@ -64,7 +64,7 @@ class FooClient extends BaseFooClient implements Foo {
     oprot.writeMessageBegin(new TMessage("blah", TMessageType.CALL, nextSeqid()));
     blah_args args = new blah_args();
     args.num = num;
-    args.Str = Str;
+    args.str = str;
     args.event = event;
     args.write(oprot);
     oprot.writeMessageEnd();
@@ -490,10 +490,6 @@ class blah_args implements TBase {
     iprot.readStructEnd();
 
     // check for required fields of primitive type, which can't be checked in the validate method
-    if (!__isset_num) {
-        throw new TProtocolError(TProtocolErrorType.UNKNOWN, "Required field 'num' was not found in serialized data! Struct: " + toString());
-    }
-
     validate();
   }
 
@@ -547,13 +543,6 @@ class blah_args implements TBase {
 
   validate() {
     // check for required fields
-    // alas, we cannot check 'num' because it's a primitive and you chose the non-beans generator.
-    if (str == null) {
-      throw new TProtocolError(TProtocolErrorType.UNKNOWN, "Required field 'str' was not present! Struct: " + toString());
-    }
-    if (event == null) {
-      throw new TProtocolError(TProtocolErrorType.UNKNOWN, "Required field 'event' was not present! Struct: " + toString());
-    }
     // check that fields of type enum have valid values
   }
 
@@ -882,14 +871,14 @@ class oneWay_args implements TBase {
         case REQ:
           if (field.type == TType.MAP) {
             {
-              TMap _map0 = iprot.readMapBegin();
+              TMap _map22 = iprot.readMapBegin();
               this.req = new Map<int, String>();
-              for (int _i1 = 0; _i1 < _map0.length; ++_i1) {
-                int _key2;
-                String _val3;
-                _key2 = iprot.readI32();
-                _val3 = iprot.readString();
-                this.req[_key2] = _val3;
+              for (int _i23 = 0; _i23 < _map22.length; ++_i23) {
+                int _key24;
+                String _val25;
+                _key24 = iprot.readI32();
+                _val25 = iprot.readString();
+                this.req[_key24] = _val25;
               }
               iprot.readMapEnd();
             }
@@ -906,10 +895,6 @@ class oneWay_args implements TBase {
     iprot.readStructEnd();
 
     // check for required fields of primitive type, which can't be checked in the validate method
-    if (!__isset_id) {
-        throw new TProtocolError(TProtocolErrorType.UNKNOWN, "Required field 'id' was not found in serialized data! Struct: " + toString());
-    }
-
     validate();
   }
 
@@ -924,9 +909,9 @@ class oneWay_args implements TBase {
       oprot.writeFieldBegin(_REQ_FIELD_DESC);
       {
         oprot.writeMapBegin(new TMap(TType.I32, TType.STRING, this.req.length));
-        for (var elem5 in this.req.keys) {
-          oprot.writeI32(elem5);
-          oprot.writeString(this.req[elem5]);
+        for (var elem27 in this.req.keys) {
+          oprot.writeI32(elem27);
+          oprot.writeString(this.req[elem27]);
         }
         oprot.writeMapEnd();
       }
@@ -957,10 +942,6 @@ class oneWay_args implements TBase {
 
   validate() {
     // check for required fields
-    // alas, we cannot check 'id' because it's a primitive and you chose the non-beans generator.
-    if (req == null) {
-      throw new TProtocolError(TProtocolErrorType.UNKNOWN, "Required field 'req' was not present! Struct: " + toString());
-    }
     // check that fields of type enum have valid values
   }
 

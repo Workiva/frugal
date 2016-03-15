@@ -41,21 +41,6 @@ func generateThriftIDL(dir string, frugal *parser.Frugal) (string, error) {
 	defer f.Close()
 
 	contents := ""
-	thrift := frugal.Thrift
-
-	contents += generateNamespaces(thrift.Namespaces)
-	includes, err := generateIncludes(frugal)
-	if err != nil {
-		return "", err
-	}
-	contents += includes
-	contents += generateConstants(frugal)
-	contents += generateTypedefs(thrift.Typedefs)
-	contents += generateEnums(thrift.Enums)
-	contents += generateStructLikes(thrift.Structs, structLikeStruct)
-	contents += generateStructLikes(thrift.Unions, structLikeUnion)
-	contents += generateStructLikes(thrift.Exceptions, structLikeException)
-	contents += generateServices(thrift.Services)
 
 	_, err = f.WriteString(contents)
 	return file, err

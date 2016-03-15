@@ -4,15 +4,34 @@ namespace java example
 
 include "base.frugal"
 
-typedef i64 id
-typedef i32 int
-typedef map<int, string> request
+typedef i64 Id
+typedef i32 Int
+typedef map<Int, string> request
 
 /**
  * This docstring doesn't get added to the generated code because
  * it doesn't have the @ sign.
  */
-const id DEFAULT_ID = -1
+const Id DEFAULT_ID = -1
+
+const i8 thirtyfour = 34
+
+const map<string,string> MAPCONSTANT = {'hello':'world', 'goodnight':'moon'}
+
+const Event ConstEvent1 = {"ID": -2, "Message": "first one"}
+const Event ConstEvent2 = {"ID": -7, "Message": "second one"}
+
+const list<i32> NumsList = [2,4,7,1]
+const set<i32> NumsSet = [1,3,8,0]
+
+const map<string,Event> MAPCONSTANT2 = {'hello':{"ID": -2, "Message": "first here"}}
+
+union TestingUnions {
+	1: Id AnID,
+	2: string aString,
+	3: Int someotherthing,
+	4: i16 AnInt16
+}
 
 /**@
  * This docstring gets added to the generated code because it has
@@ -20,15 +39,31 @@ const id DEFAULT_ID = -1
  */
 struct Event {
     /**@ ID is a unique identifier for an event. */
-    1: id ID = DEFAULT_ID,
+    1: Id ID = DEFAULT_ID,
 
     /**@ Message contains the event payload. */
     2: string Message
 }
 
+enum ItsAnEnum {
+    FIRST = 2,
+    SECOND,
+    THIRD
+}
+
+struct EventWrapper {
+    1: optional Id ID,
+    2: Event Ev,
+    3: list<Event> Events,
+    4: set<Event> Events2,
+    5: map<Id, Event> EventMap,
+    6: list<list<Int>> Nums,
+    7: list<ItsAnEnum> Enums
+}
+
 exception AwesomeException {
     /**@ ID is a unique identifier for an awesome exception. */
-    1: id ID,
+    1: Id ID,
 
     /**@ Reason contains the error message. */
     2: string Reason
@@ -46,7 +81,7 @@ service Foo extends base.BaseFoo {
     i64 blah(1:i32 num, 2:string Str, 3:Event event) throws (1:AwesomeException awe, 2:base.api_exception api),
 
     /**@ oneway methods don't receive a response from the server. */
-    oneway void oneWay(1:id id, 2:request req)
+    oneway void oneWay(1:Id id, 2:request req)
 }
 
 /**@

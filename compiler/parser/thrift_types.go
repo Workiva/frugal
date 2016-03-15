@@ -5,15 +5,22 @@ import (
 	"strings"
 )
 
-var thriftTypes = map[string]bool{
+var thriftBaseTypes = map[string]bool{
 	"bool":   true,
 	"byte":   true,
+	"i8":     true,
 	"i16":    true,
 	"i32":    true,
 	"i64":    true,
 	"double": true,
 	"string": true,
 	"binary": true,
+}
+
+var thriftContainerTypes = map[string]bool{
+	"list": true,
+	"set": true,
+	"map": true,
 }
 
 // Thrift Field Modifiers
@@ -25,7 +32,12 @@ const (
 )
 
 func IsThriftPrimitive(typ *Type) bool {
-	_, ok := thriftTypes[typ.Name]
+	_, ok := thriftBaseTypes[typ.Name]
+	return ok
+}
+
+func IsThriftContainer(t *Type) bool {
+	_, ok := thriftContainerTypes[t.Name]
 	return ok
 }
 
