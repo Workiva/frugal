@@ -794,11 +794,22 @@ func (g *Generator) GenerateTypesImports(file *os.File) error {
 		contents += "\t\"errors\"\n"
 	}
 	contents += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
+
+	protections := ""
+	pkgPrefix := g.Options["package_prefix"]
+	// TODO there's a pretty good chance there's a case I forgot about
+	for _, include := range g.Frugal.Thrift.Includes {
+		contents += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, include.Name)
+		protections += fmt.Sprintf("var _ = %s.GoUnusedProtection__\n", include.Name)
+	}
+
 	contents += ")\n\n"
 	contents += "// (needed to ensure safety because of naive import list construction.)\n"
 	contents += "var _ = thrift.ZERO\n"
 	contents += "var _ = fmt.Printf\n"
-	contents += "var _ = bytes.Equal"
+	contents += "var _ = bytes.Equal\n\n"
+	contents += protections
+	contents += "var GoUnusedProtection__ int\n"
 
 	_, err := file.WriteString(contents)
 	return err
