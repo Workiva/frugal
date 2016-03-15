@@ -5,11 +5,6 @@ set -o pipefail
 # Set -e so that we fail if an error is hit.
 set -e
 
-# Get maven
-wget http://apache.claz.org/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
-tar xzvf apache-maven-3.3.9-bin.tar.gz
-export PATH=$PWD/apache-maven-3.3.9/bin:$PATH
-
 ROOT=$PWD
 
 # Compile the java library code

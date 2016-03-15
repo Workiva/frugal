@@ -2,9 +2,9 @@ package frugal
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,8 +15,6 @@ import (
 const (
 	queue                      = "rpc"
 	defaultMaxMissedHeartbeats = 3
-	minHeartbeatInterval       = 20 * time.Second
-	frugalPrefix               = "frugal."
 )
 
 type client struct {
@@ -25,14 +23,22 @@ type client struct {
 	heartbeat     string
 }
 
-func newFrugalInbox() string {
-	return fmt.Sprintf("%s%s", frugalPrefix, nats.NewInbox())
+func newInbox(prefix string) string {
+	tokens := strings.Split(prefix, ".")
+	tokens[len(tokens)-1] = nats.NewInbox() // Always at least 1 token
+	inbox := ""
+	pre := ""
+	for _, token := range tokens {
+		inbox += pre + token
+		pre = "."
+	}
+	return inbox
 }
 
 // FNatsServer implements FServer by using NATS as the underlying transport.
 type FNatsServer struct {
 	conn                *nats.Conn
-	subject             string
+	subjects            []string
 	heartbeatSubject    string
 	heartbeatInterval   time.Duration
 	maxMissedHeartbeats uint
@@ -65,6 +71,29 @@ func NewFNatsServer(
 	)
 }
 
+// NewFNatsServerWithSubjects creates a new FNatsServer which listens for
+// requests on the given subjects.
+func NewFNatsServerWithSubjects(
+	conn *nats.Conn,
+	subjects []string,
+	heartbeatInterval time.Duration,
+	processor FProcessor,
+	transportFactory FTransportFactory,
+	protocolFactory *FProtocolFactory) FServer {
+
+	return NewFNatsServerFactoryWithSubjects(
+		conn,
+		subjects,
+		heartbeatInterval,
+		defaultMaxMissedHeartbeats,
+		NewFProcessorFactory(processor),
+		transportFactory,
+		protocolFactory,
+	)
+}
+
+// NewFNatsServerFactory creates a new FNatsServer which listens for requests
+// on the given subject.
 func NewFNatsServerFactory(
 	conn *nats.Conn,
 	subject string,
@@ -74,13 +103,31 @@ func NewFNatsServerFactory(
 	transportFactory FTransportFactory,
 	protocolFactory *FProtocolFactory) FServer {
 
-	if heartbeatInterval < minHeartbeatInterval {
-		heartbeatInterval = minHeartbeatInterval
-	}
+	return NewFNatsServerFactoryWithSubjects(
+		conn,
+		[]string{subject},
+		heartbeatInterval,
+		maxMissedHeartbeats,
+		processorFactory,
+		transportFactory,
+		protocolFactory,
+	)
+}
+
+// NewFNatsServerFactoryWithSubjects creates a new FNatsServer which listens
+// for requests on the given subjects.
+func NewFNatsServerFactoryWithSubjects(
+	conn *nats.Conn,
+	subjects []string,
+	heartbeatInterval time.Duration,
+	maxMissedHeartbeats uint,
+	processorFactory FProcessorFactory,
+	transportFactory FTransportFactory,
+	protocolFactory *FProtocolFactory) FServer {
 
 	return &FNatsServer{
 		conn:                conn,
-		subject:             subject,
+		subjects:            subjects,
 		heartbeatSubject:    nats.NewInbox(),
 		heartbeatInterval:   heartbeatInterval,
 		maxMissedHeartbeats: maxMissedHeartbeats,
@@ -94,49 +141,13 @@ func NewFNatsServerFactory(
 
 // Serve starts the server.
 func (n *FNatsServer) Serve() error {
-	sub, err := n.conn.QueueSubscribe(n.subject, queue, func(msg *nats.Msg) {
-		if msg.Reply == "" {
-			log.Printf("frugal: discarding invalid connect message %+v\n", msg)
-			return
-		}
-		hs := &natsConnectionHandshake{}
-		if err := json.Unmarshal(msg.Data, hs); err != nil {
-			log.Printf("frugal: could not deserialize connect message %+v\n", msg)
-			return
-		}
-		if hs.Version != natsV0 {
-			log.Printf("frugal: not a supported connect version %d", hs.Version)
-			return
-		}
-		var (
-			heartbeatReply = nats.NewInbox()
-			listenTo       = newFrugalInbox()
-			tr, err        = n.accept(listenTo, msg.Reply, heartbeatReply)
-		)
+	subscriptions := make([]*nats.Subscription, len(n.subjects))
+	for i, subject := range n.subjects {
+		sub, err := n.conn.QueueSubscribe(subject, queue, n.handleConnection)
 		if err != nil {
-			log.Println("frugal: error accepting client transport:", err)
-			return
+			return err
 		}
-
-		client := &client{tr: tr, stopHeartbeat: make(chan struct{}), heartbeat: heartbeatReply}
-		if n.isHeartbeating() {
-			n.mu.Lock()
-			n.clients[heartbeatReply] = client
-			n.mu.Unlock()
-		}
-
-		// Connect message consists of "[heartbeat subject] [heartbeat reply subject] [expected interval ms]"
-		connectMsg := n.heartbeatSubject + " " + heartbeatReply + " " +
-			strconv.FormatInt(int64(n.heartbeatInterval.Seconds())*1000, 10)
-		if err := n.conn.PublishRequest(msg.Reply, listenTo, []byte(connectMsg)); err != nil {
-			log.Println("frugal: error publishing transport inbox:", err)
-			tr.Close()
-		} else if n.isHeartbeating() {
-			go n.acceptHeartbeat(client)
-		}
-	})
-	if err != nil {
-		return err
+		subscriptions[i] = sub
 	}
 
 	n.conn.Flush()
@@ -146,17 +157,66 @@ func (n *FNatsServer) Serve() error {
 
 	log.Println("frugal: server running...")
 	<-n.quit
+	log.Println("frugal: server stopping...")
 	if n.conn.Status() != nats.CONNECTED {
 		log.Println("frugal: Nats is already disconnected!")
 		return nil
 	}
-	return sub.Unsubscribe()
+
+	for _, sub := range subscriptions {
+		sub.Unsubscribe()
+	}
+	return nil
 }
 
 // Stop the server.
 func (n *FNatsServer) Stop() error {
 	close(n.quit)
 	return nil
+}
+
+// handleConnection is invoked when a remote peer is attempting to connect to
+// the server.
+func (n *FNatsServer) handleConnection(msg *nats.Msg) {
+	if msg.Reply == "" {
+		log.Printf("frugal: discarding invalid connect message %+v\n", msg)
+		return
+	}
+	hs := &natsConnectionHandshake{}
+	if err := json.Unmarshal(msg.Data, hs); err != nil {
+		log.Printf("frugal: could not deserialize connect message %+v\n", msg)
+		return
+	}
+	if hs.Version != natsV0 {
+		log.Printf("frugal: not a supported connect version %d", hs.Version)
+		return
+	}
+	var (
+		heartbeatReply = nats.NewInbox()
+		listenTo       = newInbox(msg.Reply)
+		tr, err        = n.accept(listenTo, msg.Reply, heartbeatReply)
+	)
+	if err != nil {
+		log.Println("frugal: error accepting client transport:", err)
+		return
+	}
+
+	client := &client{tr: tr, stopHeartbeat: make(chan struct{}), heartbeat: heartbeatReply}
+	if n.isHeartbeating() {
+		n.mu.Lock()
+		n.clients[heartbeatReply] = client
+		n.mu.Unlock()
+	}
+
+	// Connect message consists of "[heartbeat subject] [heartbeat reply subject] [expected interval ms]"
+	connectMsg := n.heartbeatSubject + " " + heartbeatReply + " " +
+		strconv.FormatInt(int64(n.heartbeatInterval/time.Millisecond), 10)
+	if err := n.conn.PublishRequest(msg.Reply, listenTo, []byte(connectMsg)); err != nil {
+		log.Println("frugal: error publishing transport inbox:", err)
+		tr.Close()
+	} else if n.isHeartbeating() {
+		go n.acceptHeartbeat(client)
+	}
 }
 
 func (n *FNatsServer) remove(heartbeat string) {
@@ -206,9 +266,15 @@ func (n *FNatsServer) acceptHeartbeat(client *client) {
 	}
 	defer sub.Unsubscribe()
 
+	var wait <-chan time.Time
 	for {
+		if n.maxMissedHeartbeats > 1 {
+			wait = time.After(n.heartbeatInterval)
+		} else {
+			wait = time.After(n.heartbeatInterval + n.heartbeatInterval/4)
+		}
 		select {
-		case <-time.After(n.heartbeatInterval + heartbeatGracePeriod):
+		case <-wait:
 			missed++
 			if missed >= n.maxMissedHeartbeats {
 				log.Println("frugal: client heartbeat expired")
@@ -228,13 +294,12 @@ func (n *FNatsServer) acceptHeartbeat(client *client) {
 func (n *FNatsServer) accept(listenTo, replyTo, heartbeat string) (FTransport, error) {
 	client := newNatsServiceTTransportServer(n.conn, listenTo, replyTo)
 	transport := n.transportFactory.GetTransport(client)
-	if err := transport.Open(); err != nil {
-		return nil, err
-	}
-
 	processor := n.processorFactory.GetProcessor(transport)
 	protocol := n.protocolFactory.GetProtocol(transport)
 	transport.SetRegistry(NewServerRegistry(processor, n.protocolFactory, protocol))
+	if err := transport.Open(); err != nil {
+		return nil, err
+	}
 
 	// Cleanup heartbeat when client disconnects.
 	go func() {

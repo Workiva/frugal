@@ -13,11 +13,25 @@ can be hosted on Pub.
 
 ## Installation
 
-Install Thrift. Dart support has not yet been released for Thrift, so we must
-install from `HEAD` for the time being.
+Install Thrift. Dart support has not yet been released for Thrift, so we use a fork for the time-being.
+
+Clone the fork
+```bash
+git clone git@github.com:stevenosborne-wf/thrift.git
+cd thrift
+git checkout 0.9.3-wk-2
 ```
-brew update
-brew install thrift --with-java --with-python --HEAD
+
+Configure the install (Note: you make need to install build dependencies)
+```bash
+./bootstrap.sh
+./configure --without-perl --without-php --without-cpp --without-nodejs --enable-libs=no --enable-tests=no --enable-tutorial=no PY_PREFIX="$VIRTUAL_ENV"
+```
+
+Install Thrift
+```
+make
+make install
 ```
 
 Install Frugal

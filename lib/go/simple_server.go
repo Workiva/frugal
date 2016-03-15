@@ -1,19 +1,23 @@
 package frugal
 
-import "log"
+import (
+	"log"
+
+	"git.apache.org/thrift.git/lib/go/thrift"
+)
 
 // FSimpleServer is a simple, single-threaded FServer.
 type FSimpleServer struct {
 	quit             chan struct{}
 	processorFactory FProcessorFactory
-	serverTransport  FServerTransport
+	serverTransport  thrift.TServerTransport
 	transportFactory FTransportFactory
 	protocolFactory  *FProtocolFactory
 }
 
 func NewFSimpleServerFactory5(
 	processorFactory FProcessorFactory,
-	serverTransport FServerTransport,
+	serverTransport thrift.TServerTransport,
 	transportFactory FTransportFactory,
 	protocolFactory *FProtocolFactory) *FSimpleServer {
 
@@ -43,8 +47,8 @@ func (p *FSimpleServer) AcceptLoop() error {
 		}
 		if client != nil {
 			go func() {
-				if err := p.processRequests(client); err != nil {
-					log.Println("error processing request:", err)
+				if err := p.accept(client); err != nil {
+					log.Println("frugal: error accepting client transport:", err)
 				}
 			}()
 		}
@@ -68,16 +72,13 @@ func (p *FSimpleServer) Stop() error {
 	return nil
 }
 
-func (p *FSimpleServer) processRequests(client FTransport) error {
+func (p *FSimpleServer) accept(client thrift.TTransport) error {
 	processor := p.processorFactory.GetProcessor(client)
 	transport := p.transportFactory.GetTransport(client)
 	protocol := p.protocolFactory.GetProtocol(transport)
 	transport.SetRegistry(NewServerRegistry(processor, p.protocolFactory, protocol))
-
-	select {
-	case <-p.quit:
-		transport.Close()
-	case <-client.Closed():
+	if err := transport.Open(); err != nil {
+		return err
 	}
 
 	return nil

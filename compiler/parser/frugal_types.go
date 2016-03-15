@@ -46,23 +46,23 @@ func (s *Scope) assignScope() {
 	}
 }
 
-type Async struct {
-	Comment []string
-	Name    string
-	Extends string
-	Methods []*Method
-	Frugal  *Frugal // Pointer back to containing Frugal
-}
-
 type Frugal struct {
 	Name           string
 	File           string
 	Dir            string
 	Path           string
 	Scopes         []*Scope
-	Asyncs         []*Async
 	Thrift         *Thrift
 	ParsedIncludes map[string]*Frugal
+
+	// This retains a list of all definitions in the order they are defined in
+	// the IDL. The Thrift compiler has several bugs which make the generated
+	// code sensitive to the ordering of IDL definitions, e.g.
+	// https://issues.apache.org/jira/browse/THRIFT-3465
+	// This is used to retain ordering in the generated intermediate Thrift.
+	// TODO: Remove this once the dependency on Thrift is removed or the bugs
+	// in Thrift are fixed.
+	OrderedDefinitions []interface{}
 }
 
 func (f *Frugal) NamespaceForInclude(include, lang string) (string, bool) {

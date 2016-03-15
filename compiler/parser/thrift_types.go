@@ -25,6 +25,7 @@ var thriftContainerTypes = map[string]bool{
 
 // Thrift Field Modifiers
 type FieldModifier int
+
 const (
 	Required FieldModifier = iota
 	Optional
@@ -120,10 +121,32 @@ type Field struct {
 	Default  interface{}
 }
 
+type StructType int
+
+func (s StructType) String() string {
+	switch s {
+	case StructTypeStruct:
+		return "struct"
+	case StructTypeException:
+		return "exception"
+	case StructTypeUnion:
+		return "union"
+	default:
+		panic(fmt.Sprintf("unknown struct type %d", s))
+	}
+}
+
+const (
+	StructTypeStruct = iota
+	StructTypeException
+	StructTypeUnion
+)
+
 type Struct struct {
 	Comment []string
 	Name    string
 	Fields  []*Field
+	Type    StructType
 }
 
 type Method struct {

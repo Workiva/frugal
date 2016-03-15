@@ -18,11 +18,15 @@ import (
 
 const (
 	// NATS limits messages to 1MB.
-	natsMaxMessageSize   = 1024 * 1024
-	disconnect           = "DISCONNECT"
-	natsV0               = 0
-	heartbeatGracePeriod = 5 * time.Second
+	natsMaxMessageSize = 1024 * 1024
+	disconnect         = "DISCONNECT"
+	frugalPrefix       = "frugal."
+	natsV0             = 0
 )
+
+func newFrugalInbox() string {
+	return fmt.Sprintf("%s%s", frugalPrefix, nats.NewInbox())
+}
 
 // natsServiceTTransport implements thrift.TTransport.
 type natsServiceTTransport struct {
@@ -217,6 +221,9 @@ func (n *natsServiceTTransport) handshakeRequest(hsBytes []byte) (m *nats.Msg, e
 	err = n.conn.PublishRequest(n.connectSubject, inbox, hsBytes)
 	if err == nil {
 		m, err = s.NextMsg(n.connectTimeout)
+		if err == nats.ErrTimeout {
+			err = thrift.NewTTransportException(thrift.TIMED_OUT, err.Error())
+		}
 	}
 	s.Unsubscribe()
 	return
@@ -316,10 +323,14 @@ func (n *natsServiceTTransport) RemainingBytes() uint64 {
 
 func (n *natsServiceTTransport) heartbeatTimeoutPeriod() time.Duration {
 	// The server is expected to heartbeat at every heartbeatInterval. Add an
-	// additional grace period.
+	// additional grace period if maxMissedHeartbeats == 1 to avoid potential
+	// races.
 	n.fieldsMu.RLock()
 	defer n.fieldsMu.RUnlock()
-	return n.heartbeatInterval + heartbeatGracePeriod
+	if n.maxMissedHeartbeats > 1 {
+		return n.heartbeatInterval
+	}
+	return n.heartbeatInterval + n.heartbeatInterval/4
 }
 
 func (n *natsServiceTTransport) recvHeartbeatChan() chan struct{} {
