@@ -81,9 +81,9 @@ type request map[Int]string
 type ItsAnEnum int64
 
 const (
-	ItsAnEnum_FIRST  ItsAnEnum = 2
 	ItsAnEnum_SECOND ItsAnEnum = 3
 	ItsAnEnum_THIRD  ItsAnEnum = 4
+	ItsAnEnum_FIRST  ItsAnEnum = 2
 )
 
 func (p ItsAnEnum) String() string {
@@ -402,13 +402,13 @@ func (p *EventWrapper) ReadField3(iprot thrift.TProtocol) error {
 	if err != nil {
 		return thrift.PrependError("error reading list begin: ", err)
 	}
-	Events := make([]*Event, 0, size)
+	p.Events = make([]*Event, 0, size)
 	for i := 0; i < size; i++ {
 		elem0 := NewEvent()
 		if err := elem0.Read(iprot); err != nil {
 			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem0), err)
 		}
-		Events = append(Events, elem0)
+		p.Events = append(p.Events, elem0)
 
 	}
 	if err := iprot.ReadListEnd(); err != nil {
@@ -422,13 +422,13 @@ func (p *EventWrapper) ReadField4(iprot thrift.TProtocol) error {
 	if err != nil {
 		return thrift.PrependError("error reading set begin: ", err)
 	}
-	Events2 := make(map[*Event]bool, 0, size)
+	p.Events2 = make(map[*Event]bool, 0, size)
 	for i := 0; i < size; i++ {
 		elem1 := NewEvent()
 		if err := elem1.Read(iprot); err != nil {
 			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem1), err)
 		}
-		Events2[elem1] = true
+		p.Events2[elem1] = true
 
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
@@ -442,7 +442,7 @@ func (p *EventWrapper) ReadField5(iprot thrift.TProtocol) error {
 	if err != nil {
 		return thrift.PrependError("error reading map begin: ", err)
 	}
-	EventMap := make(map[Id]*Event, 0, size)
+	p.EventMap = make(map[Id]*Event, 0, size)
 	for i := 0; i < size; i++ {
 		var elem2 Id
 		if v, err := iprot.ReadI64(); err != nil {
@@ -454,7 +454,7 @@ func (p *EventWrapper) ReadField5(iprot thrift.TProtocol) error {
 		if err := elem3.Read(iprot); err != nil {
 			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem3), err)
 		}
-		EventMap[elem2] = elem3
+		p.EventMap[elem2] = elem3
 
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
@@ -468,7 +468,7 @@ func (p *EventWrapper) ReadField6(iprot thrift.TProtocol) error {
 	if err != nil {
 		return thrift.PrependError("error reading list begin: ", err)
 	}
-	Nums := make([][]Int, 0, size)
+	p.Nums = make([][]Int, 0, size)
 	for i := 0; i < size; i++ {
 		_, size, err := iprot.ReadListBegin()
 		if err != nil {
@@ -488,7 +488,7 @@ func (p *EventWrapper) ReadField6(iprot thrift.TProtocol) error {
 		if err := iprot.ReadListEnd(); err != nil {
 			return thrift.PrependError("error reading list end: ", err)
 		}
-		Nums = append(Nums, elem4)
+		p.Nums = append(p.Nums, elem4)
 
 	}
 	if err := iprot.ReadListEnd(); err != nil {
@@ -502,7 +502,7 @@ func (p *EventWrapper) ReadField7(iprot thrift.TProtocol) error {
 	if err != nil {
 		return thrift.PrependError("error reading list begin: ", err)
 	}
-	Enums := make([]ItsAnEnum, 0, size)
+	p.Enums = make([]ItsAnEnum, 0, size)
 	for i := 0; i < size; i++ {
 		var elem6 ItsAnEnum
 		if v, err := iprot.ReadI64(); err != nil {
@@ -510,7 +510,7 @@ func (p *EventWrapper) ReadField7(iprot thrift.TProtocol) error {
 		} else {
 			elem6 = ItsAnEnum(v)
 		}
-		Enums = append(Enums, elem6)
+		p.Enums = append(p.Enums, elem6)
 
 	}
 	if err := iprot.ReadListEnd(); err != nil {

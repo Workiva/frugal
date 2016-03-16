@@ -622,17 +622,17 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, prefix string, dec
 			containerType = "list"
 			containerTypeCap = "List"
 			read = "\t_, size, err := iprot.ReadListBegin()\n"
-			assign = fmt.Sprintf("\t\t%s = append(%s, %%s)\n", field.Name, field.Name)
+			assign = fmt.Sprintf("\t\t%s%s = append(%s%s, %%s)\n", prefix, field.Name, prefix, field.Name)
 		case "set":
 			containerType = "set"
 			containerTypeCap = "Set"
 			read = "\t_, size, err := iprot.ReadSetBegin()\n"
-			assign = fmt.Sprintf("\t\t%s[%%s] = true\n", field.Name)
+			assign = fmt.Sprintf("\t\t%s%s[%%s] = true\n", prefix, field.Name)
 		case "map":
 			containerType = "map"
 			containerTypeCap = "Map"
 			read = "\t_, _, size, err := iprot.ReadMapBegin()\n"
-			assign = fmt.Sprintf("\t\t%s[%%s] = %%%%s\n", field.Name)
+			assign = fmt.Sprintf("\t\t%s%s[%%s] = %%%%s\n", prefix, field.Name)
 		default:
 			panic("not a valid container: " + field.Type.Name)
 		}
@@ -641,7 +641,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, prefix string, dec
 		contents += "\tif err != nil {\n"
 		contents += fmt.Sprintf("\t\treturn thrift.PrependError(\"error reading %s begin: \", err)\n", containerType)
 		contents += "\t}\n"
-		contents += fmt.Sprintf("\t%s := make(%s, 0, size)\n", field.Name, goType)
+		contents += fmt.Sprintf("\t%s%s %s make(%s, 0, size)\n", prefix, field.Name, eq, goType)
 		contents += "\tfor i := 0; i < size; i++ {\n"
 
 		if containerType == "map" {
@@ -1816,6 +1816,29 @@ func snakeToCamel(s string) string {
 	return result
 }
 
+func title(s string) string {
+	var result string
+
+	words := strings.Split(s, "_")
+
+	for _, word := range words {
+		if upper := strings.ToUpper(word); commonInitialisms[upper] {
+			result += upper
+			continue
+		}
+
+		w := []rune(word)
+		w[0] = unicode.ToUpper(w[0])
+		result += string(w)
+	}
+
+	if strings.HasPrefix(result, "New") || strings.HasSuffix(result, "Args") || strings.HasSuffix(result, "Result") {
+		result += "_"
+	}
+
+	return result
+}
+
 // startsWithInitialism returns the initialism if the given string begins with
 // it.
 func startsWithInitialism(s string) string {
@@ -1829,6 +1852,7 @@ func startsWithInitialism(s string) string {
 	return initialism
 }
 
+// TODO add this to generator struct
 var elemNum int
 func getElem() string {
 	s := fmt.Sprintf("elem%d", elemNum)
