@@ -30,7 +30,8 @@ union TestingUnions {
 	1: Id AnID,
 	2: string aString,
 	3: Int someotherthing,
-	4: i16 AnInt16
+	4: i16 AnInt16,
+	5: request Requests
 }
 
 /**@

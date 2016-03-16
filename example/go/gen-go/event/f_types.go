@@ -81,9 +81,9 @@ type request map[Int]string
 type ItsAnEnum int64
 
 const (
-	ItsAnEnum_SECOND ItsAnEnum = 3
 	ItsAnEnum_THIRD  ItsAnEnum = 4
 	ItsAnEnum_FIRST  ItsAnEnum = 2
+	ItsAnEnum_SECOND ItsAnEnum = 3
 )
 
 func (p ItsAnEnum) String() string {
@@ -709,6 +709,7 @@ type TestingUnions struct {
 	aString        *string `thrift:"aString,2" db:"aString" json:"aString,omitempty"`
 	someotherthing *Int    `thrift:"someotherthing,3" db:"someotherthing" json:"someotherthing,omitempty"`
 	AnInt16        *int16  `thrift:"AnInt16,4" db:"AnInt16" json:"AnInt16,omitempty"`
+	Requests       request `thrift:"Requests,5" db:"Requests" json:"Requests,omitempty"`
 }
 
 func NewTestingUnions() *TestingUnions {
@@ -767,6 +768,16 @@ func (p *TestingUnions) GetAnInt16() int16 {
 	return *p.AnInt16
 }
 
+var TestingUnions_Requests_DEFAULT request
+
+func (p *TestingUnions) IsSetRequests() bool {
+	return p.Requests != nil
+}
+
+func (p *TestingUnions) GetRequests() request {
+	return p.Requests
+}
+
 func (p *TestingUnions) CountSetFieldsTestingUnions() int {
 	count := 0
 	if p.IsSetAnID() {
@@ -779,6 +790,9 @@ func (p *TestingUnions) CountSetFieldsTestingUnions() int {
 		count++
 	}
 	if p.IsSetAnInt16() {
+		count++
+	}
+	if p.IsSetRequests() {
 		count++
 	}
 	return count
@@ -812,6 +826,10 @@ func (p *TestingUnions) Read(iprot thrift.TProtocol) error {
 			}
 		case 4:
 			if err := p.ReadField4(iprot); err != nil {
+				return err
+			}
+		case 5:
+			if err := p.ReadField5(iprot); err != nil {
 				return err
 			}
 		default:
@@ -862,6 +880,34 @@ func (p *TestingUnions) ReadField4(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *TestingUnions) ReadField5(iprot thrift.TProtocol) error {
+	_, _, size, err := iprot.ReadMapBegin()
+	if err != nil {
+		return thrift.PrependError("error reading map begin: ", err)
+	}
+	p.Requests = make(map[Int]string, 0, size)
+	for i := 0; i < size; i++ {
+		var elem7 Int
+		if v, err := iprot.ReadI32(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("error reading field 0: ", p), err)
+		} else {
+			elem7 = Int(v)
+		}
+		var elem8 string
+		if v, err := iprot.ReadString(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("error reading field 0: ", p), err)
+		} else {
+			elem8 = v
+		}
+		p.Requests[elem7] = elem8
+
+	}
+	if err := iprot.ReadMapEnd(); err != nil {
+		return thrift.PrependError("error reading map end: ", err)
+	}
+	return nil
+}
+
 func (p *TestingUnions) Write(oprot thrift.TProtocol) error {
 	if c := p.CountSetFieldsTestingUnions(); c != 1 {
 		fmt.Errorf("%T write union: exactly one field must be set (%d set).", p, c)
@@ -879,6 +925,9 @@ func (p *TestingUnions) Write(oprot thrift.TProtocol) error {
 		return err
 	}
 	if err := p.writeField4(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField5(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -945,6 +994,32 @@ func (p *TestingUnions) writeField4(oprot thrift.TProtocol) error {
 		}
 		if err := oprot.WriteFieldEnd(); err != nil {
 			return thrift.PrependError(fmt.Sprintf("%T write field end error 4:AnInt16: ", p), err)
+		}
+	}
+	return nil
+}
+
+func (p *TestingUnions) writeField5(oprot thrift.TProtocol) error {
+	if p.IsSetRequests() {
+		if err := oprot.WriteFieldBegin("Requests", thrift.MAP, 5); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 5:Requests: ", p), err)
+		}
+		if err := oprot.WriteMapBegin(thrift.I32, thrift.STRING, len(p.Requests)); err != nil {
+			return thrift.PrependError("error writing map begin: ", err)
+		}
+		for k, v := range p.Requests {
+			if err := oprot.WriteI32(int32(k)); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+			}
+			if err := oprot.WriteString(string(v)); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+			}
+		}
+		if err := oprot.WriteMapEnd(); err != nil {
+			return thrift.PrependError("error writing map end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 5:Requests: ", p), err)
 		}
 	}
 	return nil

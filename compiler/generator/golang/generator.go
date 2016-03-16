@@ -617,7 +617,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, prefix string, dec
 		containerTypeCap := ""
 		read := ""
 		assign := ""
-		switch field.Type.Name {
+		switch underlyingType.Name {
 		case "list":
 			containerType = "list"
 			containerTypeCap = "List"
@@ -634,7 +634,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, prefix string, dec
 			read = "\t_, _, size, err := iprot.ReadMapBegin()\n"
 			assign = fmt.Sprintf("\t\t%s%s[%%s] = %%%%s\n", prefix, field.Name)
 		default:
-			panic("not a valid container: " + field.Type.Name)
+			panic("not a valid container: " + underlyingType.Name)
 		}
 
 		contents += read
@@ -647,13 +647,13 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, prefix string, dec
 		if containerType == "map" {
 			// need to read key
 			keyElem := getElem()
-			keyField := g.Frugal.FieldFromType(field.Type.KeyType, keyElem)
+			keyField := g.Frugal.FieldFromType(underlyingType.KeyType, keyElem)
 			contents += g.generateReadFieldRec(keyField, "", true)
 			assign = fmt.Sprintf(assign, keyElem)
 		}
 
 		valElem := getElem()
-		valField := g.Frugal.FieldFromType(field.Type.ValueType, valElem)
+		valField := g.Frugal.FieldFromType(underlyingType.ValueType, valElem)
 		contents += g.generateReadFieldRec(valField, "", true)
 		assign = fmt.Sprintf(assign, valElem)
 		contents += fmt.Sprintf("\t\t%s\n", assign)
@@ -738,15 +738,15 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 		if isPointerField {
 			prefix = "*" + prefix
 		}
-		valEnumType := g.getEnumFromThriftType(field.Type.ValueType)
+		valEnumType := g.getEnumFromThriftType(origType.ValueType)
 
-		switch field.Type.Name {
+		switch origType.Name {
 		case "list":
 			contents += fmt.Sprintf("\tif err := oprot.WriteListBegin(%s, len(%s)); err != nil {\n", valEnumType, prefix + field.Name)
 			contents += "\t\treturn thrift.PrependError(\"error writing list begin: \", err)\n"
 			contents += "\t}\n"
 			contents += fmt.Sprintf("\tfor _, v := range %s {\n", prefix + field.Name)
-			valField := g.Frugal.FieldFromType(field.Type.ValueType, "")
+			valField := g.Frugal.FieldFromType(origType.ValueType, "")
 			contents += g.generateWriteFieldRec(valField, "v")
 			contents += "\t}\n"
 			contents += "\tif err := oprot.WriteListEnd(); err != nil {\n"
@@ -757,26 +757,28 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 			contents += "\t\treturn thrift.PrependError(\"error writing set begin: \", err)\n"
 			contents += "\t}\n"
 			contents += fmt.Sprintf("\tfor v, _ := range %s {\n", prefix + field.Name)
-			valField := g.Frugal.FieldFromType(field.Type.ValueType, "")
+			valField := g.Frugal.FieldFromType(origType.ValueType, "")
 			contents += g.generateWriteFieldRec(valField, "v")
 			contents += "\t}\n"
 			contents += "\tif err := oprot.WriteSetEnd(); err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error writing set end: \", err)\n"
 			contents += "\t}\n"
 		case "map":
-			keyEnumType := g.getEnumFromThriftType(field.Type.KeyType)
+			keyEnumType := g.getEnumFromThriftType(origType.KeyType)
 			contents += fmt.Sprintf("\tif err := oprot.WriteMapBegin(%s, %s, len(%s)); err != nil {\n", keyEnumType, valEnumType, prefix + field.Name)
 			contents += "\t\treturn thrift.PrependError(\"error writing map begin: \", err)\n"
 			contents += "\t}\n"
 			contents += fmt.Sprintf("\tfor k, v := range %s {\n", prefix + field.Name)
-			keyField := g.Frugal.FieldFromType(field.Type.KeyType, "")
+			keyField := g.Frugal.FieldFromType(origType.KeyType, "")
 			contents += g.generateWriteFieldRec(keyField, "k")
-			valField := g.Frugal.FieldFromType(field.Type.ValueType, "")
+			valField := g.Frugal.FieldFromType(origType.ValueType, "")
 			contents += g.generateWriteFieldRec(valField, "v")
 			contents += "\t}\n"
 			contents += "\tif err := oprot.WriteMapEnd(); err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error writing map end: \", err)\n"
 			contents += "\t}\n"
+		default:
+			panic("crap")
 		}
 	}
 
