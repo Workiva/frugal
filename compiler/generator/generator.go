@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/Workiva/frugal/compiler/parser"
+	"fmt"
 )
 
 const FilePrefix = "f_"
@@ -18,6 +19,7 @@ const (
 	SubscribeFile       FileType = "subscribe"
 
 	TypeFile FileType = "types"
+	ServiceArgsResultsFile FileType = "service_args_results"
 )
 
 // Languages is a map of supported language to a slice of the generator options
@@ -63,6 +65,7 @@ type LanguageGenerator interface {
 	GenerateStruct(*parser.Struct) error
 	GenerateUnion(*parser.Struct) error
 	GenerateException(*parser.Struct) error
+	GenerateServiceArgsResults(string, string, []*parser.Struct) error
 
 
 	// Service-specific methods
@@ -144,6 +147,44 @@ func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir strin
 
 	for _, exception := range frugal.Thrift.Exceptions {
 		if err := o.GenerateException(exception); err != nil {
+			return err
+		}
+	}
+
+	for _, service := range frugal.Thrift.Services {
+		structs := []*parser.Struct{}
+		for _, method := range service.Methods {
+			arg := &parser.Struct{
+				Name: fmt.Sprintf("%s_%s_args", service.Name, method.Name),
+				Fields: method.Arguments,
+				Type: parser.StructTypeStruct,
+			}
+			structs = append(structs, arg)
+
+			if !method.Oneway {
+				numReturns := 0
+				if method.ReturnType != nil {
+					numReturns = 1
+				}
+
+				fields := make([]*parser.Field, len(method.Exceptions) + numReturns, len(method.Exceptions) + numReturns)
+				if numReturns == 1 {
+					fields[0] = frugal.FieldFromType(method.ReturnType, "success")
+				}
+				copy(fields[numReturns:], method.Exceptions)
+				for _, field := range fields {
+					field.Modifier = parser.Optional
+				}
+
+				result := &parser.Struct{
+					Name: fmt.Sprintf("%s_%s_result", service.Name, method.Name),
+					Fields: fields,
+					Type: parser.StructTypeStruct,
+				}
+				structs = append(structs, result)
+			}
+		}
+		if err := o.GenerateServiceArgsResults(service.Name, outputDir, structs); err != nil {
 			return err
 		}
 	}

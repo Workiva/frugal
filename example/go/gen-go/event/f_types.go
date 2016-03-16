@@ -81,9 +81,9 @@ type Request map[Int]string
 type ItsAnEnum int64
 
 const (
-	ItsAnEnum_THIRD  ItsAnEnum = 4
 	ItsAnEnum_FIRST  ItsAnEnum = 2
 	ItsAnEnum_SECOND ItsAnEnum = 3
+	ItsAnEnum_THIRD  ItsAnEnum = 4
 )
 
 func (p ItsAnEnum) String() string {
@@ -100,12 +100,12 @@ func (p ItsAnEnum) String() string {
 
 func ItsAnEnumFromString(s string) (ItsAnEnum, error) {
 	switch s {
+	case "FIRST":
+		return ItsAnEnum_FIRST, nil
 	case "SECOND":
 		return ItsAnEnum_SECOND, nil
 	case "THIRD":
 		return ItsAnEnum_THIRD, nil
-	case "FIRST":
-		return ItsAnEnum_FIRST, nil
 	}
 	return ItsAnEnum(0), fmt.Errorf("not a valid ItsAnEnum string")
 }

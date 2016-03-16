@@ -58,15 +58,12 @@ func (g *Generator) InitializeGenerator(outputDir string) error {
 		return err
 	}
 
-	// TODO also make file for *Args and *Results structs from services?
-
 	return nil
 }
 
 func (g *Generator) CloseGenerator() error {
-	g.PostProcess(g.typesFile)
-	g.typesFile.Close()
-	return nil
+	defer g.typesFile.Close()
+	return g.PostProcess(g.typesFile)
 }
 
 func (g *Generator) GetOutputDir(dir string) string {
@@ -108,6 +105,8 @@ func (g *Generator) GenerateFile(name, outputDir string, fileType generator.File
 		return g.CreateFile(strings.ToLower(name)+scopeSuffix, outputDir, lang, true)
 	case generator.TypeFile:
 		return g.CreateFile("types", outputDir, lang, true)
+	case generator.ServiceArgsResultsFile:
+		return g.CreateFile(strings.ToLower(name), outputDir, lang, true)
 	default:
 		return nil, fmt.Errorf("Bad file type for golang generator: %s", fileType)
 	}
@@ -154,7 +153,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 			contents += g.GenerateInlineComment(constant.Comment, "")
 		}
 
-		cName := title(constant.Name)
+		cName := title(constant.Name, false)
 		value := g.generateConstantValue(constant.Type, constant.Value)
 		// Don't use underlying type so typedefs aren't consts
 		if parser.IsThriftPrimitive(constant.Type) || g.Frugal.IsEnum(constant.Type) {
@@ -255,7 +254,7 @@ func (g *Generator) GenerateTypeDef(typedef *parser.TypeDef) error {
 		contents += g.GenerateInlineComment(typedef.Comment, "")
 	}
 
-	contents += fmt.Sprintf("type %s %s\n", title(typedef.Name), g.getGoTypeFromThriftType(typedef.Type))
+	contents += fmt.Sprintf("type %s %s\n", title(typedef.Name, false), g.getGoTypeFromThriftType(typedef.Type))
 	_, err := g.typesFile.WriteString(contents)
 	return err
 }
@@ -268,18 +267,18 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 		contents += g.GenerateInlineComment(enum.Comment, "")
 	}
 
-	eName := title(enum.Name)
+	eName := title(enum.Name, false)
 	contents += fmt.Sprintf("type %s int64\n\n", eName)
 	contents += "const (\n"
 	for _, field := range enum.Values {
-		contents += fmt.Sprintf("\t%s_%s %s = %d\n", eName, title(field.Name), eName, field.Value)
+		contents += fmt.Sprintf("\t%s_%s %s = %d\n", eName, title(field.Name, false), eName, field.Value)
 	}
 	contents += ")\n\n"
 
 	contents += fmt.Sprintf("func (p %s) String() string {\n", eName)
 	contents += "\tswitch p {\n"
 	for _, field := range enum.Values {
-		fName := title(field.Name)
+		fName := title(field.Name, false)
 		contents += fmt.Sprintf("\tcase %s_%s:\n", eName, fName)
 		contents += fmt.Sprintf("\t\treturn \"%s\"\n", fName)
 	}
@@ -290,7 +289,7 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 	contents += fmt.Sprintf("func %sFromString(s string) (%s, error) {\n", eName, eName)
 	contents += "\tswitch s {\n"
 	for _, field := range enum.Values {
-		fName := title(field.Name)
+		fName := title(field.Name, false)
 		contents += fmt.Sprintf("\tcase \"%s\":\n", fName)
 		contents += fmt.Sprintf("\t\treturn %s_%s, nil\n", eName, fName)
 	}
@@ -332,19 +331,18 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 }
 
 func (g *Generator) GenerateStruct(s *parser.Struct) error {
-	return g.generateStruct(s, false)
+	_, err := g.typesFile.WriteString(g.generateStruct(s, false))
+	return err
 }
 
 func (g *Generator) GenerateUnion(union *parser.Struct) error {
-	return g.generateStruct(union, true)
+	_, err := g.typesFile.WriteString(g.generateStruct(union, false))
+	return err
 }
 
 func (g *Generator) GenerateException(exception *parser.Struct) error {
-	if err := g.generateStruct(exception, false); err != nil {
-		return err
-	}
-
-	contents := fmt.Sprintf("func (p *%s) Error() string {\n", exception.Name)
+	contents := g.generateStruct(exception, false)
+	contents += fmt.Sprintf("func (p *%s) Error() string {\n", exception.Name)
 	contents += "\treturn p.String()\n"
 	contents += "}\n"
 
@@ -352,7 +350,45 @@ func (g *Generator) GenerateException(exception *parser.Struct) error {
 	return err
 }
 
-func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
+func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir string, structs []*parser.Struct) error {
+	file, err := g.GenerateFile(serviceName, outputDir, generator.ServiceArgsResultsFile)
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+	if err = g.GenerateDocStringComment(file); err != nil {
+		return err
+	}
+	if err = g.GenerateNewline(file, 2); err != nil {
+		return err
+	}
+	if err = g.generatePackage(file); err != nil {
+		return err
+	}
+	if err = g.GenerateNewline(file, 2); err != nil {
+		return err
+	}
+	// TODO I assume this needs to be different?
+	if err = g.GenerateServiceResultArgsImports(file); err != nil {
+		return err
+	}
+	if err = g.GenerateNewline(file, 2); err != nil {
+		return err
+	}
+
+	contents := ""
+	for _, s := range structs {
+		contents += g.generateStruct(s, true)
+	}
+
+	_, err = file.WriteString(contents)
+	if err != nil {
+		return err
+	}
+	return g.PostProcess(file)
+}
+
+func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string {
 	contents := ""
 
 	// Struct declaration
@@ -360,14 +396,14 @@ func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
 		contents += g.GenerateInlineComment(s.Comment, "")
 	}
 
-	sName := title(s.Name)
+	sName := title(s.Name, isArgsOrResult)
 	contents += fmt.Sprintf("type %s struct {\n", sName)
 
 	// Declare fields
 	for _, field := range s.Fields {
-		fName := title(field.Name)
+		fName := title(field.Name, false)
 		// All fields in a union are optional
-		if isUnion {
+		if s.Type == parser.StructTypeUnion {
 			field.Modifier = parser.Optional
 		}
 
@@ -399,7 +435,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
 
 	for _, field := range s.Fields {
 		if field.Default != nil{
-			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name), field.Default)
+			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name, false), field.Default)
 		}
 	}
 
@@ -408,14 +444,13 @@ func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
 
 	// Getters
 	for _, field := range s.Fields {
-		fName := title(field.Name)
+		fName := title(field.Name, false)
 		isPointer := g.isPointerField(field)
 		goType := g.getGoTypeFromThriftTypeOpt(field.Type, false)
 		goOptType := g.getGoTypeFromThriftTypeOpt(field.Type, true)
 
 		if field.Modifier == parser.Optional || isPointer {
 			// Generate a default for getters
-			// TODO is this necessary for all? look at slices/maps. Doesn't hurt though
 			contents += fmt.Sprintf("var %s_%s_DEFAULT %s", sName, fName, goType)
 			if field.Default != nil {
 				contents += fmt.Sprintf(" = %s", g.generateConstantValue(field.Type, field.Default))
@@ -428,7 +463,6 @@ func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
 			contents += "}\n\n"
 		}
 		if isPointer {
-			// TODO is it possible to be a pointer field and not be a pointer?
 			// Need to dereference the field before returning if it's a pointer
 			maybePointer := ""
 			if goType != goOptType {
@@ -442,18 +476,18 @@ func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
 			contents += "}\n\n"
 
 		} else {
-			contents += fmt.Sprintf("func (p *%s) Get%s() %s {\n", s.Name, field.Name, g.getGoTypeFromThriftType(field.Type))
-			contents += fmt.Sprintf("\treturn p.%s\n", field.Name)
+			contents += fmt.Sprintf("func (p *%s) Get%s() %s {\n", sName, fName, g.getGoTypeFromThriftType(field.Type))
+			contents += fmt.Sprintf("\treturn p.%s\n", fName)
 			contents += "}\n\n"
 		}
 	}
 
 	// Helper function to determine how many optional fields are set in a union
-	if isUnion {
+	if s.Type == parser.StructTypeUnion {
 		contents += fmt.Sprintf("func (p *%s) CountSetFieldsTestingUnions() int {\n", sName)
 		contents += "\tcount := 0\n"
 		for _, field := range s.Fields {
-			contents += fmt.Sprintf("\tif p.IsSet%s() {\n", title(field.Name))
+			contents += fmt.Sprintf("\tif p.IsSet%s() {\n", title(field.Name, false))
 			contents += "\t\tcount++\n"
 			contents += "\t}\n"
 		}
@@ -469,7 +503,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
 	for _, field := range s.Fields {
 		// Generate variables to make sure required fields are present
 		if field.Modifier == parser.Required {
-			contents += fmt.Sprintf("\tisset%s := false\n", title(field.Name))
+			contents += fmt.Sprintf("\tisset%s := false\n", title(field.Name, false))
 		}
 	}
 	contents += "\n"
@@ -488,7 +522,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
 		contents += "\t\t\t\treturn err\n"
 		contents += "\t\t\t}\n"
 		if field.Modifier == parser.Required {
-			contents += fmt.Sprintf("\t\t\tisset%s = true\n", title(field.Name))
+			contents += fmt.Sprintf("\t\t\tisset%s = true\n", title(field.Name, false))
 		}
 	}
 	contents += "\t\tdefault:\n"
@@ -502,7 +536,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
 	contents += "\t}\n"
 	for _, field := range s.Fields {
 		if field.Modifier == parser.Required {
-			fName := title(field.Name)
+			fName := title(field.Name, false)
 			contents += fmt.Sprintf("\tif !isset%s {\n", fName)
 			errorMessage := fmt.Sprintf("Required field %s is not set", fName)
 			contents += fmt.Sprintf("\t\treturn thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA, fmt.Errorf(\"%s\"))\n", errorMessage)
@@ -520,7 +554,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
 	contents += fmt.Sprintf("func (p *%s) Write(oprot thrift.TProtocol) error {\n", sName)
 
 	// Only one field can be set for a union, make sure that's the case
-	if isUnion {
+	if s.Type == parser.StructTypeUnion {
 		contents += fmt.Sprintf("\tif c := p.CountSetFields%s(); c != 1 {\n", sName)
 		contents += "\t\tfmt.Errorf(\"%T write union: exactly one field must be set (%d set).\", p, c)\n"
 		contents += "\t}\n"
@@ -557,8 +591,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isUnion bool) error {
 	contents += fmt.Sprintf("\treturn fmt.Sprintf(\"%s(%%+v)\", *p)\n", sName)
 	contents += "}\n\n"
 
-	_, err := g.typesFile.WriteString(contents)
-	return err
+	return contents
 }
 
 func (g *Generator) generateReadField(structName string, field *parser.Field) string {
@@ -580,7 +613,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 	if first {
 		eq = "="
 		prefix = "p."
-		fName = title(field.Name)
+		fName = title(field.Name, false)
 	}
 	contents := ""
 
@@ -645,7 +678,13 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 		contents += "\t}\n"
 	} else if g.Frugal.IsStruct(underlyingType) {
 		// All structs types should start with a pointer
-		contents += fmt.Sprintf("\t%s%s %s New%s()\n", prefix, fName, eq, goUnderlyingType[1:])
+		lastInd := strings.LastIndex(goUnderlyingType, ".")
+		if lastInd == -1 {
+			lastInd = 0
+		}
+		initializer := fmt.Sprintf("%sNew%s()", goUnderlyingType[1:lastInd+1], goUnderlyingType[lastInd+1:])
+
+		contents += fmt.Sprintf("\t%s%s %s %s\n", prefix, fName, eq, initializer)
 		contents += fmt.Sprintf("\tif err := %s%s.Read(iprot); err != nil {\n", prefix, fName)
 		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T error reading struct: \", %s%s), err)\n", prefix, fName)
 		contents += "\t}\n"
@@ -708,7 +747,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 
 func (g *Generator) generateWriteField(structName string, field *parser.Field) string {
 	contents := ""
-	fName := title(field.Name)
+	fName := title(field.Name, false)
 
 	contents += fmt.Sprintf("func (p *%s) writeField%d(oprot thrift.TProtocol) error {\n", structName, field.ID)
 	// If an optional field isn't set, it isn't written
@@ -733,7 +772,7 @@ func (g *Generator) generateWriteField(structName string, field *parser.Field) s
 func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) string {
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	isPointerField := g.isPointerField(field)
-	fName := title(field.Name)
+	fName := title(field.Name, false)
 	contents := ""
 
 	isEnum := g.Frugal.IsEnum(underlyingType)
@@ -853,7 +892,35 @@ func (g *Generator) GenerateTypesImports(file *os.File) error {
 	contents += "var _ = fmt.Printf\n"
 	contents += "var _ = bytes.Equal\n\n"
 	contents += protections
-	contents += "var GoUnusedProtection__ int\n\n"
+	contents += "var GoUnusedProtection__ int\n"
+
+	_, err := file.WriteString(contents)
+	return err
+}
+
+// TODO definitely duplicated code
+func (g *Generator) GenerateServiceResultArgsImports(file *os.File) error {
+	contents := ""
+	contents += "import (\n"
+	contents += "\t\"bytes\"\n"
+	contents += "\t\"fmt\"\n"
+	contents += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
+
+	protections := ""
+	pkgPrefix := g.Options["package_prefix"]
+	// TODO there's a pretty good chance there's a case I forgot about
+	for _, include := range g.Frugal.Thrift.Includes {
+		contents += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, include.Name)
+		protections += fmt.Sprintf("var _ = %s.GoUnusedProtection__\n", include.Name)
+	}
+
+	contents += ")\n\n"
+	contents += "// (needed to ensure safety because of naive import list construction.)\n"
+	contents += "var _ = thrift.ZERO\n"
+	contents += "var _ = fmt.Printf\n"
+	contents += "var _ = bytes.Equal\n\n"
+	contents += protections
+	contents += "var GoUnusedProtection__ int\n"
 
 	_, err := file.WriteString(contents)
 	return err
@@ -1686,6 +1753,7 @@ func (g *Generator) getGoTypeFromUnderlyingThriftType(t *parser.Type) string {
 	return g.getGoTypeFromThriftTypeOpt(g.Frugal.UnderlyingType(t), false)
 }
 
+// TODO check this
 func (g *Generator) getGoTypeFromThriftTypeOpt(t *parser.Type, optional bool) string {
 	maybePointer := ""
 	if optional {
@@ -1712,17 +1780,15 @@ func (g *Generator) getGoTypeFromThriftTypeOpt(t *parser.Type, optional bool) st
 		return fmt.Sprintf("%s[]%s", maybePointer,
 			g.getGoTypeFromThriftTypeOpt(t.ValueType, false))
 	case "set":
-		return fmt.Sprintf("map[%s]bool",
+		return fmt.Sprintf("%smap[%s]bool", maybePointer,
 			g.getGoTypeFromThriftTypeOpt(t.ValueType, false))
 	case "map":
-		return fmt.Sprintf("map[%s]%s",
+		return fmt.Sprintf("%smap[%s]%s", maybePointer,
 			g.getGoTypeFromThriftTypeOpt(t.KeyType, false),
 			g.getGoTypeFromThriftTypeOpt(t.ValueType, false))
 	default:
 		// Custom type, either typedef or struct.
 		name := g.qualifiedTypeName(t)
-		// TODO wtf
-//		name := t.Name
 		if g.Frugal.IsStruct(t) {
 			// This is a struct, return a pointer to it.
 			return "*" + name
@@ -1861,7 +1927,7 @@ func snakeToCamel(s string) string {
 	return result
 }
 
-func title(s string) string {
+func title(s string, isArgsOrResult bool) string {
 	// TODO prob remove
 	if len(s) == 0 {
 		return s
@@ -1887,7 +1953,7 @@ func title(s string) string {
 		result += string(w)
 	}
 
-	if strings.HasPrefix(result, "New") || strings.HasSuffix(result, "Args") || strings.HasSuffix(result, "Result") {
+	if !isArgsOrResult && (strings.HasPrefix(result, "New") || strings.HasSuffix(result, "Args") || strings.HasSuffix(result, "Result")) {
 		result += "_"
 	}
 
