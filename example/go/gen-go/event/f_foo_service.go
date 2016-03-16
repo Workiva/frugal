@@ -27,7 +27,7 @@ type FFoo interface {
 	// Blah the server.
 	Blah(ctx *frugal.FContext, num int32, Str string, event *Event) (r int64, err error)
 	// oneway methods don't receive a response from the server.
-	OneWay(ctx *frugal.FContext, id Id, req request) (err error)
+	OneWay(ctx *frugal.FContext, id ID, req Request) (err error)
 }
 
 type FFooClient struct {
@@ -261,7 +261,7 @@ func (f *FFooClient) recvBlahHandler(ctx *frugal.FContext, resultC chan<- int64,
 }
 
 // oneway methods don't receive a response from the server.
-func (f *FFooClient) OneWay(ctx *frugal.FContext, id Id, req request) (err error) {
+func (f *FFooClient) OneWay(ctx *frugal.FContext, id ID, req Request) (err error) {
 	f.mu.Lock()
 	if err = f.oprot.WriteRequestHeader(ctx); err != nil {
 		f.mu.Unlock()
@@ -395,7 +395,7 @@ func (p *fooFBlah) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol)
 		switch v := err2.(type) {
 		case *AwesomeException:
 			result.Awe = v
-		case *base.api_exception:
+		case *base.APIException:
 			result.API = v
 		default:
 			p.writeMu.Lock()

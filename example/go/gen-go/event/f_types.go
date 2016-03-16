@@ -21,9 +21,9 @@ var _ = bytes.Equal
 var _ = base.GoUnusedProtection__
 var GoUnusedProtection__ int
 
-var DEFAULT_ID Id
+var DEFAULT_ID ID
 
-const thirtyfour = 34
+const Thirtyfour = 34
 
 var MAPCONSTANT map[string]string
 
@@ -75,9 +75,9 @@ func init() {
 
 }
 
-type Id int64
+type ID int64
 type Int int32
-type request map[Int]string
+type Request map[Int]string
 type ItsAnEnum int64
 
 const (
@@ -100,12 +100,12 @@ func (p ItsAnEnum) String() string {
 
 func ItsAnEnumFromString(s string) (ItsAnEnum, error) {
 	switch s {
-	case "FIRST":
-		return ItsAnEnum_FIRST, nil
 	case "SECOND":
 		return ItsAnEnum_SECOND, nil
 	case "THIRD":
 		return ItsAnEnum_THIRD, nil
+	case "FIRST":
+		return ItsAnEnum_FIRST, nil
 	}
 	return ItsAnEnum(0), fmt.Errorf("not a valid ItsAnEnum string")
 }
@@ -143,7 +143,7 @@ func (p *ItsAnEnum) Value() (driver.Value, error) {
 // the @ sign.
 type Event struct {
 	// ID is a unique identifier for an event.
-	ID Id `thrift:"ID,1" db:"ID" json:"ID"`
+	ID ID `thrift:"ID,1" db:"ID" json:"ID"`
 	// Message contains the event payload.
 	Message string `thrift:"Message,2" db:"Message" json:"Message"`
 }
@@ -154,7 +154,7 @@ func NewEvent() *Event {
 	}
 }
 
-func (p *Event) GetID() Id {
+func (p *Event) GetID() ID {
 	return p.ID
 }
 
@@ -200,7 +200,7 @@ func (p *Event) ReadField1(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadI64(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("error reading field 1: ", p), err)
 	} else {
-		p.ID = Id(v)
+		p.ID = ID(v)
 	}
 	return nil
 }
@@ -267,11 +267,11 @@ func (p *Event) String() string {
 }
 
 type EventWrapper struct {
-	ID       *Id             `thrift:"ID,1" db:"ID" json:"ID,omitempty"`
+	ID       *ID             `thrift:"ID,1" db:"ID" json:"ID,omitempty"`
 	Ev       *Event          `thrift:"Ev,2" db:"Ev" json:"Ev"`
 	Events   []*Event        `thrift:"Events,3" db:"Events" json:"Events"`
 	Events2  map[*Event]bool `thrift:"Events2,4" db:"Events2" json:"Events2"`
-	EventMap map[Id]*Event   `thrift:"EventMap,5" db:"EventMap" json:"EventMap"`
+	EventMap map[ID]*Event   `thrift:"EventMap,5" db:"EventMap" json:"EventMap"`
 	Nums     [][]Int         `thrift:"Nums,6" db:"Nums" json:"Nums"`
 	Enums    []ItsAnEnum     `thrift:"Enums,7" db:"Enums" json:"Enums"`
 }
@@ -280,13 +280,13 @@ func NewEventWrapper() *EventWrapper {
 	return &EventWrapper{}
 }
 
-var EventWrapper_ID_DEFAULT Id
+var EventWrapper_ID_DEFAULT ID
 
 func (p *EventWrapper) IsSetID() bool {
 	return p.ID != nil
 }
 
-func (p *EventWrapper) GetID() Id {
+func (p *EventWrapper) GetID() ID {
 	if !p.IsSetID() {
 		return EventWrapper_ID_DEFAULT
 	}
@@ -314,7 +314,7 @@ func (p *EventWrapper) GetEvents2() map[*Event]bool {
 	return p.Events2
 }
 
-func (p *EventWrapper) GetEventMap() map[Id]*Event {
+func (p *EventWrapper) GetEventMap() map[ID]*Event {
 	return p.EventMap
 }
 
@@ -384,7 +384,7 @@ func (p *EventWrapper) ReadField1(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadI64(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("error reading field 1: ", p), err)
 	} else {
-		p.ID = &Id(v)
+		p.ID = &ID(v)
 	}
 	return nil
 }
@@ -442,13 +442,13 @@ func (p *EventWrapper) ReadField5(iprot thrift.TProtocol) error {
 	if err != nil {
 		return thrift.PrependError("error reading map begin: ", err)
 	}
-	p.EventMap = make(map[Id]*Event, 0, size)
+	p.EventMap = make(map[ID]*Event, 0, size)
 	for i := 0; i < size; i++ {
-		var elem2 Id
+		var elem2 ID
 		if v, err := iprot.ReadI64(); err != nil {
 			return thrift.PrependError(fmt.Sprintf("error reading field 0: ", p), err)
 		} else {
-			elem2 = Id(v)
+			elem2 = ID(v)
 		}
 		elem3 := NewEvent()
 		if err := elem3.Read(iprot); err != nil {
@@ -705,54 +705,54 @@ func (p *EventWrapper) String() string {
 }
 
 type TestingUnions struct {
-	AnID           *Id     `thrift:"AnID,1" db:"AnID" json:"AnID,omitempty"`
-	aString        *string `thrift:"aString,2" db:"aString" json:"aString,omitempty"`
-	someotherthing *Int    `thrift:"someotherthing,3" db:"someotherthing" json:"someotherthing,omitempty"`
+	AnID           *ID     `thrift:"AnID,1" db:"AnID" json:"AnID,omitempty"`
+	AString        *string `thrift:"aString,2" db:"aString" json:"aString,omitempty"`
+	Someotherthing *Int    `thrift:"someotherthing,3" db:"someotherthing" json:"someotherthing,omitempty"`
 	AnInt16        *int16  `thrift:"AnInt16,4" db:"AnInt16" json:"AnInt16,omitempty"`
-	Requests       request `thrift:"Requests,5" db:"Requests" json:"Requests,omitempty"`
+	Requests       Request `thrift:"Requests,5" db:"Requests" json:"Requests,omitempty"`
 }
 
 func NewTestingUnions() *TestingUnions {
 	return &TestingUnions{}
 }
 
-var TestingUnions_AnID_DEFAULT Id
+var TestingUnions_AnID_DEFAULT ID
 
 func (p *TestingUnions) IsSetAnID() bool {
 	return p.AnID != nil
 }
 
-func (p *TestingUnions) GetAnID() Id {
+func (p *TestingUnions) GetAnID() ID {
 	if !p.IsSetAnID() {
 		return TestingUnions_AnID_DEFAULT
 	}
 	return *p.AnID
 }
 
-var TestingUnions_aString_DEFAULT string
+var TestingUnions_AString_DEFAULT string
 
-func (p *TestingUnions) IsSetaString() bool {
-	return p.aString != nil
+func (p *TestingUnions) IsSetAString() bool {
+	return p.AString != nil
 }
 
-func (p *TestingUnions) GetaString() string {
-	if !p.IsSetaString() {
-		return TestingUnions_aString_DEFAULT
+func (p *TestingUnions) GetAString() string {
+	if !p.IsSetAString() {
+		return TestingUnions_AString_DEFAULT
 	}
-	return *p.aString
+	return *p.AString
 }
 
-var TestingUnions_someotherthing_DEFAULT Int
+var TestingUnions_Someotherthing_DEFAULT Int
 
-func (p *TestingUnions) IsSetsomeotherthing() bool {
-	return p.someotherthing != nil
+func (p *TestingUnions) IsSetSomeotherthing() bool {
+	return p.Someotherthing != nil
 }
 
-func (p *TestingUnions) Getsomeotherthing() Int {
-	if !p.IsSetsomeotherthing() {
-		return TestingUnions_someotherthing_DEFAULT
+func (p *TestingUnions) GetSomeotherthing() Int {
+	if !p.IsSetSomeotherthing() {
+		return TestingUnions_Someotherthing_DEFAULT
 	}
-	return *p.someotherthing
+	return *p.Someotherthing
 }
 
 var TestingUnions_AnInt16_DEFAULT int16
@@ -768,13 +768,13 @@ func (p *TestingUnions) GetAnInt16() int16 {
 	return *p.AnInt16
 }
 
-var TestingUnions_Requests_DEFAULT request
+var TestingUnions_Requests_DEFAULT Request
 
 func (p *TestingUnions) IsSetRequests() bool {
 	return p.Requests != nil
 }
 
-func (p *TestingUnions) GetRequests() request {
+func (p *TestingUnions) GetRequests() Request {
 	return p.Requests
 }
 
@@ -783,10 +783,10 @@ func (p *TestingUnions) CountSetFieldsTestingUnions() int {
 	if p.IsSetAnID() {
 		count++
 	}
-	if p.IsSetaString() {
+	if p.IsSetAString() {
 		count++
 	}
-	if p.IsSetsomeotherthing() {
+	if p.IsSetSomeotherthing() {
 		count++
 	}
 	if p.IsSetAnInt16() {
@@ -848,7 +848,7 @@ func (p *TestingUnions) ReadField1(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadI64(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("error reading field 1: ", p), err)
 	} else {
-		p.AnID = &Id(v)
+		p.AnID = &ID(v)
 	}
 	return nil
 }
@@ -857,7 +857,7 @@ func (p *TestingUnions) ReadField2(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("error reading field 2: ", p), err)
 	} else {
-		p.aString = &v
+		p.AString = &v
 	}
 	return nil
 }
@@ -866,7 +866,7 @@ func (p *TestingUnions) ReadField3(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadI32(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("error reading field 3: ", p), err)
 	} else {
-		p.someotherthing = &Int(v)
+		p.Someotherthing = &Int(v)
 	}
 	return nil
 }
@@ -885,7 +885,7 @@ func (p *TestingUnions) ReadField5(iprot thrift.TProtocol) error {
 	if err != nil {
 		return thrift.PrependError("error reading map begin: ", err)
 	}
-	p.Requests = make(map[Int]string, 0, size)
+	p.Requests = make(Request, 0, size)
 	for i := 0; i < size; i++ {
 		var elem7 Int
 		if v, err := iprot.ReadI32(); err != nil {
@@ -955,30 +955,30 @@ func (p *TestingUnions) writeField1(oprot thrift.TProtocol) error {
 }
 
 func (p *TestingUnions) writeField2(oprot thrift.TProtocol) error {
-	if p.IsSetaString() {
-		if err := oprot.WriteFieldBegin("aString", thrift.STRING, 2); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:aString: ", p), err)
+	if p.IsSetAString() {
+		if err := oprot.WriteFieldBegin("AString", thrift.STRING, 2); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:AString: ", p), err)
 		}
-		if err := oprot.WriteString(string(*p.aString)); err != nil {
+		if err := oprot.WriteString(string(*p.AString)); err != nil {
 			return thrift.PrependError(fmt.Sprintf("%T. (2) field write error: ", p), err)
 		}
 		if err := oprot.WriteFieldEnd(); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T write field end error 2:aString: ", p), err)
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 2:AString: ", p), err)
 		}
 	}
 	return nil
 }
 
 func (p *TestingUnions) writeField3(oprot thrift.TProtocol) error {
-	if p.IsSetsomeotherthing() {
-		if err := oprot.WriteFieldBegin("someotherthing", thrift.I32, 3); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T write field begin error 3:someotherthing: ", p), err)
+	if p.IsSetSomeotherthing() {
+		if err := oprot.WriteFieldBegin("Someotherthing", thrift.I32, 3); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 3:Someotherthing: ", p), err)
 		}
-		if err := oprot.WriteI32(int32(*p.someotherthing)); err != nil {
+		if err := oprot.WriteI32(int32(*p.Someotherthing)); err != nil {
 			return thrift.PrependError(fmt.Sprintf("%T. (3) field write error: ", p), err)
 		}
 		if err := oprot.WriteFieldEnd(); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T write field end error 3:someotherthing: ", p), err)
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 3:Someotherthing: ", p), err)
 		}
 	}
 	return nil
@@ -1034,7 +1034,7 @@ func (p *TestingUnions) String() string {
 
 type AwesomeException struct {
 	// ID is a unique identifier for an awesome exception.
-	ID Id `thrift:"ID,1" db:"ID" json:"ID"`
+	ID ID `thrift:"ID,1" db:"ID" json:"ID"`
 	// Reason contains the error message.
 	Reason string `thrift:"Reason,2" db:"Reason" json:"Reason"`
 }
@@ -1043,7 +1043,7 @@ func NewAwesomeException() *AwesomeException {
 	return &AwesomeException{}
 }
 
-func (p *AwesomeException) GetID() Id {
+func (p *AwesomeException) GetID() ID {
 	return p.ID
 }
 
@@ -1089,7 +1089,7 @@ func (p *AwesomeException) ReadField1(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadI64(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("error reading field 1: ", p), err)
 	} else {
-		p.ID = Id(v)
+		p.ID = ID(v)
 	}
 	return nil
 }
