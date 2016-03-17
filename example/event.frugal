@@ -13,6 +13,7 @@ typedef map<int, string> request
  * it doesn't have the @ sign.
  */
 const id DEFAULT_ID = -1
+const id other_default = DEFAULT_ID
 
 const i8 thirtyfour = 34
 
@@ -32,6 +33,17 @@ union TestingUnions {
 	3: int someotherthing,
 	4: i16 AnInt16,
 	5: request Requests
+}
+
+struct TestingDefaults {
+    1: optional id ID2 = DEFAULT_ID,
+    2: Event ev1 = {"ID": DEFAULT_ID, "Message": "a message"},
+    3: Event ev2 = {"ID": 5, "Message": "a message2"},
+    4: id ID = -2,
+    5: string thing = 'a constant',
+    6: optional string thing2 = 'another constant',
+    7: list<int> listfield = [1, 2,3,4,5],
+    8: id ID3 = other_default
 }
 
 /**@

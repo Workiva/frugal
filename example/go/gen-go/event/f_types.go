@@ -23,6 +23,8 @@ var GoUnusedProtection__ int
 
 var DEFAULT_ID ID
 
+var OtherDefault ID
+
 const Thirtyfour = 34
 
 var MAPCONSTANT map[string]string
@@ -39,11 +41,11 @@ var MAPCONSTANT2 map[string]*Event
 
 func init() {
 	DEFAULT_ID = -1
+	OtherDefault = -1
 	MAPCONSTANT = map[string]string{
 		"hello":     "world",
 		"goodnight": "moon",
 	}
-
 	ConstEvent1 = &Event{
 		ID:      -2,
 		Message: "first one",
@@ -58,21 +60,18 @@ func init() {
 		7,
 		1,
 	}
-
 	NumsSet = map[int32]bool{
 		1: true,
 		3: true,
 		8: true,
 		0: true,
 	}
-
 	MAPCONSTANT2 = map[string]*Event{
 		"hello": &Event{
 			ID:      -2,
 			Message: "first here",
 		},
 	}
-
 }
 
 type ID int64
@@ -100,12 +99,12 @@ func (p ItsAnEnum) String() string {
 
 func ItsAnEnumFromString(s string) (ItsAnEnum, error) {
 	switch s {
-	case "FIRST":
-		return ItsAnEnum_FIRST, nil
 	case "SECOND":
 		return ItsAnEnum_SECOND, nil
 	case "THIRD":
 		return ItsAnEnum_THIRD, nil
+	case "FIRST":
+		return ItsAnEnum_FIRST, nil
 	}
 	return ItsAnEnum(0), fmt.Errorf("not a valid ItsAnEnum string")
 }
@@ -139,6 +138,417 @@ func (p *ItsAnEnum) Value() (driver.Value, error) {
 	return int64(*p), nil
 }
 
+type TestingDefaults struct {
+	ID2       ID     `thrift:"ID2,1" db:"ID2" json:"ID2,omitempty"`
+	Ev1       *Event `thrift:"ev1,2" db:"ev1" json:"ev1"`
+	Ev2       *Event `thrift:"ev2,3" db:"ev2" json:"ev2"`
+	ID        ID     `thrift:"ID,4" db:"ID" json:"ID"`
+	Thing     string `thrift:"thing,5" db:"thing" json:"thing"`
+	Thing2    string `thrift:"thing2,6" db:"thing2" json:"thing2,omitempty"`
+	Listfield []Int  `thrift:"listfield,7" db:"listfield" json:"listfield"`
+	ID3       ID     `thrift:"ID3,8" db:"ID3" json:"ID3"`
+}
+
+func NewTestingDefaults() *TestingDefaults {
+	return &TestingDefaults{
+		ID2: -1,
+		Ev1: &Event{
+			ID:      -1,
+			Message: "a message",
+		},
+		Ev2: &Event{
+			ID:      5,
+			Message: "a message2",
+		},
+		ID:     -2,
+		Thing:  "a constant",
+		Thing2: "another constant",
+		Listfield: []Int{
+			1,
+			2,
+			3,
+			4,
+			5,
+		},
+		ID3: -1,
+	}
+}
+
+var TestingDefaults_ID2_DEFAULT ID = -1
+
+func (p *TestingDefaults) IsSetID2() bool {
+	return p.ID2 != nil
+}
+
+func (p *TestingDefaults) GetID2() ID {
+	return p.ID2
+}
+
+var TestingDefaults_Ev1_DEFAULT *Event = &Event{
+	ID:      -1,
+	Message: "a message",
+}
+
+func (p *TestingDefaults) IsSetEv1() bool {
+	return p.Ev1 != nil
+}
+
+func (p *TestingDefaults) GetEv1() *Event {
+	if !p.IsSetEv1() {
+		return TestingDefaults_Ev1_DEFAULT
+	}
+	return p.Ev1
+}
+
+var TestingDefaults_Ev2_DEFAULT *Event = &Event{
+	ID:      5,
+	Message: "a message2",
+}
+
+func (p *TestingDefaults) IsSetEv2() bool {
+	return p.Ev2 != nil
+}
+
+func (p *TestingDefaults) GetEv2() *Event {
+	if !p.IsSetEv2() {
+		return TestingDefaults_Ev2_DEFAULT
+	}
+	return p.Ev2
+}
+
+func (p *TestingDefaults) GetID() ID {
+	return p.ID
+}
+
+func (p *TestingDefaults) GetThing() string {
+	return p.Thing
+}
+
+var TestingDefaults_Thing2_DEFAULT string = "another constant"
+
+func (p *TestingDefaults) IsSetThing2() bool {
+	return p.Thing2 != nil
+}
+
+func (p *TestingDefaults) GetThing2() string {
+	return p.Thing2
+}
+
+func (p *TestingDefaults) GetListfield() []Int {
+	return p.Listfield
+}
+
+func (p *TestingDefaults) GetID3() ID {
+	return p.ID3
+}
+
+func (p *TestingDefaults) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 1:
+			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		case 2:
+			if err := p.ReadField2(iprot); err != nil {
+				return err
+			}
+		case 3:
+			if err := p.ReadField3(iprot); err != nil {
+				return err
+			}
+		case 4:
+			if err := p.ReadField4(iprot); err != nil {
+				return err
+			}
+		case 5:
+			if err := p.ReadField5(iprot); err != nil {
+				return err
+			}
+		case 6:
+			if err := p.ReadField6(iprot); err != nil {
+				return err
+			}
+		case 7:
+			if err := p.ReadField7(iprot); err != nil {
+				return err
+			}
+		case 8:
+			if err := p.ReadField8(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField1(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadI64(); err != nil {
+		return thrift.PrependError("error reading field 1: ", err)
+	} else {
+		temp := ID(v)
+		p.ID2 = temp
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField2(iprot thrift.TProtocol) error {
+	p.Ev1 = NewEvent()
+	if err := p.Ev1.Read(iprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.Ev1), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField3(iprot thrift.TProtocol) error {
+	p.Ev2 = NewEvent()
+	if err := p.Ev2.Read(iprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.Ev2), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField4(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadI64(); err != nil {
+		return thrift.PrependError("error reading field 4: ", err)
+	} else {
+		temp := ID(v)
+		p.ID = temp
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField5(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadString(); err != nil {
+		return thrift.PrependError("error reading field 5: ", err)
+	} else {
+		p.Thing = v
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField6(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadString(); err != nil {
+		return thrift.PrependError("error reading field 6: ", err)
+	} else {
+		p.Thing2 = v
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField7(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin()
+	if err != nil {
+		return thrift.PrependError("error reading list begin: ", err)
+	}
+	p.Listfield = make([]Int, 0, size)
+	for i := 0; i < size; i++ {
+		var elem0 Int
+		if v, err := iprot.ReadI32(); err != nil {
+			return thrift.PrependError("error reading field 0: ", err)
+		} else {
+			temp := Int(v)
+			elem0 = temp
+		}
+		p.Listfield = append(p.Listfield, elem0)
+	}
+	if err := iprot.ReadListEnd(); err != nil {
+		return thrift.PrependError("error reading list end: ", err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField8(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadI64(); err != nil {
+		return thrift.PrependError("error reading field 8: ", err)
+	} else {
+		temp := ID(v)
+		p.ID3 = temp
+	}
+	return nil
+}
+
+func (p *TestingDefaults) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("TestingDefaults"); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField2(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField3(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField4(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField5(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField6(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField7(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField8(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return thrift.PrependError("write field stop error: ", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return thrift.PrependError("write struct stop error: ", err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField1(oprot thrift.TProtocol) error {
+	if p.IsSetID2() {
+		if err := oprot.WriteFieldBegin("ID2", thrift.I64, 1); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:ID2: ", p), err)
+		}
+		if err := oprot.WriteI64(int64(p.ID2)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.ID2 (1) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 1:ID2: ", p), err)
+		}
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField2(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("ev1", thrift.STRUCT, 2); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:ev1: ", p), err)
+	}
+	if err := p.Ev1.Write(oprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.Ev1), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 2:ev1: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField3(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("ev2", thrift.STRUCT, 3); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 3:ev2: ", p), err)
+	}
+	if err := p.Ev2.Write(oprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.Ev2), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 3:ev2: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField4(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("ID", thrift.I64, 4); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 4:ID: ", p), err)
+	}
+	if err := oprot.WriteI64(int64(p.ID)); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T.ID (4) field write error: ", p), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 4:ID: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField5(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("thing", thrift.STRING, 5); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 5:thing: ", p), err)
+	}
+	if err := oprot.WriteString(string(p.Thing)); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T.thing (5) field write error: ", p), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 5:thing: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField6(oprot thrift.TProtocol) error {
+	if p.IsSetThing2() {
+		if err := oprot.WriteFieldBegin("thing2", thrift.STRING, 6); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 6:thing2: ", p), err)
+		}
+		if err := oprot.WriteString(string(p.Thing2)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.thing2 (6) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 6:thing2: ", p), err)
+		}
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField7(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("listfield", thrift.LIST, 7); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 7:listfield: ", p), err)
+	}
+	if err := oprot.WriteListBegin(thrift.I32, len(p.Listfield)); err != nil {
+		return thrift.PrependError("error writing list begin: ", err)
+	}
+	for _, v := range p.Listfield {
+		if err := oprot.WriteI32(int32(v)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+		}
+	}
+	if err := oprot.WriteListEnd(); err != nil {
+		return thrift.PrependError("error writing list end: ", err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 7:listfield: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField8(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("ID3", thrift.I64, 8); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 8:ID3: ", p), err)
+	}
+	if err := oprot.WriteI64(int64(p.ID3)); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T.ID3 (8) field write error: ", p), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 8:ID3: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("TestingDefaults(%+v)", *p)
+}
+
 // This docstring gets added to the generated code because it has
 // the @ sign.
 type Event struct {
@@ -150,7 +560,7 @@ type Event struct {
 
 func NewEvent() *Event {
 	return &Event{
-		ID: DEFAULT_ID,
+		ID: -1,
 	}
 }
 
@@ -418,11 +828,11 @@ func (p *EventWrapper) ReadField3(iprot thrift.TProtocol) error {
 	}
 	p.Events = make([]*Event, 0, size)
 	for i := 0; i < size; i++ {
-		elem0 := NewEvent()
-		if err := elem0.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem0), err)
+		elem1 := NewEvent()
+		if err := elem1.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem1), err)
 		}
-		p.Events = append(p.Events, elem0)
+		p.Events = append(p.Events, elem1)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -437,11 +847,11 @@ func (p *EventWrapper) ReadField4(iprot thrift.TProtocol) error {
 	}
 	p.Events2 = make(map[*Event]bool, size)
 	for i := 0; i < size; i++ {
-		elem1 := NewEvent()
-		if err := elem1.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem1), err)
+		elem2 := NewEvent()
+		if err := elem2.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem2), err)
 		}
-		p.Events2[elem1] = true
+		p.Events2[elem2] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -456,18 +866,18 @@ func (p *EventWrapper) ReadField5(iprot thrift.TProtocol) error {
 	}
 	p.EventMap = make(map[ID]*Event, size)
 	for i := 0; i < size; i++ {
-		var elem3 ID
+		var elem4 ID
 		if v, err := iprot.ReadI64(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := ID(v)
-			elem3 = temp
+			elem4 = temp
 		}
-		elem2 := NewEvent()
-		if err := elem2.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem2), err)
+		elem3 := NewEvent()
+		if err := elem3.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem3), err)
 		}
-		p.EventMap[elem3] = elem2
+		p.EventMap[elem4] = elem3
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)
@@ -486,21 +896,21 @@ func (p *EventWrapper) ReadField6(iprot thrift.TProtocol) error {
 		if err != nil {
 			return thrift.PrependError("error reading list begin: ", err)
 		}
-		elem4 := make([]Int, 0, size)
+		elem5 := make([]Int, 0, size)
 		for i := 0; i < size; i++ {
-			var elem5 Int
+			var elem6 Int
 			if v, err := iprot.ReadI32(); err != nil {
 				return thrift.PrependError("error reading field 0: ", err)
 			} else {
 				temp := Int(v)
-				elem5 = temp
+				elem6 = temp
 			}
-			elem4 = append(elem4, elem5)
+			elem5 = append(elem5, elem6)
 		}
 		if err := iprot.ReadListEnd(); err != nil {
 			return thrift.PrependError("error reading list end: ", err)
 		}
-		p.Nums = append(p.Nums, elem4)
+		p.Nums = append(p.Nums, elem5)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -515,14 +925,14 @@ func (p *EventWrapper) ReadField7(iprot thrift.TProtocol) error {
 	}
 	p.Enums = make([]ItsAnEnum, 0, size)
 	for i := 0; i < size; i++ {
-		var elem6 ItsAnEnum
+		var elem7 ItsAnEnum
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := ItsAnEnum(v)
-			elem6 = temp
+			elem7 = temp
 		}
-		p.Enums = append(p.Enums, elem6)
+		p.Enums = append(p.Enums, elem7)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -903,20 +1313,20 @@ func (p *TestingUnions) ReadField5(iprot thrift.TProtocol) error {
 	}
 	p.Requests = make(Request, size)
 	for i := 0; i < size; i++ {
-		var elem8 Int
+		var elem9 Int
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := Int(v)
-			elem8 = temp
+			elem9 = temp
 		}
-		var elem7 string
+		var elem8 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem7 = v
+			elem8 = v
 		}
-		p.Requests[elem8] = elem7
+		p.Requests[elem9] = elem8
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)

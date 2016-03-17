@@ -176,6 +176,19 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) string {
 	underlyingType := g.Frugal.UnderlyingType(t)
 
+	// If the value being referenced is of type Identifier, it's referencing
+	// another constant. Need to recurse to get that value
+	identifier, ok := value.(parser.Identifier)
+	if ok {
+		name := string(identifier)
+		for _, constant := range g.Frugal.Thrift.Constants {
+			if name == constant.Name {
+				return g.generateConstantValue(t, constant.Value)
+			}
+		}
+		panic("referenced constant doesn't exist: ", name)
+	}
+
 	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {
 		switch underlyingType.Name {
 		case "bool":
@@ -195,7 +208,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 				val := g.generateConstantValue(underlyingType.ValueType, v)
 				contents += fmt.Sprintf("%s,\n", val)
 			}
-			contents += "}\n"
+			contents += "}"
 			return contents
 		case "set":
 			contents := ""
@@ -204,7 +217,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 				val := g.generateConstantValue(underlyingType.ValueType, v)
 				contents += fmt.Sprintf("%s: true,\n", val)
 			}
-			contents += "}\n"
+			contents += "}"
 			return contents
 		case "map":
 			contents := ""
@@ -214,7 +227,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 				val := g.generateConstantValue(underlyingType.ValueType, pair.Value)
 				contents += fmt.Sprintf("%s: %s,\n", key, val)
 			}
-			contents += "}\n"
+			contents += "}"
 			return contents
 		}
 	} else if g.Frugal.IsEnum(underlyingType) {
@@ -434,8 +447,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 	for _, field := range s.Fields {
 		// Use the default if it exists, otherwise the zero value is implicitly used
 		if field.Default != nil {
-			// TODO should this actually render the value?
-			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name), field.Default)
+			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name), g.generateConstantValue(field.Type, field.Default))
 		}
 	}
 
