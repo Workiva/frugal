@@ -267,7 +267,7 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 	}
 
 	eName := title(enum.Name)
-	contents += fmt.Sprintf("type %s int64\n\n", eName)
+	contents += fmt.Sprintf("type %s int32\n\n", eName)
 	contents += "const (\n"
 	for _, field := range enum.Values {
 		contents += fmt.Sprintf("\t%s_%s %s = %d\n", eName, title(field.Name), eName, field.Value)
@@ -434,6 +434,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 	for _, field := range s.Fields {
 		// Use the default if it exists, otherwise the zero value is implicitly used
 		if field.Default != nil {
+			// TODO should this actually render the value?
 			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name), field.Default)
 		}
 	}
@@ -562,7 +563,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 	// Only one field can be set for a union, make sure that's the case
 	if s.Type == parser.StructTypeUnion {
 		contents += fmt.Sprintf("\tif c := p.CountSetFields%s(); c != 1 {\n", sName)
-		contents += "\t\tfmt.Errorf(\"%T write union: exactly one field must be set (%d set).\", p, c)\n"
+		contents += "\t\treturn fmt.Errorf(\"%T write union: exactly one field must be set (%d set).\", p, c)\n"
 		contents += "\t}\n"
 	}
 
@@ -655,7 +656,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			thriftType = "Binary"
 		default:
 			if isEnum {
-				thriftType = "I64"
+				thriftType = "I32"
 			} else {
 				panic("unknown thrift type: " + underlyingType.Name)
 			}
@@ -679,7 +680,8 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 		if cast == "" {
 			contents += fmt.Sprintf("\t\t%s%s = %sv\n", prefix, fName, maybeAddress)
 		} else {
-			contents += fmt.Sprintf("\t\t%s%s = %s%s(v)\n", prefix, fName, maybeAddress, cast)
+			contents += fmt.Sprintf("\t\ttemp := %s(v)\n", cast)
+			contents += fmt.Sprintf("\t\t%s%s = %stemp\n", prefix, fName, maybeAddress)
 		}
 
 		contents += "\t}\n"
@@ -698,57 +700,56 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T error reading struct: \", %s%s), err)\n", prefix, fName)
 		contents += "\t}\n"
 	} else if parser.IsThriftContainer(underlyingType) {
-		containerType := ""
-		containerTypeCap := ""
-		read := ""
-		assign := ""
+		valElem := getElem()
+		valField := g.Frugal.FieldFromType(underlyingType.ValueType, valElem)
+		valContents := g.generateReadFieldRec(valField, false)
 		switch underlyingType.Name {
 		case "list":
-			containerType = "list"
-			containerTypeCap = "List"
-			read = "\t_, size, err := iprot.ReadListBegin()\n"
-			assign = fmt.Sprintf("\t\t%s%s = append(%s%s, %%s)\n", prefix, fName, prefix, fName)
+			contents += "\t_, size, err := iprot.ReadListBegin()\n"
+			contents += "\tif err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading list begin: \", err)\n"
+			contents += "\t}\n"
+			contents += fmt.Sprintf("\t%s%s %s make(%s, 0, size)\n", prefix, fName, eq, goOrigType)
+			contents += "\tfor i := 0; i < size; i++ {\n"
+			contents += valContents
+			contents += fmt.Sprintf("\t\t%s%s = append(%s%s, %s)\n", prefix, fName, prefix, fName, valElem)
+			contents += "\t}\n"
+			contents += "\tif err := iprot.ReadListEnd(); err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading list end: \", err)\n"
+			contents += "\t}\n"
 		case "set":
-			containerType = "set"
-			containerTypeCap = "Set"
-			read = "\t_, size, err := iprot.ReadSetBegin()\n"
-			assign = fmt.Sprintf("\t\t%s%s[%%s] = true\n", prefix, fName)
+			contents += "\t_, size, err := iprot.ReadSetBegin()\n"
+			contents += "\tif err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading set begin: \", err)\n"
+			contents += "\t}\n"
+			contents += fmt.Sprintf("\t%s%s %s make(%s, size)\n", prefix, fName, eq, goOrigType)
+			contents += "\tfor i := 0; i < size; i++ {\n"
+			contents += valContents
+			contents += fmt.Sprintf("\t\t%s%s[%s] = true\n", prefix, fName, valElem)
+			contents += "\t}\n"
+			contents += "\tif err := iprot.ReadSetEnd(); err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading set end: \", err)\n"
+			contents += "\t}\n"
 		case "map":
-			containerType = "map"
-			containerTypeCap = "Map"
-			read = "\t_, _, size, err := iprot.ReadMapBegin()\n"
-			assign = fmt.Sprintf("\t\t%s%s[%%s] = %%%%s\n", prefix, fName)
-		default:
-			panic("not a valid container: " + underlyingType.Name)
-		}
-
-		contents += read
-		contents += "\tif err != nil {\n"
-		contents += fmt.Sprintf("\t\treturn thrift.PrependError(\"error reading %s begin: \", err)\n", containerType)
-		contents += "\t}\n"
-		contents += fmt.Sprintf("\t%s%s %s make(%s, 0, size)\n", prefix, fName, eq, goOrigType)
-		contents += "\tfor i := 0; i < size; i++ {\n"
-
-		// Need to use underlyingType to get the key/value types as the
-		// typedefs don't have key/value types
-		// Recursion is necessary due to nesting of types
-		if containerType == "map" {
-			// need to read keys for maps
+			contents += "\t_, _, size, err := iprot.ReadMapBegin()\n"
+			contents += "\tif err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading map begin: \", err)\n"
+			contents += "\t}\n"
+			contents += fmt.Sprintf("\t%s%s %s make(%s, size)\n", prefix, fName, eq, goOrigType)
+			contents += "\tfor i := 0; i < size; i++ {\n"
 			keyElem := getElem()
 			keyField := g.Frugal.FieldFromType(underlyingType.KeyType, keyElem)
 			contents += g.generateReadFieldRec(keyField, false)
-			assign = fmt.Sprintf(assign, keyElem)
+			contents += valContents
+			contents += fmt.Sprintf("\t\t%s%s[%s] = %s\n", prefix, fName, keyElem, valElem)
+			contents += "\t}\n"
+			contents += "\tif err := iprot.ReadMapEnd(); err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading map end: \", err)\n"
+			contents += "\t}\n"
+		default:
+			panic("unrecognized thrift type: " + underlyingType.Name)
 		}
 
-		valElem := getElem()
-		valField := g.Frugal.FieldFromType(underlyingType.ValueType, valElem)
-		contents += g.generateReadFieldRec(valField, false)
-		assign = fmt.Sprintf(assign, valElem)
-		contents += fmt.Sprintf("\t\t%s\n", assign)
-		contents += "\t}\n"
-		contents += fmt.Sprintf("\tif err := iprot.Read%sEnd(); err != nil {\n", containerTypeCap)
-		contents += fmt.Sprintf("\t\treturn thrift.PrependError(\"error reading %s end: \", err)\n", containerType)
-		contents += fmt.Sprintf("\t}\n")
 	}
 
 	return contents
@@ -812,7 +813,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 			write += "Binary([]byte(%s))"
 		default:
 			if isEnum {
-				write += "I64(int64(%s))"
+				write += "I32(int32(%s))"
 			} else {
 				panic("unknown thrift type: " + underlyingType.Name)
 			}
@@ -1826,7 +1827,7 @@ func (g *Generator) getEnumFromThriftType(t *parser.Type) string {
 		return "thrift.MAP"
 	default:
 		if g.Frugal.IsEnum(underlyingType) {
-			return "thrift.I64"
+			return "thrift.I32"
 		} else if g.Frugal.IsStruct(underlyingType) {
 			return "thrift.STRUCT"
 		}
