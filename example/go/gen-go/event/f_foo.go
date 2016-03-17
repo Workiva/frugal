@@ -56,7 +56,7 @@ func (p *FooPingArgs) Read(iprot thrift.TProtocol) error {
 }
 
 func (p *FooPingArgs) Write(oprot thrift.TProtocol) error {
-	if err := oprot.WriteStructBegin("FooPingArgs"); err != nil {
+	if err := oprot.WriteStructBegin("Foo_ping_args"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -112,7 +112,7 @@ func (p *FooPingResult) Read(iprot thrift.TProtocol) error {
 }
 
 func (p *FooPingResult) Write(oprot thrift.TProtocol) error {
-	if err := oprot.WriteStructBegin("FooPingResult"); err != nil {
+	if err := oprot.WriteStructBegin("Foo_ping_result"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -230,7 +230,7 @@ func (p *FooBlahArgs) ReadField3(iprot thrift.TProtocol) error {
 }
 
 func (p *FooBlahArgs) Write(oprot thrift.TProtocol) error {
-	if err := oprot.WriteStructBegin("FooBlahArgs"); err != nil {
+	if err := oprot.WriteStructBegin("Foo_blah_args"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
 	if err := p.writeField1(oprot); err != nil {
@@ -413,7 +413,7 @@ func (p *FooBlahResult) ReadField2(iprot thrift.TProtocol) error {
 }
 
 func (p *FooBlahResult) Write(oprot thrift.TProtocol) error {
-	if err := oprot.WriteStructBegin("FooBlahResult"); err != nil {
+	if err := oprot.WriteStructBegin("Foo_blah_result"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
 	if err := p.writeField0(oprot); err != nil {
@@ -578,7 +578,7 @@ func (p *FooOneWayArgs) ReadField2(iprot thrift.TProtocol) error {
 }
 
 func (p *FooOneWayArgs) Write(oprot thrift.TProtocol) error {
-	if err := oprot.WriteStructBegin("FooOneWayArgs"); err != nil {
+	if err := oprot.WriteStructBegin("Foo_oneWay_args"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
 	if err := p.writeField1(oprot); err != nil {

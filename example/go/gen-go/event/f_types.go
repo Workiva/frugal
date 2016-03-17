@@ -88,12 +88,12 @@ const (
 
 func (p ItsAnEnum) String() string {
 	switch p {
-	case ItsAnEnum_THIRD:
-		return "THIRD"
 	case ItsAnEnum_FIRST:
 		return "FIRST"
 	case ItsAnEnum_SECOND:
 		return "SECOND"
+	case ItsAnEnum_THIRD:
+		return "THIRD"
 	}
 	return "<UNSET>"
 }

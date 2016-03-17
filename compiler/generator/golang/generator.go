@@ -562,7 +562,8 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 		contents += "\t}\n"
 	}
 
-	contents += fmt.Sprintf("\tif err := oprot.WriteStructBegin(\"%s\"); err != nil {\n", sName)
+	// Use actual struct name so it's consistent between languages
+	contents += fmt.Sprintf("\tif err := oprot.WriteStructBegin(\"%s\"); err != nil {\n", s.Name)
 	contents += "\t\treturn thrift.PrependError(fmt.Sprintf(\"%T write struct begin error: \", p), err)\n"
 	contents += "\t}\n"
 
@@ -758,6 +759,7 @@ func (g *Generator) generateWriteField(structName string, field *parser.Field) s
 	if field.Modifier == parser.Optional {
 		contents += fmt.Sprintf("\tif p.IsSet%s() {\n", fName)
 	}
+	// Use actual field so it's consistent between languages
 	contents += fmt.Sprintf("\tif err := oprot.WriteFieldBegin(\"%s\", %s, %d); err != nil {\n", field.Name, g.getEnumFromThriftType(field.Type), field.ID)
 	contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T write field begin error %d:%s: \", p), err)\n", field.ID, field.Name)
 	contents += "\t}\n"
