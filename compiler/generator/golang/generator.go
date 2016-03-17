@@ -174,7 +174,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) string {
 	underlyingType := g.Frugal.UnderlyingType(t)
 
-	if parser.IsThriftPrimitive(underlyingType) {
+	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {
 		switch underlyingType.Name {
 		case "bool":
 			return fmt.Sprintf("%t", value)
@@ -817,7 +817,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 			prefix = "*" + prefix
 		}
 		valEnumType := g.getEnumFromThriftType(underlyingType.ValueType)
-		valField := g.generateWriteFieldRec(underlyingType.ValueType, "")
+		valField := g.Frugal.FieldFromType(underlyingType.ValueType, "")
 
 		switch underlyingType.Name {
 		case "list":
