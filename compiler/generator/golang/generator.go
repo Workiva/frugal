@@ -25,7 +25,7 @@ const (
 type Generator struct {
 	*generator.BaseGenerator
 	generateConstants bool
-	typesFile *os.File
+	typesFile         *os.File
 }
 
 func NewGenerator(options map[string]string) generator.LanguageGenerator {
@@ -171,6 +171,8 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 	return nil
 }
 
+// generateConstantValue recursively generates the string representation of
+// a, possibly complex, constant value.
 func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) string {
 	underlyingType := g.Frugal.UnderlyingType(t)
 
@@ -218,7 +220,6 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 	} else if g.Frugal.IsEnum(underlyingType) {
 		return fmt.Sprintf("%d", value)
 	} else if g.Frugal.IsStruct(underlyingType) {
-		// Need to find the struct
 		var s *parser.Struct
 		for _, potential := range g.Frugal.Thrift.Structs {
 			if underlyingType.Name == potential.Name {
@@ -431,7 +432,8 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 	contents += fmt.Sprintf("\treturn &%s{\n", sName)
 
 	for _, field := range s.Fields {
-		if field.Default != nil{
+		// Use the default if it exists, otherwise the zero value is implicitly used
+		if field.Default != nil {
 			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name, false), field.Default)
 		}
 	}
@@ -527,6 +529,9 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 	contents += "\t\t\t\treturn err\n"
 	contents += "\t\t\t}\n"
 	contents += "\t\t}\n"
+	contents += "\t\tif err := iprot.ReadFieldEnd(); err != nil {\n"
+	contents += "\t\t\treturn err\n"
+	contents += "\t\t}\n"
 	contents += "\t}\n"
 	contents += "\tif err := iprot.ReadStructEnd(); err != nil {\n"
 	contents += "\t\treturn thrift.PrependError(fmt.Sprintf(\"%T read struct end error: \", p), err)\n"
@@ -571,7 +576,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 	contents += "\t\treturn thrift.PrependError(\"write field stop error: \", err)\n"
 	contents += "\t}\n"
 	contents += "\tif err := oprot.WriteStructEnd(); err != nil {\n"
-	contents += "\t\treturn thrift.PrependError(\"write sturct stop error: \", err)\n"
+	contents += "\t\treturn thrift.PrependError(\"write struct stop error: \", err)\n"
 	contents += "\t}\n"
 	contents += "\treturn nil\n"
 	contents += "}\n\n"
@@ -664,7 +669,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 		}
 
 		contents += fmt.Sprintf("\tif v, err := iprot.Read%s(); err != nil {\n", thriftType)
-		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"error reading field %d: \", p), err)\n", field.ID)
+		contents += fmt.Sprintf("\t\treturn thrift.PrependError(\"error reading field %d: \", err)\n", field.ID)
 		contents += "\t} else {\n"
 		if cast == "" {
 			contents += fmt.Sprintf("\t\t%s%s = %sv\n", prefix, fName, maybeAddress)
@@ -675,6 +680,8 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 		contents += "\t}\n"
 	} else if g.Frugal.IsStruct(underlyingType) {
 		// All structs types should start with a pointer
+		// Need to extract the struct name from the package prefix
+		// ie *base.APIException -> base.NewAPIException()
 		lastInd := strings.LastIndex(goUnderlyingType, ".")
 		if lastInd == -1 {
 			lastInd = 0
@@ -719,9 +726,9 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 
 		// Need to use underlyingType to get the key/value types as the
 		// typedefs don't have key/value types
-		// Recursions is necessary due to nesting of types
+		// Recursion is necessary due to nesting of types
 		if containerType == "map" {
-			// need to read key
+			// need to read keys for maps
 			keyElem := getElem()
 			keyField := g.Frugal.FieldFromType(underlyingType.KeyType, keyElem)
 			contents += g.generateReadFieldRec(keyField, false)
@@ -751,12 +758,12 @@ func (g *Generator) generateWriteField(structName string, field *parser.Field) s
 	if field.Modifier == parser.Optional {
 		contents += fmt.Sprintf("\tif p.IsSet%s() {\n", fName)
 	}
-	contents += fmt.Sprintf("\tif err := oprot.WriteFieldBegin(\"%s\", %s, %d); err != nil {\n", fName, g.getEnumFromThriftType(field.Type), field.ID)
-	contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T write field begin error %d:%s: \", p), err)\n", field.ID, fName)
+	contents += fmt.Sprintf("\tif err := oprot.WriteFieldBegin(\"%s\", %s, %d); err != nil {\n", field.Name, g.getEnumFromThriftType(field.Type), field.ID)
+	contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T write field begin error %d:%s: \", p), err)\n", field.ID, field.Name)
 	contents += "\t}\n"
 	contents += g.generateWriteFieldRec(field, "p.")
 	contents += "\tif err := oprot.WriteFieldEnd(); err != nil {\n"
-	contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T write field end error %d:%s: \", p), err)\n", field.ID, fName)
+	contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T write field end error %d:%s: \", p), err)\n", field.ID, field.Name)
 	contents += "\t}\n"
 	if field.Modifier == parser.Optional {
 		contents += "\t}\n"
@@ -804,13 +811,13 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 				panic("unknown thrift type: " + underlyingType.Name)
 			}
 		}
-		write = fmt.Sprintf(write, prefix + fName)
+		write = fmt.Sprintf(write, prefix+fName)
 		contents += fmt.Sprintf("\tif err := oprot.%s; err != nil {\n", write)
-		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T. (%d) field write error: \", p), err)\n", field.ID)
+		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T.%s (%d) field write error: \", p), err)\n", field.Name, field.ID)
 		contents += "\t}\n"
 	} else if g.Frugal.IsStruct(underlyingType) {
-		contents += fmt.Sprintf("\tif err := %s.Write(oprot); err != nil {\n", prefix + fName)
-		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T error writing struct: \", %s), err)\n", prefix + fName)
+		contents += fmt.Sprintf("\tif err := %s.Write(oprot); err != nil {\n", prefix+fName)
+		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T error writing struct: \", %s), err)\n", prefix+fName)
 		contents += "\t}\n"
 	} else if parser.IsThriftContainer(underlyingType) {
 		if isPointerField {
@@ -821,20 +828,20 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 
 		switch underlyingType.Name {
 		case "list":
-			contents += fmt.Sprintf("\tif err := oprot.WriteListBegin(%s, len(%s)); err != nil {\n", valEnumType, prefix + fName)
+			contents += fmt.Sprintf("\tif err := oprot.WriteListBegin(%s, len(%s)); err != nil {\n", valEnumType, prefix+fName)
 			contents += "\t\treturn thrift.PrependError(\"error writing list begin: \", err)\n"
 			contents += "\t}\n"
-			contents += fmt.Sprintf("\tfor _, v := range %s {\n", prefix + fName)
+			contents += fmt.Sprintf("\tfor _, v := range %s {\n", prefix+fName)
 			contents += g.generateWriteFieldRec(valField, "v")
 			contents += "\t}\n"
 			contents += "\tif err := oprot.WriteListEnd(); err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error writing list end: \", err)\n"
 			contents += "\t}\n"
 		case "set":
-			contents += fmt.Sprintf("\tif err := oprot.WriteSetBegin(%s, len(%s)); err != nil {\n", valEnumType, prefix + fName)
+			contents += fmt.Sprintf("\tif err := oprot.WriteSetBegin(%s, len(%s)); err != nil {\n", valEnumType, prefix+fName)
 			contents += "\t\treturn thrift.PrependError(\"error writing set begin: \", err)\n"
 			contents += "\t}\n"
-			contents += fmt.Sprintf("\tfor v, _ := range %s {\n", prefix + fName)
+			contents += fmt.Sprintf("\tfor v, _ := range %s {\n", prefix+fName)
 			contents += g.generateWriteFieldRec(valField, "v")
 			contents += "\t}\n"
 			contents += "\tif err := oprot.WriteSetEnd(); err != nil {\n"
@@ -842,10 +849,10 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 			contents += "\t}\n"
 		case "map":
 			keyEnumType := g.getEnumFromThriftType(underlyingType.KeyType)
-			contents += fmt.Sprintf("\tif err := oprot.WriteMapBegin(%s, %s, len(%s)); err != nil {\n", keyEnumType, valEnumType, prefix + fName)
+			contents += fmt.Sprintf("\tif err := oprot.WriteMapBegin(%s, %s, len(%s)); err != nil {\n", keyEnumType, valEnumType, prefix+fName)
 			contents += "\t\treturn thrift.PrependError(\"error writing map begin: \", err)\n"
 			contents += "\t}\n"
-			contents += fmt.Sprintf("\tfor k, v := range %s {\n", prefix + fName)
+			contents += fmt.Sprintf("\tfor k, v := range %s {\n", prefix+fName)
 			keyField := g.Frugal.FieldFromType(underlyingType.KeyType, "")
 			contents += g.generateWriteFieldRec(keyField, "k")
 			contents += g.generateWriteFieldRec(valField, "v")
@@ -1743,10 +1750,6 @@ func (g *Generator) getGoTypeFromThriftType(t *parser.Type) string {
 	return g.getGoTypeFromThriftTypePtr(t, false)
 }
 
-func (g *Generator) getGoTypeFromUnderlyingThriftType(t *parser.Type) string {
-	return g.getGoTypeFromThriftTypePtr(g.Frugal.UnderlyingType(t), false)
-}
-
 // TODO check this
 func (g *Generator) getGoTypeFromThriftTypePtr(t *parser.Type, pointer bool) string {
 	maybePointer := ""
@@ -1853,7 +1856,7 @@ func (g *Generator) isPrimitive(t *parser.Type) bool {
 func (g *Generator) isPointerField(field *parser.Field) bool {
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	// Structs as fields are always pointers
-	if(g.Frugal.IsStruct(underlyingType)) {
+	if g.Frugal.IsStruct(underlyingType) {
 		return true
 	}
 	// If it's not optional, it's not a pointer
@@ -1937,7 +1940,6 @@ func title(s string, isArgsOrResult bool) string {
 		return s
 	}
 
-
 	var result string
 	words := strings.Split(s, "_")
 
@@ -1974,6 +1976,7 @@ func startsWithInitialism(s string) string {
 
 // TODO add this to generator struct?
 var elemNum int
+
 func getElem() string {
 	s := fmt.Sprintf("elem%d", elemNum)
 	elemNum++

@@ -19,8 +19,8 @@ var thriftBaseTypes = map[string]bool{
 
 var thriftContainerTypes = map[string]bool{
 	"list": true,
-	"set": true,
-	"map": true,
+	"set":  true,
+	"map":  true,
 }
 
 // Thrift Field Modifiers

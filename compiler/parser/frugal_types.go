@@ -134,19 +134,19 @@ func (f *Frugal) UnderlyingType(t *Type) *Type {
 
 func (f *Frugal) FieldFromType(t *Type, name string) *Field {
 	return &Field{
-		Comment: nil,
-		ID: 0,
-		Name: name,
+		Comment:  nil,
+		ID:       0,
+		Name:     name,
 		Modifier: Required,
-		Type: t,
-		Default: nil,
+		Type:     t,
+		Default:  nil,
 	}
 }
 
 func (f *Frugal) ConstantFromField(field *Field, value interface{}) *Constant {
 	return &Constant{
-		Name: field.Name,
-		Type: field.Type,
+		Name:  field.Name,
+		Type:  field.Type,
 		Value: value,
 	}
 }

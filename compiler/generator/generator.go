@@ -1,11 +1,11 @@
 package generator
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/Workiva/frugal/compiler/parser"
-	"fmt"
 )
 
 const FilePrefix = "f_"
@@ -18,7 +18,7 @@ const (
 	PublishFile         FileType = "publish"
 	SubscribeFile       FileType = "subscribe"
 
-	TypeFile FileType = "types"
+	TypeFile               FileType = "types"
 	ServiceArgsResultsFile FileType = "service_args_results"
 )
 
@@ -66,7 +66,6 @@ type LanguageGenerator interface {
 	GenerateUnion(*parser.Struct) error
 	GenerateException(*parser.Struct) error
 	GenerateServiceArgsResults(string, string, []*parser.Struct) error
-
 
 	// Service-specific methods
 	GenerateServicePackage(*os.File, *parser.Service) error
@@ -123,7 +122,6 @@ func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string, gen
 }
 
 func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir string) error {
-//	contents += generateStructLikes(thrift.Unions, structLikeUnion)
 	if err := o.GenerateConstantsContents(frugal.Thrift.Constants); err != nil {
 		return err
 	}
@@ -162,9 +160,9 @@ func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir strin
 		structs := []*parser.Struct{}
 		for _, method := range service.Methods {
 			arg := &parser.Struct{
-				Name: fmt.Sprintf("%s_%s_args", service.Name, method.Name),
+				Name:   fmt.Sprintf("%s_%s_args", service.Name, method.Name),
 				Fields: method.Arguments,
-				Type: parser.StructTypeStruct,
+				Type:   parser.StructTypeStruct,
 			}
 			structs = append(structs, arg)
 
@@ -174,7 +172,7 @@ func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir strin
 					numReturns = 1
 				}
 
-				fields := make([]*parser.Field, len(method.Exceptions) + numReturns, len(method.Exceptions) + numReturns)
+				fields := make([]*parser.Field, len(method.Exceptions)+numReturns, len(method.Exceptions)+numReturns)
 				if numReturns == 1 {
 					fields[0] = frugal.FieldFromType(method.ReturnType, "success")
 				}
@@ -184,9 +182,9 @@ func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir strin
 				}
 
 				result := &parser.Struct{
-					Name: fmt.Sprintf("%s_%s_result", service.Name, method.Name),
+					Name:   fmt.Sprintf("%s_%s_result", service.Name, method.Name),
 					Fields: fields,
-					Type: parser.StructTypeStruct,
+					Type:   parser.StructTypeStruct,
 				}
 				structs = append(structs, result)
 			}

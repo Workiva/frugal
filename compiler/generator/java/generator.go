@@ -75,7 +75,6 @@ func (g *Generator) GenerateServiceArgsResults(string, string, []*parser.Struct)
 	return nil
 }
 
-
 func (g *Generator) GetOutputDir(dir string) string {
 	if pkg, ok := g.Frugal.Thrift.Namespace(lang); ok {
 		path := generator.GetPackageComponents(pkg)
