@@ -144,12 +144,6 @@ func (f *Frugal) FieldFromType(t *Type, name string) *Field {
 }
 
 func (f *Frugal) ConstantFromField(field *Field, value interface{}) *Constant {
-//	type Constant struct {
-//		Comment []string
-//		Name    string
-//		Type    *Type
-//		Value   interface{}
-//	}
 	return &Constant{
 		Name: field.Name,
 		Type: field.Type,

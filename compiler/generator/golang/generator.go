@@ -186,6 +186,34 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 			return fmt.Sprintf("\"%s\"", value)
 		case "binary":
 			return fmt.Sprintf("%q", value)
+		case "list":
+			contents := ""
+			contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
+			for _, v := range value.([]interface{}) {
+				val := g.generateConstantValue(underlyingType.ValueType, v)
+				contents += fmt.Sprintf("%s,\n", val)
+			}
+			contents += "}\n"
+			return contents
+		case "set":
+			contents := ""
+			contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
+			for _, v := range value.([]interface{}) {
+				val := g.generateConstantValue(underlyingType.ValueType, v)
+				contents += fmt.Sprintf("%s: true,\n", val)
+			}
+			contents += "}\n"
+			return contents
+		case "map":
+			contents := ""
+			contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
+			for _, pair := range value.([]parser.KeyValue) {
+				key := g.generateConstantValue(underlyingType.KeyType, pair.Key)
+				val := g.generateConstantValue(underlyingType.ValueType, pair.Value)
+				contents += fmt.Sprintf("%s: %s,\n", key, val)
+			}
+			contents += "}\n"
+			return contents
 		}
 	} else if g.Frugal.IsEnum(underlyingType) {
 		return fmt.Sprintf("%d", value)
@@ -212,37 +240,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 
 		contents += "}"
 		return contents
-	} else if underlyingType.Name == "map" {
-		// TODO try to consolidate the next types? throw in switch if not
-		contents := ""
-		contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
-		for _, pair := range value.([]parser.KeyValue) {
-			key := g.generateConstantValue(underlyingType.KeyType, pair.Key)
-			val := g.generateConstantValue(underlyingType.ValueType, pair.Value)
-			contents += fmt.Sprintf("%s: %s,\n", key, val)
-		}
-		contents += "}\n"
-		return contents
-	} else if underlyingType.Name == "set" {
-		contents := ""
-		contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
-		for _, v := range value.([]interface{}) {
-			val := g.generateConstantValue(underlyingType.ValueType, v)
-			contents += fmt.Sprintf("%s: true,\n", val)
-		}
-		contents += "}\n"
-		return contents
-	} else if underlyingType.Name == "list" {
-		contents := ""
-		contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
-		for _, v := range value.([]interface{}) {
-			val := g.generateConstantValue(underlyingType.ValueType, v)
-			contents += fmt.Sprintf("%s,\n", val)
-		}
-		contents += "}\n"
-		return contents
 	}
-
 
 	panic("no entry for type " + underlyingType.Name)
 }
@@ -368,7 +366,6 @@ func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir str
 	if err = g.GenerateNewline(file, 2); err != nil {
 		return err
 	}
-	// TODO I assume this needs to be different?
 	if err = g.GenerateServiceResultArgsImports(file); err != nil {
 		return err
 	}
@@ -423,7 +420,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 		}
 		annotation := fmt.Sprintf("`thrift:\"%s\" db:\"%s\" json:\"%s\"`", thriftAnnotation, field.Name, jsonAnnotation)
 
-		goType := g.getGoTypeFromThriftTypeOpt(field.Type, g.isPointerField(field))
+		goType := g.getGoTypeFromThriftTypePtr(field.Type, g.isPointerField(field))
 		contents += fmt.Sprintf("\t%s %s %s\n", fName, goType, annotation)
 	}
 
@@ -446,8 +443,8 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 	for _, field := range s.Fields {
 		fName := title(field.Name, false)
 		isPointer := g.isPointerField(field)
-		goType := g.getGoTypeFromThriftTypeOpt(field.Type, false)
-		goOptType := g.getGoTypeFromThriftTypeOpt(field.Type, true)
+		goType := g.getGoTypeFromThriftTypePtr(field.Type, false)
+		goOptType := g.getGoTypeFromThriftTypePtr(field.Type, true)
 
 		if field.Modifier == parser.Optional || isPointer {
 			// Generate a default for getters
@@ -619,8 +616,8 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 
 	isPointerField := g.isPointerField(field)
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
-	goOrigType := g.getGoTypeFromThriftTypeOpt(field.Type, false)
-	goUnderlyingType := g.getGoTypeFromThriftTypeOpt(underlyingType, false)
+	goOrigType := g.getGoTypeFromThriftTypePtr(field.Type, false)
+	goUnderlyingType := g.getGoTypeFromThriftTypePtr(underlyingType, false)
 
 	isEnum := g.Frugal.IsEnum(underlyingType)
 	if parser.IsThriftPrimitive(underlyingType) || isEnum {
@@ -816,11 +813,11 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T error writing struct: \", %s), err)\n", prefix + fName)
 		contents += "\t}\n"
 	} else if parser.IsThriftContainer(underlyingType) {
-		// TODO these should be able to be consolidated?
 		if isPointerField {
 			prefix = "*" + prefix
 		}
 		valEnumType := g.getEnumFromThriftType(underlyingType.ValueType)
+		valField := g.generateWriteFieldRec(underlyingType.ValueType, "")
 
 		switch underlyingType.Name {
 		case "list":
@@ -828,7 +825,6 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 			contents += "\t\treturn thrift.PrependError(\"error writing list begin: \", err)\n"
 			contents += "\t}\n"
 			contents += fmt.Sprintf("\tfor _, v := range %s {\n", prefix + fName)
-			valField := g.Frugal.FieldFromType(underlyingType.ValueType, "")
 			contents += g.generateWriteFieldRec(valField, "v")
 			contents += "\t}\n"
 			contents += "\tif err := oprot.WriteListEnd(); err != nil {\n"
@@ -839,7 +835,6 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 			contents += "\t\treturn thrift.PrependError(\"error writing set begin: \", err)\n"
 			contents += "\t}\n"
 			contents += fmt.Sprintf("\tfor v, _ := range %s {\n", prefix + fName)
-			valField := g.Frugal.FieldFromType(underlyingType.ValueType, "")
 			contents += g.generateWriteFieldRec(valField, "v")
 			contents += "\t}\n"
 			contents += "\tif err := oprot.WriteSetEnd(); err != nil {\n"
@@ -853,14 +848,13 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 			contents += fmt.Sprintf("\tfor k, v := range %s {\n", prefix + fName)
 			keyField := g.Frugal.FieldFromType(underlyingType.KeyType, "")
 			contents += g.generateWriteFieldRec(keyField, "k")
-			valField := g.Frugal.FieldFromType(underlyingType.ValueType, "")
 			contents += g.generateWriteFieldRec(valField, "v")
 			contents += "\t}\n"
 			contents += "\tif err := oprot.WriteMapEnd(); err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error writing map end: \", err)\n"
 			contents += "\t}\n"
 		default:
-			panic("crap")
+			panic("unknow type: " + underlyingType.Name)
 		}
 	}
 
@@ -1746,17 +1740,17 @@ func (g *Generator) generateServerOutputArgs(args []*parser.Field) string {
 }
 
 func (g *Generator) getGoTypeFromThriftType(t *parser.Type) string {
-	return g.getGoTypeFromThriftTypeOpt(t, false)
+	return g.getGoTypeFromThriftTypePtr(t, false)
 }
 
 func (g *Generator) getGoTypeFromUnderlyingThriftType(t *parser.Type) string {
-	return g.getGoTypeFromThriftTypeOpt(g.Frugal.UnderlyingType(t), false)
+	return g.getGoTypeFromThriftTypePtr(g.Frugal.UnderlyingType(t), false)
 }
 
 // TODO check this
-func (g *Generator) getGoTypeFromThriftTypeOpt(t *parser.Type, optional bool) string {
+func (g *Generator) getGoTypeFromThriftTypePtr(t *parser.Type, pointer bool) string {
 	maybePointer := ""
-	if optional {
+	if pointer {
 		maybePointer = "*"
 	}
 	switch t.Name {
@@ -1778,14 +1772,14 @@ func (g *Generator) getGoTypeFromThriftTypeOpt(t *parser.Type, optional bool) st
 		return maybePointer + "[]byte"
 	case "list":
 		return fmt.Sprintf("%s[]%s", maybePointer,
-			g.getGoTypeFromThriftTypeOpt(t.ValueType, false))
+			g.getGoTypeFromThriftTypePtr(t.ValueType, false))
 	case "set":
 		return fmt.Sprintf("%smap[%s]bool", maybePointer,
-			g.getGoTypeFromThriftTypeOpt(t.ValueType, false))
+			g.getGoTypeFromThriftTypePtr(t.ValueType, false))
 	case "map":
 		return fmt.Sprintf("%smap[%s]%s", maybePointer,
-			g.getGoTypeFromThriftTypeOpt(t.KeyType, false),
-			g.getGoTypeFromThriftTypeOpt(t.ValueType, false))
+			g.getGoTypeFromThriftTypePtr(t.KeyType, false),
+			g.getGoTypeFromThriftTypePtr(t.ValueType, false))
 	default:
 		// Custom type, either typedef or struct.
 		name := g.qualifiedTypeName(t)
@@ -1828,7 +1822,7 @@ func (g *Generator) getEnumFromThriftType(t *parser.Type) string {
 		} else if g.Frugal.IsStruct(underlyingType) {
 			return "thrift.STRUCT"
 		}
-		panic("something")
+		panic("not a valid thrift type: " + underlyingType.Name)
 	}
 }
 
@@ -1856,14 +1850,13 @@ func (g *Generator) isPrimitive(t *parser.Type) bool {
 	}
 }
 
-// TODO check this
 func (g *Generator) isPointerField(field *parser.Field) bool {
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	// Structs as fields are always pointers
 	if(g.Frugal.IsStruct(underlyingType)) {
 		return true
 	}
-	// If it's not optional, use the value
+	// If it's not optional, it's not a pointer
 	if field.Modifier != parser.Optional {
 		return false
 	}
@@ -1871,16 +1864,23 @@ func (g *Generator) isPointerField(field *parser.Field) bool {
 	hasDefault := field.Default != nil
 	switch underlyingType.Name {
 	case "binary":
+		// byte slice
 		return true
 	case "bool", "byte", "i8", "i16", "i32", "i64", "double", "string":
+		// If there's no default, needs to be a pointer to be nillable
 		return !hasDefault
 	case "list", "set", "map":
+		// slices and maps are nillable by default, use a pointer
+		// if there's a default to differentiate between the default and
+		// not set
 		return hasDefault
 	default:
 		// Custom type, either typedef or struct-like.
 		if g.Frugal.IsStruct(underlyingType) {
+			// Structs are always pointers
 			return true
 		} else if g.Frugal.IsEnum(underlyingType) {
+			// Same case as nums
 			return !hasDefault
 		}
 		return hasDefault
@@ -1928,7 +1928,6 @@ func snakeToCamel(s string) string {
 }
 
 func title(s string, isArgsOrResult bool) string {
-	// TODO prob remove
 	if len(s) == 0 {
 		return s
 	}
@@ -1973,7 +1972,7 @@ func startsWithInitialism(s string) string {
 	return initialism
 }
 
-// TODO add this to generator struct
+// TODO add this to generator struct?
 var elemNum int
 func getElem() string {
 	s := fmt.Sprintf("elem%d", elemNum)

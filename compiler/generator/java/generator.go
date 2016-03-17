@@ -32,12 +32,49 @@ type Generator struct {
 	time time.Time
 }
 
-//func NewGenerator(options map[string]string) generator.LanguageGenerator {
-//	return &Generator{
-//		&generator.BaseGenerator{Options: options},
-//		globals.Now,
-//	}
-//}
+func NewGenerator(options map[string]string) generator.LanguageGenerator {
+	return &Generator{
+		&generator.BaseGenerator{Options: options},
+		globals.Now,
+	}
+}
+
+// TODO Unimplmented methods
+func (g *Generator) InitializeGenerator(outputDir string) error {
+	return nil
+}
+
+func (g *Generator) CloseGenerator() error {
+	return nil
+}
+
+func (g *Generator) GenerateConstantsContents([]*parser.Constant) error {
+	return nil
+}
+
+func (g *Generator) GenerateTypeDef(*parser.TypeDef) error {
+	return nil
+}
+
+func (g *Generator) GenerateEnum(*parser.Enum) error {
+	return nil
+}
+func (g *Generator) GenerateStruct(*parser.Struct) error {
+	return nil
+}
+
+func (g *Generator) GenerateUnion(*parser.Struct) error {
+	return nil
+}
+
+func (g *Generator) GenerateException(*parser.Struct) error {
+	return nil
+}
+
+func (g *Generator) GenerateServiceArgsResults(string, string, []*parser.Struct) error {
+	return nil
+}
+
 
 func (g *Generator) GetOutputDir(dir string) string {
 	if pkg, ok := g.Frugal.Thrift.Namespace(lang); ok {

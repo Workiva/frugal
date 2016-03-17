@@ -25,7 +25,7 @@ const (
 // Languages is a map of supported language to a slice of the generator options
 // it supports.
 var Languages = map[string][]string{
-	"go":   []string{"thrift_import", "frugal_import", "package_prefix"},
+	"go":   []string{"thrift_import", "frugal_import", "package_prefix", "gen_with_frugal"},
 	"java": []string{"generated_annotations"},
 	"dart": []string{"library_prefix"},
 }
@@ -34,7 +34,7 @@ var Languages = map[string][]string{
 // produced by the parser.
 type ProgramGenerator interface {
 	// Generate the Frugal in the given directory.
-	Generate(frugal *parser.Frugal, outputDir string) error
+	Generate(frugal *parser.Frugal, outputDir string, genWithFrugal bool) error
 
 	// GetOutputDir returns the full output directory for generated code.
 	GetOutputDir(dir string, f *parser.Frugal) string
@@ -95,16 +95,20 @@ func NewProgramGenerator(generator LanguageGenerator, splitPublisherSubscriber b
 }
 
 // Generate the Frugal in the given directory.
-func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string) error {
+func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string, genWithFrugal bool) error {
 	o.SetFrugal(frugal)
-	o.InitializeGenerator(outputDir)
+	if genWithFrugal {
+		o.InitializeGenerator(outputDir)
+	}
 	if err := o.GenerateDependencies(outputDir); err != nil {
 		return err
 	}
 
-	// generate thrift
-	if err := o.generateThrift(frugal, outputDir); err != nil {
-		return err
+	if genWithFrugal {
+		// generate thrift
+		if err := o.generateThrift(frugal, outputDir); err != nil {
+			return err
+		}
 	}
 
 	// generate frugal
@@ -112,7 +116,10 @@ func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string) err
 		return err
 	}
 
-	return o.CloseGenerator()
+	if genWithFrugal {
+		return o.CloseGenerator()
+	}
+	return nil
 }
 
 func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir string) error {
