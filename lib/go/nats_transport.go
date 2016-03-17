@@ -20,8 +20,13 @@ const (
 	// NATS limits messages to 1MB.
 	natsMaxMessageSize = 1024 * 1024
 	disconnect         = "DISCONNECT"
+	frugalPrefix       = "frugal."
 	natsV0             = 0
 )
+
+func newFrugalInbox() string {
+	return fmt.Sprintf("%s%s", frugalPrefix, nats.NewInbox())
+}
 
 // natsServiceTTransport implements thrift.TTransport.
 type natsServiceTTransport struct {
@@ -216,6 +221,9 @@ func (n *natsServiceTTransport) handshakeRequest(hsBytes []byte) (m *nats.Msg, e
 	err = n.conn.PublishRequest(n.connectSubject, inbox, hsBytes)
 	if err == nil {
 		m, err = s.NextMsg(n.connectTimeout)
+		if err == nats.ErrTimeout {
+			err = thrift.NewTTransportException(thrift.TIMED_OUT, err.Error())
+		}
 	}
 	s.Unsubscribe()
 	return

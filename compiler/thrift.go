@@ -102,7 +102,7 @@ func generateConstant(frugal *parser.Frugal, constant *parser.Constant) string {
 
 	value := constant.Value
 	underlyingType := frugal.UnderlyingType(constant.Type)
-	if parser.IsThriftPrimitive(underlyingType) {
+	if parser.IsThriftPrimitive(underlyingType) || frugal.IsEnum(underlyingType) {
 		if underlyingType.Name == "string" {
 			value = fmt.Sprintf(`"%s"`, value)
 		}

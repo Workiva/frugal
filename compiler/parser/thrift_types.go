@@ -8,6 +8,7 @@ import (
 var thriftTypes = map[string]bool{
 	"bool":   true,
 	"byte":   true,
+	"i8":     true,
 	"i16":    true,
 	"i32":    true,
 	"i64":    true,

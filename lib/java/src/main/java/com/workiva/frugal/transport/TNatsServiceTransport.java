@@ -317,11 +317,11 @@ public class TNatsServiceTransport extends TTransport {
             throw getClosedConditionException(conn, "write:");
         }
         if (writeBuffer.remaining() < len) {
+            int size = len + TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE - writeBuffer.remaining();
             writeBuffer.clear();
             throw new FMessageSizeException(
                     String.format("Message exceeds %d bytes, was %d bytes",
-                            TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE,
-                            len + TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE - writeBuffer.remaining()));
+                            TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE, size));
         }
         writeBuffer.put(bytes, off, len);
     }
