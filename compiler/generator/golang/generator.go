@@ -186,7 +186,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 				return g.generateConstantValue(t, constant.Value)
 			}
 		}
-		panic("referenced constant doesn't exist: ", name)
+		panic("referenced constant doesn't exist: " + name)
 	}
 
 	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {

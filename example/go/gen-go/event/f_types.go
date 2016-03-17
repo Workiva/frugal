@@ -80,9 +80,9 @@ type Request map[Int]string
 type ItsAnEnum int32
 
 const (
+	ItsAnEnum_THIRD  ItsAnEnum = 4
 	ItsAnEnum_FIRST  ItsAnEnum = 2
 	ItsAnEnum_SECOND ItsAnEnum = 3
-	ItsAnEnum_THIRD  ItsAnEnum = 4
 )
 
 func (p ItsAnEnum) String() string {
