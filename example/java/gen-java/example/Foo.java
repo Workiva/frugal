@@ -2568,15 +2568,15 @@ public class Foo {
             case 2: // REQ
               if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
                 {
-                  org.apache.thrift.protocol.TMap _map42 = iprot.readMapBegin();
-                  struct.req = new HashMap<Integer,String>(2*_map42.size);
-                  int _key43;
-                  String _val44;
-                  for (int _i45 = 0; _i45 < _map42.size; ++_i45)
+                  org.apache.thrift.protocol.TMap _map0 = iprot.readMapBegin();
+                  struct.req = new HashMap<Integer,String>(2*_map0.size);
+                  int _key1;
+                  String _val2;
+                  for (int _i3 = 0; _i3 < _map0.size; ++_i3)
                   {
-                    _key43 = iprot.readI32();
-                    _val44 = iprot.readString();
-                    struct.req.put(_key43, _val44);
+                    _key1 = iprot.readI32();
+                    _val2 = iprot.readString();
+                    struct.req.put(_key1, _val2);
                   }
                   iprot.readMapEnd();
                 }
@@ -2607,10 +2607,10 @@ public class Foo {
           oprot.writeFieldBegin(REQ_FIELD_DESC);
           {
             oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I32, org.apache.thrift.protocol.TType.STRING, struct.req.size()));
-            for (Map.Entry<Integer, String> _iter46 : struct.req.entrySet())
+            for (Map.Entry<Integer, String> _iter4 : struct.req.entrySet())
             {
-              oprot.writeI32(_iter46.getKey());
-              oprot.writeString(_iter46.getValue());
+              oprot.writeI32(_iter4.getKey());
+              oprot.writeString(_iter4.getValue());
             }
             oprot.writeMapEnd();
           }
@@ -2647,17 +2647,10 @@ public class Foo {
         if (struct.isSetReq()) {
           {
             oprot.writeI32(struct.req.size());
-<<<<<<< HEAD
-            for (Map.Entry<Integer, String> _iter47 : struct.req.entrySet())
-            {
-              oprot.writeI32(_iter47.getKey());
-              oprot.writeString(_iter47.getValue());
-=======
             for (Map.Entry<Integer, String> _iter5 : struct.req.entrySet())
             {
               oprot.writeI32(_iter5.getKey());
               oprot.writeString(_iter5.getValue());
->>>>>>> 8723fc1b4b40dec3938ce8a8aa49cee9bf7c4ad1
             }
           }
         }
@@ -2673,17 +2666,6 @@ public class Foo {
         }
         if (incoming.get(1)) {
           {
-<<<<<<< HEAD
-            org.apache.thrift.protocol.TMap _map48 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I32, org.apache.thrift.protocol.TType.STRING, iprot.readI32());
-            struct.req = new HashMap<Integer,String>(2*_map48.size);
-            int _key49;
-            String _val50;
-            for (int _i51 = 0; _i51 < _map48.size; ++_i51)
-            {
-              _key49 = iprot.readI32();
-              _val50 = iprot.readString();
-              struct.req.put(_key49, _val50);
-=======
             org.apache.thrift.protocol.TMap _map6 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I32, org.apache.thrift.protocol.TType.STRING, iprot.readI32());
             struct.req = new HashMap<Integer,String>(2*_map6.size);
             int _key7;
@@ -2693,7 +2675,6 @@ public class Foo {
               _key7 = iprot.readI32();
               _val8 = iprot.readString();
               struct.req.put(_key7, _val8);
->>>>>>> 8723fc1b4b40dec3938ce8a8aa49cee9bf7c4ad1
             }
           }
           struct.setReqIsSet(true);

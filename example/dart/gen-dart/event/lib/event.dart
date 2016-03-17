@@ -8,7 +8,6 @@
 library event;
 
 export 'src/event.dart' show Event;
-export 'src/event_wrapper.dart' show EventWrapper;
 export 'src/awesome_exception.dart' show AwesomeException;
 export 'src/event_constants.dart' show EventConstants;
 export 'src/foo.dart' show Foo;
