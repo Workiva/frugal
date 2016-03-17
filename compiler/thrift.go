@@ -34,28 +34,28 @@ func generateThriftIDL(dir string, frugal *parser.Frugal) (string, error) {
 
 	contents := ""
 
-//	for _, stmt := range frugal.OrderedDefinitions {
-//		switch v := stmt.(type) {
-//		case *parser.Namespace:
-//			contents += generateNamespace(v)
-//		case *parser.Constant:
-//			contents += generateConstant(frugal, v)
-//		case *parser.Enum:
-//			contents += generateEnum(v)
-//		case *parser.TypeDef:
-//			contents += generateTypedef(v)
-//		case *parser.Struct: // Also applies to exceptions and unions
-//			contents += generateStructLike(v)
-//		case *parser.Service:
-//			contents += generateService(v)
-//		case *parser.Include:
-//			include, err := generateInclude(frugal, v)
-//			if err != nil {
-//				return "", err
-//			}
-//			contents += include
-//		}
-//	}
+	for _, stmt := range frugal.OrderedDefinitions {
+		switch v := stmt.(type) {
+		case *parser.Namespace:
+			contents += generateNamespace(v)
+		case *parser.Constant:
+			contents += generateConstant(frugal, v)
+		case *parser.Enum:
+			contents += generateEnum(v)
+		case *parser.TypeDef:
+			contents += generateTypedef(v)
+		case *parser.Struct: // Also applies to exceptions and unions
+			contents += generateStructLike(v)
+		case *parser.Service:
+			contents += generateService(v)
+		case *parser.Include:
+			include, err := generateInclude(frugal, v)
+			if err != nil {
+				return "", err
+			}
+			contents += include
+		}
+	}
 
 	_, err = f.WriteString(contents)
 	return file, err
