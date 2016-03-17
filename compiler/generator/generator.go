@@ -160,7 +160,7 @@ func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir strin
 		structs := []*parser.Struct{}
 		for _, method := range service.Methods {
 			arg := &parser.Struct{
-				Name:   fmt.Sprintf("%s_%s_args", service.Name, method.Name),
+				Name:   fmt.Sprintf("%s_args", method.Name),
 				Fields: method.Arguments,
 				Type:   parser.StructTypeStruct,
 			}
@@ -182,7 +182,7 @@ func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir strin
 				}
 
 				result := &parser.Struct{
-					Name:   fmt.Sprintf("%s_%s_result", service.Name, method.Name),
+					Name:   fmt.Sprintf("%s_result", method.Name),
 					Fields: fields,
 					Type:   parser.StructTypeStruct,
 				}

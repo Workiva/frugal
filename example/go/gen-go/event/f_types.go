@@ -88,24 +88,24 @@ const (
 
 func (p ItsAnEnum) String() string {
 	switch p {
-	case ItsAnEnum_FIRST:
-		return "FIRST"
 	case ItsAnEnum_SECOND:
 		return "SECOND"
 	case ItsAnEnum_THIRD:
 		return "THIRD"
+	case ItsAnEnum_FIRST:
+		return "FIRST"
 	}
 	return "<UNSET>"
 }
 
 func ItsAnEnumFromString(s string) (ItsAnEnum, error) {
 	switch s {
+	case "THIRD":
+		return ItsAnEnum_THIRD, nil
 	case "FIRST":
 		return ItsAnEnum_FIRST, nil
 	case "SECOND":
 		return ItsAnEnum_SECOND, nil
-	case "THIRD":
-		return ItsAnEnum_THIRD, nil
 	}
 	return ItsAnEnum(0), fmt.Errorf("not a valid ItsAnEnum string")
 }
@@ -271,7 +271,7 @@ func (p *Event) String() string {
 
 type EventWrapper struct {
 	ID       *ID             `thrift:"ID,1" db:"ID" json:"ID,omitempty"`
-	Ev       *Event          `thrift:"Ev,2" db:"Ev" json:"Ev"`
+	Ev       *Event          `thrift:"Ev,2,required" db:"Ev" json:"Ev"`
 	Events   []*Event        `thrift:"Events,3" db:"Events" json:"Events"`
 	Events2  map[*Event]bool `thrift:"Events2,4" db:"Events2" json:"Events2"`
 	EventMap map[ID]*Event   `thrift:"EventMap,5" db:"EventMap" json:"EventMap"`
@@ -334,6 +334,8 @@ func (p *EventWrapper) Read(iprot thrift.TProtocol) error {
 		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
 	}
 
+	issetEv := false
+
 	for {
 		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
 		if err != nil {
@@ -351,6 +353,7 @@ func (p *EventWrapper) Read(iprot thrift.TProtocol) error {
 			if err := p.ReadField2(iprot); err != nil {
 				return err
 			}
+			issetEv = true
 		case 3:
 			if err := p.ReadField3(iprot); err != nil {
 				return err
@@ -382,6 +385,9 @@ func (p *EventWrapper) Read(iprot thrift.TProtocol) error {
 	}
 	if err := iprot.ReadStructEnd(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	if !issetEv {
+		return thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA, fmt.Errorf("Required field Ev is not set"))
 	}
 	return nil
 }

@@ -54,7 +54,7 @@ enum ItsAnEnum {
 
 struct EventWrapper {
     1: optional Id ID,
-    2: Event Ev,
+    2: required Event Ev,
     3: list<Event> Events,
     4: set<Event> Events2,
     5: map<Id, Event> EventMap,

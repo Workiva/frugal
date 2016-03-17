@@ -153,7 +153,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 			contents += g.GenerateInlineComment(constant.Comment, "")
 		}
 
-		cName := title(constant.Name, false)
+		cName := title(constant.Name)
 		value := g.generateConstantValue(constant.Type, constant.Value)
 		// Don't use underlying type so typedefs aren't consts
 		if parser.IsThriftPrimitive(constant.Type) || g.Frugal.IsEnum(constant.Type) {
@@ -228,7 +228,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 			}
 		}
 		contents := ""
-		contents += fmt.Sprintf("&%s{\n", s.Name)
+		contents += fmt.Sprintf("&%s{\n", title(s.Name))
 
 		for _, pair := range value.([]parser.KeyValue) {
 			name := pair.Key.(string)
@@ -253,7 +253,7 @@ func (g *Generator) GenerateTypeDef(typedef *parser.TypeDef) error {
 		contents += g.GenerateInlineComment(typedef.Comment, "")
 	}
 
-	contents += fmt.Sprintf("type %s %s\n", title(typedef.Name, false), g.getGoTypeFromThriftType(typedef.Type))
+	contents += fmt.Sprintf("type %s %s\n", title(typedef.Name), g.getGoTypeFromThriftType(typedef.Type))
 	_, err := g.typesFile.WriteString(contents)
 	return err
 }
@@ -266,18 +266,18 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 		contents += g.GenerateInlineComment(enum.Comment, "")
 	}
 
-	eName := title(enum.Name, false)
+	eName := title(enum.Name)
 	contents += fmt.Sprintf("type %s int64\n\n", eName)
 	contents += "const (\n"
 	for _, field := range enum.Values {
-		contents += fmt.Sprintf("\t%s_%s %s = %d\n", eName, title(field.Name, false), eName, field.Value)
+		contents += fmt.Sprintf("\t%s_%s %s = %d\n", eName, title(field.Name), eName, field.Value)
 	}
 	contents += ")\n\n"
 
 	contents += fmt.Sprintf("func (p %s) String() string {\n", eName)
 	contents += "\tswitch p {\n"
 	for _, field := range enum.Values {
-		fName := title(field.Name, false)
+		fName := title(field.Name)
 		contents += fmt.Sprintf("\tcase %s_%s:\n", eName, fName)
 		contents += fmt.Sprintf("\t\treturn \"%s\"\n", fName)
 	}
@@ -288,7 +288,7 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 	contents += fmt.Sprintf("func %sFromString(s string) (%s, error) {\n", eName, eName)
 	contents += "\tswitch s {\n"
 	for _, field := range enum.Values {
-		fName := title(field.Name, false)
+		fName := title(field.Name)
 		contents += fmt.Sprintf("\tcase \"%s\":\n", fName)
 		contents += fmt.Sprintf("\t\treturn %s_%s, nil\n", eName, fName)
 	}
@@ -330,17 +330,17 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 }
 
 func (g *Generator) GenerateStruct(s *parser.Struct) error {
-	_, err := g.typesFile.WriteString(g.generateStruct(s, false))
+	_, err := g.typesFile.WriteString(g.generateStruct(s, ""))
 	return err
 }
 
 func (g *Generator) GenerateUnion(union *parser.Struct) error {
-	_, err := g.typesFile.WriteString(g.generateStruct(union, false))
+	_, err := g.typesFile.WriteString(g.generateStruct(union, ""))
 	return err
 }
 
 func (g *Generator) GenerateException(exception *parser.Struct) error {
-	contents := g.generateStruct(exception, false)
+	contents := g.generateStruct(exception, "")
 	contents += fmt.Sprintf("func (p *%s) Error() string {\n", exception.Name)
 	contents += "\treturn p.String()\n"
 	contents += "}\n"
@@ -376,7 +376,7 @@ func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir str
 
 	contents := ""
 	for _, s := range structs {
-		contents += g.generateStruct(s, true)
+		contents += g.generateStruct(s, serviceName)
 	}
 
 	_, err = file.WriteString(contents)
@@ -386,7 +386,7 @@ func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir str
 	return g.PostProcess(file)
 }
 
-func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string {
+func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string {
 	contents := ""
 
 	// Struct declaration
@@ -394,12 +394,12 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 		contents += g.GenerateInlineComment(s.Comment, "")
 	}
 
-	sName := title(s.Name, isArgsOrResult)
+	sName := titleServiceName(s.Name, serviceName)
 	contents += fmt.Sprintf("type %s struct {\n", sName)
 
 	// Declare fields
 	for _, field := range s.Fields {
-		fName := title(field.Name, false)
+		fName := title(field.Name)
 		// All fields in a union are optional
 		if s.Type == parser.StructTypeUnion {
 			field.Modifier = parser.Optional
@@ -434,7 +434,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 	for _, field := range s.Fields {
 		// Use the default if it exists, otherwise the zero value is implicitly used
 		if field.Default != nil {
-			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name, false), field.Default)
+			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name), field.Default)
 		}
 	}
 
@@ -443,7 +443,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 
 	// Getters
 	for _, field := range s.Fields {
-		fName := title(field.Name, false)
+		fName := title(field.Name)
 		isPointer := g.isPointerField(field)
 		goType := g.getGoTypeFromThriftTypePtr(field.Type, false)
 		goOptType := g.getGoTypeFromThriftTypePtr(field.Type, true)
@@ -486,7 +486,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 		contents += fmt.Sprintf("func (p *%s) CountSetFieldsTestingUnions() int {\n", sName)
 		contents += "\tcount := 0\n"
 		for _, field := range s.Fields {
-			contents += fmt.Sprintf("\tif p.IsSet%s() {\n", title(field.Name, false))
+			contents += fmt.Sprintf("\tif p.IsSet%s() {\n", title(field.Name))
 			contents += "\t\tcount++\n"
 			contents += "\t}\n"
 		}
@@ -502,7 +502,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 	for _, field := range s.Fields {
 		// Generate variables to make sure required fields are present
 		if field.Modifier == parser.Required {
-			contents += fmt.Sprintf("\tisset%s := false\n", title(field.Name, false))
+			contents += fmt.Sprintf("\tisset%s := false\n", title(field.Name))
 		}
 	}
 	contents += "\n"
@@ -514,21 +514,25 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 	contents += "\t\tif fieldTypeId == thrift.STOP {\n"
 	contents += "\t\t\tbreak\n"
 	contents += "\t\t}\n"
-	contents += "\t\tswitch fieldId {\n"
-	for _, field := range s.Fields {
-		contents += fmt.Sprintf("\t\tcase %d:\n", field.ID)
-		contents += fmt.Sprintf("\t\t\tif err := p.ReadField%d(iprot); err != nil {\n", field.ID)
-		contents += "\t\t\t\treturn err\n"
-		contents += "\t\t\t}\n"
-		if field.Modifier == parser.Required {
-			contents += fmt.Sprintf("\t\t\tisset%s = true\n", title(field.Name, false))
+	if len(s.Fields) > 0 {
+		contents += "\t\tswitch fieldId {\n"
+		for _, field := range s.Fields {
+			contents += fmt.Sprintf("\t\tcase %d:\n", field.ID)
+			contents += fmt.Sprintf("\t\t\tif err := p.ReadField%d(iprot); err != nil {\n", field.ID)
+			contents += "\t\t\t\treturn err\n"
+			contents += "\t\t\t}\n"
+			if field.Modifier == parser.Required {
+				contents += fmt.Sprintf("\t\t\tisset%s = true\n", title(field.Name))
+			}
 		}
+		contents += "\t\tdefault:\n"
 	}
-	contents += "\t\tdefault:\n"
 	contents += "\t\t\tif err := iprot.Skip(fieldTypeId); err != nil {\n"
 	contents += "\t\t\t\treturn err\n"
 	contents += "\t\t\t}\n"
-	contents += "\t\t}\n"
+	if len(s.Fields) > 0 {
+		contents += "\t\t}\n"
+	}
 	contents += "\t\tif err := iprot.ReadFieldEnd(); err != nil {\n"
 	contents += "\t\t\treturn err\n"
 	contents += "\t\t}\n"
@@ -538,7 +542,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isArgsOrResult bool) string
 	contents += "\t}\n"
 	for _, field := range s.Fields {
 		if field.Modifier == parser.Required {
-			fName := title(field.Name, false)
+			fName := title(field.Name)
 			contents += fmt.Sprintf("\tif !isset%s {\n", fName)
 			errorMessage := fmt.Sprintf("Required field %s is not set", fName)
 			contents += fmt.Sprintf("\t\treturn thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA, fmt.Errorf(\"%s\"))\n", errorMessage)
@@ -616,7 +620,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 	if first {
 		eq = "="
 		prefix = "p."
-		fName = title(field.Name, false)
+		fName = title(field.Name)
 	}
 	contents := ""
 
@@ -752,7 +756,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 
 func (g *Generator) generateWriteField(structName string, field *parser.Field) string {
 	contents := ""
-	fName := title(field.Name, false)
+	fName := title(field.Name)
 
 	contents += fmt.Sprintf("func (p *%s) writeField%d(oprot thrift.TProtocol) error {\n", structName, field.ID)
 	// If an optional field isn't set, it isn't written
@@ -778,7 +782,7 @@ func (g *Generator) generateWriteField(structName string, field *parser.Field) s
 func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) string {
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	isPointerField := g.isPointerField(field)
-	fName := title(field.Name, false)
+	fName := title(field.Name)
 	contents := ""
 
 	isEnum := g.Frugal.IsEnum(underlyingType)
@@ -1752,7 +1756,6 @@ func (g *Generator) getGoTypeFromThriftType(t *parser.Type) string {
 	return g.getGoTypeFromThriftTypePtr(t, false)
 }
 
-// TODO check this
 func (g *Generator) getGoTypeFromThriftTypePtr(t *parser.Type, pointer bool) string {
 	maybePointer := ""
 	if pointer {
@@ -1932,7 +1935,12 @@ func snakeToCamel(s string) string {
 	return result
 }
 
-func title(s string, isArgsOrResult bool) string {
+func title(s string) string {
+	return titleServiceName(s, "")
+}
+
+// TODO need qualified?
+func titleServiceName(s string, serviceName string) string {
 	if len(s) == 0 {
 		return s
 	}
@@ -1942,6 +1950,9 @@ func title(s string, isArgsOrResult bool) string {
 		return s
 	}
 
+	if serviceName != "" {
+		s = fmt.Sprintf("%s_%s", serviceName, s)
+	}
 	var result string
 	words := strings.Split(s, "_")
 
@@ -1956,7 +1967,7 @@ func title(s string, isArgsOrResult bool) string {
 		result += string(w)
 	}
 
-	if !isArgsOrResult && (strings.HasPrefix(result, "New") || strings.HasSuffix(result, "Args") || strings.HasSuffix(result, "Result")) {
+	if (serviceName == "") && (strings.HasPrefix(result, "New") || strings.HasSuffix(result, "Args") || strings.HasSuffix(result, "Result")) {
 		result += "_"
 	}
 
