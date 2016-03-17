@@ -15,6 +15,8 @@ can be hosted on Pub.
 
 Install Thrift. Dart support has not yet been released for Thrift, so we use a fork for the time-being.
 
+### From Source
+
 Clone the fork
 ```bash
 git clone git@github.com:stevenosborne-wf/thrift.git
@@ -33,6 +35,22 @@ Install Thrift
 make
 make install
 ```
+
+### From Homebrew
+
+go into /usr/local/Library/Formula and change thrift.rb formula
+
+change
+```
+    url "https://git-wip-us.apache.org/repos/asf/thrift.git"
+```
+to
+
+```
+    url "https://github.com/stevenosborne-wf/thrift.git", :revision => "87853fb19b6fdcd03bc5dfd647d2a09bf2b11ade"
+```
+then run `brew install thrift --HEAD --with-python --with-java`
+If it complains about not finding that reference, you might have an existing git copy of thrift in your cache (/Library/Caches/HomeBrew/thrift--git)
 
 Install Frugal
 ```

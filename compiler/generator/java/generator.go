@@ -273,9 +273,9 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 			op.Name, args, op.Name)
 		subscriber += fmt.Sprintf(tabtab+"final String op = \"%s\";\n", op.Name)
 		subscriber += fmt.Sprintf(tabtab+"String prefix = %s;\n", generatePrefixStringTemplate(scope))
-		subscriber += tabtab + "String topic = String.format(\"%s" + strings.Title(scope.Name) + "%s%s\", prefix, DELIMITER, op);\n"
+		subscriber += tabtab + "final String topic = String.format(\"%s" + strings.Title(scope.Name) + "%s%s\", prefix, DELIMITER, op);\n"
 		subscriber += tabtab + "final FScopeProvider.Client client = provider.build();\n"
-		subscriber += tabtab + "FScopeTransport transport = client.getTransport();\n"
+		subscriber += tabtab + "final FScopeTransport transport = client.getTransport();\n"
 		subscriber += tabtab + "transport.subscribe(topic);\n\n"
 
 		subscriber += tabtab + "final FSubscription sub = new FSubscription(topic, transport);\n"
@@ -294,10 +294,8 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 		subscriber += tabtabtabtabtabtabtabtab + "return;\n"
 		subscriber += tabtabtabtabtabtabtab + "}\n"
 		subscriber += tabtabtabtabtabtab + "}\n"
-		subscriber += tabtabtabtabtabtab + fmt.Sprintf("LOGGER.severe(\"Subscriber recv%s error \" + e.getMessage());\n", op.Name)
-		subscriber += tabtabtabtabtabtab + "sub.signal(e);\n"
-		subscriber += tabtabtabtabtabtab + "sub.unsubscribe();\n"
-		subscriber += tabtabtabtabtabtab + "return;\n"
+		subscriber += tabtabtabtabtabtab + "LOGGER.warning(String.format(\"Subscriber error receiving %s, discarding frame: %s\", topic, e.getMessage()));\n"
+		subscriber += tabtabtabtabtabtab + "transport.discardFrame();\n"
 		subscriber += tabtabtabtabtab + "}\n"
 		subscriber += tabtabtabtab + "}\n"
 		subscriber += tabtabtab + "}\n"

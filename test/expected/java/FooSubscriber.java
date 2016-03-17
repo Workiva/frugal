@@ -46,9 +46,9 @@ public class FooSubscriber {
 	public FSubscription subscribeFoo(String baz, final FooHandler handler) throws TException {
 		final String op = "Foo";
 		String prefix = String.format("foo.bar.%s.qux.", baz);
-		String topic = String.format("%sFoo%s%s", prefix, DELIMITER, op);
+		final String topic = String.format("%sFoo%s%s", prefix, DELIMITER, op);
 		final FScopeProvider.Client client = provider.build();
-		FScopeTransport transport = client.getTransport();
+		final FScopeTransport transport = client.getTransport();
 		transport.subscribe(topic);
 
 		final FSubscription sub = new FSubscription(topic, transport);
@@ -66,10 +66,8 @@ public class FooSubscriber {
 								return;
 							}
 						}
-						LOGGER.severe("Subscriber recvFoo error " + e.getMessage());
-						sub.signal(e);
-						sub.unsubscribe();
-						return;
+						LOGGER.warning(String.format("Subscriber error receiving %s, discarding frame: %s", topic, e.getMessage()));
+						transport.discardFrame();
 					}
 				}
 			}
@@ -100,9 +98,9 @@ public class FooSubscriber {
 	public FSubscription subscribeBar(String baz, final BarHandler handler) throws TException {
 		final String op = "Bar";
 		String prefix = String.format("foo.bar.%s.qux.", baz);
-		String topic = String.format("%sFoo%s%s", prefix, DELIMITER, op);
+		final String topic = String.format("%sFoo%s%s", prefix, DELIMITER, op);
 		final FScopeProvider.Client client = provider.build();
-		FScopeTransport transport = client.getTransport();
+		final FScopeTransport transport = client.getTransport();
 		transport.subscribe(topic);
 
 		final FSubscription sub = new FSubscription(topic, transport);
@@ -120,10 +118,8 @@ public class FooSubscriber {
 								return;
 							}
 						}
-						LOGGER.severe("Subscriber recvBar error " + e.getMessage());
-						sub.signal(e);
-						sub.unsubscribe();
-						return;
+						LOGGER.warning(String.format("Subscriber error receiving %s, discarding frame: %s", topic, e.getMessage()));
+						transport.discardFrame();
 					}
 				}
 			}
