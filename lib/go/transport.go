@@ -43,6 +43,12 @@ type FScopeTransport interface {
 
 	// Subscribe sets the subscribe topic and opens the transport.
 	Subscribe(string) error
+
+	// DiscardFrame discards the current message frame the transport is
+	// reading, if any. After calling this, a subsequent call to Read will read
+	// from the next frame. This must be called from the same goroutine as the
+	// goroutine calling Read.
+	DiscardFrame()
 }
 
 // FTransport is a TTransport for services.

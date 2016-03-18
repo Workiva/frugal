@@ -9,8 +9,12 @@ import (
 	"sync"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	q "github.com/Workiva/go-datastructures/queue"
 	"github.com/nats-io/nats"
 )
+
+// frameBufferSize is the number of message frames to buffer on the subscriber.
+const frameBufferSize = 5
 
 // FNatsScopeTransportFactory creates FNatsScopeTransports.
 type FNatsScopeTransportFactory struct {
@@ -28,17 +32,17 @@ func (n *FNatsScopeTransportFactory) GetTransport() FScopeTransport {
 
 // fNatsScopeTransport implements FScopeTransport.
 type fNatsScopeTransport struct {
-	conn        *nats.Conn
-	subject     string
-	reader      *io.PipeReader
-	writer      *io.PipeWriter
-	writeBuffer *bytes.Buffer
-	sub         *nats.Subscription
-	pull        bool
-	topicMu     sync.Mutex
-	openMu      sync.RWMutex
-	isOpen      bool
-	sizeBuffer  []byte
+	conn         *nats.Conn
+	subject      string
+	frameBuffer  *q.RingBuffer
+	currentFrame []byte
+	writeBuffer  *bytes.Buffer
+	sub          *nats.Subscription
+	pull         bool
+	topicMu      sync.Mutex
+	openMu       sync.RWMutex
+	isOpen       bool
+	sizeBuffer   []byte
 }
 
 // NewNatsFScopeTransport creates a new FScopeTransport which is used for
@@ -104,7 +108,7 @@ func (n *fNatsScopeTransport) Open() error {
 			"cannot subscribe to empty subject")
 	}
 
-	n.reader, n.writer = io.Pipe()
+	n.frameBuffer = q.NewRingBuffer(frameBufferSize)
 
 	sub, err := n.conn.Subscribe(n.formattedSubject(), func(msg *nats.Msg) {
 		if len(msg.Data) < 4 {
@@ -112,7 +116,7 @@ func (n *fNatsScopeTransport) Open() error {
 			return
 		}
 		// Discard frame size.
-		n.writer.Write(msg.Data[4:])
+		n.frameBuffer.Put(msg.Data[4:])
 	})
 	if err != nil {
 		return thrift.NewTTransportExceptionFromError(err)
@@ -155,18 +159,40 @@ func (n *fNatsScopeTransport) Close() error {
 		return thrift.NewTTransportExceptionFromError(err)
 	}
 	n.sub = nil
-	err := n.writer.Close()
-	n.writer = nil
+	n.frameBuffer.Dispose()
 	n.isOpen = false
-	return thrift.NewTTransportExceptionFromError(err)
+	return nil
 }
 
 func (n *fNatsScopeTransport) Read(p []byte) (int, error) {
 	if !n.IsOpen() {
 		return 0, thrift.NewTTransportExceptionFromError(io.EOF)
 	}
-	num, err := n.reader.Read(p)
-	return num, thrift.NewTTransportExceptionFromError(err)
+	if n.currentFrame == nil {
+		frame, err := n.frameBuffer.Get()
+		if err != nil {
+			return 0, thrift.NewTTransportExceptionFromError(io.EOF)
+		}
+		n.currentFrame = frame.([]byte)
+	}
+	num := copy(p, n.currentFrame)
+	// TODO: We could be more efficient here. If the provided buffer isn't
+	// full, we could attempt to get the next frame.
+
+	n.currentFrame = n.currentFrame[num:]
+	if len(n.currentFrame) == 0 {
+		// The entire frame was copied, clear it.
+		n.currentFrame = nil
+	}
+	return num, nil
+}
+
+// DiscardFrame discards the current message frame the transport is reading, if
+// any. After calling this, a subsequent call to Read will read from the next
+// frame. This must be called from the same goroutine as the goroutine calling
+// Read.
+func (n *fNatsScopeTransport) DiscardFrame() {
+	n.currentFrame = nil
 }
 
 // Write bytes to publish. If buffered bytes exceeds 1MB, ErrTooLarge is

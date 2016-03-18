@@ -31,13 +31,8 @@ func (s *FSubscription) Topic() string {
 // Error returns a channel which is signaled when something went wrong with the
 // subscription. If an error is returned on this channel, the Subscription has
 // been closed.
+//
+// DEPRECATED. TODO: Remove in a future release.
 func (s *FSubscription) Error() <-chan error {
 	return s.errorC
-}
-
-// Signal is used to indicate an error on the subscription. This is to be used
-// by generated code and should not be called directly.
-func (s *FSubscription) Signal(err error) {
-	s.errorC <- err
-	close(s.errorC)
 }
