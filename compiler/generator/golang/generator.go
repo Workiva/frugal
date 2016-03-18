@@ -471,7 +471,11 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 
 			// Determines if the field is set
 			contents += fmt.Sprintf("func (p *%s) IsSet%s() bool {\n", sName, fName)
-			contents += fmt.Sprintf("\treturn p.%s != nil\n", fName)
+			if field.Modifier == parser.Optional && field.Default != nil {
+				contents += fmt.Sprintf("\treturn p.%s != %s_%s_DEFAULT", fName, sName, fName)
+			} else {
+				contents += fmt.Sprintf("\treturn p.%s != nil\n", fName)
+			}
 			contents += "}\n\n"
 		}
 		if isPointer {

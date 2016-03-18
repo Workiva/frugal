@@ -35,7 +35,7 @@ var ConstEvent2 *Event
 
 var NumsList []int32
 
-var NumsSet map[int32]bool
+var NumsSet map[Int]bool
 
 var MAPCONSTANT2 map[string]*Event
 
@@ -60,7 +60,7 @@ func init() {
 		7,
 		1,
 	}
-	NumsSet = map[int32]bool{
+	NumsSet = map[Int]bool{
 		1: true,
 		3: true,
 		8: true,
@@ -80,9 +80,9 @@ type Request map[Int]string
 type ItsAnEnum int32
 
 const (
-	ItsAnEnum_THIRD  ItsAnEnum = 4
 	ItsAnEnum_FIRST  ItsAnEnum = 2
 	ItsAnEnum_SECOND ItsAnEnum = 3
+	ItsAnEnum_THIRD  ItsAnEnum = 4
 )
 
 func (p ItsAnEnum) String() string {
@@ -99,12 +99,12 @@ func (p ItsAnEnum) String() string {
 
 func ItsAnEnumFromString(s string) (ItsAnEnum, error) {
 	switch s {
+	case "FIRST":
+		return ItsAnEnum_FIRST, nil
 	case "SECOND":
 		return ItsAnEnum_SECOND, nil
 	case "THIRD":
 		return ItsAnEnum_THIRD, nil
-	case "FIRST":
-		return ItsAnEnum_FIRST, nil
 	}
 	return ItsAnEnum(0), fmt.Errorf("not a valid ItsAnEnum string")
 }
@@ -177,7 +177,7 @@ func NewTestingDefaults() *TestingDefaults {
 var TestingDefaults_ID2_DEFAULT ID = -1
 
 func (p *TestingDefaults) IsSetID2() bool {
-	return p.ID2 != nil
+	return p.ID2 != TestingDefaults_ID2_DEFAULT
 }
 
 func (p *TestingDefaults) GetID2() ID {
@@ -227,7 +227,7 @@ func (p *TestingDefaults) GetThing() string {
 var TestingDefaults_Thing2_DEFAULT string = "another constant"
 
 func (p *TestingDefaults) IsSetThing2() bool {
-	return p.Thing2 != nil
+	return p.Thing2 != TestingDefaults_Thing2_DEFAULT
 }
 
 func (p *TestingDefaults) GetThing2() string {
