@@ -445,8 +445,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 	contents += fmt.Sprintf("\treturn &%s{\n", sName)
 
 	for _, field := range s.Fields {
-		// Use the default if it exists, otherwise the zero value is implicitly used
-		// TODO Still not right
+		// Use the default if it exists and it's not a pointer field, otherwise the zero value is implicitly used
 		if field.Default != nil && !g.isPointerField(field) {
 			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name), g.generateConstantValue(field.Type, field.Default))
 		}
@@ -929,7 +928,6 @@ func (g *Generator) GenerateTypesImports(file *os.File) error {
 	return err
 }
 
-// TODO definitely duplicated code
 func (g *Generator) GenerateServiceResultArgsImports(file *os.File) error {
 	contents := ""
 	contents += "import (\n"
@@ -1963,7 +1961,6 @@ func title(s string) string {
 	return titleServiceName(s, "")
 }
 
-// TODO need qualified?
 func titleServiceName(s string, serviceName string) string {
 	if len(s) == 0 {
 		return s
@@ -2011,9 +2008,9 @@ func startsWithInitialism(s string) string {
 	return initialism
 }
 
-// TODO add this to generator struct?
 var elemNum int
 
+// getElem returns a unique identifier name
 func getElem() string {
 	s := fmt.Sprintf("elem%d", elemNum)
 	elemNum++
