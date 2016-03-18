@@ -26,4 +26,10 @@ public abstract class FScopeTransport extends TTransport {
      * @throws TException
      */
     public abstract void subscribe(String topic) throws TException;
+
+    /**
+     * Discards the current message frame the transport is reading, if any. After calling this, a subsequent call to
+     * read will read from the next frame. This must be called from the same thread as the thread calling read.
+     */
+    public abstract void discardFrame();
 }

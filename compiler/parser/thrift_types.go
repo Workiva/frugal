@@ -383,6 +383,7 @@ func getImports(t *Type) []string {
 	switch t.Name {
 	case "bool":
 	case "byte":
+	case "i8":
 	case "i16":
 	case "i32":
 	case "i64":

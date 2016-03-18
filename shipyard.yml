@@ -3,26 +3,19 @@ base: 'ubuntu/trusty'
 
 apt:
   packages:
-    - automake
-    - libtool
-    - g++
-    - byacc
-    - make
-    - pkg-config
-    - flex
+    - wget
     - git
     - golang
 
 after_install:
+  # Grab thrift binary
+  - mkdir -p $PWD/bin
+  - wget -O $PWD/bin/thrift https://github.com/stevenosborne-wf/thrift/releases/download/0.9.3-wk-2/thrift-0.9.3-wk-2-linux-amd64 
+  - chmod 0755 $PWD/bin/thrift
+  - export PATH=$PATH:$PWD/bin
+
+  # Move frugal binary
   - export PATH=$PATH:/usr/local/go/bin
-  - git clone https://git-wip-us.apache.org/repos/asf/thrift.git
-  - cd thrift
-  - ./bootstrap.sh
-  - ./configure
-  - make
-  - make install
-  - cd ..
-  - rm -rf thrift
   - cp /build/smithy/frugal /bin
   - chmod 755 /bin/frugal
 

@@ -1,8 +1,6 @@
 project: frugal
 language: golang
 
-runner_image: drydock.workiva.org/workiva/skynet-images:32110
-
 script:
     - ./scripts/smithy.sh
 

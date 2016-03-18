@@ -12,6 +12,8 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
@@ -21,10 +23,15 @@ import java.util.logging.Logger;
  */
 public class FNatsScopeTransport extends FScopeTransport {
 
+    // The number of message frames to buffer on the subscriber.
+    private static final int FRAME_BUFFER_SIZE = 5;
+    private static final byte[] FRAME_BUFFER_CLOSED = new byte[0];
+
     private final Connection conn;
     private String subject;
-    private PipedOutputStream writer;
-    private PipedInputStream reader;
+    private BlockingQueue<byte[]> frameBuffer;
+    private byte[] currentFrame;
+    private int currentFramePos;
     private ByteBuffer writeBuffer;
     private Subscription sub;
     private boolean pull;
@@ -106,12 +113,7 @@ public class FNatsScopeTransport extends FScopeTransport {
             throw new TTransportException("Subject cannot be empty.");
         }
 
-        try {
-            writer = new PipedOutputStream();
-            reader = new PipedInputStream(writer);
-        } catch (IOException e) {
-            throw new TTransportException(e);
-        }
+        frameBuffer = new ArrayBlockingQueue<>(FRAME_BUFFER_SIZE);
 
         sub = conn.subscribe(getFormattedSubject(), new MessageHandler() {
             @Override
@@ -122,10 +124,8 @@ public class FNatsScopeTransport extends FScopeTransport {
                 }
                 try {
                     // Discard frame size.
-                    writer.write(Arrays.copyOfRange(msg.getData(), 4, msg.getData().length));
-                    writer.flush();
-                } catch (IOException e) {
-                    // pipe is closed, nothing to do.
+                    frameBuffer.put(Arrays.copyOfRange(msg.getData(), 4, msg.getData().length));
+                } catch (InterruptedException ignored) {
                 }
             }
         });
@@ -149,12 +149,10 @@ public class FNatsScopeTransport extends FScopeTransport {
         }
         sub = null;
         try {
-            writer.close();
-        } catch (IOException e) {
-            LOGGER.warning("could not close write buffer. " + e.getMessage());
+            frameBuffer.put(FRAME_BUFFER_CLOSED);
+        } catch (InterruptedException e) {
+            LOGGER.warning("could not close write frame buffer. " + e.getMessage());
         }
-        writer = null;
-        reader = null;
         isOpen = false;
     }
 
@@ -163,15 +161,30 @@ public class FNatsScopeTransport extends FScopeTransport {
         if (!isOpen()) {
             throw new TTransportException(TTransportException.END_OF_FILE);
         }
-        try {
-            int bytesRead = reader.read(bytes, off, len);
-            if (bytesRead < 0) {
-                throw new TTransportException(TTransportException.END_OF_FILE);
+        if (currentFrame == null) {
+            try {
+                currentFrame = frameBuffer.take();
+            } catch (InterruptedException e) {
+                throw new TTransportException(TTransportException.END_OF_FILE, e.getMessage());
             }
-            return bytesRead;
-        } catch (IOException e) {
-            throw new TTransportException(TTransportException.END_OF_FILE, e);
         }
+        if (currentFrame == FRAME_BUFFER_CLOSED) {
+            throw new TTransportException(TTransportException.END_OF_FILE);
+        }
+        int size = Math.min(len, currentFrame.length);
+        System.arraycopy(currentFrame, currentFramePos, bytes, off, size);
+        currentFramePos += size;
+        if (currentFramePos == currentFrame.length) {
+            // The entire frame was copied, clear it.
+            discardFrame();
+        }
+        return size;
+    }
+
+    @Override
+    public void discardFrame() {
+        currentFrame = null;
+        currentFramePos = 0;
     }
 
     @Override

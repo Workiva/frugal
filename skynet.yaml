@@ -2,7 +2,7 @@ run:
   when-branch-name-is:
     - .+
 
-image: "drydock.workiva.org/workiva/skynet-images:32110"
+image: "drydock.workiva.org/workiva/skynet-images:33350"
 
 also-run:
   Workiva/messaging-sdk:go-tests:
@@ -10,11 +10,16 @@ also-run:
   Workiva/messaging-sdk:java-tests:
     on-pull-request: true
 
-
 env:
   - GORACE="halt_on_errors=1"
 
 scripts:
+  # Grab thrift binary
+  - mkdir -p $PWD/bin
+  - wget -O $PWD/bin/thrift https://github.com/stevenosborne-wf/thrift/releases/download/0.9.3-wk-2/thrift-0.9.3-wk-2-linux-amd64 
+  - chmod 0755 $PWD/bin/thrift
+  - export PATH=$PATH:$PWD/bin
+
   - testing=$PWD
   - mkdir -p $GOPATH/src/github.com/Workiva
   - cp -r $testing $GOPATH/src/github.com/Workiva/frugal
