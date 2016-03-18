@@ -134,8 +134,8 @@ func main() {
 			fmt.Fprintln(os.Stderr, "Blah requires 3 args")
 			flag.Usage()
 		}
-		tmp0, err14 := (strconv.Atoi(flag.Arg(1)))
-		if err14 != nil {
+		tmp0, err7 := (strconv.Atoi(flag.Arg(1)))
+		if err7 != nil {
 			Usage()
 			return
 		}
@@ -143,19 +143,19 @@ func main() {
 		value0 := argvalue0
 		argvalue1 := flag.Arg(2)
 		value1 := argvalue1
-		arg16 := flag.Arg(3)
-		mbTrans17 := thrift.NewTMemoryBufferLen(len(arg16))
-		defer mbTrans17.Close()
-		_, err18 := mbTrans17.WriteString(arg16)
-		if err18 != nil {
+		arg9 := flag.Arg(3)
+		mbTrans10 := thrift.NewTMemoryBufferLen(len(arg9))
+		defer mbTrans10.Close()
+		_, err11 := mbTrans10.WriteString(arg9)
+		if err11 != nil {
 			Usage()
 			return
 		}
-		factory19 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt20 := factory19.GetProtocol(mbTrans17)
+		factory12 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt13 := factory12.GetProtocol(mbTrans10)
 		argvalue2 := event.NewEvent()
-		err21 := argvalue2.Read(jsProt20)
-		if err21 != nil {
+		err14 := argvalue2.Read(jsProt13)
+		if err14 != nil {
 			Usage()
 			return
 		}
@@ -168,25 +168,25 @@ func main() {
 			fmt.Fprintln(os.Stderr, "OneWay requires 2 args")
 			flag.Usage()
 		}
-		argvalue0, err22 := (strconv.ParseInt(flag.Arg(1), 10, 64))
-		if err22 != nil {
+		argvalue0, err15 := (strconv.ParseInt(flag.Arg(1), 10, 64))
+		if err15 != nil {
 			Usage()
 			return
 		}
 		value0 := event.ID(argvalue0)
-		arg23 := flag.Arg(2)
-		mbTrans24 := thrift.NewTMemoryBufferLen(len(arg23))
-		defer mbTrans24.Close()
-		_, err25 := mbTrans24.WriteString(arg23)
-		if err25 != nil {
+		arg16 := flag.Arg(2)
+		mbTrans17 := thrift.NewTMemoryBufferLen(len(arg16))
+		defer mbTrans17.Close()
+		_, err18 := mbTrans17.WriteString(arg16)
+		if err18 != nil {
 			Usage()
 			return
 		}
-		factory26 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt27 := factory26.GetProtocol(mbTrans24)
+		factory19 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt20 := factory19.GetProtocol(mbTrans17)
 		containerStruct1 := event.NewFooOneWayArgs()
-		err28 := containerStruct1.ReadField2(jsProt27)
-		if err28 != nil {
+		err21 := containerStruct1.ReadField2(jsProt20)
+		if err21 != nil {
 			Usage()
 			return
 		}
