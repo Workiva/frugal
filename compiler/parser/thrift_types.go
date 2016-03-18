@@ -8,6 +8,7 @@ import (
 var thriftTypes = map[string]bool{
 	"bool":   true,
 	"byte":   true,
+	"i8":     true,
 	"i16":    true,
 	"i32":    true,
 	"i64":    true,
@@ -371,6 +372,7 @@ func getImports(t *Type) []string {
 	switch t.Name {
 	case "bool":
 	case "byte":
+	case "i8":
 	case "i16":
 	case "i32":
 	case "i64":

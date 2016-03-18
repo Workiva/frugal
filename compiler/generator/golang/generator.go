@@ -802,7 +802,7 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 	}
 	if method.ReturnType != nil {
 		contents += "\t} else {\n"
-		if g.isPrimitive(method.ReturnType) {
+		if g.isPrimitive(method.ReturnType) || g.Frugal.IsEnum(method.ReturnType) {
 			contents += "\t\tresult.Success = &retval\n"
 		} else {
 			contents += "\t\tresult.Success = retval\n"

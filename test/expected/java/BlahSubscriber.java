@@ -40,9 +40,9 @@ public class BlahSubscriber {
 	public FSubscription subscribeDoStuff(final DoStuffHandler handler) throws TException {
 		final String op = "DoStuff";
 		String prefix = "";
-		String topic = String.format("%sBlah%s%s", prefix, DELIMITER, op);
+		final String topic = String.format("%sBlah%s%s", prefix, DELIMITER, op);
 		final FScopeProvider.Client client = provider.build();
-		FScopeTransport transport = client.getTransport();
+		final FScopeTransport transport = client.getTransport();
 		transport.subscribe(topic);
 
 		final FSubscription sub = new FSubscription(topic, transport);
@@ -60,10 +60,8 @@ public class BlahSubscriber {
 								return;
 							}
 						}
-						LOGGER.severe("Subscriber recvDoStuff error " + e.getMessage());
-						sub.signal(e);
-						sub.unsubscribe();
-						return;
+						LOGGER.warning(String.format("Subscriber error receiving %s, discarding frame: %s", topic, e.getMessage()));
+						transport.discardFrame();
 					}
 				}
 			}
