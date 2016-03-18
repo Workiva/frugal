@@ -262,6 +262,16 @@ func (f *fMuxTransport) Write(p []byte) (int, error) {
 	return f.TFramedTransport.Write(p)
 }
 
+func (f *fMuxTransport) Flush() error {
+	f.mu.RLock()
+	open := f.open
+	f.mu.RUnlock()
+	if !open {
+		return thrift.NewTTransportException(thrift.NOT_OPEN, "fMuxTransport not open")
+	}
+	return f.TFramedTransport.Flush()
+}
+
 // Closed channel is closed when the FTransport is closed.
 func (f *fMuxTransport) Closed() <-chan error {
 	return f.closedChan()
