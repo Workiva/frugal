@@ -960,7 +960,6 @@ func (g *Generator) GenerateServiceResultArgsImports(file *os.File) error {
 	contents += "var _ = fmt.Printf\n"
 	contents += "var _ = bytes.Equal\n\n"
 	contents += protections
-	contents += "var GoUnusedProtection__ int\n"
 
 	_, err := file.WriteString(contents)
 	return err
