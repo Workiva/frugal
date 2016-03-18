@@ -1,4 +1,5 @@
 import unittest
+import mock
 
 from frugal.context import FContext
 from frugal.exceptions import FContextHeaderException

@@ -4,6 +4,7 @@ from thrift.Thrift import TApplicationException
 from thrift.Thrift import TMessageType
 from thrift.Thrift import TType
 
+
 class FProcessor(object):
     """
     FProcessor is a generic object which operates upon an
@@ -17,6 +18,12 @@ class FProcessor(object):
 class FBaseProcessor(FProcessor):
 
     def __init__(self, processor_function_map):
+        """ Create new instance of FBaseProcessor that will process requests
+
+        Args:
+            processor_function_map: dict keyed by rpc call name for
+                                    processor functions
+        """
         self._processor_function_map = processor_function_map
         self._write_lock = Lock()
 
@@ -34,10 +41,12 @@ class FBaseProcessor(FProcessor):
 
         context = iprot.read_request_header()
         message = iprot.readMessageBegin()
-        processor = self._processor_function_map.get(message.name)
 
-        if processor:
-            processor.process(context, iprot, oprot)
+        processor_function = self._processor_function_map.get(message.name)
+
+        # If the function was in our dict, call it
+        if processor_function:
+            processor_function(context, iprot, oprot)
             return
 
         iprot.skip(TType.STRUCT)

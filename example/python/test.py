@@ -1,5 +1,7 @@
 from datetime import timedelta
 import json
+import logging
+from time import sleep
 
 from tornado import gen
 from tornado import ioloop
@@ -9,13 +11,24 @@ from nats.io.client import Client as NATS
 from nats.io.utils import new_inbox
 
 # from frugal.context import FContext
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
+
+
+class Heartbeat(object):
+
+    def __init__(self, listen_subject, reply_subject, interval, missed_count=0):
+        self.listen_subject = listen_subject
+        self.reply_subject = reply_subject
+        self.interval = interval
+        self.missed_count = missed_count
+
+    def increment_missed(self):
+        self.missed_count += 1
 
 
 @gen.coroutine
 def main():
-
-    # context = FContext()
-
     nats_client = NATS()
     options = {"verbose": True, "servers": ["nats://127.0.0.1:4222"]}
 
@@ -29,23 +42,51 @@ def main():
     sid = yield nats_client.subscribe(inbox, b'', None, future)
     yield nats_client.auto_unsubscribe(sid, 1)
     yield nats_client.publish_request("foo", inbox, payload)
-    msg = yield gen.with_timeout(timedelta(milliseconds=5000), future)
-    print("message: {0}".format(dir(msg)))
-    print("message data: {0}".format(msg.data))
+
+    # Handshake call
+    msg = yield gen.with_timeout(timedelta(milliseconds=10000), future)
 
     subjects = msg.data.split()
-    heartbeat_listen = subjects[0]
-    heartbeat_reply = subjects[1]
-    heartbeat_interval = int(subjects[2])
 
-    print("heartbeat listen {0}".format(heartbeat_listen))
-    print("heartbeat reply {0}".format(heartbeat_reply))
-    print("heartbeat interval {0}".format(heartbeat_interval))
+    hb = Heartbeat(subjects[0], subjects[1], int(subjects[2]))
 
-    print("listenTo: {0}".format(msg.subject))
-    print("writeTo: {0}".format(msg.reply))
+    listen_to = msg.subject
+    # write_to = msg.reply
+
+    def on_message_cb(msg=None):
+        if msg.reply == "DISCONNECT":
+            print("Got disconnect message.")
+            return
+        # TODO write msg.data to writer
+
+    yield nats_client.subscribe(listen_to, "", on_message_cb)
+
+    def on_heartbeat_cb(msg=None):
+        print("heartbeat received: {0}".format(msg.subject))
+        print("heartbeat timmer running : {}".format(heartbeat_timer.is_running()))
+
+        if not heartbeat_timer.is_running():
+            print("starting heartbeat timer")
+            heartbeat_timer.start()
+        hb.increment_missed
+
+    @gen.coroutine
+    def send_heartbeat(future=None):
+        print("sending heartbeat")
+        yield nats_client.publish(hb.reply_subject, "")
+        if future is None:
+            future = concurrent.Future()
+
+    heartbeat_timer = ioloop.PeriodicCallback(send_heartbeat, hb.interval)
+
+    # Subscribe to heartbeat listen
+    yield nats_client.subscribe(hb.listen_subject, "", on_heartbeat_cb)
+
+    # Start things off publishing
+    yield nats_client.publish(hb.listen_subject, "")
 
 
 if __name__ == '__main__':
-    ioloop.IOLoop.instance().run_sync(main)
-
+    io_loop = ioloop.IOLoop.instance()
+    io_loop.add_callback(main)
+    io_loop.start()

@@ -1,5 +1,3 @@
-import logging
-
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TTransport
 
@@ -13,35 +11,30 @@ from frugal.protocol.protocol_factory import FProtocolFactory
 from frugal.transport.transport_factory import FMuxTransportFactory
 from frugal.transport.nats_service_transport import TNatsServiceTransport
 
-from gen_py.example.f_foo import Client as FFooClient
-
+from gen_py.example.f_foo import Processor as FFooProcessor
 
 @gen.coroutine
 def main():
-
-    print("Starting.....")
-
     nats_client = NATS()
     options = {"verbose": True, "servers": ["nats://127.0.0.1:4222"]}
     yield nats_client.connect(**options)
 
-    transport_factory = FMuxTransportFactory()
-    nats_transport = TNatsServiceTransport(nats_client, "foo", 50000, 3)
-    transport = transport_factory.get_transport(nats_transport)
-
-    try:
-        yield transport.open()
-    except TTransport.TTransportException as ex:
-        print("got TTransportException")
-        logging.error(ex)
-        raise gen.Return()
 
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
-    foo_client = FFooClient(transport, prot_factory)
-    foo_client.one_way(FContext(), 99, {99: "request"})
+    transport_factory = FMuxTransportFactory()
 
-    raise gen.Return("")
+    handler = FooHanlder()
+    processor = FFooProcessor(handler)
+    server = FNatsServer(nats_client,
+                         "foo",
+                         20 * 1000,
+                         2,
+                         FProcessorFactory(processor),
+                         transport_factory,
+                         prot_factory)
+
+    print("starting NATS server on foo")
 
 
 if __name__ == '__main__':
-    ioloop.IOLoop.instance().run_sync(main)
+    main()

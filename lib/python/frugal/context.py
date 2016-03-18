@@ -8,7 +8,7 @@ _DEFAULT_TIMEOUT = 60 * 1000
 
 
 class FContext(object):
-    """FContext is the message context for a frugal message."""
+    """FContext is the message context for a Frugal message."""
 
     def __init__(self, correlation_id=None, timeout=_DEFAULT_TIMEOUT):
         """Initialize FContext.

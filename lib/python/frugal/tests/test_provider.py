@@ -8,7 +8,7 @@ from frugal.provider import FScopeProvider
 
 class TestFScopeProvider(unittest.TestCase):
 
-    @patch('frugal.transport.scope_transport_factory.FScopeTransportFactory')
+    @patch('frugal.transport.transport_factory.FScopeTransportFactory')
     @patch('frugal.protocol.protocol_factory.FProtocolFactory')
     @patch('thrift.protocol.TProtocol.TProtocolBase')
     def test_new_provider(self, mock_transport_factory,

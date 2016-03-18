@@ -70,8 +70,8 @@ class FMuxTransport(FTransport):
 
     def is_open(self):
         with self._lock:
-            trans_open = self._framed_transport.isOpen()
-            return trans_open and self._registery is not None
+            return (self._framed_transport.isOpen() and
+                    self._registry is not None)
 
     def open(self):
         with self._lock:
@@ -93,4 +93,3 @@ class FMuxTransport(FTransport):
     def flush(self):
         with self._lock:
             self._framed_transport.flush()
-

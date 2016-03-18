@@ -113,7 +113,53 @@ public class TNatsServiceTransport extends TTransport {
         }
 
         if (connectionSubject != null) {
-            handshake();
+            NatsConnectionProtocol connectionProtocol = new NatsConnectionProtocol(NatsConnectionProtocol.NATS_V0);
+            Gson gson = new Gson();
+            String serializedVersion = gson.toJson(connectionProtocol);
+            Message message;
+            try {
+                Message result;
+                String inbox = newFrugalInbox();
+                try (SyncSubscription s = conn.subscribeSync(inbox, null)) {
+                    s.autoUnsubscribe(1);
+                    conn.publish(this.connectionSubject, inbox, serializedVersion.getBytes("UTF-8"));
+                    result = s.nextMessage(this.connectionTimeout, TimeUnit.MILLISECONDS);
+                }
+                message = result;
+            } catch (IOException e) {
+                throw new TTransportException(e);
+            } catch (TimeoutException e) {
+                throw new TTransportException(TTransportException.TIMED_OUT, "Handshake timed out", e);
+            }
+            String reply = message.getReplyTo();
+            if (reply == null || reply.isEmpty()) {
+                throw new TTransportException("No reply subject on connect.");
+            }
+
+            String[] subjects = new String(message.getData()).split(" ");
+            if (subjects.length != 3) {
+                throw new TTransportException("Invalid connect message.");
+            }
+
+            String heartbeatListen1 = subjects[0];
+            String heartbeatReply1 = subjects[1];
+            int deadline;
+            try {
+                deadline = Integer.parseInt(subjects[2]);
+            } catch (NumberFormatException e) {
+                throw new TTransportException("Connection deadline not an integer.", e);
+            }
+
+            long heartbeatInterval1 = 0;
+            if (deadline > 0) {
+                heartbeatInterval1 = deadline;
+            }
+
+            this.heartbeatListen = heartbeatListen1;
+            this.heartbeatReply = heartbeatReply1;
+            this.heartbeatInterval = heartbeatInterval1;
+            this.listenTo = message.getSubject();
+            this.writeTo = reply;
         }
 
         if (listenTo == null || "".equals(listenTo) || writeTo == null || "".equals(writeTo)) {
@@ -145,13 +191,23 @@ public class TNatsServiceTransport extends TTransport {
             }
         });
 
+        setupHeartbeatSub();
+
+        isOpen = true;
+    }
+
+    private void setupHeartbeatSub() {
         if (heartbeatInterval > 0) {
             startTimer();
-            heartbeatSub = conn.subscribe(heartbeatListen, new MessageHandler() {
+            heartbeatSub = conn.subscribe(heartbeatListen,  new MessageHandler() {
 
                 @Override
                 public void onMessage(Message message) {
-                    receiveHeartbeat();
+                    synchronized (TNatsServiceTransport.this) {
+                        heartbeatTimer.cancel();
+                        missedHeartbeats.set(0);
+                        startTimer();
+                    }
                     try {
                         conn.publish(heartbeatReply, null);
                     } catch (IOException e) {
@@ -159,59 +215,6 @@ public class TNatsServiceTransport extends TTransport {
                     }
                 }
             });
-        }
-        isOpen = true;
-    }
-
-    private void handshake() throws TTransportException {
-        NatsConnectionProtocol connectionProtocol = new NatsConnectionProtocol(NatsConnectionProtocol.NATS_V0);
-        Gson gson = new Gson();
-        String serializedVersion = gson.toJson(connectionProtocol);
-        Message message;
-        try {
-            message = handshakeRequest(serializedVersion.getBytes("UTF-8"));
-        } catch (IOException e) {
-            throw new TTransportException(e);
-        } catch (TimeoutException e) {
-            throw new TTransportException(TTransportException.TIMED_OUT, "Handshake timed out", e);
-        }
-        String reply = message.getReplyTo();
-        if (reply == null || reply.isEmpty()) {
-            throw new TTransportException("No reply subject on connect.");
-        }
-
-        String[] subjects = new String(message.getData()).split(" ");
-        if (subjects.length != 3) {
-            throw new TTransportException("Invalid connect message.");
-        }
-
-        String heartbeatListen = subjects[0];
-        String heartbeatReply = subjects[1];
-        int deadline;
-        try {
-            deadline = Integer.parseInt(subjects[2]);
-        } catch (NumberFormatException e) {
-            throw new TTransportException("Connection deadline not an integer.", e);
-        }
-
-        long heartbeatInterval = 0;
-        if (deadline > 0) {
-            heartbeatInterval = deadline;
-        }
-
-        this.heartbeatListen = heartbeatListen;
-        this.heartbeatReply = heartbeatReply;
-        this.heartbeatInterval = heartbeatInterval;
-        this.listenTo = message.getSubject();
-        this.writeTo = reply;
-    }
-
-    private Message handshakeRequest(byte[] handshakeBytes) throws TimeoutException, IOException {
-        String inbox = newFrugalInbox();
-        try (SyncSubscription s = conn.subscribeSync(inbox, null)) {
-            s.autoUnsubscribe(1);
-            conn.publish(this.connectionSubject, inbox, handshakeBytes);
-            return s.nextMessage(this.connectionTimeout, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -237,12 +240,6 @@ public class TNatsServiceTransport extends TTransport {
             close();
             return;
         }
-        startTimer();
-    }
-
-    private synchronized void receiveHeartbeat() {
-        heartbeatTimer.cancel();
-        missedHeartbeats.set(0);
         startTimer();
     }
 
