@@ -7,6 +7,12 @@ set -e
 
 ROOT=$PWD
 
+# Retrieve the thrift binary
+mkdir -p $ROOT/bin
+wget -O $ROOT/bin/thrift https://github.com/stevenosborne-wf/thrift/releases/download/0.9.3-wk-2/thrift-0.9.3-wk-2-linux-amd64 
+chmod 0755 $ROOT/bin/thrift
+export PATH=$PATH:$ROOT/bin
+
 # Compile the java library code
 cd $ROOT/lib/java && mvn verify
 mv target/frugal-*.jar $ROOT
