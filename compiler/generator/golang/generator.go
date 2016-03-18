@@ -908,9 +908,9 @@ func (g *Generator) GenerateTypesImports(file *os.File) error {
 		contents += "\t\"errors\"\n"
 	}
 	if g.Options["thrift_import"] != "" {
-		imports += "\t\"" + g.Options["thrift_import"] + "\"\n"
+		contents += "\t\"" + g.Options["thrift_import"] + "\"\n"
 	} else {
-		imports += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
+		contents += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
 	}
 
 	protections := ""
@@ -939,9 +939,9 @@ func (g *Generator) GenerateServiceResultArgsImports(file *os.File) error {
 	contents += "\t\"bytes\"\n"
 	contents += "\t\"fmt\"\n"
 	if g.Options["thrift_import"] != "" {
-		imports += "\t\"" + g.Options["thrift_import"] + "\"\n"
+		contents += "\t\"" + g.Options["thrift_import"] + "\"\n"
 	} else {
-		imports += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
+		contents += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
 	}
 
 	protections := ""
