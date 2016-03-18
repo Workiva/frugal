@@ -902,15 +902,20 @@ func (g *Generator) GenerateTypesImports(file *os.File) error {
 	contents += "import (\n"
 	contents += "\t\"bytes\"\n"
 	contents += "\t\"fmt\"\n"
+	// Enums need these for some reason
 	if len(g.Frugal.Thrift.Enums) > 0 {
 		contents += "\t\"database/sql/driver\"\n"
 		contents += "\t\"errors\"\n"
 	}
-	contents += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
+	if g.Options["thrift_import"] != "" {
+		imports += "\t\"" + g.Options["thrift_import"] + "\"\n"
+	} else {
+		imports += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
+	}
 
 	protections := ""
 	pkgPrefix := g.Options["package_prefix"]
-	// TODO there's a pretty good chance there's a case I forgot about
+	// TODO right?
 	for _, include := range g.Frugal.Thrift.Includes {
 		contents += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, include.Name)
 		protections += fmt.Sprintf("var _ = %s.GoUnusedProtection__\n", include.Name)
@@ -933,11 +938,15 @@ func (g *Generator) GenerateServiceResultArgsImports(file *os.File) error {
 	contents += "import (\n"
 	contents += "\t\"bytes\"\n"
 	contents += "\t\"fmt\"\n"
-	contents += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
+	if g.Options["thrift_import"] != "" {
+		imports += "\t\"" + g.Options["thrift_import"] + "\"\n"
+	} else {
+		imports += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
+	}
 
 	protections := ""
 	pkgPrefix := g.Options["package_prefix"]
-	// TODO there's a pretty good chance there's a case I forgot about
+	// TODO right?
 	for _, include := range g.Frugal.Thrift.Includes {
 		contents += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, include.Name)
 		protections += fmt.Sprintf("var _ = %s.GoUnusedProtection__\n", include.Name)
