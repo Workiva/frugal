@@ -200,7 +200,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 		case "string":
 			return fmt.Sprintf("\"%s\"", value)
 		case "binary":
-			return fmt.Sprintf("%q", value)
+			return fmt.Sprintf("[]byte(\"%s\")", value)
 		case "list":
 			contents := ""
 			contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
@@ -446,7 +446,8 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 
 	for _, field := range s.Fields {
 		// Use the default if it exists, otherwise the zero value is implicitly used
-		if field.Default != nil {
+		// TODO Still not right
+		if field.Default != nil && !g.isPointerField(field) {
 			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name), g.generateConstantValue(field.Type, field.Default))
 		}
 	}
@@ -460,6 +461,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 		isPointer := g.isPointerField(field)
 		goType := g.getGoTypeFromThriftTypePtr(field.Type, false)
 		goOptType := g.getGoTypeFromThriftTypePtr(field.Type, true)
+		underlyingType := g.Frugal.UnderlyingType(field.Type)
 
 		if field.Modifier == parser.Optional || isPointer {
 			// Generate a default for getters
@@ -471,10 +473,15 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 
 			// Determines if the field is set
 			contents += fmt.Sprintf("func (p *%s) IsSet%s() bool {\n", sName, fName)
-			if field.Modifier == parser.Optional && field.Default != nil {
-				contents += fmt.Sprintf("\treturn p.%s != %s_%s_DEFAULT", fName, sName, fName)
-			} else {
+			if isPointer || parser.IsThriftContainer(underlyingType) || (underlyingType.Name == "binary" && field.Default == nil) {
+				// Compare these to nil
 				contents += fmt.Sprintf("\treturn p.%s != nil\n", fName)
+			} else if underlyingType.Name == "binary" {
+				// Binary fields are byte slices, can't compare slices with ==
+				contents += fmt.Sprintf("\treturn !bytes.Equal(p.%s, %s_%s_DEFAULT)\n", fName, sName, fName)
+			} else {
+				// Otherwise compare to default
+				contents += fmt.Sprintf("\treturn p.%s != %s_%s_DEFAULT\n", fName, sName, fName)
 			}
 			contents += "}\n\n"
 		}
@@ -1889,8 +1896,8 @@ func (g *Generator) isPointerField(field *parser.Field) bool {
 	hasDefault := field.Default != nil
 	switch underlyingType.Name {
 	case "binary":
-		// byte slice
-		return true
+		// According to thrift, these are always like this, not sure why
+		return false
 	case "bool", "byte", "i8", "i16", "i32", "i64", "double", "string":
 		// If there's no default, needs to be a pointer to be nillable
 		return !hasDefault

@@ -27,6 +27,8 @@ const set<int> NumsSet = [1,3,8,0]
 
 const map<string,Event> MAPCONSTANT2 = {'hello':{"ID": -2, "Message": "first here"}}
 
+const binary bin_const = "hello"
+
 union TestingUnions {
 	1: id AnID,
 	2: string aString,
@@ -43,7 +45,14 @@ struct TestingDefaults {
     5: string thing = 'a constant',
     6: optional string thing2 = 'another constant',
     7: list<int> listfield = [1, 2,3,4,5],
-    8: id ID3 = other_default
+    8: id ID3 = other_default,
+    9: binary bin_field,
+    10: optional binary bin_field2,
+    11: binary bin_field3,
+    12: optional binary bin_field4 = bin_const,
+    13: optional list<int> list2 = [1,3,4,5,8]
+    14: optional list<int> list3,
+    15: list<int> list4 = [1,2,3,6]
 }
 
 /**@
@@ -94,7 +103,9 @@ service Foo extends base.BaseFoo {
     i64 blah(1:i32 num, 2:string Str, 3:Event event) throws (1:AwesomeException awe, 2:base.api_exception api),
 
     /**@ oneway methods don't receive a response from the server. */
-    oneway void oneWay(1:id id, 2:request req)
+    oneway void oneWay(1:id id, 2:request req),
+
+    binary bin_method(1:binary bin, 2:string Str) throws (1:base.api_exception api)
 }
 
 /**@

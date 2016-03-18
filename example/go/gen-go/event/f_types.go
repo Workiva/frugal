@@ -39,6 +39,8 @@ var NumsSet map[Int]bool
 
 var MAPCONSTANT2 map[string]*Event
 
+const BinConst = []byte("hello")
+
 func init() {
 	DEFAULT_ID = -1
 	OtherDefault = -1
@@ -147,19 +149,18 @@ type TestingDefaults struct {
 	Thing2    string `thrift:"thing2,6" db:"thing2" json:"thing2,omitempty"`
 	Listfield []Int  `thrift:"listfield,7" db:"listfield" json:"listfield"`
 	ID3       ID     `thrift:"ID3,8" db:"ID3" json:"ID3"`
+	BinField  []byte `thrift:"bin_field,9" db:"bin_field" json:"bin_field"`
+	BinField2 []byte `thrift:"bin_field2,10" db:"bin_field2" json:"bin_field2,omitempty"`
+	BinField3 []byte `thrift:"bin_field3,11" db:"bin_field3" json:"bin_field3"`
+	BinField4 []byte `thrift:"bin_field4,12" db:"bin_field4" json:"bin_field4,omitempty"`
+	List2     *[]Int `thrift:"list2,13" db:"list2" json:"list2,omitempty"`
+	List3     []Int  `thrift:"list3,14" db:"list3" json:"list3,omitempty"`
+	List4     []Int  `thrift:"list4,15" db:"list4" json:"list4"`
 }
 
 func NewTestingDefaults() *TestingDefaults {
 	return &TestingDefaults{
-		ID2: -1,
-		Ev1: &Event{
-			ID:      -1,
-			Message: "a message",
-		},
-		Ev2: &Event{
-			ID:      5,
-			Message: "a message2",
-		},
+		ID2:    -1,
 		ID:     -2,
 		Thing:  "a constant",
 		Thing2: "another constant",
@@ -170,7 +171,14 @@ func NewTestingDefaults() *TestingDefaults {
 			4,
 			5,
 		},
-		ID3: -1,
+		ID3:       -1,
+		BinField4: []byte("hello"),
+		List4: []Int{
+			1,
+			2,
+			3,
+			6,
+		},
 	}
 }
 
@@ -242,6 +250,67 @@ func (p *TestingDefaults) GetID3() ID {
 	return p.ID3
 }
 
+func (p *TestingDefaults) GetBinField() []byte {
+	return p.BinField
+}
+
+var TestingDefaults_BinField2_DEFAULT []byte
+
+func (p *TestingDefaults) IsSetBinField2() bool {
+	return p.BinField2 != nil
+}
+
+func (p *TestingDefaults) GetBinField2() []byte {
+	return p.BinField2
+}
+
+func (p *TestingDefaults) GetBinField3() []byte {
+	return p.BinField3
+}
+
+var TestingDefaults_BinField4_DEFAULT []byte = []byte("hello")
+
+func (p *TestingDefaults) IsSetBinField4() bool {
+	return !bytes.Equal(p.BinField4, TestingDefaults_BinField4_DEFAULT)
+}
+
+func (p *TestingDefaults) GetBinField4() []byte {
+	return p.BinField4
+}
+
+var TestingDefaults_List2_DEFAULT []Int = []Int{
+	1,
+	3,
+	4,
+	5,
+	8,
+}
+
+func (p *TestingDefaults) IsSetList2() bool {
+	return p.List2 != nil
+}
+
+func (p *TestingDefaults) GetList2() []Int {
+	if !p.IsSetList2() {
+		return TestingDefaults_List2_DEFAULT
+	}
+	return *p.List2
+}
+
+var TestingDefaults_List3_DEFAULT []Int
+
+func (p *TestingDefaults) IsSetList3() bool {
+	return p.List3 != nil
+}
+
+func (p *TestingDefaults) GetList3() []Int {
+	return p.List3
+}
+
+func (p *TestingDefaults) GetList4() []Int {
+	return p.List4
+}
+
 func (p *TestingDefaults) Read(iprot thrift.TProtocol) error {
 	if _, err := iprot.ReadStructBegin(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
@@ -286,6 +355,34 @@ func (p *TestingDefaults) Read(iprot thrift.TProtocol) error {
 			}
 		case 8:
 			if err := p.ReadField8(iprot); err != nil {
+				return err
+			}
+		case 9:
+			if err := p.ReadField9(iprot); err != nil {
+				return err
+			}
+		case 10:
+			if err := p.ReadField10(iprot); err != nil {
+				return err
+			}
+		case 11:
+			if err := p.ReadField11(iprot); err != nil {
+				return err
+			}
+		case 12:
+			if err := p.ReadField12(iprot); err != nil {
+				return err
+			}
+		case 13:
+			if err := p.ReadField13(iprot); err != nil {
+				return err
+			}
+		case 14:
+			if err := p.ReadField14(iprot); err != nil {
+				return err
+			}
+		case 15:
+			if err := p.ReadField15(iprot); err != nil {
 				return err
 			}
 		default:
@@ -389,6 +486,108 @@ func (p *TestingDefaults) ReadField8(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *TestingDefaults) ReadField9(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadBinary(); err != nil {
+		return thrift.PrependError("error reading field 9: ", err)
+	} else {
+		p.BinField = v
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField10(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadBinary(); err != nil {
+		return thrift.PrependError("error reading field 10: ", err)
+	} else {
+		p.BinField2 = v
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField11(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadBinary(); err != nil {
+		return thrift.PrependError("error reading field 11: ", err)
+	} else {
+		p.BinField3 = v
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField12(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadBinary(); err != nil {
+		return thrift.PrependError("error reading field 12: ", err)
+	} else {
+		p.BinField4 = v
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField13(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin()
+	if err != nil {
+		return thrift.PrependError("error reading list begin: ", err)
+	}
+	p.List2 = make([]Int, 0, size)
+	for i := 0; i < size; i++ {
+		var elem1 Int
+		if v, err := iprot.ReadI32(); err != nil {
+			return thrift.PrependError("error reading field 0: ", err)
+		} else {
+			temp := Int(v)
+			elem1 = temp
+		}
+		p.List2 = append(p.List2, elem1)
+	}
+	if err := iprot.ReadListEnd(); err != nil {
+		return thrift.PrependError("error reading list end: ", err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField14(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin()
+	if err != nil {
+		return thrift.PrependError("error reading list begin: ", err)
+	}
+	p.List3 = make([]Int, 0, size)
+	for i := 0; i < size; i++ {
+		var elem2 Int
+		if v, err := iprot.ReadI32(); err != nil {
+			return thrift.PrependError("error reading field 0: ", err)
+		} else {
+			temp := Int(v)
+			elem2 = temp
+		}
+		p.List3 = append(p.List3, elem2)
+	}
+	if err := iprot.ReadListEnd(); err != nil {
+		return thrift.PrependError("error reading list end: ", err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) ReadField15(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin()
+	if err != nil {
+		return thrift.PrependError("error reading list begin: ", err)
+	}
+	p.List4 = make([]Int, 0, size)
+	for i := 0; i < size; i++ {
+		var elem3 Int
+		if v, err := iprot.ReadI32(); err != nil {
+			return thrift.PrependError("error reading field 0: ", err)
+		} else {
+			temp := Int(v)
+			elem3 = temp
+		}
+		p.List4 = append(p.List4, elem3)
+	}
+	if err := iprot.ReadListEnd(); err != nil {
+		return thrift.PrependError("error reading list end: ", err)
+	}
+	return nil
+}
+
 func (p *TestingDefaults) Write(oprot thrift.TProtocol) error {
 	if err := oprot.WriteStructBegin("TestingDefaults"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
@@ -415,6 +614,27 @@ func (p *TestingDefaults) Write(oprot thrift.TProtocol) error {
 		return err
 	}
 	if err := p.writeField8(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField9(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField10(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField11(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField12(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField13(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField14(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField15(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -538,6 +758,129 @@ func (p *TestingDefaults) writeField8(oprot thrift.TProtocol) error {
 	}
 	if err := oprot.WriteFieldEnd(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field end error 8:ID3: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField9(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("bin_field", thrift.BINARY, 9); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 9:bin_field: ", p), err)
+	}
+	if err := oprot.WriteBinary([]byte(p.BinField)); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T.bin_field (9) field write error: ", p), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 9:bin_field: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField10(oprot thrift.TProtocol) error {
+	if p.IsSetBinField2() {
+		if err := oprot.WriteFieldBegin("bin_field2", thrift.BINARY, 10); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 10:bin_field2: ", p), err)
+		}
+		if err := oprot.WriteBinary([]byte(p.BinField2)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.bin_field2 (10) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 10:bin_field2: ", p), err)
+		}
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField11(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("bin_field3", thrift.BINARY, 11); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 11:bin_field3: ", p), err)
+	}
+	if err := oprot.WriteBinary([]byte(p.BinField3)); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T.bin_field3 (11) field write error: ", p), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 11:bin_field3: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField12(oprot thrift.TProtocol) error {
+	if p.IsSetBinField4() {
+		if err := oprot.WriteFieldBegin("bin_field4", thrift.BINARY, 12); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 12:bin_field4: ", p), err)
+		}
+		if err := oprot.WriteBinary([]byte(p.BinField4)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.bin_field4 (12) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 12:bin_field4: ", p), err)
+		}
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField13(oprot thrift.TProtocol) error {
+	if p.IsSetList2() {
+		if err := oprot.WriteFieldBegin("list2", thrift.LIST, 13); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 13:list2: ", p), err)
+		}
+		if err := oprot.WriteListBegin(thrift.I32, len(*p.List2)); err != nil {
+			return thrift.PrependError("error writing list begin: ", err)
+		}
+		for _, v := range *p.List2 {
+			if err := oprot.WriteI32(int32(v)); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+			}
+		}
+		if err := oprot.WriteListEnd(); err != nil {
+			return thrift.PrependError("error writing list end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 13:list2: ", p), err)
+		}
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField14(oprot thrift.TProtocol) error {
+	if p.IsSetList3() {
+		if err := oprot.WriteFieldBegin("list3", thrift.LIST, 14); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 14:list3: ", p), err)
+		}
+		if err := oprot.WriteListBegin(thrift.I32, len(p.List3)); err != nil {
+			return thrift.PrependError("error writing list begin: ", err)
+		}
+		for _, v := range p.List3 {
+			if err := oprot.WriteI32(int32(v)); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+			}
+		}
+		if err := oprot.WriteListEnd(); err != nil {
+			return thrift.PrependError("error writing list end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 14:list3: ", p), err)
+		}
+	}
+	return nil
+}
+
+func (p *TestingDefaults) writeField15(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("list4", thrift.LIST, 15); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 15:list4: ", p), err)
+	}
+	if err := oprot.WriteListBegin(thrift.I32, len(p.List4)); err != nil {
+		return thrift.PrependError("error writing list begin: ", err)
+	}
+	for _, v := range p.List4 {
+		if err := oprot.WriteI32(int32(v)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+		}
+	}
+	if err := oprot.WriteListEnd(); err != nil {
+		return thrift.PrependError("error writing list end: ", err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 15:list4: ", p), err)
 	}
 	return nil
 }
@@ -828,11 +1171,11 @@ func (p *EventWrapper) ReadField3(iprot thrift.TProtocol) error {
 	}
 	p.Events = make([]*Event, 0, size)
 	for i := 0; i < size; i++ {
-		elem1 := NewEvent()
-		if err := elem1.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem1), err)
+		elem4 := NewEvent()
+		if err := elem4.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem4), err)
 		}
-		p.Events = append(p.Events, elem1)
+		p.Events = append(p.Events, elem4)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -847,11 +1190,11 @@ func (p *EventWrapper) ReadField4(iprot thrift.TProtocol) error {
 	}
 	p.Events2 = make(map[*Event]bool, size)
 	for i := 0; i < size; i++ {
-		elem2 := NewEvent()
-		if err := elem2.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem2), err)
+		elem5 := NewEvent()
+		if err := elem5.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem5), err)
 		}
-		p.Events2[elem2] = true
+		p.Events2[elem5] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -866,18 +1209,18 @@ func (p *EventWrapper) ReadField5(iprot thrift.TProtocol) error {
 	}
 	p.EventMap = make(map[ID]*Event, size)
 	for i := 0; i < size; i++ {
-		var elem4 ID
+		var elem7 ID
 		if v, err := iprot.ReadI64(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := ID(v)
-			elem4 = temp
+			elem7 = temp
 		}
-		elem3 := NewEvent()
-		if err := elem3.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem3), err)
+		elem6 := NewEvent()
+		if err := elem6.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem6), err)
 		}
-		p.EventMap[elem4] = elem3
+		p.EventMap[elem7] = elem6
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)
@@ -896,21 +1239,21 @@ func (p *EventWrapper) ReadField6(iprot thrift.TProtocol) error {
 		if err != nil {
 			return thrift.PrependError("error reading list begin: ", err)
 		}
-		elem5 := make([]Int, 0, size)
+		elem8 := make([]Int, 0, size)
 		for i := 0; i < size; i++ {
-			var elem6 Int
+			var elem9 Int
 			if v, err := iprot.ReadI32(); err != nil {
 				return thrift.PrependError("error reading field 0: ", err)
 			} else {
 				temp := Int(v)
-				elem6 = temp
+				elem9 = temp
 			}
-			elem5 = append(elem5, elem6)
+			elem8 = append(elem8, elem9)
 		}
 		if err := iprot.ReadListEnd(); err != nil {
 			return thrift.PrependError("error reading list end: ", err)
 		}
-		p.Nums = append(p.Nums, elem5)
+		p.Nums = append(p.Nums, elem8)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -925,14 +1268,14 @@ func (p *EventWrapper) ReadField7(iprot thrift.TProtocol) error {
 	}
 	p.Enums = make([]ItsAnEnum, 0, size)
 	for i := 0; i < size; i++ {
-		var elem7 ItsAnEnum
+		var elem10 ItsAnEnum
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := ItsAnEnum(v)
-			elem7 = temp
+			elem10 = temp
 		}
-		p.Enums = append(p.Enums, elem7)
+		p.Enums = append(p.Enums, elem10)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -1313,20 +1656,20 @@ func (p *TestingUnions) ReadField5(iprot thrift.TProtocol) error {
 	}
 	p.Requests = make(Request, size)
 	for i := 0; i < size; i++ {
-		var elem9 Int
+		var elem12 Int
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := Int(v)
-			elem9 = temp
+			elem12 = temp
 		}
-		var elem8 string
+		var elem11 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem8 = v
+			elem11 = v
 		}
-		p.Requests[elem9] = elem8
+		p.Requests[elem12] = elem11
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)

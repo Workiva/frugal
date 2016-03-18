@@ -551,20 +551,20 @@ func (p *FooOneWayArgs) ReadField2(iprot thrift.TProtocol) error {
 	}
 	p.Req = make(Request, size)
 	for i := 0; i < size; i++ {
-		var elem11 Int
+		var elem14 Int
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := Int(v)
-			elem11 = temp
+			elem14 = temp
 		}
-		var elem10 string
+		var elem13 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem10 = v
+			elem13 = v
 		}
-		p.Req[elem11] = elem10
+		p.Req[elem14] = elem13
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)
@@ -633,4 +633,270 @@ func (p *FooOneWayArgs) String() string {
 		return "<nil>"
 	}
 	return fmt.Sprintf("FooOneWayArgs(%+v)", *p)
+}
+
+type FooBinMethodArgs struct {
+	Bin []byte `thrift:"bin,1" db:"bin" json:"bin"`
+	Str string `thrift:"Str,2" db:"Str" json:"Str"`
+}
+
+func NewFooBinMethodArgs() *FooBinMethodArgs {
+	return &FooBinMethodArgs{}
+}
+
+func (p *FooBinMethodArgs) GetBin() []byte {
+	return p.Bin
+}
+
+func (p *FooBinMethodArgs) GetStr() string {
+	return p.Str
+}
+
+func (p *FooBinMethodArgs) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 1:
+			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		case 2:
+			if err := p.ReadField2(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	return nil
+}
+
+func (p *FooBinMethodArgs) ReadField1(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadBinary(); err != nil {
+		return thrift.PrependError("error reading field 1: ", err)
+	} else {
+		p.Bin = v
+	}
+	return nil
+}
+
+func (p *FooBinMethodArgs) ReadField2(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadString(); err != nil {
+		return thrift.PrependError("error reading field 2: ", err)
+	} else {
+		p.Str = v
+	}
+	return nil
+}
+
+func (p *FooBinMethodArgs) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("bin_method_args"); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField2(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return thrift.PrependError("write field stop error: ", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return thrift.PrependError("write struct stop error: ", err)
+	}
+	return nil
+}
+
+func (p *FooBinMethodArgs) writeField1(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("bin", thrift.BINARY, 1); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:bin: ", p), err)
+	}
+	if err := oprot.WriteBinary([]byte(p.Bin)); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T.bin (1) field write error: ", p), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 1:bin: ", p), err)
+	}
+	return nil
+}
+
+func (p *FooBinMethodArgs) writeField2(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("Str", thrift.STRING, 2); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:Str: ", p), err)
+	}
+	if err := oprot.WriteString(string(p.Str)); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T.Str (2) field write error: ", p), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 2:Str: ", p), err)
+	}
+	return nil
+}
+
+func (p *FooBinMethodArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("FooBinMethodArgs(%+v)", *p)
+}
+
+type FooBinMethodResult struct {
+	Success []byte             `thrift:"success,0" db:"success" json:"success,omitempty"`
+	API     *base.APIException `thrift:"api,1" db:"api" json:"api,omitempty"`
+}
+
+func NewFooBinMethodResult() *FooBinMethodResult {
+	return &FooBinMethodResult{}
+}
+
+var FooBinMethodResult_Success_DEFAULT []byte
+
+func (p *FooBinMethodResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *FooBinMethodResult) GetSuccess() []byte {
+	return p.Success
+}
+
+var FooBinMethodResult_API_DEFAULT *base.APIException
+
+func (p *FooBinMethodResult) IsSetAPI() bool {
+	return p.API != nil
+}
+
+func (p *FooBinMethodResult) GetAPI() *base.APIException {
+	if !p.IsSetAPI() {
+		return FooBinMethodResult_API_DEFAULT
+	}
+	return p.API
+}
+
+func (p *FooBinMethodResult) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 0:
+			if err := p.ReadField0(iprot); err != nil {
+				return err
+			}
+		case 1:
+			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	return nil
+}
+
+func (p *FooBinMethodResult) ReadField0(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadBinary(); err != nil {
+		return thrift.PrependError("error reading field 0: ", err)
+	} else {
+		p.Success = v
+	}
+	return nil
+}
+
+func (p *FooBinMethodResult) ReadField1(iprot thrift.TProtocol) error {
+	p.API = base.NewAPIException()
+	if err := p.API.Read(iprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.API), err)
+	}
+	return nil
+}
+
+func (p *FooBinMethodResult) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("bin_method_result"); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+	}
+	if err := p.writeField0(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return thrift.PrependError("write field stop error: ", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return thrift.PrependError("write struct stop error: ", err)
+	}
+	return nil
+}
+
+func (p *FooBinMethodResult) writeField0(oprot thrift.TProtocol) error {
+	if p.IsSetSuccess() {
+		if err := oprot.WriteFieldBegin("success", thrift.BINARY, 0); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 0:success: ", p), err)
+		}
+		if err := oprot.WriteBinary([]byte(p.Success)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.success (0) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 0:success: ", p), err)
+		}
+	}
+	return nil
+}
+
+func (p *FooBinMethodResult) writeField1(oprot thrift.TProtocol) error {
+	if p.IsSetAPI() {
+		if err := oprot.WriteFieldBegin("api", thrift.STRUCT, 1); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:api: ", p), err)
+		}
+		if err := p.API.Write(oprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.API), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 1:api: ", p), err)
+		}
+	}
+	return nil
+}
+
+func (p *FooBinMethodResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("FooBinMethodResult(%+v)", *p)
 }
