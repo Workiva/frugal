@@ -274,8 +274,9 @@ func (n *natsServiceTTransport) Close() error {
 	n.heartbeatSub = nil
 	close(n.closed)
 	n.isOpen = false
+	n.writer.Close()
 	n.fieldsMu.Unlock()
-	return thrift.NewTTransportExceptionFromError(n.writer.Close())
+	return nil
 }
 
 func (n *natsServiceTTransport) Read(p []byte) (int, error) {

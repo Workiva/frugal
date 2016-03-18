@@ -97,7 +97,7 @@ type fMuxTransport struct {
 	numWorkers          uint
 	workC               chan []byte
 	open                bool
-	mu                  sync.Mutex
+	mu                  sync.RWMutex
 	closed              chan error
 	monitorClosedSignal chan<- error
 }
@@ -121,6 +121,7 @@ func (f *fMuxTransport) SetMonitor(monitor FTransportMonitor) {
 	select {
 	case f.monitorClosedSignal <- nil:
 	default:
+		log.Println("frugal: dropped transport monitor close signal")
 	}
 
 	// Start the new monitor
@@ -208,6 +209,12 @@ func (f *fMuxTransport) Open() error {
 	return nil
 }
 
+func (f *fMuxTransport) IsOpen() bool {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	return f.open && f.TFramedTransport.IsOpen()
+}
+
 // Close will close the underlying TTransport and stops all goroutines.
 func (f *fMuxTransport) Close() error {
 	return f.close(nil)
@@ -239,6 +246,36 @@ func (f *fMuxTransport) close(cause error) error {
 	}
 
 	return nil
+}
+
+func (f *fMuxTransport) Read(p []byte) (int, error) {
+	f.mu.RLock()
+	open := f.open
+	f.mu.RUnlock()
+	if !open {
+		return 0, thrift.NewTTransportException(thrift.NOT_OPEN, "fMuxTransport not open")
+	}
+	return f.TFramedTransport.Read(p)
+}
+
+func (f *fMuxTransport) Write(p []byte) (int, error) {
+	f.mu.RLock()
+	open := f.open
+	f.mu.RUnlock()
+	if !open {
+		return 0, thrift.NewTTransportException(thrift.NOT_OPEN, "fMuxTransport not open")
+	}
+	return f.TFramedTransport.Write(p)
+}
+
+func (f *fMuxTransport) Flush() error {
+	f.mu.RLock()
+	open := f.open
+	f.mu.RUnlock()
+	if !open {
+		return thrift.NewTTransportException(thrift.NOT_OPEN, "fMuxTransport not open")
+	}
+	return f.TFramedTransport.Flush()
 }
 
 // Closed channel is closed when the FTransport is closed.
@@ -280,7 +317,7 @@ func (f *fMuxTransport) startWorkers() {
 }
 
 func (f *fMuxTransport) closedChan() <-chan error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.closed
 }
