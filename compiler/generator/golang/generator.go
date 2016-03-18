@@ -509,9 +509,11 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 		contents += fmt.Sprintf("func (p *%s) CountSetFieldsTestingUnions() int {\n", sName)
 		contents += "\tcount := 0\n"
 		for _, field := range s.Fields {
-			contents += fmt.Sprintf("\tif p.IsSet%s() {\n", title(field.Name))
-			contents += "\t\tcount++\n"
-			contents += "\t}\n"
+			if g.isPointerField(field) {
+				contents += fmt.Sprintf("\tif p.IsSet%s() {\n", title(field.Name))
+				contents += "\t\tcount++\n"
+				contents += "\t}\n"
+			}
 		}
 		contents += "\treturn count\n"
 		contents += "}\n\n"
