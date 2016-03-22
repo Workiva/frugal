@@ -1,5 +1,6 @@
 package com.workiva.frugal.protocol;
 
+import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TTransport;
 
@@ -14,7 +15,8 @@ public class FProtocolFactory {
     }
 
     public FProtocol getProtocol(TTransport transport) {
-        return new FProtocol(tProtocolFactory.getProtocol(transport));
+        TProtocol protocol = tProtocolFactory.getProtocol(transport);
+        return new FProtocol(protocol);
     }
 
 }

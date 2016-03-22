@@ -43,8 +43,9 @@ public class FServerRegistry implements FRegistry {
      * @param frame an entire Frugal message frame.
      */
     public void execute(byte[] frame) throws TException {
+        FProtocol protocol = inputProtocolFactory.getProtocol(new TMemoryInputTransport(frame));
         fProcessor.process(
-                inputProtocolFactory.getProtocol(new TMemoryInputTransport(frame)), outputProtocol);
+                protocol, outputProtocol);
     }
 
     public void close() {}
