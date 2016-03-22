@@ -20,7 +20,7 @@ public class FClientRegistry implements FRegistry {
     private static final Logger LOGGER = Logger.getLogger(FClientRegistry.class.getName());
     private static final AtomicLong NEXT_OP_ID = new AtomicLong(0);
 
-    private Map<Long, Pair<FAsyncCallback, Thread>> handlers;
+    protected Map<Long, Pair<FAsyncCallback, Thread>> handlers;
 
     public FClientRegistry() {
         handlers = new ConcurrentHashMap<>();
