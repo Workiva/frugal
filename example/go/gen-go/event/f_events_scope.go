@@ -101,10 +101,9 @@ func (l *eventsSubscriber) SubscribeEventCreated(user string, handler func(*frug
 				if e, ok := err.(thrift.TTransportException); ok && e.TypeId() == thrift.END_OF_FILE {
 					return
 				}
-				log.Printf("frugal: error receiving %s: %s\n", topic, err.Error())
-				sub.Signal(err)
-				sub.Unsubscribe()
-				return
+				log.Printf("frugal: error receiving %s, discarding frame: %s\n", topic, err.Error())
+				transport.DiscardFrame()
+				continue
 			}
 			handler(ctx, received)
 		}

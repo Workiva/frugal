@@ -3,9 +3,12 @@ language: golang
 
 script:
     - ./scripts/smithy.sh
+    - tar -czf goLib.tar.gz ./lib/go
 
 artifacts:
     artifactory:
         - frugal-*.jar
     docker:
         - ./frugal
+    release:
+        - goLib.tar.gz
