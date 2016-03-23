@@ -48,6 +48,8 @@ type FNatsServer struct {
 	processorFactory    FProcessorFactory
 	transportFactory    FTransportFactory
 	protocolFactory     *FProtocolFactory
+	highWatermark       time.Duration
+	waterMu             sync.RWMutex
 }
 
 // NewFNatsServer creates a new FNatsServer which listens for requests on the
@@ -136,6 +138,7 @@ func NewFNatsServerFactoryWithSubjects(
 		transportFactory:    transportFactory,
 		protocolFactory:     protocolFactory,
 		quit:                make(chan struct{}, 1),
+		highWatermark:       defaultWatermark,
 	}
 }
 
@@ -173,6 +176,15 @@ func (n *FNatsServer) Serve() error {
 func (n *FNatsServer) Stop() error {
 	close(n.quit)
 	return nil
+}
+
+// SetHighWatermark sets the maximum amount of time a frame is allowed to await
+// processing before triggering server overload logic. For now, this just
+// consists of logging a warning. If not set, default is 5 seconds.
+func (n *FNatsServer) SetHighWatermark(watermark time.Duration) {
+	n.waterMu.Lock()
+	n.highWatermark = watermark
+	n.waterMu.Unlock()
 }
 
 // handleConnection is invoked when a remote peer is attempting to connect to
@@ -297,6 +309,9 @@ func (n *FNatsServer) accept(listenTo, replyTo, heartbeat string) (FTransport, e
 	processor := n.processorFactory.GetProcessor(transport)
 	protocol := n.protocolFactory.GetProtocol(transport)
 	transport.SetRegistry(NewServerRegistry(processor, n.protocolFactory, protocol))
+	n.waterMu.RLock()
+	transport.SetHighWatermark(n.highWatermark)
+	n.waterMu.RUnlock()
 	if err := transport.Open(); err != nil {
 		return nil, err
 	}

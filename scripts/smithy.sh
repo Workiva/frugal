@@ -14,7 +14,7 @@ chmod 0755 $ROOT/bin/thrift
 export PATH=$PATH:$ROOT/bin
 
 # Compile the java library code
-cd $ROOT/lib/java && mvn verify
+cd $ROOT/lib/java && mvn clean verify
 mv target/frugal-*.jar $ROOT
 
 # Compile the go library code

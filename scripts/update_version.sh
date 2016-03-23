@@ -29,8 +29,16 @@ replace
 cd $ROOT/test
 replace
 
-# Change versions in the example
+# Install new binary and regenerate example code
+cd $ROOT
+go install
 cd $ROOT/example
+sh generate_code.sh
+
+# Update java and dart example dependencies
+cd $ROOT/example/java
+replace
+cd $ROOT/example/dart
 replace
 
 # Return home, your work is done!

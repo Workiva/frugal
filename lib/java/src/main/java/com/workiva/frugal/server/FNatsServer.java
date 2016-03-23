@@ -37,6 +37,7 @@ public class FNatsServer implements FServer {
     private FTransportFactory transportFactory;
     private FProtocolFactory protocolFactory;
     private final BlockingQueue<Object> shutdown = new ArrayBlockingQueue<>(1);
+    private long highWatermark = FTransport.DEFAULT_WATERMARK;
 
     private final ScheduledExecutorService heartbeatExecutor = Executors.newScheduledThreadPool(1);
 
@@ -140,6 +141,21 @@ public class FNatsServer implements FServer {
         }
     }
 
+    /**
+     * Sets the maximum amount of time a frame is allowed to await processing
+     * before triggering transport overload logic. For now, this just
+     * consists of logging a warning. If not set, the default is 5 seconds.
+     *
+     * @param watermark the watermark time in milliseconds.
+     */
+    public synchronized void setHighWatermark(long watermark) {
+        this.highWatermark = watermark;
+    }
+
+    private synchronized long getHighWatermark() {
+        return highWatermark;
+    }
+
     private String newFrugalInbox(String prefix) {
         String[] tokens = prefix.split("\\.");
         tokens[tokens.length-1] = conn.newInbox(); // Always at least 1 token
@@ -159,6 +175,7 @@ public class FNatsServer implements FServer {
         FProcessor processor = processorFactory.getProcessor(transport);
         FProtocol protocol = protocolFactory.getProtocol(transport);
         transport.setRegistry(new FServerRegistry(processor, protocolFactory, protocol));
+        transport.setHighWatermark(getHighWatermark());
         transport.open();
         return client;
     }

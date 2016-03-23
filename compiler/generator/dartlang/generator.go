@@ -102,7 +102,7 @@ func (g *Generator) addToPubspec(dir string) error {
 	}
 
 	if g.Frugal.ContainsFrugalDefinitions() {
-		deps["frugal"] = dep{Git: gitDep{URL: "git@github.com:Workiva/frugal-dart.git", Ref: "1.0.6"}}
+		deps["frugal"] = dep{Git: gitDep{URL: "git@github.com:Workiva/frugal-dart.git", Ref: "1.0.7"}}
 	}
 
 	includesSet := make(map[string]bool)
