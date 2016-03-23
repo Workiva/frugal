@@ -24,6 +24,7 @@ public class FSimpleServer implements FServer {
     private FTransportFactory fTransportFactory;
     private FProtocolFactory fProtocolFactory;
     private volatile boolean stopped;
+    private long highWatermark = FTransport.DEFAULT_WATERMARK;
 
     private static Logger LOGGER = Logger.getLogger(FSimpleServer.class.getName());
 
@@ -83,6 +84,7 @@ public class FSimpleServer implements FServer {
         FTransport transport = fTransportFactory.getTransport(client);
         FProtocol protocol = fProtocolFactory.getProtocol(transport);
         transport.setRegistry(new FServerRegistry(processor, fProtocolFactory, protocol));
+        transport.setHighWatermark(getHighWatermark());
         transport.open();
     }
 
@@ -94,4 +96,20 @@ public class FSimpleServer implements FServer {
         stopped = true;
         tServerTransport.interrupt();
     }
+
+    /**
+     * Sets the maximum amount of time a frame is allowed to await processing
+     * before triggering transport overload logic. For now, this just
+     * consists of logging a warning. If not set, the default is 5 seconds.
+     *
+     * @param watermark the watermark time in milliseconds.
+     */
+    public synchronized void setHighWatermark(long watermark) {
+        this.highWatermark = watermark;
+    }
+
+    private synchronized long getHighWatermark() {
+        return highWatermark;
+    }
+
 }

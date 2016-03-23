@@ -8,7 +8,7 @@ script:
 artifacts:
     artifactory:
         - frugal-*.jar
-    docker:
-        - ./frugal
     release:
+        - ./frugal
+    go_library:
         - goLib.tar.gz

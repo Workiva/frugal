@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 
 public class FMuxTransport extends FTransport {
     protected TFramedTransport framedTransport;
-    protected BlockingQueue<byte[]> workQueue;
+    protected BlockingQueue<FrameWrapper> workQueue;
     private ProcessorThread processorThread;
     private WorkerThread[] workerThreads;
 
@@ -51,6 +51,24 @@ public class FMuxTransport extends FTransport {
          */
         public FMuxTransport getTransport(TTransport transport) {
             return new FMuxTransport(transport, numWorkers);
+        }
+    }
+
+    private static class FrameWrapper {
+        byte[] frameBytes;
+        long timestamp;
+
+        protected FrameWrapper(byte[] frameByes, long timestamp) {
+            this.frameBytes = frameByes;
+            this.timestamp = timestamp;
+        }
+
+        protected byte[] getFrameBytes() {
+            return frameBytes;
+        }
+
+        protected long getTimestamp() {
+            return this.timestamp;
         }
     }
 
@@ -140,9 +158,9 @@ public class FMuxTransport extends FTransport {
         public void run() {
             running = true;
             while (running) {
-                byte[] frame;
+                byte[] frameBytes;
                 try {
-                    frame = framedTransport.readFrame();
+                    frameBytes = framedTransport.readFrame();
                 } catch (TTransportException e) {
                     if (e.getType() != TTransportException.END_OF_FILE) {
                         LOGGER.warning("error reading frame, closing transport " + e.getMessage());
@@ -152,6 +170,7 @@ public class FMuxTransport extends FTransport {
                 }
 
                 try {
+                    FrameWrapper frame = new FrameWrapper(frameBytes, System.currentTimeMillis());
                     workQueue.put(frame);
                 } catch (InterruptedException e) {
                     LOGGER.warning("could not put frame in work queue. Dropping frame.");
@@ -178,15 +197,19 @@ public class FMuxTransport extends FTransport {
         public void run() {
             running = true;
             while (running) {
-                byte[] frame;
+                FrameWrapper frame;
                 try {
                     frame = workQueue.take();
                 } catch (InterruptedException e) {
                     // Just keep trying!
                     continue;
                 }
+                long duration = System.currentTimeMillis() - frame.getTimestamp();
+                if (duration > getHighWatermark()) {
+                    LOGGER.warning("frame spent " + duration + "ms in the transport buffer, your consumer might be backed up");
+                }
                 try {
-                    registry.execute(frame);
+                    registry.execute(frame.getFrameBytes());
                 } catch (TException e) {
                     // An exception here indicates an unrecoverable exception,
                     // tear down transport.

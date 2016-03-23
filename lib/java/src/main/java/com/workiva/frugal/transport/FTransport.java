@@ -20,10 +20,12 @@ public abstract class FTransport extends TTransport {
 
     public static final int REQUEST_TOO_LARGE = 100;
     public static final int RESPONSE_TOO_LARGE = 101;
+    public static final long DEFAULT_WATERMARK = 5 * 1000;
 
     private volatile FClosedCallback _closedCallback;
     private volatile FTransportClosedCallback closedCallback;
     private volatile FTransportClosedCallback monitor;
+    protected long highWatermark = DEFAULT_WATERMARK;
     protected FRegistry registry;
 
     /**
@@ -86,6 +88,20 @@ public abstract class FTransport extends TTransport {
     public synchronized void setMonitor(FTransportMonitor monitor) {
         LOGGER.info("FTransport Monitor: Beginning to monitor transport...");
         this.monitor = new MonitorRunner(monitor, this);
+    }
+
+    /**
+     * Sets the maximum amount of time a frame is allowed to await processing
+     * before triggering transport overload logic.
+     *
+     * @param watermark the watermark time in milliseconds.
+     */
+    public synchronized void setHighWatermark(long watermark) {
+        this.highWatermark = watermark;
+    }
+
+    protected synchronized long getHighWatermark() {
+        return highWatermark;
     }
 
     protected synchronized void signalClose(final Exception cause) {
