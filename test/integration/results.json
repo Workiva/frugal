@@ -1,0 +1,50 @@
+{
+  "date": "Thu Mar 24 10:39:06 2016", 
+  "platform": "Darwin", 
+  "duration": "1.1", 
+  "results": [
+    [
+      "go", 
+      "go", 
+      "compact", 
+      "buffered", 
+      "ip", 
+      true, 
+      null, 
+      0, 
+      {
+        "client": "log/go-go_compact_buffered-ip_client.log", 
+        "server": "log/go-go_compact_buffered-ip_server.log"
+      }
+    ], 
+    [
+      "go", 
+      "go", 
+      "binary", 
+      "buffered", 
+      "ip", 
+      true, 
+      null, 
+      0, 
+      {
+        "client": "log/go-go_binary_buffered-ip_client.log", 
+        "server": "log/go-go_binary_buffered-ip_server.log"
+      }
+    ], 
+    [
+      "go", 
+      "go", 
+      "json", 
+      "buffered", 
+      "ip", 
+      true, 
+      null, 
+      0, 
+      {
+        "client": "log/go-go_json_buffered-ip_client.log", 
+        "server": "log/go-go_json_buffered-ip_server.log"
+      }
+    ]
+  ], 
+  "revision": "943d423"
+}

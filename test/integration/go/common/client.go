@@ -4,11 +4,13 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"gen/frugaltest"
 	"git.apache.org/thrift.git/lib/go/thrift"
-	"github.com/Workiva/fruga/test/integration/go/gen/frugaltest"
 	"github.com/Workiva/frugal/lib/go"
+	"github.com/Workiva/frugal/test/integration/go/gen/frugaltest"
+	"log"
 )
+
+// const addr = "localhost:4535"
 
 var debugClientProtocol bool
 
@@ -26,10 +28,12 @@ func StartClient(
 
 	hostPort := fmt.Sprintf("%s:%d", host, port)
 
-	var protocolFactory = thrift.TProtocolFactory
+	var protocolFactory thrift.TProtocolFactory
 	switch protocol {
 	case "compact":
 		protocolFactory = thrift.NewTCompactProtocolFactory()
+	case "simplejson":
+		protocolFactory = thrift.NewTSimpleJSONProtocolFactory()
 	case "json":
 		protocolFactory = thrift.NewTJSONProtocolFactory()
 	case "binary":
@@ -37,13 +41,10 @@ func StartClient(
 	default:
 		return nil, fmt.Errorf("Invalid protocol specified %s", protocol)
 	}
-
-	// Not sure if this section will work, leaving it in for now.
-	if debugServerProtocol {
+	if debugClientProtocol {
 		protocolFactory = thrift.NewTDebugProtocolFactory(protocolFactory, "client:")
 	}
 
-	// var trans frugal.FTransport
 	var trans thrift.TTransport
 	if ssl {
 		trans, err = thrift.NewTSSLSocket(hostPort, &tls.Config{InsecureSkipVerify: true})
@@ -57,9 +58,34 @@ func StartClient(
 	if err != nil {
 		return nil, err
 	}
-
-	if err = trans.Open(); err != nil {
-		return nil, err
+	switch transport {
+	case "http":
+		trans, err = thrift.NewTHttpClient(fmt.Sprintf("http://%s/service", hostPort))
+		if err != nil {
+			return nil, err
+		}
+	case "framed":
+		trans = thrift.NewTFramedTransport(trans)
+	case "buffered":
+		trans = thrift.NewTBufferedTransport(trans, 8192)
+	// case "zlib":
+	// 	trans, err = thrift.NewTZlibTransport(trans, zlib.BestCompression)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	case "":
+		trans = trans
+	default:
+		return nil, fmt.Errorf("Invalid transport specified %s", transport)
 	}
-	client = frugaltest.NewFrugalTestClient(trans, protocolFactory)
+
+	fTransportFactory := frugal.NewFMuxTransportFactory(2)
+	fTransport := fTransportFactory.GetTransport(trans)
+	// defer fTransport.Close()  // TODO: Close this after all the tests are run
+	if err := fTransport.Open(); err != nil {
+		log.Fatal(err)
+	}
+
+	client = frugaltest.NewFFrugalTestClient(fTransport, frugal.NewFProtocolFactory(protocolFactory))
+	return
 }

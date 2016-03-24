@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/Workiva/frugal/lib/go"
 	"github.com/Workiva/frugal/test/integration/go/gen/frugaltest"
 )
 
@@ -25,11 +26,11 @@ func StartServer(
 	protocol string,
 	ssl bool,
 	certPath string,
-	handler frugalTest.FrugalTest) (srv *frugal.FSimpleServer, err error) {
+	handler frugaltest.FFrugalTest) (srv *frugal.FSimpleServer, err error) {
 
 	hostPort := fmt.Sprintf("%s:%d", host, port)
 
-	var protocolFactory = thrift.TProtocolFactory
+	var protocolFactory thrift.TProtocolFactory
 	switch protocol {
 	case "compact":
 		protocolFactory = thrift.NewTCompactProtocolFactory()
@@ -66,8 +67,14 @@ func StartServer(
 	}
 
 	fTransportFactory := frugal.NewFMuxTransportFactory(2)
+	// processor := frugaltest.NewFProcessor
 	processor := frugaltest.NewFFrugalTestProcessor(handler)
-	server := thrift.NewTSimpleServerFactory4(processor, serverTransport, transportFactory, protocolFactory)
+	server := frugal.NewFSimpleServerFactory5(
+		frugal.NewFProcessorFactory(processor),
+		serverTransport,
+		fTransportFactory,
+		frugal.NewFProtocolFactory(protocolFactory))
+
 	if err = server.Listen(); err != nil {
 		return
 	}
