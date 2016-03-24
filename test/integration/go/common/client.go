@@ -10,8 +10,6 @@ import (
 	"log"
 )
 
-// const addr = "localhost:4535"
-
 var debugClientProtocol bool
 
 func init() {
@@ -24,7 +22,7 @@ func StartClient(
 	domain_socket string,
 	transport string,
 	protocol string,
-	ssl bool) (client *frugaltest.FFrugalTestClient, err error) { // Not sure about this frugaltest
+	ssl bool) (client *frugaltest.FFrugalTestClient, err error) {
 
 	hostPort := fmt.Sprintf("%s:%d", host, port)
 
@@ -68,11 +66,6 @@ func StartClient(
 		trans = thrift.NewTFramedTransport(trans)
 	case "buffered":
 		trans = thrift.NewTBufferedTransport(trans, 8192)
-	// case "zlib":
-	// 	trans, err = thrift.NewTZlibTransport(trans, zlib.BestCompression)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
 	case "":
 		trans = trans
 	default:
