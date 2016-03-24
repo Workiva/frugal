@@ -1,7 +1,6 @@
 from datetime import timedelta
 import json
 import logging
-from time import sleep
 
 from tornado import gen
 from tornado import ioloop
@@ -25,6 +24,9 @@ class Heartbeat(object):
 
     def increment_missed(self):
         self.missed_count += 1
+
+    def reset_count(self):
+        self.missed_count = 0
 
 
 @gen.coroutine
@@ -61,18 +63,20 @@ def main():
 
     yield nats_client.subscribe(listen_to, "", on_message_cb)
 
+    # Setup Heartbeat
     def on_heartbeat_cb(msg=None):
-        print("heartbeat received: {0}".format(msg.subject))
-        print("heartbeat timmer running : {}".format(heartbeat_timer.is_running()))
+        # Received a heartbeat, set missed count to 0
+        print("received heartbeat. count: {}".format(hb.missed_count))
+        hb.reset_count()
 
         if not heartbeat_timer.is_running():
-            print("starting heartbeat timer")
             heartbeat_timer.start()
-        hb.increment_missed
 
     @gen.coroutine
     def send_heartbeat(future=None):
-        print("sending heartbeat")
+        if hb.missed_count > 4:
+            print("heartbeat expired...shut it down")
+        hb.increment_missed()
         yield nats_client.publish(hb.reply_subject, "")
         if future is None:
             future = concurrent.Future()
@@ -83,7 +87,7 @@ def main():
     yield nats_client.subscribe(hb.listen_subject, "", on_heartbeat_cb)
 
     # Start things off publishing
-    yield nats_client.publish(hb.listen_subject, "")
+    # yield nats_client.publish(hb.listen_subject, "")
 
 
 if __name__ == '__main__':

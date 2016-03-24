@@ -25,7 +25,6 @@ class TNatsServiceTransport(TTransportBase):
     def __init__(self,
                  nats_client,
                  connection_subject,
-                 io_loop,
                  connection_timeout=DEFAULT_CONNECTION_TIMEOUT,
                  max_missed_heartbeats=DEFAULT_MAX_MISSED_HEARTBEATS):
         """Create a TNatsServerTransport to communicate with NATS
@@ -35,7 +34,7 @@ class TNatsServiceTransport(TTransportBase):
             listen_to: subject to listen on
             write_to: subject to write to
         """
-        self.io_loop = io_loop or ioloop.IOLoop.current()
+        # self.io_loop = io_loop or ioloop.IOLoop.current()
 
         self._nats_client = nats_client
         self._connection_subject = connection_subject

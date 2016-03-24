@@ -21,12 +21,13 @@ def main():
 
     print("Starting.....")
 
+    # Create & connect to NATS Client using python-nats
     nats_client = NATS()
     options = {"verbose": True, "servers": ["nats://127.0.0.1:4222"]}
     yield nats_client.connect(**options)
 
     transport_factory = FMuxTransportFactory()
-    nats_transport = TNatsServiceTransport(nats_client, "foo", 50000, 3)
+    nats_transport = TNatsServiceTransport(nats_client, "foo", 20000, 3)
     transport = transport_factory.get_transport(nats_transport)
 
     try:
@@ -40,8 +41,10 @@ def main():
     foo_client = FFooClient(transport, prot_factory)
     foo_client.one_way(FContext(), 99, {99: "request"})
 
-    raise gen.Return("")
+    print("Successfully sent one_way")
 
 
 if __name__ == '__main__':
-    ioloop.IOLoop.instance().run_sync(main)
+    io_loop = ioloop.IOLoop.instance()
+    io_loop.add_callback(main)
+    io_loop.start()

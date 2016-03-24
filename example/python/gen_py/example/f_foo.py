@@ -1,12 +1,17 @@
 from threading import Lock
 
+from tornado import concurrent
+
 from gen_py.base import f_base_foo, base_foo
 
 from frugal.registry import FClientRegistry
-from thrift.Thrift import TType, TMessageType
+from thrift.Thrift import TType, TMessageType, TApplicationException
 
 
 class Iface(f_base_foo.Iface):
+
+    def ping(self):
+        pass
 
     def one_way(self, id, req):
         pass
@@ -30,6 +35,32 @@ class Client(f_base_foo.Client, Iface):
         self._oprot = self._protocol_factory.get_protocol(self._transport)
         self._write_lock = Lock()
 
+    def ping(self, context):
+        future = self._reqs[self._seqid] = concurrent.Future()
+        self.send_ping()
+        return future
+
+    def send_ping(self):
+        oprot = self._oprot
+        self._transport.register(
+        self._oprot.writeMessageBegin('ping', TMessageType.CALL, 0)
+        args = ping_args()
+        args.write(self._oprot)
+        self._oprot.writeMessageEnd()
+        self._oprot.transport.flush()
+
+    def recv_ping(self, ctx):
+        if mtype == TMessageType.EXCEPTION:
+            x = TApplicationException()
+            x.read(iprot)
+            iprot.readMessageEnd()
+            raise x
+        self._iprot.read_response_headers(ctx)
+        result = ping_result()
+        result.read(iprot)
+        iprot.readMessageEnd()
+        return
+
     def one_way(self, ctx, id, req):
         """ oneway methods don't receive a response from the server
 
@@ -47,6 +78,88 @@ class Client(f_base_foo.Client, Iface):
             args.write(oprot)
             oprot.writeMessageEnd()
             oprot.get_transport().flush()
+
+
+class ping_args(object):
+
+    thrift_spec = (
+    )
+
+    def read(self, iprot):
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        oprot.writeStructBegin('ping_args')
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __hash__(self):
+        value = 17
+        return value
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+             for key, value in self.__dict__.iteritems()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return (isinstance(other, self.__class__) and
+                self.__dict__ == other.__dict__)
+
+    def __ne__(self, other):
+        return not (self == other)
+
+
+class ping_result(object):
+
+    thrift_spec = (
+    )
+
+    def read(self, iprot):
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            else:
+                iprot.skip(ftype)
+            iprot.readField()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        oprot.writeStructBegin('ping_result')
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __hash__(self):
+        value = 17
+        return value
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+             for key, value in self.__dict__.iteritems()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return (isinstance(other, self.__class__) and
+                self.__dict__ == other.__dict__)
+
+    def __ne__(self, other):
+        return not (self == other)
 
 
 class one_way_args(object):
