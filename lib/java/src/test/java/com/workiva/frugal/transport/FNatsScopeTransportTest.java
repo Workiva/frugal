@@ -3,8 +3,11 @@ package com.workiva.frugal.transport;
 import com.workiva.frugal.exception.FException;
 import io.nats.client.*;
 import org.apache.thrift.transport.TTransportException;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -74,12 +77,16 @@ public class FNatsScopeTransportTest {
     @Test
     public void testSubscribe() throws Exception {
         when(conn.getState()).thenReturn(Constants.ConnState.CONNECTED);
-        when(conn.subscribe(any(String.class), any(MessageHandler.class))).thenReturn(mockSub);
+        ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
+
+        when(conn.subscribe(topicCaptor.capture(), any(MessageHandler.class))).thenReturn(mockSub);
 
         transport.subscribe(topic);
 
         assertTrue(transport.isOpen());
         assertEquals(mockSub, transport.sub);
+
+        assertEquals(formattedSubject, topicCaptor.getValue());
     }
 
     @Test
@@ -109,7 +116,6 @@ public class FNatsScopeTransportTest {
 
         transport.close();
 
-        // should we be closing nats?
         assertFalse(transport.isOpen);
     }
 
@@ -119,7 +125,6 @@ public class FNatsScopeTransportTest {
         transport.pull = true;
         transport.sub = mockSub;
 
-        // should i have to do this? when does this get initialized
         transport.frameBuffer = new ArrayBlockingQueue<>(4);
         transport.close();
 

@@ -45,6 +45,10 @@ public class FMuxTransportTest {
     public void testIsOpenFalseWhenTransportClosed() throws Exception {
         when(mockTrans.isOpen()).thenReturn(false);
 
+        registry = new FClientRegistry();
+
+        muxTransport.setRegistry(registry);
+
         assertFalse(muxTransport.isOpen());
     }
 

@@ -14,7 +14,6 @@ public class FClientRegistryTest {
     private FClientRegistry registry;
 
     @Before
-
     public void setUp() throws Exception {
         registry = new FClientRegistry();
 
