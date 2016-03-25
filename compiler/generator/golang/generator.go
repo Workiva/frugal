@@ -156,7 +156,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 		cName := title(constant.Name)
 		value := g.generateConstantValue(constant.Type, constant.Value)
 		// Don't use underlying type so typedefs aren't consts
-		if parser.IsThriftPrimitive(constant.Type) || g.Frugal.IsEnum(constant.Type) {
+		if (parser.IsThriftPrimitive(constant.Type) || g.Frugal.IsEnum(constant.Type)) && constant.Type.Name != "binary" {
 			contents += fmt.Sprintf("const %s = %s\n\n", cName, value)
 		} else {
 			contents += fmt.Sprintf("var %s %s\n\n", cName, g.getGoTypeFromThriftType(constant.Type))

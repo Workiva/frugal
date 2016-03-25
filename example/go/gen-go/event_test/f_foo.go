@@ -17,7 +17,6 @@ var _ = fmt.Printf
 var _ = bytes.Equal
 
 var _ = base.GoUnusedProtection__
-var GoUnusedProtection__ int
 
 type FooPingArgs struct {
 }

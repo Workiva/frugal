@@ -39,7 +39,7 @@ var NumsSet map[Int]bool
 
 var MAPCONSTANT2 map[string]*Event
 
-const BinConst = []byte("hello")
+var BinConst []byte
 
 func init() {
 	DEFAULT_ID = -1
@@ -74,6 +74,7 @@ func init() {
 			Message: "first here",
 		},
 	}
+	BinConst = []byte("hello")
 }
 
 type ID int64
@@ -89,24 +90,24 @@ const (
 
 func (p ItsAnEnum) String() string {
 	switch p {
-	case ItsAnEnum_FIRST:
-		return "FIRST"
 	case ItsAnEnum_SECOND:
 		return "SECOND"
 	case ItsAnEnum_THIRD:
 		return "THIRD"
+	case ItsAnEnum_FIRST:
+		return "FIRST"
 	}
 	return "<UNSET>"
 }
 
 func ItsAnEnumFromString(s string) (ItsAnEnum, error) {
 	switch s {
+	case "THIRD":
+		return ItsAnEnum_THIRD, nil
 	case "FIRST":
 		return ItsAnEnum_FIRST, nil
 	case "SECOND":
 		return ItsAnEnum_SECOND, nil
-	case "THIRD":
-		return ItsAnEnum_THIRD, nil
 	}
 	return ItsAnEnum(0), fmt.Errorf("not a valid ItsAnEnum string")
 }
