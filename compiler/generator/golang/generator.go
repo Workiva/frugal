@@ -506,7 +506,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 
 	// Helper function to determine how many optional fields are set in a union
 	if s.Type == parser.StructTypeUnion {
-		contents += fmt.Sprintf("func (p *%s) CountSetFieldsTestingUnions() int {\n", sName)
+		contents += fmt.Sprintf("func (p *%s) CountSetFields%s() int {\n", sName, sName)
 		contents += "\tcount := 0\n"
 		for _, field := range s.Fields {
 			if g.isPointerField(field) {
@@ -724,6 +724,10 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T error reading struct: \", %s%s), err)\n", prefix, fName)
 		contents += "\t}\n"
 	} else if parser.IsThriftContainer(underlyingType) {
+		maybePointer := ""
+		if isPointerField {
+			maybePointer = "*"
+		}
 		valElem := getElem()
 		valField := g.Frugal.FieldFromType(underlyingType.ValueType, valElem)
 		valContents := g.generateReadFieldRec(valField, false)
@@ -733,10 +737,15 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			contents += "\tif err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error reading list begin: \", err)\n"
 			contents += "\t}\n"
-			contents += fmt.Sprintf("\t%s%s %s make(%s, 0, size)\n", prefix, fName, eq, goOrigType)
+			if !isPointerField {
+				contents += fmt.Sprintf("\t%s%s %s make(%s, 0, size)\n", prefix, fName, eq, goOrigType)
+			} else {
+				contents += fmt.Sprintf("\ttemp := make(%s, 0, size)\n", goOrigType)
+				contents += fmt.Sprintf("\t%s%s %s &temp\n", prefix, fName, eq)
+			}
 			contents += "\tfor i := 0; i < size; i++ {\n"
 			contents += valContents
-			contents += fmt.Sprintf("\t\t%s%s = append(%s%s, %s)\n", prefix, fName, prefix, fName, valElem)
+			contents += fmt.Sprintf("\t\t%s%s%s = append(%s%s%s, %s)\n", maybePointer, prefix, fName, maybePointer, prefix, fName, valElem)
 			contents += "\t}\n"
 			contents += "\tif err := iprot.ReadListEnd(); err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error reading list end: \", err)\n"
@@ -746,10 +755,15 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			contents += "\tif err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error reading set begin: \", err)\n"
 			contents += "\t}\n"
-			contents += fmt.Sprintf("\t%s%s %s make(%s, size)\n", prefix, fName, eq, goOrigType)
+			if !isPointerField {
+				contents += fmt.Sprintf("\t%s%s %s make(%s, size)\n", prefix, fName, eq, goOrigType)
+			} else {
+				contents += fmt.Sprintf("\ttemp := make(%s, size)\n", goOrigType)
+				contents += fmt.Sprintf("\t%s%s %s &temp\n", prefix, fName, eq)
+			}
 			contents += "\tfor i := 0; i < size; i++ {\n"
 			contents += valContents
-			contents += fmt.Sprintf("\t\t%s%s[%s] = true\n", prefix, fName, valElem)
+			contents += fmt.Sprintf("\t\t(%s%s%s)[%s] = true\n", maybePointer, prefix, fName, valElem)
 			contents += "\t}\n"
 			contents += "\tif err := iprot.ReadSetEnd(); err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error reading set end: \", err)\n"
@@ -759,13 +773,18 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			contents += "\tif err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error reading map begin: \", err)\n"
 			contents += "\t}\n"
-			contents += fmt.Sprintf("\t%s%s %s make(%s, size)\n", prefix, fName, eq, goOrigType)
+			if !isPointerField {
+				contents += fmt.Sprintf("\t%s%s %s make(%s, size)\n", prefix, fName, eq, goOrigType)
+			} else {
+				contents += fmt.Sprintf("\ttemp := make(%s, size)\n", goOrigType)
+				contents += fmt.Sprintf("\t%s%s %s &temp\n", prefix, fName, eq)
+			}
 			contents += "\tfor i := 0; i < size; i++ {\n"
 			keyElem := getElem()
 			keyField := g.Frugal.FieldFromType(underlyingType.KeyType, keyElem)
 			contents += g.generateReadFieldRec(keyField, false)
 			contents += valContents
-			contents += fmt.Sprintf("\t\t%s%s[%s] = %s\n", prefix, fName, keyElem, valElem)
+			contents += fmt.Sprintf("\t\t(%s%s%s)[%s] = %s\n", maybePointer, prefix, fName, keyElem, valElem)
 			contents += "\t}\n"
 			contents += "\tif err := iprot.ReadMapEnd(); err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error reading map end: \", err)\n"

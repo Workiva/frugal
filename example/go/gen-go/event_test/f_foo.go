@@ -550,20 +550,20 @@ func (p *FooOneWayArgs) ReadField2(iprot thrift.TProtocol) error {
 	}
 	p.Req = make(Request, size)
 	for i := 0; i < size; i++ {
-		var elem14 Int
+		var elem16 Int
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := Int(v)
-			elem14 = temp
+			elem16 = temp
 		}
-		var elem13 string
+		var elem15 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem13 = v
+			elem15 = v
 		}
-		p.Req[elem14] = elem13
+		(p.Req)[elem16] = elem15
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)
