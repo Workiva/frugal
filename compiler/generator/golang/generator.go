@@ -191,12 +191,8 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 
 	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {
 		switch underlyingType.Name {
-		case "bool":
-			return fmt.Sprintf("%t", value)
-		case "i8", "byte", "i16", "i32", "i64":
-			return fmt.Sprintf("%d", value)
-		case "double":
-			return fmt.Sprintf("%f", value)
+		case "bool", "i8", "byte", "i16", "i32", "i64", "double":
+			return fmt.Sprintf("%v", value)
 		case "string":
 			return fmt.Sprintf("\"%s\"", value)
 		case "binary":
@@ -413,10 +409,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 	// Declare fields
 	for _, field := range s.Fields {
 		fName := title(field.Name)
-		// All fields in a union are optional
-		if s.Type == parser.StructTypeUnion {
-			field.Modifier = parser.Optional
-		}
+		// All fields in a union are marked optional by default
 
 		if field.Comment != nil {
 			contents += g.GenerateInlineComment(field.Comment, "\t")
