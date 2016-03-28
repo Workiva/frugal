@@ -182,11 +182,24 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 	identifier, ok := value.(parser.Identifier)
 	if ok {
 		name := string(identifier)
-		for _, constant := range g.Frugal.Thrift.Constants {
-			if name == constant.Name {
-				return g.generateConstantValue(t, constant.Value)
+		// split based on '.', if present, it should be from an include
+		pieces := strings.Split(name, ".")
+		if len(pieces) == 1 {
+			// From this file
+			for _, constant := range g.Frugal.Thrift.Constants {
+				if name == constant.Name {
+					return g.generateConstantValue(t, constant.Value)
+				}
+			}
+		} else if len(pieces) == 2 {
+			// From an include
+			for _, constant := range g.Frugal.ParsedIncludes[pieces[0]].Thrift.Constants {
+				if pieces[1] == constant.Name {
+					return g.generateConstantValue(t, constant.Value)
+				}
 			}
 		}
+
 		panic("referenced constant doesn't exist: " + name)
 	}
 
@@ -351,7 +364,7 @@ func (g *Generator) GenerateUnion(union *parser.Struct) error {
 
 func (g *Generator) GenerateException(exception *parser.Struct) error {
 	contents := g.generateStruct(exception, "")
-	contents += fmt.Sprintf("func (p *%s) Error() string {\n", exception.Name)
+	contents += fmt.Sprintf("func (p *%s) Error() string {\n", title(exception.Name))
 	contents += "\treturn p.String()\n"
 	contents += "}\n"
 

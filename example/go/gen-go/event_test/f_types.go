@@ -21,6 +21,8 @@ var _ = bytes.Equal
 var _ = base.GoUnusedProtection__
 var GoUnusedProtection__ int
 
+const RedefConst = 582
+
 var DEFAULT_ID ID
 
 var OtherDefault ID
@@ -102,12 +104,12 @@ func (p ItsAnEnum) String() string {
 
 func ItsAnEnumFromString(s string) (ItsAnEnum, error) {
 	switch s {
+	case "THIRD":
+		return ItsAnEnum_THIRD, nil
 	case "FIRST":
 		return ItsAnEnum_FIRST, nil
 	case "SECOND":
 		return ItsAnEnum_SECOND, nil
-	case "THIRD":
-		return ItsAnEnum_THIRD, nil
 	}
 	return ItsAnEnum(0), fmt.Errorf("not a valid ItsAnEnum string")
 }
@@ -139,6 +141,104 @@ func (p *ItsAnEnum) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return int64(*p), nil
+}
+
+type TestBase struct {
+	BaseStruct *base.Thing `thrift:"base_struct,1" db:"base_struct" json:"base_struct"`
+}
+
+func NewTestBase() *TestBase {
+	return &TestBase{}
+}
+
+var TestBase_BaseStruct_DEFAULT *base.Thing
+
+func (p *TestBase) IsSetBaseStruct() bool {
+	return p.BaseStruct != nil
+}
+
+func (p *TestBase) GetBaseStruct() *base.Thing {
+	if !p.IsSetBaseStruct() {
+		return TestBase_BaseStruct_DEFAULT
+	}
+	return p.BaseStruct
+}
+
+func (p *TestBase) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 1:
+			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestBase) ReadField1(iprot thrift.TProtocol) error {
+	p.BaseStruct = base.NewThing()
+	if err := p.BaseStruct.Read(iprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.BaseStruct), err)
+	}
+	return nil
+}
+
+func (p *TestBase) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("TestBase"); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return thrift.PrependError("write field stop error: ", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return thrift.PrependError("write struct stop error: ", err)
+	}
+	return nil
+}
+
+func (p *TestBase) writeField1(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("base_struct", thrift.STRUCT, 1); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:base_struct: ", p), err)
+	}
+	if err := p.BaseStruct.Write(oprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.BaseStruct), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 1:base_struct: ", p), err)
+	}
+	return nil
+}
+
+func (p *TestBase) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("TestBase(%+v)", *p)
 }
 
 // This docstring gets added to the generated code because it has
