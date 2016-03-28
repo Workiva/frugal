@@ -729,7 +729,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			maybePointer = "*"
 		}
 		valElem := getElem()
-		valField := g.Frugal.FieldFromType(underlyingType.ValueType, valElem)
+		valField := parser.FieldFromType(underlyingType.ValueType, valElem)
 		valContents := g.generateReadFieldRec(valField, false)
 		switch underlyingType.Name {
 		case "list":
@@ -781,7 +781,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			}
 			contents += "\tfor i := 0; i < size; i++ {\n"
 			keyElem := getElem()
-			keyField := g.Frugal.FieldFromType(underlyingType.KeyType, keyElem)
+			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
 			contents += g.generateReadFieldRec(keyField, false)
 			contents += valContents
 			contents += fmt.Sprintf("\t\t(%s%s%s)[%s] = %s\n", maybePointer, prefix, fName, keyElem, valElem)
@@ -874,7 +874,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 			prefix = "*" + prefix
 		}
 		valEnumType := g.getEnumFromThriftType(underlyingType.ValueType)
-		valField := g.Frugal.FieldFromType(underlyingType.ValueType, "")
+		valField := parser.FieldFromType(underlyingType.ValueType, "")
 
 		switch underlyingType.Name {
 		case "list":
@@ -903,7 +903,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 			contents += "\t\treturn thrift.PrependError(\"error writing map begin: \", err)\n"
 			contents += "\t}\n"
 			contents += fmt.Sprintf("\tfor k, v := range %s {\n", prefix+fName)
-			keyField := g.Frugal.FieldFromType(underlyingType.KeyType, "")
+			keyField := parser.FieldFromType(underlyingType.KeyType, "")
 			contents += g.generateWriteFieldRec(keyField, "k")
 			contents += g.generateWriteFieldRec(valField, "v")
 			contents += "\t}\n"

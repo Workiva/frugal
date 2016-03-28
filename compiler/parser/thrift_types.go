@@ -42,6 +42,17 @@ func IsThriftContainer(t *Type) bool {
 	return ok
 }
 
+func FieldFromType(t *Type, name string) *Field {
+	return &Field{
+		Comment:  nil,
+		ID:       0,
+		Name:     name,
+		Modifier: Required,
+		Type:     t,
+		Default:  nil,
+	}
+}
+
 type Include struct {
 	Name  string
 	Value string
