@@ -32,8 +32,8 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 	return &Generator{&generator.BaseGenerator{Options: options}, true, nil}
 }
 
-func (g *Generator) InitializeGenerator(outputDir string) error {
-	// make the types file
+// SetupGenerator initializes globals the generator needs, like the types file.
+func (g *Generator) SetupGenerator(outputDir string) error {
 	t, err := g.GenerateFile("", outputDir, generator.TypeFile)
 	if err != nil {
 		return err
@@ -61,7 +61,8 @@ func (g *Generator) InitializeGenerator(outputDir string) error {
 	return nil
 }
 
-func (g *Generator) CloseGenerator() error {
+// TeardownGenerator cleanups globals the generator needs, like the types file
+func (g *Generator) TeardownGenerator() error {
 	defer g.typesFile.Close()
 	return g.PostProcess(g.typesFile)
 }

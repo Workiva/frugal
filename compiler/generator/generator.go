@@ -47,8 +47,8 @@ type ProgramGenerator interface {
 type LanguageGenerator interface {
 	// Generic methods
 	SetFrugal(*parser.Frugal)
-	InitializeGenerator(outputDir string) error
-	CloseGenerator() error
+	SetupGenerator(outputDir string) error
+	TeardownGenerator() error
 	GenerateDependencies(dir string) error
 	GenerateFile(name, outputDir string, fileType FileType) (*os.File, error)
 	GenerateDocStringComment(*os.File) error
@@ -97,7 +97,7 @@ func NewProgramGenerator(generator LanguageGenerator, splitPublisherSubscriber b
 func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string, genWithFrugal bool) error {
 	o.SetFrugal(frugal)
 	if genWithFrugal {
-		o.InitializeGenerator(outputDir)
+		o.SetupGenerator(outputDir)
 	}
 	if err := o.GenerateDependencies(outputDir); err != nil {
 		return err
@@ -116,7 +116,7 @@ func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string, gen
 	}
 
 	if genWithFrugal {
-		return o.CloseGenerator()
+		return o.TeardownGenerator()
 	}
 	return nil
 }

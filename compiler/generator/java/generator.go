@@ -40,11 +40,11 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 }
 
 // TODO Unimplmented methods
-func (g *Generator) InitializeGenerator(outputDir string) error {
+func (g *Generator) SetupGenerator(outputDir string) error {
 	return nil
 }
 
-func (g *Generator) CloseGenerator() error {
+func (g *Generator) TeardownGenerator() error {
 	return nil
 }
 
