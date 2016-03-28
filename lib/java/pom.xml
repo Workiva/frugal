@@ -15,12 +15,10 @@
     </properties>
 
     <repositories>
+        <!-- Remove this local repo once jnats is pinned -->
         <repository>
-            <id>sonatype-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
+            <id>local-lib</id>
+            <url>file://${project.basedir}/lib</url>
         </repository>
     </repositories>
 
@@ -33,7 +31,7 @@
         <dependency>
             <groupId>io.nats</groupId>
             <artifactId>jnats</artifactId>
-            <version>0.4.0-20160304.053128-17</version>
+            <version>0.4.0-wk</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -72,6 +70,23 @@
                 <configuration>
                     <includePom>true</includePom>
                 </configuration>
+            </plugin>
+	    <plugin>
+                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <version>1.4.0</version>
+                <executions>
+                    <execution>
+                        <id>Vendor jnats as a non SNAPSHOT package</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${project.basedir}/utils/vendor_jnats.sh</executable>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
