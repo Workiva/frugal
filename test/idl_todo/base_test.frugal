@@ -1,0 +1,15 @@
+namespace java base
+
+exception api_exception {}
+
+
+service BaseFoo {
+    void basePing()
+}
+
+const i32 const_i32_from_base = 582;
+
+struct thing {
+    1: i32 an_id,
+    2: string a_string
+}
