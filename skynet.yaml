@@ -5,7 +5,7 @@ run:
 image: "drydock.workiva.org/workiva/skynet-images:33350"
 
 also-run:
-  Workiva/messaging-sdk:go-tests:
+  Workiva/messaging-sdk:frugal-go-tests:
     on-pull-request: true
   Workiva/messaging-sdk:java-tests:
     on-pull-request: true

@@ -72,11 +72,12 @@ class TFramedTransport extends TTransport{
         throw new TTransportException("Cannot read directly from " + getClass().getName());
     }
 
-    private final byte[] i32buf = new byte[4];
+    private final byte[] readi32buf = new byte[4];
+    private final byte[] writei32buf = new byte[4];
 
     public byte[] readFrame() throws TTransportException {
-        transport_.readAll(i32buf, 0, 4);
-        int size = decodeFrameSize(i32buf);
+        transport_.readAll(readi32buf, 0, 4);
+        int size = decodeFrameSize(readi32buf);
 
         if (size < 0) {
             close();
@@ -104,8 +105,8 @@ class TFramedTransport extends TTransport{
         int len = writeBuffer_.len();
         writeBuffer_.reset();
 
-        encodeFrameSize(len, i32buf);
-        transport_.write(i32buf, 0, 4);
+        encodeFrameSize(len, writei32buf);
+        transport_.write(writei32buf, 0, 4);
         transport_.write(buf, 0, len);
         transport_.flush();
     }
