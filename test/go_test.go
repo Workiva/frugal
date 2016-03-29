@@ -32,6 +32,7 @@ func TestValidGoFrugalCompiler(t *testing.T) {
 		Gen: "go:package_prefix=github.com/Workiva/frugal/test/out/,gen_with_frugal",
 		Out: outputDir,
 		Delim: delim,
+		Recurse: true,
 	}
 	if err := compiler.Compile(options); err != nil {
 		t.Fatal("unexpected error", err)
