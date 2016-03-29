@@ -14,6 +14,7 @@ const (
 	delim       = "."
 	validFile   = "idl/valid.frugal"
 	invalidFile = "idl/invalid.frugal"
+	frugalGenFile = "idl/variety.frugal"
 )
 
 var (

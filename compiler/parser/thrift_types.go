@@ -113,7 +113,7 @@ type EnumValue struct {
 type Enum struct {
 	Comment []string
 	Name    string
-	Values  map[string]*EnumValue
+	Values  []*EnumValue
 }
 
 type Constant struct {

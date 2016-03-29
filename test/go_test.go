@@ -25,3 +25,20 @@ func TestValidGo(t *testing.T) {
 	blahScopePath := filepath.Join(outputDir, "valid", "f_blah_scope.go")
 	compareFiles(t, "expected/go/f_blah_scope.txt", blahScopePath)
 }
+
+func TestValidGoFrugalCompiler(t *testing.T) {
+	options := compiler.Options{
+		File: frugalGenFile,
+		Gen: "go:package_prefix=github.com/Workiva/frugal/test/out/,gen_with_frugal",
+		Out: outputDir,
+		Delim: delim,
+	}
+	if err := compiler.Compile(options); err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
+	ftypesPath := filepath.Join(outputDir, "variety", "f_types.go")
+	compareFiles(t, "expected/go/variety/f_types.txt", ftypesPath)
+	ffooPath := filepath.Join(outputDir, "variety", "f_foo.go")
+	compareFiles(t, "expected/go/variety/f_foo.txt", ffooPath)
+}

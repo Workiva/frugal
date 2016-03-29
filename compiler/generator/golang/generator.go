@@ -947,7 +947,6 @@ func (g *Generator) GenerateTypesImports(file *os.File) error {
 
 	protections := ""
 	pkgPrefix := g.Options["package_prefix"]
-	// TODO right?
 	for _, include := range g.Frugal.Thrift.Includes {
 		contents += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, include.Name)
 		protections += fmt.Sprintf("var _ = %s.GoUnusedProtection__\n", include.Name)
@@ -978,7 +977,6 @@ func (g *Generator) GenerateServiceResultArgsImports(file *os.File) error {
 
 	protections := ""
 	pkgPrefix := g.Options["package_prefix"]
-	// TODO right?
 	for _, include := range g.Frugal.Thrift.Includes {
 		contents += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, include.Name)
 		protections += fmt.Sprintf("var _ = %s.GoUnusedProtection__\n", include.Name)
@@ -1945,10 +1943,7 @@ func (g *Generator) isPointerField(field *parser.Field) bool {
 		return hasDefault
 	default:
 		// Custom type, either typedef or struct-like.
-		if g.Frugal.IsStruct(underlyingType) {
-			// Structs are always pointers
-			return true
-		} else if g.Frugal.IsEnum(underlyingType) {
+		if g.Frugal.IsEnum(underlyingType) {
 			// Same case as nums
 			return !hasDefault
 		}
@@ -1996,25 +1991,25 @@ func snakeToCamel(s string) string {
 	return result
 }
 
-func title(s string) string {
-	return titleServiceName(s, "")
+func title(name string) string {
+	return titleServiceName(name, "")
 }
 
-func titleServiceName(s string, serviceName string) string {
-	if len(s) == 0 {
-		return s
+func titleServiceName(name string, serviceName string) string {
+	if len(name) == 0 {
+		return name
 	}
 
 	// Keep screaming caps
-	if s == strings.ToUpper(s) {
-		return s
+	if name == strings.ToUpper(name) {
+		return name
 	}
 
 	if serviceName != "" {
-		s = fmt.Sprintf("%s_%s", serviceName, s)
+		name = fmt.Sprintf("%s_%s", serviceName, name)
 	}
 	var result string
-	words := strings.Split(s, "_")
+	words := strings.Split(name, "_")
 
 	for _, word := range words {
 		if upper := strings.ToUpper(word); commonInitialisms[upper] {
