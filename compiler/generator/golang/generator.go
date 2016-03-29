@@ -193,7 +193,11 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 			}
 		} else if len(pieces) == 2 {
 			// From an include
-			for _, constant := range g.Frugal.ParsedIncludes[pieces[0]].Thrift.Constants {
+			include, ok := g.Frugal.ParsedIncludes[pieces[0]]
+			if !ok {
+				panic(fmt.Sprintf("referenced include '%s' not present", pieces[0]))
+			}
+			for _, constant := range include.Thrift.Constants {
 				if pieces[1] == constant.Name {
 					return g.generateConstantValue(t, constant.Value)
 				}
