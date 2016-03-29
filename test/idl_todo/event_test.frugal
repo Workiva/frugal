@@ -2,7 +2,7 @@
 # contain valid Thrift or Frugal-extended syntax.
 namespace java example
 
-include "base.frugal"
+include "base_test.frugal"
 
 typedef i64 id
 typedef i32 int
@@ -12,7 +12,7 @@ typedef map<int, string> request
  * This docstring doesn't get added to the generated code because
  * it doesn't have the @ sign.
  */
-const i32 redef_const = base.const_i32_from_base;
+const i32 redef_const = base_test.const_i32_from_base;
 const id DEFAULT_ID = -1
 const id other_default = DEFAULT_ID
 
@@ -31,7 +31,7 @@ const map<string,Event> MAPCONSTANT2 = {'hello':{"ID": -2, "Message": "first her
 const binary bin_const = "hello"
 
 struct TestBase {
-    1: base.thing base_struct,
+    1: base_test.thing base_struct,
 }
 
 union TestingUnions {
