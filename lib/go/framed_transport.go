@@ -13,12 +13,13 @@ import (
 const DEFAULT_MAX_LENGTH = 16384000
 
 type TFramedTransport struct {
-	transport thrift.TTransport
-	buf       bytes.Buffer
-	reader    *bufio.Reader
-	frameSize uint32 //Current remaining size of the frame. if ==0 read next frame header
-	buffer    [4]byte
-	maxLength uint32
+	transport   thrift.TTransport
+	buf         bytes.Buffer
+	reader      *bufio.Reader
+	frameSize   uint32 //Current remaining size of the frame. if ==0 read next frame header
+	maxLength   uint32
+	readBuffer  [4]byte
+	writeBuffer [4]byte
 }
 
 type tFramedTransportFactory struct {
@@ -116,7 +117,7 @@ func (p *TFramedTransport) WriteString(s string) (n int, err error) {
 
 func (p *TFramedTransport) Flush() error {
 	size := p.buf.Len()
-	buf := p.buffer[:4]
+	buf := p.writeBuffer[:4]
 	binary.BigEndian.PutUint32(buf, uint32(size))
 	_, err := p.transport.Write(buf)
 	if err != nil {
@@ -135,7 +136,7 @@ func (p *TFramedTransport) Flush() error {
 }
 
 func (p *TFramedTransport) readFrameHeader() (uint32, error) {
-	buf := p.buffer[:4]
+	buf := p.readBuffer[:4]
 	if _, err := io.ReadFull(p.reader, buf); err != nil {
 		return 0, err
 	}

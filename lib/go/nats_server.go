@@ -270,6 +270,7 @@ func (n *FNatsServer) acceptHeartbeat(client *client) {
 		select {
 		case recvHeartbeat <- struct{}{}:
 		default:
+			log.Println("frugal: FNatsServer received heartbeat dropped")
 		}
 	})
 	if err != nil {

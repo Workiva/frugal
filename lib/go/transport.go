@@ -255,6 +255,7 @@ func (f *fMuxTransport) close(cause error) error {
 	select {
 	case f.closed <- cause:
 	default:
+		log.Printf("frugal: unable to put close error '%s' on fMuxTransport closed channel", cause)
 	}
 	close(f.closed)
 
@@ -262,6 +263,9 @@ func (f *fMuxTransport) close(cause error) error {
 	select {
 	case f.monitorClosedSignal <- cause:
 	default:
+		if f.monitorClosedSignal != nil {
+			log.Printf("frugal: unable to put close error '%s' on fMuxTransport monitor channel", cause)
+		}
 	}
 
 	return nil
@@ -296,7 +300,7 @@ func (f *fMuxTransport) startWorkers() {
 					dur := time.Since(frame.timestamp)
 					f.waterMu.RLock()
 					if dur > f.highWatermark {
-						log.Printf("frugal: frame spent %+v in the transport buffer, your consumer might be backed up\n", dur)
+						log.Printf("frugal: frame spent %+v in the transport buffer, your consumer might be backed up", dur)
 					}
 					f.waterMu.RUnlock()
 					if err := f.registry.Execute(frame.frameBytes); err != nil {

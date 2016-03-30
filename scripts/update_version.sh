@@ -18,7 +18,9 @@ function replace {
 }
     
 # Change versions in the compiler
-cd $ROOT/compiler
+cd $ROOT/compiler/generator
+replace
+cd $ROOT/compiler/globals
 replace
 
 # Change versions in the lib

@@ -28,14 +28,14 @@ public class FNatsScopeTransport extends FScopeTransport {
     private static final byte[] FRAME_BUFFER_CLOSED = new byte[0];
 
     private final Connection conn;
-    private String subject;
-    private BlockingQueue<byte[]> frameBuffer;
+    protected String subject;
+    protected BlockingQueue<byte[]> frameBuffer;
     private byte[] currentFrame;
     private int currentFramePos;
     private ByteBuffer writeBuffer;
-    private Subscription sub;
-    private boolean pull;
-    private boolean isOpen;
+    protected Subscription sub;
+    protected boolean pull;
+    protected boolean isOpen;
     private final ReentrantLock lock;
 
     private static Logger LOGGER = Logger.getLogger(FNatsScopeTransport.class.getName());

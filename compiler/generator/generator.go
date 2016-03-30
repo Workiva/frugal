@@ -18,12 +18,30 @@ const (
 	SubscribeFile       FileType = "subscribe"
 )
 
-// Languages is a map of supported language to a slice of the generator options
+// Options contains language generator options. The map key is the option name,
+// and the value is the option description.
+type Options map[string]string
+
+// LanguageOptions contains a map of language to generator options.
+type LanguageOptions map[string]Options
+
+// Languages is a map of supported language to a map of the generator options
 // it supports.
-var Languages = map[string][]string{
-	"go":   []string{"thrift_import", "frugal_import", "package_prefix"},
-	"java": []string{"generated_annotations"},
-	"dart": []string{"library_prefix"},
+var Languages = LanguageOptions{
+	"go": Options{
+		"thrift_import":  "Override Thrift package import path (default: git.apache.org/thrift.git/lib/go/thrift)",
+		"frugal_import":  "Override Frugal package import path (default: github.com/Workiva/frugal/lib/go)",
+		"package_prefix": "Package prefix for generated files",
+	},
+	"java": Options{
+		"generated_annotations": "[undated|suppress] " +
+			"undated: suppress the date at @Generated annotations, " +
+			"suppress: suppress @Generated annotations entirely",
+	},
+	"dart": Options{
+		"library_prefix": "Generate code that can be used within an existing library. " +
+			"Use a dot-separated string, e.g. \"my_parent_lib.src.gen\"",
+	},
 }
 
 // ProgramGenerator generates source code in a specified language for a Frugal
