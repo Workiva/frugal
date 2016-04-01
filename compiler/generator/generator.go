@@ -34,9 +34,9 @@ type LanguageOptions map[string]Options
 
 var Languages = LanguageOptions{
 	"go": Options{
-		"thrift_import":  "Override Thrift package import path (default: git.apache.org/thrift.git/lib/go/thrift)",
-		"frugal_import":  "Override Frugal package import path (default: github.com/Workiva/frugal/lib/go)",
-		"package_prefix": "Package prefix for generated files",
+		"thrift_import":   "Override Thrift package import path (default: git.apache.org/thrift.git/lib/go/thrift)",
+		"frugal_import":   "Override Frugal package import path (default: github.com/Workiva/frugal/lib/go)",
+		"package_prefix":  "Package prefix for generated files",
 		"gen_with_frugal": "Whether to generate thrift files with frugal (experimental)",
 	},
 	"java": Options{

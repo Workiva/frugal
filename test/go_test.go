@@ -28,10 +28,10 @@ func TestValidGo(t *testing.T) {
 
 func TestValidGoFrugalCompiler(t *testing.T) {
 	options := compiler.Options{
-		File: frugalGenFile,
-		Gen: "go:package_prefix=github.com/Workiva/frugal/test/out/,gen_with_frugal",
-		Out: outputDir,
-		Delim: delim,
+		File:    frugalGenFile,
+		Gen:     "go:package_prefix=github.com/Workiva/frugal/test/out/,gen_with_frugal",
+		Out:     outputDir,
+		Delim:   delim,
 		Recurse: true,
 	}
 	if err := compiler.Compile(options); err != nil {
