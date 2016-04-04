@@ -44,39 +44,6 @@ class FMuxTransport(FTransport):
         self._framed_transport = TFramedTransport(thrift_transport)
         self._lock = Lock()
 
-    def set_registry(self, registry):
-        with self._lock:
-            if registry is None:
-                raise StandardError("registry cannot be null.")
-
-            if self._registry is not None:
-                return
-
-            self._registry = registry
-
-    def register(self, context, callback):
-        with self._lock:
-            if self._registry is None:
-                raise StandardError("registry cannot be null.")
-            else:
-                self._registry.register(context, callback)
-
-    def unregister(self, context):
-        with self._lock:
-            if self._registry is None:
-                raise StandardError("registry cannot be null.")
-
-            self._registry.unregister(context)
-
-    def is_open(self):
-        with self._lock:
-            return (self._framed_transport.isOpen() and
-                    self._registry is not None)
-
-    def open(self):
-        with self._lock:
-            self._framed_transport.open()
-
     def close(self):
         with self._lock:
             if self._registry is None:

@@ -37,19 +37,10 @@ class Client(f_base_foo.Client, Iface):
 
     def ping(self, context):
         future = self._reqs[self._seqid] = concurrent.Future()
-        self.send_ping()
+        self.send_ping(context)
         return future
 
-    def send_ping(self):
-        oprot = self._oprot
-        self._transport.register(
-        self._oprot.writeMessageBegin('ping', TMessageType.CALL, 0)
-        args = ping_args()
-        args.write(self._oprot)
-        self._oprot.writeMessageEnd()
-        self._oprot.transport.flush()
-
-    def recv_ping(self, ctx):
+    def recv_ping(self, ctx, iprot, mtype, rseqid):
         if mtype == TMessageType.EXCEPTION:
             x = TApplicationException()
             x.read(iprot)
@@ -60,6 +51,15 @@ class Client(f_base_foo.Client, Iface):
         result.read(iprot)
         iprot.readMessageEnd()
         return
+
+    def send_ping(self, context):
+        oprot = self._oprot
+        self._transport.register(context, self.recv_ping)
+        oprot.writeMessageBegin('ping', TMessageType.CALL, 0)
+        args = ping_args()
+        args.write(oprot)
+        oprot.writeMessageEnd()
+        oprot.transport.flush()
 
     def one_way(self, ctx, id, req):
         """ oneway methods don't receive a response from the server

@@ -13,6 +13,8 @@ from nats.io.utils import new_inbox
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
+_MAX_MISSED_HEARTBEATS = 10
+
 
 class Heartbeat(object):
 
@@ -66,7 +68,9 @@ def main():
     # Setup Heartbeat
     def on_heartbeat_cb(msg=None):
         # Received a heartbeat, set missed count to 0
+        print("heartbeat subject {0}, data {1}".format(msg.subject, msg.data))
         print("received heartbeat. count: {}".format(hb.missed_count))
+        heartbeat_timer.stop()
         hb.reset_count()
 
         if not heartbeat_timer.is_running():
@@ -74,20 +78,19 @@ def main():
 
     @gen.coroutine
     def send_heartbeat(future=None):
+        hb.increment_missed()
         if hb.missed_count > 4:
             print("heartbeat expired...shut it down")
-        hb.increment_missed()
-        yield nats_client.publish(hb.reply_subject, "")
-        if future is None:
-            future = concurrent.Future()
+            heartbeat_timer.stop()
+        else:
+            print("publishing heartbeat reply")
+            yield nats_client.publish(hb.reply_subject, "")
 
     heartbeat_timer = ioloop.PeriodicCallback(send_heartbeat, hb.interval)
+    heartbeat_timer.start()
 
-    # Subscribe to heartbeat listen
     yield nats_client.subscribe(hb.listen_subject, "", on_heartbeat_cb)
-
-    # Start things off publishing
-    # yield nats_client.publish(hb.listen_subject, "")
+    raise gen.Return()
 
 
 if __name__ == '__main__':

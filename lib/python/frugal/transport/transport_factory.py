@@ -1,4 +1,4 @@
-from .transport import FMuxTransport
+from .tornado_transport import FMuxTornadoTransport
 
 
 class FTransportFactory(object):
@@ -40,4 +40,4 @@ class FMuxTransportFactory(FTransportFactory):
             new FTransport
         """
 
-        return FMuxTransport(thrift_transport)
+        return FMuxTornadoTransport(thrift_transport)

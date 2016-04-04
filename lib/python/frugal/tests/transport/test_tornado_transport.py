@@ -1,16 +1,53 @@
-import unittest
 import mock
 
+from tornado.concurrent import Future
+from tornado.testing import AsyncTestCase, gen_test
+
 from frugal.context import FContext
-from frugal.transport.transport import FMuxTransport
-from frugal.registry import FRegistry
+from frugal.transport.tornado_transport import FMuxTornadoTransport
 
 
-class TestFMuxTransport(unittest.TestCase):
+class TestFmuxTornadoTransport(AsyncTestCase):
 
     def setUp(self):
         self.mock_thrit_transport = mock.Mock()
-        self.transport = FMuxTransport(self.mock_thrit_transport)
+        self.transport = FMuxTornadoTransport(self.mock_thrit_transport)
+
+        super(TestFmuxTornadoTransport, self).setUp()
+
+    @gen_test
+    def test_open(self):
+        future = Future()
+        future.set_result(None)
+        self.mock_thrit_transport.open.return_value = future
+
+        yield self.transport.open()
+
+        # TODO assert something here?
+
+    @gen_test
+    def test_close(self):
+        f = Future()
+        f.set_result(None)
+        self.mock_thrit_transport.close.return_value = f
+
+        yield self.transport.close()
+
+        # TODO here too?
+
+    def test_is_open_calls_underlying_transport_is_open(self):
+        self.mock_thrit_transport.isOpen.return_value = False
+
+        self.assertFalse(self.transport.isOpen())
+
+        mock_registry = mock.Mock()
+        self.transport.set_registry(mock_registry)
+
+        self.assertFalse(self.transport.isOpen())
+
+        self.mock_thrit_transport.isOpen.return_value = True
+
+        self.assertTrue(self.transport.isOpen())
 
     def test_set_registry_with_none_throws_error(self):
         with self.assertRaises(StandardError):
@@ -59,29 +96,3 @@ class TestFMuxTransport(unittest.TestCase):
 
         with self.assertRaises(StandardError):
             self.transport.unregister(ctx)
-
-    def test_is_open_true(self):
-        mock_registry = mock.Mock()
-        self.transport.set_registry(mock_registry)
-        self.mock_thrit_transport.isOpen.return_value = True
-
-        self.assertTrue(self.transport.is_open())
-
-    def test_is_open_false_registry_none(self):
-        self.mock_thrit_transport.isOpen.return_value = True
-
-        self.assertFalse(self.transport.is_open())
-
-    def test_is_open_false_transport_not_open(self):
-        mock_registry = mock.Mock()
-        self.transport.set_registry(mock_registry)
-        self.mock_thrit_transport.isOpen.return_value = False
-
-        self.assertFalse(self.transport.is_open())
-
-    def test_open_calls_open_on_transport(self):
-        self.transport.open()
-
-        self.mock_thrit_transport.open.assert_called()
-
-    # TODO - figure out how to test .read(); it's calling the TFramedTransport

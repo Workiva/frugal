@@ -141,7 +141,7 @@ func runServer(conn *nats.Conn, transportFactory frugal.FTransportFactory,
 	protocolFactory *frugal.FProtocolFactory) error {
 	handler := &FooHandler{}
 	processor := event.NewFFooProcessor(handler)
-	server := frugal.NewFNatsServerFactory(conn, "foo", 20*time.Second, 2,
+	server := frugal.NewFNatsServerFactory(conn, "foo", 5*time.Second, 2,
 		frugal.NewFProcessorFactory(processor), transportFactory, protocolFactory)
 	fmt.Println("Starting the simple nats server... on ", "foo")
 	return server.Serve()
