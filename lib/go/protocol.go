@@ -1,7 +1,6 @@
 package frugal
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -134,26 +133,13 @@ func readHeader(reader io.Reader) (map[string]string, error) {
 		return nil, thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION, fmt.Sprintf("frugal: error reading protocol headers: %s", err.Error()))
 	}
 
+	// Support more versions when available.
 	if buff[0] != protocolV0 {
 		return nil, NewFProtocolExceptionWithType(thrift.BAD_VERSION, fmt.Sprintf("frugal: unsupported protocol version %d", buff[0]))
 	}
 
 	size := int32(binary.BigEndian.Uint32(buff[1:]))
-	return readHeadersFromReader(reader, size)
-}
-
-func getHeadersFromFrame(frame []byte) (map[string]string, error) {
-	if frame[0] != protocolV0 {
-		return nil, NewFProtocolExceptionWithType(thrift.BAD_VERSION, fmt.Sprint("frugal: unsupported protocol version %d", frame[0]))
-	}
-	size := int32(binary.BigEndian.Uint32(frame[1:5]))
-	// TODO: Don't allocate new buffer, just use index offset.
-	reader := bytes.NewBuffer(frame[5 : size+5])
-	return readHeadersFromReader(reader, size)
-}
-
-func readHeadersFromReader(reader io.Reader, size int32) (map[string]string, error) {
-	buff := make([]byte, size)
+	buff = make([]byte, size)
 	if _, err := io.ReadFull(reader, buff); err != nil {
 		if e, ok := err.(thrift.TTransportException); ok && e.TypeId() == thrift.END_OF_FILE {
 			return nil, err
@@ -161,19 +147,40 @@ func readHeadersFromReader(reader io.Reader, size int32) (map[string]string, err
 		return nil, thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION, fmt.Sprintf("frugal: error reading protocol headers: %s", err.Error()))
 	}
 
+	return readPairs(buff, 0, size)
+}
+
+func getHeadersFromFrame(frame []byte) (map[string]string, error) {
+	if len(frame) < 5 {
+		return nil, NewFProtocolExceptionWithType(thrift.INVALID_DATA, fmt.Sprintf("frugal: invalid frame size %d", len(frame)))
+	}
+
+	// Support more versions when available.
+	if frame[0] != protocolV0 {
+		return nil, NewFProtocolExceptionWithType(thrift.BAD_VERSION, fmt.Sprint("frugal: unsupported protocol version %d", frame[0]))
+	}
+
+	size := int32(binary.BigEndian.Uint32(frame[1:5]))
+	return readPairs(frame, 5, size+5)
+}
+
+func readPairs(buff []byte, start, end int32) (map[string]string, error) {
 	headers := make(map[string]string)
-	for i := int32(0); i < size; {
+	i := start
+	for i < end {
+		// Read header name.
 		nameSize := int32(binary.BigEndian.Uint32(buff[i : i+4]))
 		i += 4
-		if i > size || i+nameSize > size {
+		if i > end || i+nameSize > end {
 			return nil, NewFProtocolExceptionWithType(thrift.INVALID_DATA, "frugal: invalid protocol header name")
 		}
 		name := string(buff[i : i+nameSize])
 		i += nameSize
 
+		// Read header value.
 		valueSize := int32(binary.BigEndian.Uint32(buff[i : i+4]))
 		i += 4
-		if i > size || i+valueSize > size {
+		if i > end || i+valueSize > end {
 			return nil, NewFProtocolExceptionWithType(thrift.INVALID_DATA, "frugal: invalid protocol header value")
 		}
 		value := string(buff[i : i+valueSize])

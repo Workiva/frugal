@@ -9,11 +9,13 @@ dependencies:
   event:
     path: ../gen-dart/event
   frugal:
-    git:
-      url: git@github.com:Workiva/frugal-dart.git
-      ref: 1.0.10
+    hosted:
+      name: frugal
+      url: https://pub.workiva.org
+    version: ^1.1.0
   thrift:
-    git:
-      url: git@github.com:Workiva/thrift-dart.git
-      ref: 0.0.4
+    hosted:
+      name: thrift
+      url: https://pub.workiva.org
+    version: ^0.0.5
 

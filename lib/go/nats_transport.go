@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	log "github.com/Sirupsen/logrus"
 	"github.com/nats-io/nats"
 )
 
@@ -113,9 +113,9 @@ func (n *natsServiceTTransport) Open() error {
 		if msg.Reply == disconnect {
 			// Remote client is disconnecting.
 			if n.isClient() {
-				log.Println("frugal: error - received unexpected disconnect from the server")
+				log.Error("frugal: transport received unexpected disconnect from the server")
 			} else {
-				log.Println("frugal: client closed cleanly")
+				log.Debug("frugal: client transport closed cleanly")
 			}
 			n.Close()
 			return
@@ -148,7 +148,7 @@ func (n *natsServiceTTransport) Open() error {
 				case <-time.After(n.heartbeatTimeoutPeriod()):
 					missed++
 					if missed >= n.maxMissedHeartbeats {
-						log.Println("frugal: server heartbeat expired")
+						log.Warn("frugal: server heartbeat expired")
 						n.Close()
 						return
 					}

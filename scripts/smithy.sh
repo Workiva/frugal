@@ -6,10 +6,15 @@ set -o pipefail
 set -e
 
 ROOT=$PWD
+CODECOV_TOKEN='bQ4MgjJ0G2Y73v8JNX6L7yMK9679nbYB'
+THRIFT_TAG=0.9.3-wk-2
+THRIFT=thrift-$THRIFT_TAG-linux-amd64
+
 
 # Retrieve the thrift binary
 mkdir -p $ROOT/bin
-wget -O $ROOT/bin/thrift https://github.com/stevenosborne-wf/thrift/releases/download/0.9.3-wk-2/thrift-0.9.3-wk-2-linux-amd64 
+curl -L -O https://github.com/stevenosborne-wf/thrift/releases/download/$THRIFT_TAG/$THRIFT
+mv $THRIFT $ROOT/bin/thrift
 chmod 0755 $ROOT/bin/thrift
 export PATH=$PATH:$ROOT/bin
 
@@ -22,10 +27,15 @@ cd $ROOT/lib/go
 go get -d ./go .
 go build
 
-# Compile the python library code
-cd $ROOT/lib/python
-make deps
-make unit
+# Compile the dart library code
+cd $ROOT/lib/dart
+pub get
+pub run dart_dev test
+pub run dart_dev coverage --no-html
+./tool/codecov.sh
+pub run dart_dev format --check
+pub run dart_dev analyze
+zip -r frugal-dart.zip .
 
 # Run the generator tests
 cd $ROOT

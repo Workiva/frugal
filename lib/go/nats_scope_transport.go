@@ -5,10 +5,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"sync"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	log "github.com/Sirupsen/logrus"
 	q "github.com/Workiva/go-datastructures/queue"
 	"github.com/nats-io/nats"
 )
@@ -112,7 +112,7 @@ func (n *fNatsScopeTransport) Open() error {
 
 	sub, err := n.conn.Subscribe(n.formattedSubject(), func(msg *nats.Msg) {
 		if len(msg.Data) < 4 {
-			log.Println("frugal: Discarding invalid scope message frame")
+			log.Warn("frugal: Discarding invalid scope message frame")
 			return
 		}
 		// Discard frame size.
