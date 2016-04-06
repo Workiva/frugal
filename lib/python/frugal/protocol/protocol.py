@@ -20,7 +20,8 @@ class FProtocol(TProtocolBase, object):
         Args:
             wrapped_protocol: wrapped thrift protocol extending TProtocolBase.
         """
-        super(FProtocol, self).__init__(wrapped_protocol.trans)
+        self._wrapped_protocol = wrapped_protocol
+        super(FProtocol, self).__init__(self._wrapped_protocol.trans)
 
     def get_transport(self):
         return self.trans
@@ -79,7 +80,7 @@ class FProtocol(TProtocolBase, object):
                              offset, value)
             offset += len(value)
 
-        self.trans.write(buff)
+        self._wrapped_protocol.get_transport().write(buff)
 
     def _read_headers(self, buff):
         parsed_headers = {}
@@ -89,8 +90,7 @@ class FProtocol(TProtocolBase, object):
         if version is not _V0:
             raise FrugalVersionException(
                 "Wrong Frugal version.  Found version {0}.  Wanted version {1}"
-                .format(version, _V0)
-            )
+                .format(version, _V0))
 
         size = struct.unpack_from('>I', buff, 1)[0]
 
@@ -118,3 +118,33 @@ class FProtocol(TProtocolBase, object):
             parsed_headers[key] = val
 
         return parsed_headers
+
+    def writeMessageBegin(self, name, ttype, seqid):
+        self._wrapped_protocol.writeMessageBegin(name, ttype, seqid)
+
+    def writeMessageEnd(self):
+        self._wrapped_protocol.writeMessageEnd()
+
+    def writeStructBegin(self, name):
+        self._wrapped_protocol.writeStructBegin(name)
+
+    def writeStructEnd(self):
+        self._wrapped_protocol.writeStructEnd()
+
+    def writeFieldStop(self):
+        self._wrapped_protocol.writeFieldStop()
+
+    def readMessageBegin(self):
+        self._wrapped_protocol.readMessageBegin()
+
+    def readStructBegin(self):
+        self._wrapped_protocol.readStructBegin()
+
+    def readFieldBegin(self):
+        self._wrapped_protocol.readFieldBegin()
+
+    def readField(self):
+        self._wrapped_protocol.readField()
+
+    def readStructEnd(self):
+        self._wrapped_protocol.readStructEnd()

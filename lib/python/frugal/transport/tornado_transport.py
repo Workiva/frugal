@@ -16,7 +16,7 @@ class FMuxTornadoTransport(FTransport):
         self._lock = Lock()
 
     def isOpen(self):
-        return (self._transport.isOpen() and self._registry)
+        return self._transport.isOpen() and self._registry
 
     @gen.coroutine
     def open(self):
@@ -27,26 +27,32 @@ class FMuxTornadoTransport(FTransport):
         yield self._transport.close()
 
     def set_registry(self, registry):
+        """Set FRegistry on the transport.  No-Op if already set.
+        args:
+            registry: FRegistry to set on the transport
+        """
         with self._lock:
-            if registry is None:
-                raise StandardError("registry cannot be null.")
+            if not registry:
+                raise ValueError("registry cannot be null.")
 
-            if self._registry is not None:
+            if self._registry:
                 return
 
             self._registry = registry
 
     def register(self, context, callback):
         with self._lock:
-            if self._registry is None:
+            if not self._registry:
                 raise StandardError("registry cannot be null.")
-            else:
-                self._registry.register(context, callback)
+
+            self._registry.register(context, callback)
 
     def unregister(self, context):
         with self._lock:
-            if self._registry is None:
+            if not self._registry:
                 raise StandardError("registry cannot be null.")
 
             self._registry.unregister(context)
 
+    def flush(self):
+        self._transport.flush()

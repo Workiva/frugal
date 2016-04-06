@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TTransport
@@ -14,6 +15,16 @@ from frugal.transport.transport_factory import FMuxTransportFactory
 from frugal.transport.nats_service_transport import TNatsServiceTransport
 
 from gen_py.example.f_foo import Client as FFooClient
+
+root = logging.getLogger()
+root.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+root.addHandler(ch)
 
 
 @gen.coroutine
@@ -36,19 +47,18 @@ def main():
 
     try:
         yield tornado_transport.open()
-        print("after try open")
     except TTransport.TTransportException as ex:
-        print("got TTransportException")
         logging.error(ex)
         raise gen.Return()
 
-    print("Made it here")
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
     foo_client = FFooClient(tornado_transport, prot_factory)
     foo_client.one_way(FContext(), 99, {99: "request"})
 
     print("Successfully sent one_way")
 
+    f = yield foo_client.ping(FContext())
+    print("Ping future: {}".format(f))
 
 if __name__ == '__main__':
     io_loop = ioloop.IOLoop.instance()

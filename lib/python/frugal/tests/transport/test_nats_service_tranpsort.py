@@ -1,4 +1,5 @@
 import mock
+import struct
 
 from thrift.transport.TTransport import TTransportException
 from tornado import concurrent
@@ -61,23 +62,30 @@ class TestTNatsServiceTransport(AsyncTestCase):
         f = concurrent.Future()
         f.set_result("handshake response 1234")
 
+    @gen_test
+    def test_write_throws_not_open_exception(self):
+        self.transport._is_open = False
+
+        try:
+            self.transport.write(b'', 0, 4)
+            self.fail()
+        except TTransportException as e:
+            self.assertEqual("Transport not open!", e.message)
 
     @gen_test
-    def test_handshake(self):
-        f = concurrent.Future()
-        f.set_result(1)
-        self.mock_nats_client.subscribe.return_value = f
+    def test_write_adds_buff_to_write_buffer(self):
+        self.mock_nats_client.is_connected.return_value = True
+        self.transport._is_open = True
 
-        f2 = concurrent.Future()
-        f2.set_result(None)
-        self.mock_nats_client.auto_unsubscribe.return_value = f2
+        buff = bytearray(10)
+        struct.pack_into('>I', buff, 0, 10)
 
-        self.mock_nats_client.auto_unsubscribe.return_value = f2
-        f3 = concurrent.Future()
-        f3.set_result(None)
+        self.transport.write(buff, 0, 10)
 
-        self.mock_nats_client.publish_request.return_value = f3
+        # Assert unpacking self._wbuf has what we've written
 
-        msg = yield self.transport._handshake()
+        wbuf = self.transport._wbuf.getvalue()
 
+        print(wbuf)
 
+        self.fail()

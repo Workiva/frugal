@@ -1,7 +1,9 @@
 import json
 import logging
 from datetime import timedelta
+import struct
 from threading import Lock
+from io import BytesIO
 
 from nats.io.utils import new_inbox
 from thrift.transport.TTransport import TTransportBase, TTransportException
@@ -28,7 +30,8 @@ class TNatsServiceTransport(TTransportBase):
                  nats_client,
                  connection_subject,
                  connection_timeout=DEFAULT_CONNECTION_TIMEOUT,
-                 max_missed_heartbeats=DEFAULT_MAX_MISSED_HEARTBEATS):
+                 max_missed_heartbeats=DEFAULT_MAX_MISSED_HEARTBEATS,
+                 io_loop=None):
         """Create a TNatsServerTransport to communicate with NATS
 
         Args:
@@ -36,9 +39,8 @@ class TNatsServiceTransport(TTransportBase):
             listen_to: subject to listen on
             write_to: subject to write to
         """
-        # self.io_loop = io_loop or ioloop.IOLoop.current()
-
         self._nats_client = nats_client
+        self._io_loop = io_loop or ioloop.IOLoop.current()
 
         self._connection_subject = connection_subject
         self._connection_timeout = connection_timeout
@@ -52,57 +54,53 @@ class TNatsServiceTransport(TTransportBase):
         self._heartbeat_interval = None
         self._heartbeat_timer = None
         self._heartbeat_sub_id = None
+        self._missed_heartbeats = 0
 
         self._write_to = None
         self._listen_to = None
-        self._heartbeat_count = 0
+
+        self._open_lock = Lock()
+
+        self._wbuf = BytesIO()
 
     def isOpen(self):
-        return self._is_open and self._nats_client.is_connected()
+        with self._open_lock:
+            return self._is_open and self._nats_client.is_connected()
 
     @gen.coroutine
     def open(self):
-        """Open the Transport
+        """Open the Transport to communicate with NATS
 
         Throws:
             TTransportException
         """
+        with self._open_lock:
+            if not self._nats_client.is_connected():
+                # TODO switch to TExceptionType constants
+                raise TTransportException(1, "NATS not connected.")
+            elif self.isOpen():
+                raise TTransportException(2, "NATS transport already open")
 
-        #
-        # handle exceptions
-        #
-        if not self._nats_client.is_connected():
-            raise TTransportException(1, "NATS not connected.")
-        elif self.isOpen():
-            raise TTransportException(2, "NATS transport already open")
+            if self._connection_subject:
+                # TODO switch to if not and raise
+                yield self._handshake()
 
-        #
-        # handshake
-        #
-        if self._connection_subject:
-            yield self._handshake()
+            # TODO move this to top level
+            def on_message_cb(m=None):
+                if m.reply == _DISCONNECT:
+                    logger.debug("Received DISCONNECT message from Frugal server.")
+                    self.close()
+                else:
+                    # TODO call some function that will eventually execute frame
+                    logger.debug("Message from server: subject: {0}, data: {1}"
+                                 .format(m.subject, m.data))
 
-        #
-        # subscribe to topic
-        #
-        def on_message_cb(msg=None):
-            if msg.reply == _DISCONNECT:
-                self.close()
-                return
-            # TODO write msg.data to writer
-            print("subject: {0}, data: {1}".format(msg.subject, msg.data))
+            self._sub_id = yield self._nats_client.subscribe(self._listen_to,
+                                                             "",
+                                                             on_message_cb)
 
-        self._sub_id = yield self._nats_client.subscribe(
-            self._listen_to,
-            "",
-            on_message_cb
-        )
-
-        self._setup_heartbeat()
-
-        self._is_open = True
-
-        # raise gen.Return()
+            yield self._setup_heartbeat()
+            self._is_open = True
 
     @gen.coroutine
     def _handshake(self):
@@ -119,11 +117,11 @@ class TNatsServiceTransport(TTransportBase):
         msg = yield gen.with_timeout(
             timedelta(milliseconds=30000), future)
 
-        raise gen.Return(msg)
-        print("message data: {}".format(msg.data))
         subjects = msg.data.split()
         if len(subjects) != 3:
-            print("bad handshake")
+            logger.error("Bad Frugal handshake")
+            # TODO handle similar to other libraries
+            return
         self._heartbeat_listen = subjects[0]
         self._heartbeat_reply = subjects[1]
         self._heartbeat_interval = int(subjects[2])
@@ -134,39 +132,38 @@ class TNatsServiceTransport(TTransportBase):
 
     @gen.coroutine
     def _setup_heartbeat(self):
-        def on_heartbeat_message_cb(msg=None):
-            print("message subject {0}, data {1}".format(msg.subject, msg.data))
-            with _HEARTBEAT_LOCK:
-                self._heartbeat_count += 1
-                print("heartbeat count: {}".format(self._heartbeat_count))
-                self._heartbeat_timer.stop()
-                self._missed_heartbeats = 0
-                print("heartbeat callback called missed heartbeats: {} should be 0 ".format(self._missed_heartbeats))
-                self._heartbeat_timer.start()
+        # TODO move this up
+        def on_heartbeat_message(msg=None):
+            # TODO : heartbeat lock
+            self._heartbeat_timer.stop()
+            self._nats_client.publish(self._heartbeat_reply, "")
+            self._missed_heartbeats = 0
+            self._heartbeat_timer.start()
 
         if self._heartbeat_interval > 0:
+            logger.debug("Setting up heartbeat subscription.")
             self._heartbeat_sub_id = yield self._nats_client.subscribe(
                 self._heartbeat_listen,
                 "",
-                on_heartbeat_message_cb
+                on_heartbeat_message
             )
 
         self._heartbeat_timer = ioloop.PeriodicCallback(
             self._missed_heartbeat,
             self._heartbeat_interval
         )
+        logger.debug("Starting heartbeat timer.")
         self._heartbeat_timer.start()
 
     @gen.coroutine
     def _missed_heartbeat(self, future=None):
-        with _HEARTBEAT_LOCK:
-            self._missed_heartbeats += 1
-            print("missed heartbeats {}".format(self._missed_heartbeats))
-            if self._missed_heartbeats >= self._max_missed_heartbeats:
-                print("Exceeded maximum number of acceptable " +
-                    "missed heartbeats.  Closing transport.")
-                yield self.close()
-                self._heartbeat_timer.stop()
+        self._missed_heartbeats += 1
+        if self._missed_heartbeats >= self._max_missed_heartbeats:
+            logger.error("Missed maximum number ({})of heartbeats." +
+                         "Closing NATS transport"
+                         .format(self._missed_heartbeats))
+            yield self.close()
+            self._heartbeat_timer.stop()
 
     @gen.coroutine
     def close(self):
@@ -179,14 +176,25 @@ class TNatsServiceTransport(TTransportBase):
             yield self._nats_client.close()
 
     def read(self, buff, offset, length):
-        pass
+        raise Exception("Don't call this.")
 
     def write(self, buff, offset, length):
-        pass
+        """Write takes in a bytearray and appends it to the write buffer"""
+        if not self.isOpen():
+            # TODO add constant Type
+            raise TTransportException(3, "Transport not open!")
+
+        self._wbuf.seek(offset)
+        self._wbuf.write(buff)
 
     def flush(self):
         """flush publishes whatever is in the buffer to NATS"""
-        pass
+        frame = self._wbuf.getvalue()
+        frame_length = struct.pack('!i', len(frame))
+        self._wbuf = BytesIO()
+        yield self._nats_client.publish(self.connection_subject,
+                                        frame_length + frame)
 
     def _new_frugal_inbox(self):
-        return "{0}{1}".format(_FRUGAL_PREFIX, new_inbox())
+        return "{frugal}{new_inbox}".format(frugal=_FRUGAL_PREFIX,
+                                            new_inbox=new_inbox())

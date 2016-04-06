@@ -36,7 +36,8 @@ class Client(f_base_foo.Client, Iface):
         self._write_lock = Lock()
 
     def ping(self, context):
-        future = self._reqs[self._seqid] = concurrent.Future()
+        print("Called ping.")
+        future = concurrent.Future()
         self.send_ping(context)
         return future
 
@@ -59,7 +60,7 @@ class Client(f_base_foo.Client, Iface):
         args = ping_args()
         args.write(oprot)
         oprot.writeMessageEnd()
-        oprot.transport.flush()
+        oprot.get_transport().flush()
 
     def one_way(self, ctx, id, req):
         """ oneway methods don't receive a response from the server
