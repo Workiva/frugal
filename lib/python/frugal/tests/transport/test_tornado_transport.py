@@ -40,11 +40,6 @@ class TestFmuxTornadoTransport(AsyncTestCase):
 
         self.assertFalse(self.transport.isOpen())
 
-        mock_registry = mock.Mock()
-        self.transport.set_registry(mock_registry)
-
-        self.assertFalse(self.transport.isOpen())
-
         self.mock_thrit_transport.isOpen.return_value = True
 
         self.assertTrue(self.transport.isOpen())

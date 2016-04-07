@@ -74,13 +74,15 @@ class TNatsServiceTransport(TTransportBase):
         Throws:
             TTransportException
         """
-        with self._open_lock:
-            if not self._nats_client.is_connected():
-                # TODO switch to TExceptionType constants
-                raise TTransportException(1, "NATS not connected.")
-            elif self.isOpen():
-                raise TTransportException(2, "NATS transport already open")
+        if not self._nats_client.is_connected():
+            # TODO switch to TExceptionType constants
+            raise TTransportException(TTransportException.NOT_OPEN,
+                                      "NATS not connected.")
+        elif self.isOpen():
+            raise TTransportException(TTransportException.ALREADY_OPEN,
+                                      "NATS transport already open")
 
+        with self._open_lock:
             if self._connection_subject:
                 # TODO switch to if not and raise
                 yield self._handshake()

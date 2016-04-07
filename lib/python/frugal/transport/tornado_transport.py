@@ -16,7 +16,7 @@ class FMuxTornadoTransport(FTransport):
         self._lock = Lock()
 
     def isOpen(self):
-        return self._transport.isOpen() and self._registry
+        return self._transport.isOpen()
 
     @gen.coroutine
     def open(self):

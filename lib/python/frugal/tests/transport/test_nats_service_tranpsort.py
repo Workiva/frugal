@@ -40,7 +40,7 @@ class TestTNatsServiceTransport(AsyncTestCase):
             yield self.transport.open()
             self.fail()
         except TTransportException as e:
-            self.assertEqual(1, e.type)
+            self.assertEqual(TTransportException.NOT_OPEN, e.type)
             self.assertEqual("NATS not connected.", e.message)
 
     @gen_test
@@ -52,7 +52,7 @@ class TestTNatsServiceTransport(AsyncTestCase):
             yield self.transport.open()
             self.fail()
         except TTransportException as e:
-            self.assertEqual(2, e.type)
+            self.assertEqual(TTransportException.ALREADY_OPEN, e.type)
             self.assertEqual("NATS transport already open", e.message)
 
     @gen_test
@@ -84,8 +84,3 @@ class TestTNatsServiceTransport(AsyncTestCase):
 
         # Assert unpacking self._wbuf has what we've written
 
-        wbuf = self.transport._wbuf.getvalue()
-
-        print(wbuf)
-
-        self.fail()

@@ -24,6 +24,7 @@ class FProtocol(TProtocolBase, object):
         super(FProtocol, self).__init__(self._wrapped_protocol.trans)
 
     def get_transport(self):
+        # TODO: should this get the wrapped_protocols transport?
         return self.trans
 
     def write_request_headers(self, context):
@@ -67,10 +68,11 @@ class FProtocol(TProtocolBase, object):
         offset = 5
 
         for key, value in headers.iteritems():
-            struct.pack_into('>I', buff, offset, len(key))
+            key_length = len(key)
+            struct.pack_into('>I', buff, offset, key_length)
             offset += 4
 
-            struct.pack_into('>{0}s'.format(str(len(key))), buff, offset, key)
+            struct.pack_into('>{0}s'.format(str(key_length)), buff, offset, key)
             offset += len(key)
 
             struct.pack_into('>I', buff, offset, len(value))
