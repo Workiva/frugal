@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	log "github.com/Sirupsen/logrus"
 	"github.com/nats-io/nats"
 )
 
@@ -78,6 +78,10 @@ func newNatsServiceTTransportServer(conn *nats.Conn, listenTo, writeTo string) t
 	}
 }
 
+func (n *natsServiceTTransport) isClient() bool {
+	return n.connectSubject != ""
+}
+
 // Open handshakes with the server (if this is a client transport) initializes
 // the write buffer and reader/writer pipe, subscribes to the specified
 // subject, and starts heartbeating.
@@ -94,7 +98,7 @@ func (n *natsServiceTTransport) Open() error {
 	}
 
 	// Handshake if this is a client.
-	if n.connectSubject != "" {
+	if n.isClient() {
 		if err := n.handshake(); err != nil {
 			return thrift.NewTTransportExceptionFromError(err)
 		}
@@ -108,6 +112,11 @@ func (n *natsServiceTTransport) Open() error {
 	sub, err := n.conn.Subscribe(n.listenTo, func(msg *nats.Msg) {
 		if msg.Reply == disconnect {
 			// Remote client is disconnecting.
+			if n.isClient() {
+				log.Error("frugal: transport received unexpected disconnect from the server")
+			} else {
+				log.Debug("frugal: client transport closed cleanly")
+			}
 			n.Close()
 			return
 		}
@@ -123,6 +132,7 @@ func (n *natsServiceTTransport) Open() error {
 			select {
 			case n.recvHeartbeatChan() <- struct{}{}:
 			default:
+				log.Println("frugal: natsServiceTTransport received heartbeat dropped")
 			}
 			n.conn.Publish(n.heartbeatReply, nil)
 		})
@@ -138,7 +148,7 @@ func (n *natsServiceTTransport) Open() error {
 				case <-time.After(n.heartbeatTimeoutPeriod()):
 					missed++
 					if missed >= n.maxMissedHeartbeats {
-						log.Println("frugal: server heartbeat expired")
+						log.Warn("frugal: server heartbeat expired")
 						n.Close()
 						return
 					}
@@ -274,8 +284,9 @@ func (n *natsServiceTTransport) Close() error {
 	n.heartbeatSub = nil
 	close(n.closed)
 	n.isOpen = false
+	n.writer.Close()
 	n.fieldsMu.Unlock()
-	return thrift.NewTTransportExceptionFromError(n.writer.Close())
+	return nil
 }
 
 func (n *natsServiceTTransport) Read(p []byte) (int, error) {

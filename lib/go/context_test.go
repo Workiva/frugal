@@ -6,12 +6,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Ensures NewFContext creates an FContext with the given correlation id.
 func TestCorrelationID(t *testing.T) {
 	corid := "fooid"
 	ctx := NewFContext(corid)
 	assert.Equal(t, corid, ctx.CorrelationID())
 }
 
+// Ensures the "_opid" request header for an FContext is returned for calls to
+// opID.
 func TestOpID(t *testing.T) {
 	corid := "fooid"
 	opid := "12345"
@@ -20,6 +23,8 @@ func TestOpID(t *testing.T) {
 	assert.Equal(t, uint64(12345), ctx.opID())
 }
 
+// Ensures AddRequestHeader properly adds the key-value pair to the context
+// RequestHeaders.
 func TestRequestHeader(t *testing.T) {
 	corid := "fooid"
 	ctx := NewFContext(corid)
@@ -32,6 +37,8 @@ func TestRequestHeader(t *testing.T) {
 	assert.NotEqual(t, "", ctx.RequestHeaders()[opID])
 }
 
+// Ensures AddResponseHeader properly adds the key-value pair to the context
+// ResponseHeaders.
 func TestResponseHeader(t *testing.T) {
 	corid := "fooid"
 	ctx := NewFContext(corid)

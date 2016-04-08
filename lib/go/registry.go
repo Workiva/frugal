@@ -3,12 +3,12 @@ package frugal
 import (
 	"bytes"
 	"errors"
-	"log"
 	"strconv"
 	"sync"
 	"sync/atomic"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	log "github.com/Sirupsen/logrus"
 )
 
 var nextOpID uint64 = 0
@@ -67,13 +67,13 @@ func (c *clientRegistry) Unregister(ctx *FContext) {
 func (c *clientRegistry) Execute(frame []byte) error {
 	headers, err := getHeadersFromFrame(frame)
 	if err != nil {
-		log.Println("frugal: invalid protocol frame headers:", err)
+		log.Warn("frugal: invalid protocol frame headers:", err)
 		return err
 	}
 
 	opid, err := strconv.ParseUint(headers[opID], 10, 64)
 	if err != nil {
-		log.Println("frugal: invalid protocol frame:", err)
+		log.Warn("frugal: invalid protocol frame:", err)
 		return err
 	}
 

@@ -23,7 +23,7 @@ class TFramedTransport extends TTransport{
     /**
      * Buffer for output
      */
-    private final TByteArrayOutputStream writeBuffer_ =
+    protected final TByteArrayOutputStream writeBuffer_ =
             new TByteArrayOutputStream(1024);
 
     public static class Factory extends TTransportFactory {

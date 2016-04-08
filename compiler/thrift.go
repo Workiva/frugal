@@ -73,10 +73,10 @@ func generateInclude(frugal *parser.Frugal, incl *parser.Include) (string, error
 		return "", fmt.Errorf("Bad include name: %s", include)
 	}
 
-	parsed, err := compile(filepath.Join(frugal.Dir, include),
-		strings.HasSuffix(include, ".thrift"), globals.Recurse)
+	file := filepath.Join(frugal.Dir, include)
+	parsed, err := compile(file, strings.HasSuffix(include, ".thrift"), globals.Recurse)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Include %s: %s", file, err)
 	}
 
 	// Lop off extension (.frugal or .thrift)

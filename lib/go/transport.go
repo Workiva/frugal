@@ -3,11 +3,11 @@ package frugal
 import (
 	"errors"
 	"io"
-	"log"
 	"sync"
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -216,7 +216,7 @@ func (f *fMuxTransport) Open() error {
 					// Indicates the transport was closed.
 					return
 				}
-				log.Println("frugal: error reading protocol frame, closing transport:", err)
+				log.Error("frugal: error reading protocol frame, closing transport:", err)
 				return
 			}
 
@@ -255,6 +255,7 @@ func (f *fMuxTransport) close(cause error) error {
 	select {
 	case f.closed <- cause:
 	default:
+		log.Printf("frugal: unable to put close error '%s' on fMuxTransport closed channel", cause)
 	}
 	close(f.closed)
 
@@ -262,6 +263,9 @@ func (f *fMuxTransport) close(cause error) error {
 	select {
 	case f.monitorClosedSignal <- cause:
 	default:
+		if f.monitorClosedSignal != nil {
+			log.Printf("frugal: unable to put close error '%s' on fMuxTransport monitor channel", cause)
+		}
 	}
 
 	return nil
@@ -296,12 +300,12 @@ func (f *fMuxTransport) startWorkers() {
 					dur := time.Since(frame.timestamp)
 					f.waterMu.RLock()
 					if dur > f.highWatermark {
-						log.Printf("frugal: frame spent %+v in the transport buffer, your consumer might be backed up\n", dur)
+						log.Warnf("frugal: frame spent %+v in the transport buffer, your consumer might be backed up", dur)
 					}
 					f.waterMu.RUnlock()
 					if err := f.registry.Execute(frame.frameBytes); err != nil {
 						// An error here indicates an unrecoverable error, teardown transport.
-						log.Println("frugal: closing transport due to unrecoverable error processing frame:", err)
+						log.Error("frugal: closing transport due to unrecoverable error processing frame:", err)
 						f.close(err)
 						return
 					}

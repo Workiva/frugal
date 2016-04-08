@@ -83,7 +83,7 @@ public class FMuxTransport extends FTransport {
     }
 
     public synchronized boolean isOpen() {
-        return framedTransport.isOpen() && registry != null;
+        return framedTransport.isOpen();
     }
 
     public synchronized void open() throws TTransportException {

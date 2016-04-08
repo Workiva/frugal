@@ -7,9 +7,7 @@ pub/sub APIs. Frugal is intended to act as a superset of Thrift, meaning it
 implements the same functionality as Thrift with some additional
 features.
 
-Currently supported languages are Go, Java, and Dart. The Dart library code
-is in a [separate repo](https://github.com/Workiva/frugal-dart) until it
-can be hosted on Pub.
+Currently supported languages are Go, Java, and Dart.
 
 ## Installation
 

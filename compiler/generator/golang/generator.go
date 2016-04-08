@@ -155,10 +155,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 		}
 
 		cName := title(constant.Name)
-		value, err := g.generateConstantValue(constant.Type, constant.Value)
-		if err != nil {
-			return err
-		}
+		value := g.generateConstantValue(constant.Type, constant.Value)
 		// Don't use underlying type so typedefs aren't consts
 		if (parser.IsThriftPrimitive(constant.Type) || g.Frugal.IsEnum(constant.Type)) && constant.Type.Name != "binary" {
 			contents += fmt.Sprintf("const %s = %s\n\n", cName, value)
@@ -177,7 +174,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 
 // generateConstantValue recursively generates the string representation of
 // a, possibly complex, constant value.
-func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) (string, error) {
+func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) string {
 	underlyingType := g.Frugal.UnderlyingType(t)
 
 	// If the value being referenced is of type Identifier, it's referencing
@@ -194,7 +191,6 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) (st
 					return g.generateConstantValue(t, constant.Value)
 				}
 			}
-			return "", fmt.Errorf("referenced constant '%s' not present", name)
 		} else if len(pieces) == 2 {
 			// From an include
 			include, ok := g.Frugal.ParsedIncludes[pieces[0]]
@@ -206,7 +202,6 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) (st
 					return g.generateConstantValue(t, constant.Value)
 				}
 			}
-			return "", fmt.Errorf("reference constant '%s' not present", name)
 		}
 
 		panic("referenced constant doesn't exist: " + name)
@@ -215,54 +210,42 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) (st
 	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {
 		switch underlyingType.Name {
 		case "bool", "i8", "byte", "i16", "i32", "i64", "double":
-			return fmt.Sprintf("%v", value), nil
+			return fmt.Sprintf("%v", value)
 		case "string":
-			return fmt.Sprintf("\"%s\"", value), nil
+			return fmt.Sprintf("\"%s\"", value)
 		case "binary":
-			return fmt.Sprintf("[]byte(\"%s\")", value), nil
+			return fmt.Sprintf("[]byte(\"%s\")", value)
 		case "list":
 			contents := ""
 			contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
 			for _, v := range value.([]interface{}) {
-				val, err := g.generateConstantValue(underlyingType.ValueType, v)
-				if err != nil {
-					return "", err
-				}
+				val := g.generateConstantValue(underlyingType.ValueType, v)
 				contents += fmt.Sprintf("%s,\n", val)
 			}
 			contents += "}"
-			return contents, nil
+			return contents
 		case "set":
 			contents := ""
 			contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
 			for _, v := range value.([]interface{}) {
-				val, err := g.generateConstantValue(underlyingType.ValueType, v)
-				if err != nil {
-					return "", err
-				}
+				val := g.generateConstantValue(underlyingType.ValueType, v)
 				contents += fmt.Sprintf("%s: true,\n", val)
 			}
 			contents += "}"
-			return contents, nil
+			return contents
 		case "map":
 			contents := ""
 			contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
 			for _, pair := range value.([]parser.KeyValue) {
-				key, err := g.generateConstantValue(underlyingType.KeyType, pair.Key)
-				if err != nil {
-					return "", err
-				}
-				val, err := g.generateConstantValue(underlyingType.ValueType, pair.Value)
-				if err != nil {
-					return "", err
-				}
+				key := g.generateConstantValue(underlyingType.KeyType, pair.Key)
+				val := g.generateConstantValue(underlyingType.ValueType, pair.Value)
 				contents += fmt.Sprintf("%s: %s,\n", key, val)
 			}
 			contents += "}"
-			return contents, nil
+			return contents
 		}
 	} else if g.Frugal.IsEnum(underlyingType) {
-		return fmt.Sprintf("%d", value), nil
+		return fmt.Sprintf("%d", value)
 	} else if g.Frugal.IsStruct(underlyingType) {
 		var s *parser.Struct
 		for _, potential := range g.Frugal.Thrift.Structs {
@@ -278,17 +261,14 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) (st
 			name := pair.Key.(string)
 			for _, field := range s.Fields {
 				if name == field.Name {
-					val, err := g.generateConstantValue(field.Type, pair.Value)
-					if err != nil {
-						return "", err
-					}
+					val := g.generateConstantValue(field.Type, pair.Value)
 					contents += fmt.Sprintf("\t%s: %s,\n", name, val)
 				}
 			}
 		}
 
 		contents += "}"
-		return contents, nil
+		return contents
 	}
 
 	panic("no entry for type " + underlyingType.Name)
@@ -378,33 +358,24 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 }
 
 func (g *Generator) GenerateStruct(s *parser.Struct) error {
-	contents, err := g.generateStruct(s, "")
-	if err != nil {
-		return err
-	}
-	_, err = g.typesFile.WriteString(contents)
+	contents := g.generateStruct(s, "")
+	_, err := g.typesFile.WriteString(contents)
 	return err
 }
 
 func (g *Generator) GenerateUnion(union *parser.Struct) error {
-	contents, err := g.generateStruct(union, "")
-	if err != nil {
-		return err
-	}
-	_, err = g.typesFile.WriteString(contents)
+	contents := g.generateStruct(union, "")
+	_, err := g.typesFile.WriteString(contents)
 	return err
 }
 
 func (g *Generator) GenerateException(exception *parser.Struct) error {
-	contents, err := g.generateStruct(exception, "")
-	if err != nil {
-		return err
-	}
+	contents := g.generateStruct(exception, "")
 	contents += fmt.Sprintf("func (p *%s) Error() string {\n", title(exception.Name))
 	contents += "\treturn p.String()\n"
 	contents += "}\n"
 
-	_, err = g.typesFile.WriteString(contents)
+	_, err := g.typesFile.WriteString(contents)
 	return err
 }
 
@@ -435,10 +406,7 @@ func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir str
 
 	contents := ""
 	for _, s := range structs {
-		structContents, err := g.generateStruct(s, serviceName)
-		if err != nil {
-			return err
-		}
+		structContents := g.generateStruct(s, serviceName)
 		contents += structContents
 	}
 
@@ -449,7 +417,7 @@ func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir str
 	return g.PostProcess(file)
 }
 
-func (g *Generator) generateStruct(s *parser.Struct, serviceName string) (string, error) {
+func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string {
 	contents := ""
 
 	// Struct declaration
@@ -494,10 +462,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) (string
 	for _, field := range s.Fields {
 		// Use the default if it exists and it's not a pointer field, otherwise the zero value is implicitly used
 		if field.Default != nil && !g.isPointerField(field) {
-			val, err := g.generateConstantValue(field.Type, field.Default)
-			if err != nil {
-				return "", err
-			}
+			val := g.generateConstantValue(field.Type, field.Default)
 			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name), val)
 		}
 	}
@@ -517,10 +482,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) (string
 			// Generate a default for getters
 			contents += fmt.Sprintf("var %s_%s_DEFAULT %s", sName, fName, goType)
 			if field.Default != nil {
-				val, err := g.generateConstantValue(field.Type, field.Default)
-				if err != nil {
-					return "", err
-				}
+				val := g.generateConstantValue(field.Type, field.Default)
 				contents += fmt.Sprintf(" = %s", val)
 			}
 			contents += "\n\n"
@@ -678,7 +640,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) (string
 	contents += fmt.Sprintf("\treturn fmt.Sprintf(\"%s(%%+v)\", *p)\n", sName)
 	contents += "}\n\n"
 
-	return contents, nil
+	return contents
 }
 
 func (g *Generator) generateReadField(structName string, field *parser.Field) string {
