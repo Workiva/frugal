@@ -173,7 +173,7 @@ func (f *Frugal) assignFrugal() {
 }
 
 func (f *Frugal) validate() error {
-	return f.Thrift.validate()
+	return f.Thrift.validate(f.ParsedIncludes)
 }
 
 func (f *Frugal) sort() {

@@ -109,13 +109,14 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 
 	_, genWithFrugal := options["gen_with_frugal"]
 
-	if genWithFrugal {
-		// If not using frugal, add parsed includes here
-		// preserve what thrift does to keep ordering in the file
-		for _, include := range frugal.Thrift.Includes {
-			generateInclude(frugal, include)
-		}
-	}
+	// TODO check this
+//	if genWithFrugal {
+//		// If not using frugal, add parsed includes here
+//		// preserve what thrift does to keep ordering in the file
+//		for _, include := range frugal.Thrift.Includes {
+//			generateInclude(frugal, include)
+//		}
+//	}
 
 	if !genWithFrugal {
 		// Generate intermediate Thrift IDL for Frugal. If this is already a

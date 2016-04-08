@@ -98,7 +98,7 @@ exception AwesomeException {
 }
 
 /**@
- * This is a thrift service. Frugal will generate bindings that include 
+ * This is a thrift service. Frugal will generate bindings that include
  * a frugal Context for each service call.
  */
 service Foo extends base.BaseFoo {
