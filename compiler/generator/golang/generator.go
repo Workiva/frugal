@@ -475,7 +475,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 		fName := title(field.Name)
 		isPointer := g.isPointerField(field)
 		goType := g.getGoTypeFromThriftTypePtr(field.Type, false)
-		goOptType := g.getGoTypeFromThriftTypePtr(field.Type, true)
+		goPtrType := g.getGoTypeFromThriftTypePtr(field.Type, true)
 		underlyingType := g.Frugal.UnderlyingType(field.Type)
 
 		if field.Modifier == parser.Optional || isPointer {
@@ -504,7 +504,7 @@ func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string 
 		if isPointer {
 			// Need to dereference the field before returning if it's a pointer
 			maybePointer := ""
-			if goType != goOptType {
+			if goType != goPtrType {
 				maybePointer = "*"
 			}
 			contents += fmt.Sprintf("func (p *%s) Get%s() %s {\n", sName, fName, goType)

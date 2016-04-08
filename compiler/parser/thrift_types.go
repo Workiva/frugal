@@ -408,45 +408,45 @@ func (t *Thrift) validateConstants(includes map[string]*Frugal) error {
 
 func (t *Thrift) validateConstant(constant *Constant, includes map[string]*Frugal) error {
 	identifier, ok := constant.Value.(Identifier)
-	if ok {
-		// The value of a constant is the name of another constant,
-		// make sure it exists
-		name := string(identifier)
-		// split based on '.', if present, it should be from an include
-		pieces := strings.Split(name, ".")
-		if len(pieces) == 1 {
-			// From this file
-			for _, c := range t.Constants {
-				if name == c.Name {
-					return nil
-				}
-			}
-			return fmt.Errorf("referenced constant '%s' not found", name)
-		} else if len(pieces) == 2 {
-			// From an include
-			thrift := t
-			includeName := pieces[0]
-			paramName := pieces[1]
-			if includeName != "" {
-				frugalInclude, ok := includes[includeName]
-				if !ok {
-					return fmt.Errorf("include '%s' not found", includeName)
-				}
-				thrift = frugalInclude.Thrift
-			}
-			for _, c := range thrift.Constants {
-				if paramName == c.Name {
-					return nil
-				}
-			}
-			return fmt.Errorf("refenced constant '%s' from include '%s' not found", paramName, includeName)
-		}
-
-		return fmt.Errorf("invalid constant name '%s'", name)
+	if !ok {
+		// Just a value, which is fine
+		return nil
 	}
 
-	// Just a value, which is fine
-	return nil
+	// The value of a constant is the name of another constant,
+	// make sure it exists
+	name := string(identifier)
+	// split based on '.', if present, it should be from an include
+	pieces := strings.Split(name, ".")
+	if len(pieces) == 1 {
+		// From this file
+		for _, c := range t.Constants {
+			if name == c.Name {
+				return nil
+			}
+		}
+		return fmt.Errorf("referenced constant '%s' not found", name)
+	} else if len(pieces) == 2 {
+		// From an include
+		thrift := t
+		includeName := pieces[0]
+		paramName := pieces[1]
+		if includeName != "" {
+			frugalInclude, ok := includes[includeName]
+			if !ok {
+				return fmt.Errorf("include '%s' not found", includeName)
+			}
+			thrift = frugalInclude.Thrift
+		}
+		for _, c := range thrift.Constants {
+			if paramName == c.Name {
+				return nil
+			}
+		}
+		return fmt.Errorf("refenced constant '%s' from include '%s' not found", paramName, includeName)
+	}
+
+	return fmt.Errorf("invalid constant name '%s'", name)
 }
 
 func (t *Thrift) validateTypedefs(includes map[string]*Frugal) error {
@@ -506,10 +506,10 @@ func (t *Thrift) isValidType(typ *Type, includes map[string]*Frugal) bool {
 			return t.isValidType(typ.KeyType, includes) && t.isValidType(typ.ValueType, includes)
 		}
 	}
-	// TODO includes
+
 	thrift := t
 	includeName := typ.IncludeName()
-	name := typ.ParamName()
+	paramName := typ.ParamName()
 	if includeName != "" {
 		frugalInclude, ok := includes[includeName]
 		if !ok {
@@ -520,35 +520,35 @@ func (t *Thrift) isValidType(typ *Type, includes map[string]*Frugal) bool {
 
 	// Check structs
 	for _, s := range thrift.Structs {
-		if name == s.Name {
+		if paramName == s.Name {
 			return true
 		}
 	}
 
 	// Check unions
 	for _, union := range thrift.Unions {
-		if name == union.Name {
+		if paramName == union.Name {
 			return true
 		}
 	}
 
 	// Check exceptions
 	for _, exception := range thrift.Exceptions {
-		if name == exception.Name {
+		if paramName == exception.Name {
 			return true
 		}
 	}
 
 	// Check enums
 	for _, enum := range thrift.Enums {
-		if name == enum.Name {
+		if paramName == enum.Name {
 			return true
 		}
 	}
 
 	// Check typedefs
 	for _, typedef := range thrift.Typedefs {
-		if name == typedef.Name {
+		if paramName == typedef.Name {
 			return true
 		}
 	}

@@ -117,18 +117,16 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		}
 	}
 
-	if !genWithFrugal {
+	if !genWithFrugal && !isThrift {
 		// Generate intermediate Thrift IDL for Frugal. If this is already a
 		// .thrift file, do not generate an intermediate IDL.
-		if !isThrift {
-			logv(fmt.Sprintf("Generating intermediate Thrift file %s",
-				filepath.Join(dir, fmt.Sprintf("%s.thrift", frugal.Name))))
-			idlFile, err := generateThriftIDL(dir, frugal)
-			if err != nil {
-				return nil, err
-			}
-			file = idlFile
+		logv(fmt.Sprintf("Generating intermediate Thrift file %s",
+			filepath.Join(dir, fmt.Sprintf("%s.thrift", frugal.Name))))
+		idlFile, err := generateThriftIDL(dir, frugal)
+		if err != nil {
+			return nil, err
 		}
+		file = idlFile
 	}
 
 	if dryRun || !generate {
