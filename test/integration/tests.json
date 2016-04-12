@@ -1,0 +1,31 @@
+[
+  {
+    "name": "go",
+    "server": {
+      "delay": 1,
+      "command": [
+        "testserver",
+        "--certPath=../../keys"
+      ]
+
+    },
+    "client": {
+      "timeout": 6,
+      "command": [
+        "testclient"
+      ]
+    },
+    "transports": [
+      "buffered"
+    ],
+    "sockets": [
+      "ip"
+    ],
+    "protocols": [
+      "binary",
+      "compact",
+      "json"
+    ],
+    "workdir": "go/bin"
+  }
+]
