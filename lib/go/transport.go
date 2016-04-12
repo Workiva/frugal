@@ -231,6 +231,7 @@ func (f *fMuxTransport) Open() error {
 	f.startWorkers()
 
 	f.open = true
+	log.Debug("frugal: transport opened")
 	return nil
 }
 
@@ -258,6 +259,12 @@ func (f *fMuxTransport) close(cause error) error {
 		log.Printf("frugal: unable to put close error '%s' on fMuxTransport closed channel", cause)
 	}
 	close(f.closed)
+
+	if cause == nil {
+		log.Debug("frugal: transport closed")
+	} else {
+		log.Debugf("frugal: transport closed with cause: %s", cause)
+	}
 
 	// Signal transport monitor of close.
 	select {

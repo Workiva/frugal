@@ -18,24 +18,32 @@ mv $THRIFT $ROOT/bin/thrift
 chmod 0755 $ROOT/bin/thrift
 export PATH=$PATH:$ROOT/bin
 
-# Compile the java library code
+# JAVA
+# Compile library code
 cd $ROOT/lib/java && mvn clean verify
 mv target/frugal-*.jar $ROOT
 
-# Compile the go library code
+# GO
+# Compile library code
 cd $ROOT/lib/go
-go get -d ./go .
+go get -d -t ./go .
 go build
+# Run the tests
+go test
 
-# Compile the dart library code
+# DART
+# Compile library code
 cd $ROOT/lib/dart
 pub get
+cp ./pubspec.lock $ROOT
+# Run the tests
 pub run dart_dev test
 pub run dart_dev coverage --no-html
 ./tool/codecov.sh
 pub run dart_dev format --check
 pub run dart_dev analyze
-zip -r frugal-dart.zip .
+# zip the library
+zip -r frugal-dart.zip $ROOT
 
 # Run the generator tests
 cd $ROOT

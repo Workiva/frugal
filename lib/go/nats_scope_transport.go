@@ -9,7 +9,6 @@ import (
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 	log "github.com/Sirupsen/logrus"
-	q "github.com/Workiva/go-datastructures/queue"
 	"github.com/nats-io/nats"
 )
 
@@ -34,7 +33,8 @@ func (n *FNatsScopeTransportFactory) GetTransport() FScopeTransport {
 type fNatsScopeTransport struct {
 	conn         *nats.Conn
 	subject      string
-	frameBuffer  *q.RingBuffer
+	frameBuffer  chan []byte
+	closeChan    chan struct{}
 	currentFrame []byte
 	writeBuffer  *bytes.Buffer
 	sub          *nats.Subscription
@@ -108,7 +108,8 @@ func (n *fNatsScopeTransport) Open() error {
 			"cannot subscribe to empty subject")
 	}
 
-	n.frameBuffer = q.NewRingBuffer(frameBufferSize)
+	n.closeChan = make(chan struct{})
+	n.frameBuffer = make(chan []byte, frameBufferSize)
 
 	sub, err := n.conn.Subscribe(n.formattedSubject(), func(msg *nats.Msg) {
 		if len(msg.Data) < 4 {
@@ -116,7 +117,10 @@ func (n *fNatsScopeTransport) Open() error {
 			return
 		}
 		// Discard frame size.
-		n.frameBuffer.Put(msg.Data[4:])
+		select {
+		case n.frameBuffer <- msg.Data[4:]:
+		case <-n.closeChan:
+		}
 	})
 	if err != nil {
 		return thrift.NewTTransportExceptionFromError(err)
@@ -159,7 +163,7 @@ func (n *fNatsScopeTransport) Close() error {
 		return thrift.NewTTransportExceptionFromError(err)
 	}
 	n.sub = nil
-	n.frameBuffer.Dispose()
+	close(n.closeChan)
 	n.isOpen = false
 	return nil
 }
@@ -169,11 +173,12 @@ func (n *fNatsScopeTransport) Read(p []byte) (int, error) {
 		return 0, thrift.NewTTransportExceptionFromError(io.EOF)
 	}
 	if n.currentFrame == nil {
-		frame, err := n.frameBuffer.Get()
-		if err != nil {
+		select {
+		case frame := <-n.frameBuffer:
+			n.currentFrame = frame
+		case <-n.closeChan:
 			return 0, thrift.NewTTransportExceptionFromError(io.EOF)
 		}
-		n.currentFrame = frame.([]byte)
 	}
 	num := copy(p, n.currentFrame)
 	// TODO: We could be more efficient here. If the provided buffer isn't

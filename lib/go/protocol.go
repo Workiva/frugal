@@ -116,7 +116,7 @@ func (f *FProtocol) writeHeader(headers map[string]string) error {
 	}
 
 	if n, err := f.Transport().Write(buff); err != nil {
-		return thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION, fmt.Sprintf("frugal: error writing protocol headers: %s", err.Error()))
+		return thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION, fmt.Sprintf("frugal: error writing protocol headers: %s", err))
 	} else if n != len(buff) {
 		return thrift.NewTTransportException(thrift.UNKNOWN_PROTOCOL_EXCEPTION, "frugal: failed to write complete protocol headers")
 	}
@@ -130,7 +130,7 @@ func readHeader(reader io.Reader) (map[string]string, error) {
 		if e, ok := err.(thrift.TTransportException); ok && e.TypeId() == thrift.END_OF_FILE {
 			return nil, err
 		}
-		return nil, thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION, fmt.Sprintf("frugal: error reading protocol headers: %s", err.Error()))
+		return nil, thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION, fmt.Sprintf("frugal: error reading protocol headers: %s"))
 	}
 
 	// Support more versions when available.
@@ -144,7 +144,7 @@ func readHeader(reader io.Reader) (map[string]string, error) {
 		if e, ok := err.(thrift.TTransportException); ok && e.TypeId() == thrift.END_OF_FILE {
 			return nil, err
 		}
-		return nil, thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION, fmt.Sprintf("frugal: error reading protocol headers: %s", err.Error()))
+		return nil, thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION, fmt.Sprintf("frugal: error reading protocol headers: %s", err))
 	}
 
 	return readPairs(buff, 0, size)
@@ -157,7 +157,7 @@ func getHeadersFromFrame(frame []byte) (map[string]string, error) {
 
 	// Support more versions when available.
 	if frame[0] != protocolV0 {
-		return nil, NewFProtocolExceptionWithType(thrift.BAD_VERSION, fmt.Sprint("frugal: unsupported protocol version %d", frame[0]))
+		return nil, NewFProtocolExceptionWithType(thrift.BAD_VERSION, fmt.Sprintf("frugal: unsupported protocol version %d", frame[0]))
 	}
 
 	size := int32(binary.BigEndian.Uint32(frame[1:5]))

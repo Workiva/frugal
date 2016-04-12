@@ -256,6 +256,7 @@ func (s *Service) ReferencedInternals() []string {
 
 func (s *Service) validate() error {
 	for _, method := range s.Methods {
+		// Ensure oneways don't return anything.
 		if method.Oneway {
 			if len(method.Exceptions) > 0 {
 				return fmt.Errorf("Oneway method %s.%s cannot throw an exception",

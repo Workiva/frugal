@@ -150,6 +150,7 @@ func TestHandleUncleanClose(t *testing.T) {
 	ftm.On("OnReopenSucceeded").Return().Once()
 	mft := &mockFTransport{}
 	mft.On("Open").Return(nil).Once()
+	mft.On("IsOpen").Return(true)
 	r := monitorRunner{
 		monitor:   ftm,
 		transport: mft,
@@ -176,6 +177,7 @@ func TestAttemptReopenSuccess(t *testing.T) {
 	ftm.On("OnReopenSucceeded").Return().Once()
 	mft := &mockFTransport{}
 	mft.On("Open").Return(nil).Once()
+	mft.On("IsOpen").Return(true)
 	r := monitorRunner{
 		monitor:   ftm,
 		transport: mft,
@@ -204,6 +206,7 @@ func TestAttemptReopenFailRetrySucceed(t *testing.T) {
 	mft := &mockFTransport{}
 	mft.On("Open").Return(errors.New("Tears of a thousand children")).Once()
 	mft.On("Open").Return(nil).Once()
+	mft.On("IsOpen").Return(true)
 	r := monitorRunner{
 		monitor:   ftm,
 		transport: mft,
@@ -331,4 +334,8 @@ func (m *mockFTransport) Closed() <-chan error {
 
 func (m *mockFTransport) SetMonitor(mon FTransportMonitor) {
 	m.Called(mon)
+}
+
+func (m *mockFTransport) SetHighWatermark(watermark time.Duration) {
+	m.Called(watermark)
 }

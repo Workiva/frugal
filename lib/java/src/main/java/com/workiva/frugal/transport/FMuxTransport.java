@@ -83,7 +83,7 @@ public class FMuxTransport extends FTransport {
     }
 
     public synchronized boolean isOpen() {
-        return framedTransport.isOpen() && registry != null;
+        return framedTransport.isOpen();
     }
 
     public synchronized void open() throws TTransportException {
@@ -100,6 +100,7 @@ public class FMuxTransport extends FTransport {
         }
         processorThread = new ProcessorThread();
         processorThread.start();
+        LOGGER.info("transport opened");
         startWorkers();
     }
 
@@ -115,6 +116,11 @@ public class FMuxTransport extends FTransport {
         processorThread.kill();
         for (WorkerThread workerThread : workerThreads) {
             workerThread.kill();
+        }
+        if (cause == null) {
+            LOGGER.info("transport closed");
+        } else {
+            LOGGER.info("transport closed with cause: " + cause.getMessage());
         }
         signalClose(cause);
         registry.close();

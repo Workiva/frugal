@@ -6,7 +6,7 @@
 
     <groupId>com.workiva</groupId>
     <artifactId>frugal</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
 
     <name>frugal</name>
     <url>https://github.com/Workiva/frugal/lib/java</url>

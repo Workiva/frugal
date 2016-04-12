@@ -35,13 +35,6 @@ public class FMuxTransportTest {
     }
 
     @Test
-    public void testIsOpenFalseWhenRegistryNull() throws Exception {
-        when(mockTrans.isOpen()).thenReturn(true);
-
-        assertFalse(muxTransport.isOpen());
-    }
-
-    @Test
     public void testIsOpenFalseWhenTransportClosed() throws Exception {
         when(mockTrans.isOpen()).thenReturn(false);
 

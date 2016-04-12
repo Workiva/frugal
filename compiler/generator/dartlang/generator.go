@@ -102,7 +102,7 @@ func (g *Generator) addToPubspec(dir string) error {
 	}
 
 	if g.Frugal.ContainsFrugalDefinitions() {
-		deps["frugal"] = dep{Hosted: hostedDep{Name: "frugal", URL: "https://pub.workiva.org"}, Version: "^1.1.0"}
+		deps["frugal"] = dep{Hosted: hostedDep{Name: "frugal", URL: "https://pub.workiva.org"}, Version: "^1.1.1"}
 	}
 
 	includesSet := make(map[string]bool)

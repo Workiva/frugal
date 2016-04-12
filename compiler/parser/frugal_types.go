@@ -1,6 +1,9 @@
 package parser
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+)
 
 //go:generate pigeon -o grammar.peg.go ./grammar.peg
 //go:generate goimports -w ./grammar.peg.go
@@ -165,6 +168,20 @@ func (f *Frugal) assignFrugal() {
 }
 
 func (f *Frugal) validate() error {
+	// Ensure there are no duplicate names between services and scopes.
+	names := make(map[string]struct{})
+	for _, service := range f.Thrift.Services {
+		if _, ok := names[service.Name]; ok {
+			return fmt.Errorf("Duplicate service name %s", service.Name)
+		}
+		names[service.Name] = struct{}{}
+	}
+	for _, scope := range f.Scopes {
+		if _, ok := names[scope.Name]; ok {
+			return fmt.Errorf("Duplicate scope name %s", scope.Name)
+		}
+		names[scope.Name] = struct{}{}
+	}
 	return f.Thrift.validate()
 }
 
