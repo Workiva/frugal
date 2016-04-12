@@ -30,7 +30,7 @@ root.addHandler(ch)
 @gen.coroutine
 def main():
 
-    print("Starting.....")
+    logging.info("Starting...")
 
     # Create & connect to NATS Client using python-nats
     nats_client = NATS()

@@ -54,5 +54,8 @@ class FMuxTornadoTransport(FTransport):
 
             self._registry.unregister(context)
 
+    def write(self, buff):
+        self._transport.write(buff)
+
     def flush(self):
         self._transport.flush()

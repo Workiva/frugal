@@ -75,12 +75,16 @@ class TNatsServiceTransport(TTransportBase):
             TTransportException
         """
         if not self._nats_client.is_connected():
-            # TODO switch to TExceptionType constants
-            raise TTransportException(TTransportException.NOT_OPEN,
-                                      "NATS not connected.")
+            ex = TTransportException(TTransportException.NOT_OPEN,
+                                     "NATS not connected.")
+            logger.error(ex.message)
+            raise ex
+
         elif self.isOpen():
-            raise TTransportException(TTransportException.ALREADY_OPEN,
-                                      "NATS transport already open")
+            ex = TTransportException(TTransportException.ALREADY_OPEN,
+                                     "NATS transport already open")
+            logger.error(ex.message)
+            raise ex
 
         with self._open_lock:
             if self._connection_subject:
@@ -90,7 +94,7 @@ class TNatsServiceTransport(TTransportBase):
             # TODO move this to top level
             def on_message_cb(m=None):
                 if m.reply == _DISCONNECT:
-                    logger.debug("Received DISCONNECT message from Frugal server.")
+                    logger.debug("Received DISCONNECT from Frugal server.")
                     self.close()
                 else:
                     # TODO call some function that will eventually execute frame
@@ -103,6 +107,7 @@ class TNatsServiceTransport(TTransportBase):
 
             yield self._setup_heartbeat()
             self._is_open = True
+            logger.info("frugal: transport open.")
 
     @gen.coroutine
     def _handshake(self):
@@ -180,13 +185,13 @@ class TNatsServiceTransport(TTransportBase):
     def read(self, buff, offset, length):
         raise Exception("Don't call this.")
 
-    def write(self, buff, offset, length):
+    def write(self, buff):
         """Write takes in a bytearray and appends it to the write buffer"""
         if not self.isOpen():
-            # TODO add constant Type
-            raise TTransportException(3, "Transport not open!")
+            logger.error("Tried to write to closed transport!")
+            raise TTransportException(TTransportException.NOT_OPEN,
+                                      "Transport not open!")
 
-        self._wbuf.seek(offset)
         self._wbuf.write(buff)
 
     def flush(self):
@@ -195,7 +200,7 @@ class TNatsServiceTransport(TTransportBase):
         frame_length = struct.pack('!i', len(frame))
         self._wbuf = BytesIO()
         yield self._nats_client.publish(self.connection_subject,
-                                        frame_length + frame)
+                                        str(frame_length + frame))
 
     def _new_frugal_inbox(self):
         return "{frugal}{new_inbox}".format(frugal=_FRUGAL_PREFIX,

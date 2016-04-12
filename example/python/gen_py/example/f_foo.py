@@ -10,7 +10,7 @@ from thrift.Thrift import TType, TMessageType, TApplicationException
 
 class Iface(f_base_foo.Iface):
 
-    def ping(self):
+    def ping(self, context):
         pass
 
     def one_way(self, id, req):

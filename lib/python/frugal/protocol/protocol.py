@@ -82,7 +82,7 @@ class FProtocol(TProtocolBase, object):
                              offset, value)
             offset += len(value)
 
-        self._wrapped_protocol.get_transport().write(buff)
+        self.get_transport().write(buff)
 
     def _read_headers(self, buff):
         parsed_headers = {}
