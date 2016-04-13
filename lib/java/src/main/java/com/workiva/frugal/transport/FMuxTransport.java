@@ -10,10 +10,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.logging.Logger;
 
 public class FMuxTransport extends FTransport {
+
     protected TFramedTransport framedTransport;
     protected BlockingQueue<FrameWrapper> workQueue;
     private ProcessorThread processorThread;
     private WorkerThread[] workerThreads;
+    private boolean isOpen;
 
     private static Logger LOGGER = Logger.getLogger(FMuxTransport.class.getName());
 
@@ -83,7 +85,7 @@ public class FMuxTransport extends FTransport {
     }
 
     public synchronized boolean isOpen() {
-        return framedTransport.isOpen();
+        return framedTransport.isOpen() && isOpen;
     }
 
     public synchronized void open() throws TTransportException {
@@ -100,6 +102,7 @@ public class FMuxTransport extends FTransport {
         }
         processorThread = new ProcessorThread();
         processorThread.start();
+        isOpen = true;
         LOGGER.info("transport opened");
         startWorkers();
     }
@@ -109,7 +112,7 @@ public class FMuxTransport extends FTransport {
     }
 
     private synchronized void close(Exception cause) {
-        if (registry == null) {
+        if (registry == null || !isOpen()) {
             return;
         }
         framedTransport.close();
@@ -122,6 +125,7 @@ public class FMuxTransport extends FTransport {
         } else {
             LOGGER.info("transport closed with cause: " + cause.getMessage());
         }
+        isOpen = false;
         signalClose(cause);
         registry.close();
     }
