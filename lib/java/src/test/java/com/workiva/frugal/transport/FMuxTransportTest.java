@@ -26,6 +26,7 @@ public class FMuxTransportTest {
     @Test
     public void testIsOpenTrue() throws Exception {
         when(mockTrans.isOpen()).thenReturn(true);
+        muxTransport.isOpen = true;
 
         registry = new FClientRegistry();
 
@@ -48,6 +49,7 @@ public class FMuxTransportTest {
     @Test
     public void testOpenThrowsAlreadyOpenException() throws Exception {
         when(mockTrans.isOpen()).thenReturn(true);
+        muxTransport.isOpen = true;
 
         registry = new FClientRegistry();
 

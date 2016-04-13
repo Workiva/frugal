@@ -13,9 +13,9 @@ public class FMuxTransport extends FTransport {
 
     protected TFramedTransport framedTransport;
     protected BlockingQueue<FrameWrapper> workQueue;
+    protected boolean isOpen;
     private ProcessorThread processorThread;
     private WorkerThread[] workerThreads;
-    private boolean isOpen;
 
     private static Logger LOGGER = Logger.getLogger(FMuxTransport.class.getName());
 
