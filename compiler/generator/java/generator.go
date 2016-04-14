@@ -39,6 +39,42 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 	}
 }
 
+// TODO Unimplmented methods
+func (g *Generator) SetupGenerator(outputDir string) error {
+	return nil
+}
+
+func (g *Generator) TeardownGenerator() error {
+	return nil
+}
+
+func (g *Generator) GenerateConstantsContents([]*parser.Constant) error {
+	return nil
+}
+
+func (g *Generator) GenerateTypeDef(*parser.TypeDef) error {
+	return nil
+}
+
+func (g *Generator) GenerateEnum(*parser.Enum) error {
+	return nil
+}
+func (g *Generator) GenerateStruct(*parser.Struct) error {
+	return nil
+}
+
+func (g *Generator) GenerateUnion(*parser.Struct) error {
+	return nil
+}
+
+func (g *Generator) GenerateException(*parser.Struct) error {
+	return nil
+}
+
+func (g *Generator) GenerateServiceArgsResults(string, string, []*parser.Struct) error {
+	return nil
+}
+
 func (g *Generator) GetOutputDir(dir string) string {
 	if pkg, ok := g.Frugal.Thrift.Namespace(lang); ok {
 		path := generator.GetPackageComponents(pkg)

@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -16,6 +17,9 @@ const (
 	CombinedScopeFile   FileType = "combined_scope"
 	PublishFile         FileType = "publish"
 	SubscribeFile       FileType = "subscribe"
+
+	TypeFile               FileType = "types"
+	ServiceArgsResultsFile FileType = "service_args_results"
 )
 
 // Options contains language generator options. The map key is the option name,
@@ -27,11 +31,13 @@ type LanguageOptions map[string]Options
 
 // Languages is a map of supported language to a map of the generator options
 // it supports.
+
 var Languages = LanguageOptions{
 	"go": Options{
-		"thrift_import":  "Override Thrift package import path (default: git.apache.org/thrift.git/lib/go/thrift)",
-		"frugal_import":  "Override Frugal package import path (default: github.com/Workiva/frugal/lib/go)",
-		"package_prefix": "Package prefix for generated files",
+		"thrift_import":   "Override Thrift package import path (default: git.apache.org/thrift.git/lib/go/thrift)",
+		"frugal_import":   "Override Frugal package import path (default: github.com/Workiva/frugal/lib/go)",
+		"package_prefix":  "Package prefix for generated files",
+		"gen_with_frugal": "Whether to generate thrift files with frugal (experimental)",
 	},
 	"java": Options{
 		"generated_annotations": "[undated|suppress] " +
@@ -48,7 +54,7 @@ var Languages = LanguageOptions{
 // produced by the parser.
 type ProgramGenerator interface {
 	// Generate the Frugal in the given directory.
-	Generate(frugal *parser.Frugal, outputDir string) error
+	Generate(frugal *parser.Frugal, outputDir string, genWithFrugal bool) error
 
 	// GetOutputDir returns the full output directory for generated code.
 	GetOutputDir(dir string, f *parser.Frugal) string
@@ -61,6 +67,8 @@ type ProgramGenerator interface {
 type LanguageGenerator interface {
 	// Generic methods
 	SetFrugal(*parser.Frugal)
+	SetupGenerator(outputDir string) error
+	TeardownGenerator() error
 	GenerateDependencies(dir string) error
 	GenerateFile(name, outputDir string, fileType FileType) (*os.File, error)
 	GenerateDocStringComment(*os.File) error
@@ -69,6 +77,15 @@ type LanguageGenerator interface {
 	GetOutputDir(dir string) string
 	DefaultOutputDir() string
 	PostProcess(*os.File) error
+
+	// Thrift stuff
+	GenerateConstantsContents([]*parser.Constant) error
+	GenerateTypeDef(*parser.TypeDef) error
+	GenerateEnum(*parser.Enum) error
+	GenerateStruct(*parser.Struct) error
+	GenerateUnion(*parser.Struct) error
+	GenerateException(*parser.Struct) error
+	GenerateServiceArgsResults(string, string, []*parser.Struct) error
 
 	// Service-specific methods
 	GenerateServicePackage(*os.File, *parser.Service) error
@@ -97,12 +114,115 @@ func NewProgramGenerator(generator LanguageGenerator, splitPublisherSubscriber b
 }
 
 // Generate the Frugal in the given directory.
-func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string) error {
+func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string, genWithFrugal bool) error {
 	o.SetFrugal(frugal)
+	if genWithFrugal {
+		o.SetupGenerator(outputDir)
+	}
 	if err := o.GenerateDependencies(outputDir); err != nil {
 		return err
 	}
 
+	if genWithFrugal {
+		// generate thrift
+		if err := o.generateThrift(frugal, outputDir); err != nil {
+			return err
+		}
+	}
+
+	// generate frugal
+	if err := o.generateFrugal(frugal, outputDir); err != nil {
+		return err
+	}
+
+	if genWithFrugal {
+		return o.TeardownGenerator()
+	}
+	return nil
+}
+
+func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir string) error {
+	if err := o.GenerateConstantsContents(frugal.Thrift.Constants); err != nil {
+		return err
+	}
+
+	for _, typedef := range frugal.Thrift.Typedefs {
+		if err := o.GenerateTypeDef(typedef); err != nil {
+			return err
+		}
+	}
+
+	for _, enum := range frugal.Thrift.Enums {
+		if err := o.GenerateEnum(enum); err != nil {
+			return err
+		}
+	}
+
+	for _, s := range frugal.Thrift.Structs {
+		if err := o.GenerateStruct(s); err != nil {
+			return err
+		}
+	}
+
+	for _, union := range frugal.Thrift.Unions {
+		if err := o.GenerateUnion(union); err != nil {
+			return err
+		}
+	}
+
+	for _, exception := range frugal.Thrift.Exceptions {
+		if err := o.GenerateException(exception); err != nil {
+			return err
+		}
+	}
+
+	for _, service := range frugal.Thrift.Services {
+		structs := o.generateServiceMethodTypes(service)
+		if err := o.GenerateServiceArgsResults(service.Name, outputDir, structs); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o *programGenerator) generateServiceMethodTypes(service *parser.Service) []*parser.Struct {
+	structs := []*parser.Struct{}
+	for _, method := range service.Methods {
+		arg := &parser.Struct{
+			Name:   fmt.Sprintf("%s_args", method.Name),
+			Fields: method.Arguments,
+			Type:   parser.StructTypeStruct,
+		}
+		structs = append(structs, arg)
+
+		if !method.Oneway {
+			numReturns := 0
+			if method.ReturnType != nil {
+				numReturns = 1
+			}
+
+			fields := make([]*parser.Field, len(method.Exceptions)+numReturns, len(method.Exceptions)+numReturns)
+			if numReturns == 1 {
+				fields[0] = parser.FieldFromType(method.ReturnType, "success")
+			}
+			copy(fields[numReturns:], method.Exceptions)
+			for _, field := range fields {
+				field.Modifier = parser.Optional
+			}
+
+			result := &parser.Struct{
+				Name:   fmt.Sprintf("%s_result", method.Name),
+				Fields: fields,
+				Type:   parser.StructTypeStruct,
+			}
+			structs = append(structs, result)
+		}
+	}
+	return structs
+}
+
+func (o *programGenerator) generateFrugal(frugal *parser.Frugal, outputDir string) error {
 	// If no frugal definitions, we can return.
 	if !frugal.ContainsFrugalDefinitions() {
 		return nil

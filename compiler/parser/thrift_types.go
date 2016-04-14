@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var thriftTypes = map[string]bool{
+var thriftBaseTypes = map[string]bool{
 	"bool":   true,
 	"byte":   true,
 	"i8":     true,
@@ -15,6 +15,12 @@ var thriftTypes = map[string]bool{
 	"double": true,
 	"string": true,
 	"binary": true,
+}
+
+var thriftContainerTypes = map[string]bool{
+	"list": true,
+	"set":  true,
+	"map":  true,
 }
 
 // Thrift Field Modifiers
@@ -27,8 +33,24 @@ const (
 )
 
 func IsThriftPrimitive(typ *Type) bool {
-	_, ok := thriftTypes[typ.Name]
+	_, ok := thriftBaseTypes[typ.Name]
 	return ok
+}
+
+func IsThriftContainer(t *Type) bool {
+	_, ok := thriftContainerTypes[t.Name]
+	return ok
+}
+
+func FieldFromType(t *Type, name string) *Field {
+	return &Field{
+		Comment:  nil,
+		ID:       0,
+		Name:     name,
+		Modifier: Required,
+		Type:     t,
+		Default:  nil,
+	}
 }
 
 type Include struct {
@@ -91,7 +113,7 @@ type EnumValue struct {
 type Enum struct {
 	Comment []string
 	Name    string
-	Values  map[string]*EnumValue
+	Values  []*EnumValue
 }
 
 type Constant struct {
@@ -338,11 +360,26 @@ func (t *Thrift) ReferencedInternals() []string {
 	return internals
 }
 
-func (t *Thrift) validate() error {
+func (t *Thrift) validate(includes map[string]*Frugal) error {
 	if err := t.validateIncludes(); err != nil {
 		return err
 	}
-	if err := t.validateServices(); err != nil {
+	if err := t.validateConstants(includes); err != nil {
+		return err
+	}
+	if err := t.validateTypedefs(includes); err != nil {
+		return err
+	}
+	if err := t.validateStructs(includes); err != nil {
+		return err
+	}
+	if err := t.validateUnions(includes); err != nil {
+		return err
+	}
+	if err := t.validateExceptions(includes); err != nil {
+		return err
+	}
+	if err := t.validateServices(includes); err != nil {
 		return err
 	}
 	return nil
@@ -359,10 +396,194 @@ func (t *Thrift) validateIncludes() error {
 	return nil
 }
 
-func (t *Thrift) validateServices() error {
+func (t *Thrift) validateConstants(includes map[string]*Frugal) error {
+	for _, constant := range t.Constants {
+		if err := t.validateConstant(constant, includes); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (t *Thrift) validateConstant(constant *Constant, includes map[string]*Frugal) error {
+	identifier, ok := constant.Value.(Identifier)
+	if !ok {
+		// Just a value, which is fine
+		return nil
+	}
+
+	// The value of a constant is the name of another constant,
+	// make sure it exists
+	name := string(identifier)
+	// split based on '.', if present, it should be from an include
+	pieces := strings.Split(name, ".")
+	if len(pieces) == 1 {
+		// From this file
+		for _, c := range t.Constants {
+			if name == c.Name {
+				return nil
+			}
+		}
+		return fmt.Errorf("referenced constant '%s' not found", name)
+	} else if len(pieces) == 2 {
+		// From an include
+		thrift := t
+		includeName := pieces[0]
+		paramName := pieces[1]
+		if includeName != "" {
+			frugalInclude, ok := includes[includeName]
+			if !ok {
+				return fmt.Errorf("include '%s' not found", includeName)
+			}
+			thrift = frugalInclude.Thrift
+		}
+		for _, c := range thrift.Constants {
+			if paramName == c.Name {
+				return nil
+			}
+		}
+		return fmt.Errorf("refenced constant '%s' from include '%s' not found", paramName, includeName)
+	}
+
+	return fmt.Errorf("invalid constant name '%s'", name)
+}
+
+func (t *Thrift) validateTypedefs(includes map[string]*Frugal) error {
+	for _, typedef := range t.Typedefs {
+		if !t.isValidType(typedef.Type, includes) {
+			return fmt.Errorf("invalid alias '%s', type '%s' doesn't exist", typedef.Name, typedef.Type.Name)
+		}
+	}
+	return nil
+}
+
+func (t *Thrift) validateStructs(includes map[string]*Frugal) error {
+	for _, s := range t.Structs {
+		if err := t.validateStructLike(s, includes); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *Thrift) validateUnions(includes map[string]*Frugal) error {
+	for _, union := range t.Unions {
+		if err := t.validateStructLike(union, includes); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *Thrift) validateExceptions(includes map[string]*Frugal) error {
+	for _, exception := range t.Exceptions {
+		if err := t.validateStructLike(exception, includes); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *Thrift) validateStructLike(s *Struct, includes map[string]*Frugal) error {
+	for _, field := range s.Fields {
+		if !t.isValidType(field.Type, includes) {
+			return fmt.Errorf("invalid type '%s' on struct '%s'", field.Type.Name, s.Name)
+		}
+	}
+	return nil
+}
+
+func (t *Thrift) isValidType(typ *Type, includes map[string]*Frugal) bool {
+	// Check base types
+	if IsThriftPrimitive(typ) {
+		return true
+	} else if IsThriftContainer(typ) {
+		switch typ.Name {
+		case "list", "set":
+			return t.isValidType(typ.ValueType, includes)
+		case "map":
+			return t.isValidType(typ.KeyType, includes) && t.isValidType(typ.ValueType, includes)
+		}
+	}
+
+	thrift := t
+	includeName := typ.IncludeName()
+	paramName := typ.ParamName()
+	if includeName != "" {
+		frugalInclude, ok := includes[includeName]
+		if !ok {
+			return false
+		}
+		thrift = frugalInclude.Thrift
+	}
+
+	// Check structs
+	for _, s := range thrift.Structs {
+		if paramName == s.Name {
+			return true
+		}
+	}
+
+	// Check unions
+	for _, union := range thrift.Unions {
+		if paramName == union.Name {
+			return true
+		}
+	}
+
+	// Check exceptions
+	for _, exception := range thrift.Exceptions {
+		if paramName == exception.Name {
+			return true
+		}
+	}
+
+	// Check enums
+	for _, enum := range thrift.Enums {
+		if paramName == enum.Name {
+			return true
+		}
+	}
+
+	// Check typedefs
+	for _, typedef := range thrift.Typedefs {
+		if paramName == typedef.Name {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (t *Thrift) validateServices(includes map[string]*Frugal) error {
 	for _, service := range t.Services {
+		if err := t.validateServiceTypes(service, includes); err != nil {
+			return err
+		}
 		if err := service.validate(); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func (t *Thrift) validateServiceTypes(service *Service, includes map[string]*Frugal) error {
+	for _, method := range service.Methods {
+		if method.ReturnType != nil {
+			if !t.isValidType(method.ReturnType, includes) {
+				return fmt.Errorf("invalid return type '%s' for %s.%s", method.ReturnType.Name, service.Name, method.Name)
+			}
+		}
+		for _, field := range method.Arguments {
+			if !t.isValidType(field.Type, includes) {
+				return fmt.Errorf("invalid argument type '%s' for %s.%s", field.Type.Name, service.Name, method.Name)
+			}
+		}
+		for _, field := range method.Exceptions {
+			if !t.isValidType(field.Type, includes) {
+				return fmt.Errorf("invalid exception type '%s' for %s.%s", field.Type.Name, service.Name, method.Name)
+			}
 		}
 	}
 	return nil

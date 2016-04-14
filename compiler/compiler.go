@@ -107,9 +107,19 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		return nil, err
 	}
 
-	// Generate intermediate Thrift IDL for Frugal. If this is already a
-	// .thrift file, do not generate an intermediate IDL.
-	if !isThrift {
+	_, genWithFrugal := options["gen_with_frugal"]
+
+	if genWithFrugal {
+		// If not using frugal, add parsed includes here
+		// preserve what thrift does to keep ordering in the file
+		for _, include := range frugal.Thrift.Includes {
+			generateInclude(frugal, include)
+		}
+	}
+
+	if !genWithFrugal && !isThrift {
+		// Generate intermediate Thrift IDL for Frugal. If this is already a
+		// .thrift file, do not generate an intermediate IDL.
 		logv(fmt.Sprintf("Generating intermediate Thrift file %s",
 			filepath.Join(dir, fmt.Sprintf("%s.thrift", frugal.Name))))
 		idlFile, err := generateThriftIDL(dir, frugal)
@@ -123,15 +133,17 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		return frugal, nil
 	}
 
-	// Generate Thrift code.
-	logv(fmt.Sprintf("Generating \"%s\" Thrift code for %s", lang, file))
-	if err := generateThrift(frugal, dir, file, out, gen); err != nil {
-		return nil, err
+	if !genWithFrugal {
+		// Generate Thrift code.
+		logv(fmt.Sprintf("Generating \"%s\" Thrift code for %s", lang, file))
+		if err := generateThrift(frugal, dir, file, out, gen); err != nil {
+			return nil, err
+		}
 	}
 
 	// Generate Frugal code.
 	logv(fmt.Sprintf("Generating \"%s\" Frugal code for %s", lang, frugal.File))
-	return frugal, g.Generate(frugal, fullOut)
+	return frugal, g.Generate(frugal, fullOut, genWithFrugal)
 }
 
 // exists determines if the file at the given path exists.
