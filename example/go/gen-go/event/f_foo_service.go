@@ -36,20 +36,38 @@ type FFooClient struct {
 	protocolFactory *frugal.FProtocolFactory
 	oprot           *frugal.FProtocol
 	mu              sync.Mutex
+	methods         map[string]frugal.InvocationHandler
 }
 
-func NewFFooClient(t frugal.FTransport, p *frugal.FProtocolFactory) *FFooClient {
+func NewFFooClient(t frugal.FTransport, p *frugal.FProtocolFactory, middleware ...frugal.ServiceMiddleware) *FFooClient {
 	t.SetRegistry(frugal.NewFClientRegistry())
-	return &FFooClient{
-		FBaseFooClient:  base.NewFBaseFooClient(t, p),
+	methods := make(map[string]frugal.InvocationHandler)
+	client := &FFooClient{
+		FBaseFooClient:  base.NewFBaseFooClient(t, p, middleware...),
 		transport:       t,
 		protocolFactory: p,
 		oprot:           p.GetProtocol(t),
+		methods:         methods,
 	}
+	methods["ping"] = frugal.ComposeMiddleware(client.ping, middleware)
+	methods["blah"] = frugal.ComposeMiddleware(client.blah, middleware)
+	methods["oneWay"] = frugal.ComposeMiddleware(client.oneWay, middleware)
+	return client
 }
 
 // Ping the server.
 func (f *FFooClient) Ping(ctx *frugal.FContext) (err error) {
+	ret := f.methods["ping"]("Foo", "Ping", []interface{}{ctx})
+	if len(ret) != 1 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 1", len(ret)))
+	}
+	if ret[0] != nil {
+		err = ret[0].(error)
+	}
+	return err
+}
+
+func (f *FFooClient) ping(ctx *frugal.FContext) (err error) {
 	errorC := make(chan error, 1)
 	resultC := make(chan struct{}, 1)
 	if err = f.transport.Register(ctx, f.recvPingHandler(ctx, resultC, errorC)); err != nil {
@@ -150,6 +168,18 @@ func (f *FFooClient) recvPingHandler(ctx *frugal.FContext, resultC chan<- struct
 
 // Blah the server.
 func (f *FFooClient) Blah(ctx *frugal.FContext, num int32, str string, event *Event) (r int64, err error) {
+	ret := f.methods["blah"]("Foo", "Blah", []interface{}{ctx, num, str, event})
+	if len(ret) != 2 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 2", len(ret)))
+	}
+	r = ret[0].(int64)
+	if ret[1] != nil {
+		err = ret[1].(error)
+	}
+	return r, err
+}
+
+func (f *FFooClient) blah(ctx *frugal.FContext, num int32, str string, event *Event) (r int64, err error) {
 	errorC := make(chan error, 1)
 	resultC := make(chan int64, 1)
 	if err = f.transport.Register(ctx, f.recvBlahHandler(ctx, resultC, errorC)); err != nil {
@@ -262,6 +292,17 @@ func (f *FFooClient) recvBlahHandler(ctx *frugal.FContext, resultC chan<- int64,
 
 // oneway methods don't receive a response from the server.
 func (f *FFooClient) OneWay(ctx *frugal.FContext, id ID, req Request) (err error) {
+	ret := f.methods["oneWay"]("Foo", "OneWay", []interface{}{ctx, id, req})
+	if len(ret) != 1 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 1", len(ret)))
+	}
+	if ret[0] != nil {
+		err = ret[0].(error)
+	}
+	return err
+}
+
+func (f *FFooClient) oneWay(ctx *frugal.FContext, id ID, req Request) (err error) {
 	f.mu.Lock()
 	if err = f.oprot.WriteRequestHeader(ctx); err != nil {
 		f.mu.Unlock()
@@ -296,18 +337,18 @@ type FFooProcessor struct {
 	*base.FBaseFooProcessor
 }
 
-func NewFFooProcessor(handler FFoo) *FFooProcessor {
+func NewFFooProcessor(handler FFoo, middleware ...frugal.ServiceMiddleware) *FFooProcessor {
 	p := &FFooProcessor{
-		base.NewFBaseFooProcessor(handler),
+		base.NewFBaseFooProcessor(handler, middleware...),
 	}
-	p.AddToProcessorMap("ping", &fooFPing{handler: handler, writeMu: p.GetWriteMutex()})
-	p.AddToProcessorMap("blah", &fooFBlah{handler: handler, writeMu: p.GetWriteMutex()})
-	p.AddToProcessorMap("oneWay", &fooFOneWay{handler: handler, writeMu: p.GetWriteMutex()})
+	p.AddToProcessorMap("ping", &fooFPing{handler: frugal.ComposeMiddleware(handler.Ping, middleware), writeMu: p.GetWriteMutex()})
+	p.AddToProcessorMap("blah", &fooFBlah{handler: frugal.ComposeMiddleware(handler.Blah, middleware), writeMu: p.GetWriteMutex()})
+	p.AddToProcessorMap("oneWay", &fooFOneWay{handler: frugal.ComposeMiddleware(handler.OneWay, middleware), writeMu: p.GetWriteMutex()})
 	return p
 }
 
 type fooFPing struct {
-	handler FFoo
+	handler frugal.InvocationHandler
 	writeMu *sync.Mutex
 }
 
@@ -325,7 +366,14 @@ func (p *fooFPing) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol)
 	iprot.ReadMessageEnd()
 	result := FooPingResult{}
 	var err2 error
-	if err2 = p.handler.Ping(ctx); err2 != nil {
+	ret := p.handler("Foo", "Ping", []interface{}{ctx})
+	if len(ret) != 1 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 1", len(ret)))
+	}
+	if ret[0] != nil {
+		err2 = ret[0].(error)
+	}
+	if err2 != nil {
 		p.writeMu.Lock()
 		fooWriteApplicationError(ctx, oprot, thrift.INTERNAL_ERROR, "ping", "Internal error processing ping: "+err2.Error())
 		p.writeMu.Unlock()
@@ -372,7 +420,7 @@ func (p *fooFPing) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol)
 }
 
 type fooFBlah struct {
-	handler FFoo
+	handler frugal.InvocationHandler
 	writeMu *sync.Mutex
 }
 
@@ -391,7 +439,15 @@ func (p *fooFBlah) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol)
 	result := FooBlahResult{}
 	var err2 error
 	var retval int64
-	if retval, err2 = p.handler.Blah(ctx, args.Num, args.Str, args.Event); err2 != nil {
+	ret := p.handler("Foo", "Blah", []interface{}{ctx, args.Num, args.Str, args.Event})
+	if len(ret) != 2 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 2", len(ret)))
+	}
+	retval = ret[0].(int64)
+	if ret[1] != nil {
+		err2 = ret[1].(error)
+	}
+	if err2 != nil {
 		switch v := err2.(type) {
 		case *AwesomeException:
 			result.Awe = v
@@ -447,7 +503,7 @@ func (p *fooFBlah) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol)
 }
 
 type fooFOneWay struct {
-	handler FFoo
+	handler frugal.InvocationHandler
 	writeMu *sync.Mutex
 }
 
@@ -461,7 +517,14 @@ func (p *fooFOneWay) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtoco
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	if err2 = p.handler.OneWay(ctx, args.ID, args.Req); err2 != nil {
+	ret := p.handler("Foo", "OneWay", []interface{}{ctx, args.ID, args.Req})
+	if len(ret) != 1 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 1", len(ret)))
+	}
+	if ret[0] != nil {
+		err2 = ret[0].(error)
+	}
+	if err2 != nil {
 		return err2
 	}
 	return err

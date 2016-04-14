@@ -28,18 +28,34 @@ type FBaseFooClient struct {
 	protocolFactory *frugal.FProtocolFactory
 	oprot           *frugal.FProtocol
 	mu              sync.Mutex
+	methods         map[string]frugal.InvocationHandler
 }
 
-func NewFBaseFooClient(t frugal.FTransport, p *frugal.FProtocolFactory) *FBaseFooClient {
+func NewFBaseFooClient(t frugal.FTransport, p *frugal.FProtocolFactory, middleware ...frugal.ServiceMiddleware) *FBaseFooClient {
 	t.SetRegistry(frugal.NewFClientRegistry())
-	return &FBaseFooClient{
+	methods := make(map[string]frugal.InvocationHandler)
+	client := &FBaseFooClient{
 		transport:       t,
 		protocolFactory: p,
 		oprot:           p.GetProtocol(t),
+		methods:         methods,
 	}
+	methods["basePing"] = frugal.ComposeMiddleware(client.basePing, middleware)
+	return client
 }
 
 func (f *FBaseFooClient) BasePing(ctx *frugal.FContext) (err error) {
+	ret := f.methods["basePing"]("BaseFoo", "BasePing", []interface{}{ctx})
+	if len(ret) != 1 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 1", len(ret)))
+	}
+	if ret[0] != nil {
+		err = ret[0].(error)
+	}
+	return err
+}
+
+func (f *FBaseFooClient) basePing(ctx *frugal.FContext) (err error) {
 	errorC := make(chan error, 1)
 	resultC := make(chan struct{}, 1)
 	if err = f.transport.Register(ctx, f.recvBasePingHandler(ctx, resultC, errorC)); err != nil {
@@ -144,14 +160,14 @@ type FBaseFooProcessor struct {
 	handler      FBaseFoo
 }
 
-func NewFBaseFooProcessor(handler FBaseFoo) *FBaseFooProcessor {
+func NewFBaseFooProcessor(handler FBaseFoo, middleware ...frugal.ServiceMiddleware) *FBaseFooProcessor {
 	writeMu := &sync.Mutex{}
 	p := &FBaseFooProcessor{
 		processorMap: make(map[string]frugal.FProcessorFunction),
 		writeMu:      writeMu,
 		handler:      handler,
 	}
-	p.AddToProcessorMap("basePing", &basefooFBasePing{handler: handler, writeMu: p.GetWriteMutex()})
+	p.AddToProcessorMap("basePing", &basefooFBasePing{handler: frugal.ComposeMiddleware(handler.BasePing, middleware), writeMu: p.GetWriteMutex()})
 	return p
 }
 
@@ -198,7 +214,7 @@ func (p *FBaseFooProcessor) Process(iprot, oprot *frugal.FProtocol) error {
 }
 
 type basefooFBasePing struct {
-	handler FBaseFoo
+	handler frugal.InvocationHandler
 	writeMu *sync.Mutex
 }
 
@@ -216,7 +232,14 @@ func (p *basefooFBasePing) Process(ctx *frugal.FContext, iprot, oprot *frugal.FP
 	iprot.ReadMessageEnd()
 	result := BaseFooBasePingResult{}
 	var err2 error
-	if err2 = p.handler.BasePing(ctx); err2 != nil {
+	ret := p.handler("BaseFoo", "BasePing", []interface{}{ctx})
+	if len(ret) != 1 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 1", len(ret)))
+	}
+	if ret[0] != nil {
+		err2 = ret[0].(error)
+	}
+	if err2 != nil {
 		p.writeMu.Lock()
 		basefooWriteApplicationError(ctx, oprot, thrift.INTERNAL_ERROR, "basePing", "Internal error processing basePing: "+err2.Error())
 		p.writeMu.Unlock()

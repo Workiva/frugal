@@ -8,6 +8,8 @@ package foo;
 
 import com.workiva.frugal.exception.FMessageSizeException;
 import com.workiva.frugal.exception.FTimeoutException;
+import com.workiva.frugal.middleware.InvocationHandler;
+import com.workiva.frugal.middleware.ServiceMiddleware;
 import com.workiva.frugal.processor.FBaseProcessor;
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.processor.FProcessorFunction;
@@ -242,15 +244,16 @@ public class FBlah {
 
 	public static class Processor extends FBaseProcessor implements FProcessor {
 
-		public Processor(Iface iface) {
-			super(getProcessMap(iface, new java.util.HashMap<String, FProcessorFunction>()));
+		public Processor(Iface iface, ServiceMiddleware... middleware) {
+			super(getProcessMap(iface, new java.util.HashMap<String, FProcessorFunction>(), middleware));
 		}
 
-		protected Processor(Iface iface, java.util.Map<String, FProcessorFunction> processMap) {
-			super(getProcessMap(iface, processMap));
+		protected Processor(Iface iface, java.util.Map<String, FProcessorFunction> processMap, ServiceMiddleware[] middleware) {
+			super(getProcessMap(iface, processMap, middleware));
 		}
 
-		private static java.util.Map<String, FProcessorFunction> getProcessMap(Iface handler, java.util.Map<String, FProcessorFunction> processMap) {
+		private static java.util.Map<String, FProcessorFunction> getProcessMap(Iface handler, java.util.Map<String, FProcessorFunction> processMap, ServiceMiddleware[] middleware) {
+			handler = InvocationHandler.composeMiddleware("Blah", handler, Iface.class, middleware);
 			processMap.put("ping", new Ping(handler));
 			processMap.put("bleh", new Bleh(handler));
 			return processMap;

@@ -1,4 +1,7 @@
 
+import com.workiva.frugal.middleware.InvocationContext;
+import com.workiva.frugal.middleware.InvocationHandler;
+import com.workiva.frugal.middleware.ServiceMiddleware;
 import com.workiva.frugal.processor.FProcessorFactory;
 import com.workiva.frugal.protocol.*;
 import com.workiva.frugal.provider.FScopeProvider;
@@ -12,6 +15,7 @@ import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.transport.TTransportException;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
@@ -63,7 +67,7 @@ public class Main {
 
     private static void runServer(Connection conn, FTransportFactory transportFactory, FProtocolFactory protocolFactory) throws TException {
         FFoo.Iface handler = new FooHandler();
-        FFoo.Processor processor = new FFoo.Processor(handler);
+        FFoo.Processor processor = new FFoo.Processor(handler, new LoggingMiddleware());
         FServer server = new FNatsServer(conn, "foo", 20 * 1000, 2, new FProcessorFactory(processor), transportFactory, protocolFactory);
         System.out.println("Starting nats server on 'foo'");
         server.serve();
@@ -125,6 +129,23 @@ public class Main {
         @Override
         public void basePing(FContext ctx) throws TException {
             System.out.format("basePing(%s)\n", ctx);
+        }
+
+    }
+
+    private static class LoggingMiddleware implements ServiceMiddleware {
+
+        @Override
+        public <T> InvocationHandler<T> apply(InvocationContext<T> next) {
+            return new InvocationHandler<T>(next) {
+                @Override
+                public Object invoke(String service, Method method, Object receiver, Object[] args) throws Throwable {
+                    System.out.printf("==== CALLING %s.%s ====\n", service, method.getName());
+                    Object ret = method.invoke(receiver, args);
+                    System.out.printf("==== CALLED  %s.%s ====\n", service, method.getName());
+                    return ret;
+                }
+            };
         }
 
     }

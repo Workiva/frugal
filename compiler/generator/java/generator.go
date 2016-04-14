@@ -103,6 +103,8 @@ func (g *Generator) generatePackage(file *os.File) error {
 func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) error {
 	imports := "import com.workiva.frugal.exception.FMessageSizeException;\n"
 	imports += "import com.workiva.frugal.exception.FTimeoutException;\n"
+	imports += "import com.workiva.frugal.middleware.InvocationHandler;\n"
+	imports += "import com.workiva.frugal.middleware.ServiceMiddleware;\n"
 	imports += "import com.workiva.frugal.processor.FBaseProcessor;\n"
 	imports += "import com.workiva.frugal.processor.FProcessor;\n"
 	imports += "import com.workiva.frugal.processor.FProcessorFunction;\n"
@@ -577,23 +579,24 @@ func (g *Generator) generateServer(service *parser.Service) string {
 	}
 	contents += tab + fmt.Sprintf("public static class Processor extends %s implements FProcessor {\n\n", extends)
 
-	contents += tabtab + "public Processor(Iface iface) {\n"
+	contents += tabtab + "public Processor(Iface iface, ServiceMiddleware... middleware) {\n"
 	if service.Extends != "" {
-		contents += tabtabtab + "super(iface, getProcessMap(iface, new java.util.HashMap<String, FProcessorFunction>()));\n"
+		contents += tabtabtab + "super(iface, getProcessMap(iface, new java.util.HashMap<String, FProcessorFunction>(), middleware), middleware);\n"
 	} else {
-		contents += tabtabtab + "super(getProcessMap(iface, new java.util.HashMap<String, FProcessorFunction>()));\n"
+		contents += tabtabtab + "super(getProcessMap(iface, new java.util.HashMap<String, FProcessorFunction>(), middleware));\n"
 	}
 	contents += tabtab + "}\n\n"
 
-	contents += tabtab + "protected Processor(Iface iface, java.util.Map<String, FProcessorFunction> processMap) {\n"
+	contents += tabtab + "protected Processor(Iface iface, java.util.Map<String, FProcessorFunction> processMap, ServiceMiddleware[] middleware) {\n"
 	if service.Extends != "" {
-		contents += tabtabtab + "super(iface, getProcessMap(iface, processMap));\n"
+		contents += tabtabtab + "super(iface, getProcessMap(iface, processMap, middleware), middleware);\n"
 	} else {
-		contents += tabtabtab + "super(getProcessMap(iface, processMap));\n"
+		contents += tabtabtab + "super(getProcessMap(iface, processMap, middleware));\n"
 	}
 	contents += tabtab + "}\n\n"
 
-	contents += tabtab + "private static java.util.Map<String, FProcessorFunction> getProcessMap(Iface handler, java.util.Map<String, FProcessorFunction> processMap) {\n"
+	contents += tabtab + "private static java.util.Map<String, FProcessorFunction> getProcessMap(Iface handler, java.util.Map<String, FProcessorFunction> processMap, ServiceMiddleware[] middleware) {\n"
+	contents += tabtabtab + fmt.Sprintf("handler = InvocationHandler.composeMiddleware(\"%s\", handler, Iface.class, middleware);\n", servTitle)
 	for _, method := range service.Methods {
 		contents += tabtabtab + fmt.Sprintf("processMap.put(\"%s\", new %s(handler));\n", method.Name, strings.Title(method.Name))
 	}

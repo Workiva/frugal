@@ -13,6 +13,15 @@ import (
 
 const addr = "localhost:4535"
 
+func newMiddleware(called *bool) frugal.ServiceMiddleware {
+	return func(next frugal.InvocationHandler) frugal.InvocationHandler {
+		return func(service, method string, args frugal.Arguments) frugal.Results {
+			*called = true
+			return next(service, method, args)
+		}
+	}
+}
+
 func TestBasic(t *testing.T) {
 	protoFactories := []thrift.TProtocolFactory{
 		thrift.NewTCompactProtocolFactory(),
@@ -28,7 +37,8 @@ func TestBasic(t *testing.T) {
 
 func testBasic(t *testing.T, protoFactory thrift.TProtocolFactory, fTransportFactory frugal.FTransportFactory) {
 	// Setup server.
-	processor := event.NewFFooProcessor(&FooHandler{})
+	serverMiddlewareCalled := false
+	processor := event.NewFFooProcessor(&FooHandler{}, newMiddleware(&serverMiddlewareCalled))
 	serverTr, err := thrift.NewTServerSocket(addr)
 	if err != nil {
 		t.Fatal(err)
@@ -60,9 +70,17 @@ func testBasic(t *testing.T, protoFactory thrift.TProtocolFactory, fTransportFac
 	if err := fTransport.Open(); err != nil {
 		t.Fatal(err)
 	}
-	client := event.NewFFooClient(fTransport, frugal.NewFProtocolFactory(protoFactory))
+	clientMiddlewareCalled := false
+	client := event.NewFFooClient(fTransport, frugal.NewFProtocolFactory(protoFactory), newMiddleware(&clientMiddlewareCalled))
 
 	runClient(t, client)
+
+	if !serverMiddlewareCalled {
+		t.Fatal("Server middleware not invoked")
+	}
+	if !clientMiddlewareCalled {
+		t.Fatal("Client middleware not invoked")
+	}
 
 	if err := server.Stop(); err != nil {
 		t.Fatal("Failed to stop server:", err.Error())

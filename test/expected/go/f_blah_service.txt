@@ -31,19 +31,36 @@ type FBlahClient struct {
 	protocolFactory *frugal.FProtocolFactory
 	oprot           *frugal.FProtocol
 	mu              sync.Mutex
+	methods         map[string]frugal.InvocationHandler
 }
 
-func NewFBlahClient(t frugal.FTransport, p *frugal.FProtocolFactory) *FBlahClient {
+func NewFBlahClient(t frugal.FTransport, p *frugal.FProtocolFactory, middleware ...frugal.ServiceMiddleware) *FBlahClient {
 	t.SetRegistry(frugal.NewFClientRegistry())
-	return &FBlahClient{
+	methods := make(map[string]frugal.InvocationHandler)
+	client := &FBlahClient{
 		transport:       t,
 		protocolFactory: p,
 		oprot:           p.GetProtocol(t),
+		methods:         methods,
 	}
+	methods["ping"] = frugal.ComposeMiddleware(client.ping, middleware)
+	methods["bleh"] = frugal.ComposeMiddleware(client.bleh, middleware)
+	return client
 }
 
 // Use this to ping the server.
 func (f *FBlahClient) Ping(ctx *frugal.FContext) (err error) {
+	ret := f.methods["ping"]("Blah", "Ping", []interface{}{ctx})
+	if len(ret) != 1 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 1", len(ret)))
+	}
+	if ret[0] != nil {
+		err = ret[0].(error)
+	}
+	return err
+}
+
+func (f *FBlahClient) ping(ctx *frugal.FContext) (err error) {
 	errorC := make(chan error, 1)
 	resultC := make(chan struct{}, 1)
 	if err = f.transport.Register(ctx, f.recvPingHandler(ctx, resultC, errorC)); err != nil {
@@ -144,6 +161,18 @@ func (f *FBlahClient) recvPingHandler(ctx *frugal.FContext, resultC chan<- struc
 
 // Use this to tell the sever how you feel.
 func (f *FBlahClient) Bleh(ctx *frugal.FContext, one *Thing, two *Stuff) (r int64, err error) {
+	ret := f.methods["bleh"]("Blah", "Bleh", []interface{}{ctx, one, two})
+	if len(ret) != 2 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 2", len(ret)))
+	}
+	r = ret[0].(int64)
+	if ret[1] != nil {
+		err = ret[1].(error)
+	}
+	return r, err
+}
+
+func (f *FBlahClient) bleh(ctx *frugal.FContext, one *Thing, two *Stuff) (r int64, err error) {
 	errorC := make(chan error, 1)
 	resultC := make(chan int64, 1)
 	if err = f.transport.Register(ctx, f.recvBlehHandler(ctx, resultC, errorC)); err != nil {
@@ -255,15 +284,15 @@ type FBlahProcessor struct {
 	handler      FBlah
 }
 
-func NewFBlahProcessor(handler FBlah) *FBlahProcessor {
+func NewFBlahProcessor(handler FBlah, middleware ...frugal.ServiceMiddleware) *FBlahProcessor {
 	writeMu := &sync.Mutex{}
 	p := &FBlahProcessor{
 		processorMap: make(map[string]frugal.FProcessorFunction),
 		writeMu:      writeMu,
 		handler:      handler,
 	}
-	p.AddToProcessorMap("ping", &blahFPing{handler: handler, writeMu: p.GetWriteMutex()})
-	p.AddToProcessorMap("bleh", &blahFBleh{handler: handler, writeMu: p.GetWriteMutex()})
+	p.AddToProcessorMap("ping", &blahFPing{handler: frugal.ComposeMiddleware(handler.Ping, middleware), writeMu: p.GetWriteMutex()})
+	p.AddToProcessorMap("bleh", &blahFBleh{handler: frugal.ComposeMiddleware(handler.Bleh, middleware), writeMu: p.GetWriteMutex()})
 	return p
 }
 
@@ -310,7 +339,7 @@ func (p *FBlahProcessor) Process(iprot, oprot *frugal.FProtocol) error {
 }
 
 type blahFPing struct {
-	handler FBlah
+	handler frugal.InvocationHandler
 	writeMu *sync.Mutex
 }
 
@@ -328,7 +357,14 @@ func (p *blahFPing) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol
 	iprot.ReadMessageEnd()
 	result := BlahPingResult{}
 	var err2 error
-	if err2 = p.handler.Ping(ctx); err2 != nil {
+	ret := p.handler("Blah", "Ping", []interface{}{ctx})
+	if len(ret) != 1 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 1", len(ret)))
+	}
+	if ret[0] != nil {
+		err2 = ret[0].(error)
+	}
+	if err2 != nil {
 		p.writeMu.Lock()
 		blahWriteApplicationError(ctx, oprot, thrift.INTERNAL_ERROR, "ping", "Internal error processing ping: "+err2.Error())
 		p.writeMu.Unlock()
@@ -375,7 +411,7 @@ func (p *blahFPing) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol
 }
 
 type blahFBleh struct {
-	handler FBlah
+	handler frugal.InvocationHandler
 	writeMu *sync.Mutex
 }
 
@@ -394,7 +430,15 @@ func (p *blahFBleh) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol
 	result := BlahBlehResult{}
 	var err2 error
 	var retval int64
-	if retval, err2 = p.handler.Bleh(ctx, args.One, args.Two); err2 != nil {
+	ret := p.handler("Blah", "Bleh", []interface{}{ctx, args.One, args.Two})
+	if len(ret) != 2 {
+		panic(fmt.Sprintf("Middleware returned %d arguments, expected 2", len(ret)))
+	}
+	retval = ret[0].(int64)
+	if ret[1] != nil {
+		err2 = ret[1].(error)
+	}
+	if err2 != nil {
 		switch v := err2.(type) {
 		case *InvalidOperation:
 			result.Oops = v
