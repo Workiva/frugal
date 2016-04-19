@@ -101,6 +101,8 @@ class FClientRegistry(FRegistry):
                 raise FException("context already registered")
 
         op_id = self._increment_and_get_next_op_id()
+        context._set_op_id(op_id)
+
         with self._handlers_lock:
             self._handlers[op_id] = callback
 

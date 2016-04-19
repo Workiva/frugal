@@ -142,6 +142,7 @@ class TNatsServiceTransport(TTransportBase):
         # TODO move this up
         def on_heartbeat_message(msg=None):
             # TODO : heartbeat lock
+            logger.debug("Received heartbeat.")
             self._heartbeat_timer.stop()
             self._nats_client.publish(self._heartbeat_reply, "")
             self._missed_heartbeats = 0
@@ -191,16 +192,16 @@ class TNatsServiceTransport(TTransportBase):
             logger.error("Tried to write to closed transport!")
             raise TTransportException(TTransportException.NOT_OPEN,
                                       "Transport not open!")
-
         self._wbuf.write(buff)
 
+    @gen.coroutine
     def flush(self):
-        """flush publishes whatever is in the buffer to NATS"""
+        """Flush publishes whatever is in the buffer to NATS"""
         frame = self._wbuf.getvalue()
-        frame_length = struct.pack('!i', len(frame))
+        frame_length = struct.pack('>I', len(frame))
         self._wbuf = BytesIO()
-        yield self._nats_client.publish(self.connection_subject,
-                                        str(frame_length + frame))
+        yield self._nats_client.publish(self._write_to,
+                                        frame_length + frame)
 
     def _new_frugal_inbox(self):
         return "{frugal}{new_inbox}".format(frugal=_FRUGAL_PREFIX,

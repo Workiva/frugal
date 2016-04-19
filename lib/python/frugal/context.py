@@ -19,6 +19,7 @@ class FContext(object):
         """
         self._request_headers = {}
         self._response_headers = {}
+
         if not timeout:
             timeout = _DEFAULT_TIMEOUT
         self._timeout = timeout
@@ -27,6 +28,7 @@ class FContext(object):
             correlation_id = self._generate_cid()
 
         self._request_headers[_C_ID] = correlation_id
+        self._request_headers[_OP_ID] = "0"
 
     def get_correlation_id(self):
         """Return the correlation id for the FContext.
@@ -36,15 +38,15 @@ class FContext(object):
         return self._request_headers.get(_C_ID)
 
     def _get_op_id(self):
-        """Return the operation id for the FContext.  This is a unique long per
-        operation.  This is protected as operation ids are an internal
+        """Return an int operation id for the FContext.  This is a unique long
+        per operation.  This is protected as operation ids are an internal
         implementation detail.
         """
 
-        return self._request_headers.get(_OP_ID)
+        return int(self._request_headers.get(_OP_ID))
 
     def _set_op_id(self, op_id):
-        self._request_headers[_OP_ID] = op_id
+        self._request_headers[_OP_ID] = str(op_id)
 
     def get_request_headers(self):
         return copy(self._request_headers)

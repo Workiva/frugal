@@ -13,7 +13,7 @@ class Iface(f_base_foo.Iface):
     def ping(self, context):
         pass
 
-    def one_way(self, id, req):
+    def one_way(self, context, id, req):
         pass
 
 
@@ -36,18 +36,17 @@ class Client(f_base_foo.Client, Iface):
         self._write_lock = Lock()
 
     def ping(self, context):
-        print("Called ping.")
         future = concurrent.Future()
         self.send_ping(context)
         return future
 
-    def recv_ping(self, ctx, iprot, mtype, rseqid):
+    def recv_ping(self, context, iprot, mtype, rseqid):
         if mtype == TMessageType.EXCEPTION:
             x = TApplicationException()
             x.read(iprot)
             iprot.readMessageEnd()
             raise x
-        self._iprot.read_response_headers(ctx)
+        self._iprot.read_response_headers(context)
         result = ping_result()
         result.read(iprot)
         iprot.readMessageEnd()
@@ -56,23 +55,25 @@ class Client(f_base_foo.Client, Iface):
     def send_ping(self, context):
         oprot = self._oprot
         self._transport.register(context, self.recv_ping)
-        oprot.writeMessageBegin('ping', TMessageType.CALL, 0)
-        args = ping_args()
-        args.write(oprot)
-        oprot.writeMessageEnd()
-        oprot.get_transport().flush()
+        with self._write_lock:
+            oprot.write_request_headers(context)
+            oprot.writeMessageBegin('ping', TMessageType.CALL, 0)
+            args = ping_args()
+            args.write(oprot)
+            oprot.writeMessageEnd()
+            oprot.get_transport().flush()
 
-    def one_way(self, ctx, id, req):
+    def one_way(self, context, id, req):
         """ oneway methods don't receive a response from the server
 
         Args:
-            ctx: FContext
+            context: FContext
             req: dict key values to send (will be converted to JSON string)
         """
         oprot = self._oprot
         with self._write_lock:
-            oprot.write_request_headers(ctx)
-            oprot.writeMessageBegin("one_way", TMessageType.ONEWAY, 0)
+            oprot.write_request_headers(context)
+            oprot.writeMessageBegin("oneWay", TMessageType.ONEWAY, 0)
             args = one_way_args()
             args.id = id
             args.req = req
