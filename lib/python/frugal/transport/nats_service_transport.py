@@ -35,7 +35,7 @@ class TNatsServiceTransport(TTransportBase):
         """Create a TNatsServerTransport to communicate with NATS
 
         Args:
-            connection: nats connection
+            connection_subject: nats connection subject
             listen_to: subject to listen on
             write_to: subject to write to
         """
@@ -47,21 +47,14 @@ class TNatsServiceTransport(TTransportBase):
         self._max_missed_heartbeats = max_missed_heartbeats
 
         self._is_open = False
-        self._sub_id = None
 
-        self._heartbeat_listen = None
-        self._heartbeat_reply = None
-        self._heartbeat_interval = None
-        self._heartbeat_timer = None
-        self._heartbeat_sub_id = None
         self._missed_heartbeats = 0
 
-        self._write_to = None
-        self._listen_to = None
-
         self._open_lock = Lock()
-
         self._wbuf = BytesIO()
+
+    def set_execute_callback(self, execute):
+        self._execute = execute
 
     def isOpen(self):
         with self._open_lock:
@@ -88,26 +81,27 @@ class TNatsServiceTransport(TTransportBase):
 
         with self._open_lock:
             if self._connection_subject:
-                # TODO switch to if not and raise
                 yield self._handshake()
 
-            # TODO move this to top level
-            def on_message_cb(m=None):
-                if m.reply == _DISCONNECT:
-                    logger.debug("Received DISCONNECT from Frugal server.")
-                    self.close()
-                else:
-                    # TODO call some function that will eventually execute frame
-                    logger.debug("Message from server: subject: {0}, data: {1}"
-                                 .format(m.subject, m.data))
-
-            self._sub_id = yield self._nats_client.subscribe(self._listen_to,
-                                                             "",
-                                                             on_message_cb)
+            self._sub_id = yield self._nats_client.subscribe(
+                self._listen_to,
+                "",
+                self._on_message_callback
+            )
 
             yield self._setup_heartbeat()
             self._is_open = True
             logger.info("frugal: transport open.")
+
+    def _on_message_callback(self, msg=None):
+        if msg.reply == _DISCONNECT:
+            logger.debug("Received DISCONNECT from Frugal server.")
+            self.close()
+        else:
+            # TODO call some function that will eventually execute frame
+            logger.debug("Message from server: subject: {0}, data: {1}"
+                         .format(msg.subject, msg.data))
+            self._execute(msg.data)
 
     @gen.coroutine
     def _handshake(self):
@@ -137,23 +131,21 @@ class TNatsServiceTransport(TTransportBase):
         self._listen_to = msg.subject
         self._write_to = msg.reply
 
+    def _on_heartbeat_message(self, msg=None):
+        logger.debug("Received heartbeat.")
+        self._heartbeat_timer.stop()
+        self._nats_client.publish(self._heartbeat_reply, "")
+        self._missed_heartbeats = 0
+        self._heartbeat_timer.start()
+
     @gen.coroutine
     def _setup_heartbeat(self):
-        # TODO move this up
-        def on_heartbeat_message(msg=None):
-            # TODO : heartbeat lock
-            logger.debug("Received heartbeat.")
-            self._heartbeat_timer.stop()
-            self._nats_client.publish(self._heartbeat_reply, "")
-            self._missed_heartbeats = 0
-            self._heartbeat_timer.start()
-
         if self._heartbeat_interval > 0:
             logger.debug("Setting up heartbeat subscription.")
             self._heartbeat_sub_id = yield self._nats_client.subscribe(
                 self._heartbeat_listen,
                 "",
-                on_heartbeat_message
+                self._on_heartbeat_message
             )
 
         self._heartbeat_timer = ioloop.PeriodicCallback(
@@ -206,3 +198,4 @@ class TNatsServiceTransport(TTransportBase):
     def _new_frugal_inbox(self):
         return "{frugal}{new_inbox}".format(frugal=_FRUGAL_PREFIX,
                                             new_inbox=new_inbox())
+

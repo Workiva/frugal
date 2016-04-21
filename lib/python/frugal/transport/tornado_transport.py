@@ -39,6 +39,7 @@ class FMuxTornadoTransport(FTransport):
                 return
 
             self._registry = registry
+            self._transport.set_execute_callback(registry.execute)
 
     def register(self, context, callback):
         with self._lock:
@@ -54,8 +55,12 @@ class FMuxTornadoTransport(FTransport):
 
             self._registry.unregister(context)
 
+    def read(self):
+        print("called read")
+
     def write(self, buff):
         self._transport.write(buff)
 
     def flush(self):
         self._transport.flush()
+

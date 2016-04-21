@@ -1,4 +1,3 @@
-from io import BytesIO
 from struct import pack_into, unpack_from
 
 from frugal.exceptions import FrugalVersionException
@@ -11,10 +10,8 @@ _UINT = '>I'
 
 class Writer(object):
 
-    def __init__(self):
-        self.buff = BytesIO()
-
-    def write_headers_to_buffer(self, headers):
+    @staticmethod
+    def _write_headers_to_buffer(self, headers):
         """Writes a given dictionary to a bytearray object and returns it
 
         Args:
@@ -45,12 +42,6 @@ class Writer(object):
 
         return buff
 
-    def write_bytes(self, buff):
-        self.buff.write(buff)
-
-    def get_buffer(self):
-        return self.buff.getvalue()
-
     def _compute_size(self, headers):
         size = 0
         for key, value in headers.iteritems():
@@ -60,13 +51,8 @@ class Writer(object):
 
 class Reader(object):
 
-    def __init__(self, writer=None):
-        self.writer = writer or Writer()
-
-    def read_request_headers(self):
-        return self._read_headers(self.writer.get_buffer())
-
-    def _read_headers(self, buff):
+    @staticmethod
+    def read_request_headers(buff):
         parsed_headers = {}
 
         version = unpack_from(_UCHAR, buff, 0)[0]
@@ -98,5 +84,5 @@ class Reader(object):
         return parsed_headers
 
 
-def _string(self, length):
+def _string(length):
     return '>{}s'.format(length)

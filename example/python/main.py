@@ -15,6 +15,8 @@ from frugal.transport.transport_factory import FMuxTransportFactory
 from frugal.transport.nats_service_transport import TNatsServiceTransport
 
 from gen_py.example.f_foo import Client as FFooClient
+from gen_py.example.ttypes import Event
+
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -55,10 +57,14 @@ def main():
     foo_client = FFooClient(tornado_transport, prot_factory)
     foo_client.one_way(FContext(), 99, {99: "request"})
 
-    print("Successfully sent one_way")
-
     f = yield foo_client.ping(FContext())
-    print("Ping future: {}".format(f))
+    print("ping future: {}".format(f))
+    #ctx = FContext()
+    #event = Event(42, "hello world")
+    #print("sending blah")
+    #b = yield foo_client.blah(ctx, 100, "awesomesauce", event)
+    #print("Blah response {}".format(b))
+    #print("Response header foo: {}".format(ctx.get_request_header("foo")))
 
 if __name__ == '__main__':
     io_loop = ioloop.IOLoop.instance()

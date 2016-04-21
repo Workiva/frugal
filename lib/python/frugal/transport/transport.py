@@ -52,6 +52,7 @@ class FMuxTransport(FTransport):
             self._framed_transport.close()
 
     def read(self, size):
+        print("trying to read off transport")
         self._framed_transport.read(size)
 
     def write(self, buff):

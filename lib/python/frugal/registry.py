@@ -3,6 +3,7 @@ from threading import Lock
 from thrift.transport.TTransport import TMemoryBuffer
 
 from frugal.exceptions import FException
+from frugal.util.headers import Reader
 
 
 class FRegistry(object):
@@ -102,6 +103,7 @@ class FClientRegistry(FRegistry):
 
         op_id = self._increment_and_get_next_op_id()
         context._set_op_id(op_id)
+        self._handlers[str(op_id)] = callback
 
         with self._handlers_lock:
             self._handlers[op_id] = callback
@@ -121,8 +123,11 @@ class FClientRegistry(FRegistry):
         Args:
             frame: an entire Frugal message frame.
         """
-        # TODO
-        pass
+        headers = Reader.read_request_headers(frame[4:])
+        print("headers: {}".format(headers))
+        op_id = headers["_opid"]
+
+        self._handlers[op_id](TMemoryBuffer(frame[4:]))
 
     def _increment_and_get_next_op_id(self):
         with self._opid_lock:

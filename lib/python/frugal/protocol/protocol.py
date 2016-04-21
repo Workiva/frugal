@@ -24,7 +24,6 @@ class FProtocol(TProtocolBase, object):
         super(FProtocol, self).__init__(self._wrapped_protocol.trans)
 
     def get_transport(self):
-        # TODO: should this get the wrapped_protocols transport?
         return self.trans
 
     def write_request_headers(self, context):
@@ -45,10 +44,8 @@ class FProtocol(TProtocolBase, object):
     def write_response_headers(self, context):
         self._write_headers(context.get_response_headers())
 
-    def read_response_headers(self):
+    def read_response_headers(self, context):
         headers = self._read_headers(self.trans)
-
-        context = FContext()
 
         for key, value in headers.iteritems():
             context._set_response_header(key, value)
@@ -57,15 +54,15 @@ class FProtocol(TProtocolBase, object):
 
     def _write_headers(self, headers):
         size = 0
+        offset = 5
+
         for key, value in headers.iteritems():
             size = size + 8 + len(key) + len(value)
 
-        buff = bytearray(size + 5)
+        buff = bytearray(size + offset)
 
         struct.pack_into('>B', buff, 0, _V0)
         struct.pack_into('>I', buff, 1, size)
-
-        offset = 5
 
         for key, value in headers.iteritems():
             key_length = len(key)
@@ -84,11 +81,11 @@ class FProtocol(TProtocolBase, object):
 
         self.get_transport().write(buff)
 
-    def _read_headers(self, buff):
+    def _read_headers(self, buff1):
+        buff = buff1.getvalue()
         parsed_headers = {}
-
         version = struct.unpack_from('>B', buff, 0)[0]
-
+        print("version: {}".format(version))
         if version is not _V0:
             raise FrugalVersionException(
                 "Wrong Frugal version.  Found version {0}.  Wanted version {1}"
@@ -116,7 +113,7 @@ class FProtocol(TProtocolBase, object):
 
             val = struct.unpack_from('>{0}s'.format(val_size), buff, offset)[0]
             offset += len(val)
-
+            print("key_size {} key {} val_size {} val {}".format(key_size, key, val_size, val))
             parsed_headers[key] = val
 
         return parsed_headers
