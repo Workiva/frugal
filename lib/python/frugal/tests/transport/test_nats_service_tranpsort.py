@@ -67,7 +67,7 @@ class TestTNatsServiceTransport(AsyncTestCase):
         self.transport._is_open = False
 
         try:
-            self.transport.write(b'', 0, 4)
+            self.transport.write(b'')
             self.fail()
         except TTransportException as e:
             self.assertEqual("Transport not open!", e.message)
@@ -80,7 +80,7 @@ class TestTNatsServiceTransport(AsyncTestCase):
         buff = bytearray(10)
         struct.pack_into('>I', buff, 0, 10)
 
-        self.transport.write(buff, 0, 10)
+        self.transport.write(buff)
 
         # Assert unpacking self._wbuf has what we've written
 

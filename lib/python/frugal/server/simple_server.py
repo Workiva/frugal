@@ -1,6 +1,8 @@
 import logging
-from . import FServer
+
 from thrift.transport import TTransport
+
+from .server import FServer
 
 logger = logging.getLogger(__name__)
 

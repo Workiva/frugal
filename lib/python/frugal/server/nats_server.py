@@ -1,5 +1,6 @@
 import logging
-from . import FServer
+
+from .server import FServer
 
 logger = logging.getLogger(__name__)
 

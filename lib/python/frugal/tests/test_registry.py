@@ -18,7 +18,7 @@ class TestClientRegistry(unittest.TestCase):
     def test_register_with_existing_op_id(self):
         registry = FClientRegistry()
         context = FContext("fooid")
-        context._set_op_id(1)
+        context._set_op_id(0)
         callback = self.fake_callback
         registry.register(context, callback)
         self.assertRaises(FException,

@@ -4,7 +4,7 @@ from thrift.protocol.TProtocol import TProtocolBase
 
 from frugal.context import FContext, _OP_ID
 from frugal.exceptions import FrugalVersionException
-
+from frugal.util.headers import _Headers
 
 _V0 = 0
 
@@ -53,70 +53,13 @@ class FProtocol(TProtocolBase, object):
         return context
 
     def _write_headers(self, headers):
-        size = 0
-        offset = 5
-
-        for key, value in headers.iteritems():
-            size = size + 8 + len(key) + len(value)
-
-        buff = bytearray(size + offset)
-
-        struct.pack_into('>B', buff, 0, _V0)
-        struct.pack_into('>I', buff, 1, size)
-
-        for key, value in headers.iteritems():
-            key_length = len(key)
-            struct.pack_into('>I', buff, offset, key_length)
-            offset += 4
-
-            struct.pack_into('>{0}s'.format(str(key_length)), buff, offset, key)
-            offset += len(key)
-
-            struct.pack_into('>I', buff, offset, len(value))
-            offset += 4
-
-            struct.pack_into('>{0}s'.format(str(len(value))), buff,
-                             offset, value)
-            offset += len(value)
+        buff = _Headers._write_to_bytearray(headers)
 
         self.get_transport().write(buff)
 
     def _read_headers(self, buff1):
         buff = buff1.getvalue()
-        parsed_headers = {}
-        version = struct.unpack_from('>B', buff, 0)[0]
-        print("version: {}".format(version))
-        if version is not _V0:
-            raise FrugalVersionException(
-                "Wrong Frugal version.  Found version {0}.  Wanted version {1}"
-                .format(version, _V0))
-
-        size = struct.unpack_from('>I', buff, 1)[0]
-
-        offset = 5  # since size is 4 bytes
-
-        while offset < size:
-            key_size = struct.unpack_from('>I', buff, offset)[0]
-            offset += 4
-
-            # TODO: Check bounds.
-
-            key = struct.unpack_from('>{0}s'.format(key_size), buff, offset)[0]
-            offset += len(key)
-
-            # TODO: Check bounds.
-
-            val_size = struct.unpack_from('>I', buff, offset)[0]
-            offset += 4
-
-            # TODO: Check bounds.
-
-            val = struct.unpack_from('>{0}s'.format(val_size), buff, offset)[0]
-            offset += len(val)
-            print("key_size {} key {} val_size {} val {}".format(key_size, key, val_size, val))
-            parsed_headers[key] = val
-
-        return parsed_headers
+        return _Headers._read(buff)
 
     def writeMessageBegin(self, name, ttype, seqid):
         self._wrapped_protocol.writeMessageBegin(name, ttype, seqid)

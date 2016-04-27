@@ -28,6 +28,9 @@ $(BUILD_DIR)/pip-dev.out: requirements_dev.txt
 	@mkdir -p $(BUILD_DIR)
 	$(PIP) install -Ur $< && touch $@
 
+sniffer:
+	sniffer -x--with-doctest -x--logging-level=ERROR -x--with-coverage -x--cover-package=frugal
+
 unit:
 	nosetests --logging-level=ERROR --with-coverage --cover-package=frugal
 

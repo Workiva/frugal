@@ -5,6 +5,7 @@ from frugal.exceptions import FContextHeaderException
 _C_ID = "_cid"
 _OP_ID = "_opid"
 _DEFAULT_TIMEOUT = 60 * 1000
+_DEFAULT_OP_ID = 0
 
 
 class FContext(object):
@@ -28,7 +29,7 @@ class FContext(object):
             correlation_id = self._generate_cid()
 
         self._request_headers[_C_ID] = correlation_id
-        self._request_headers[_OP_ID] = "0"
+        self._request_headers[_OP_ID] = str(_DEFAULT_OP_ID)
 
     def get_correlation_id(self):
         """Return the correlation id for the FContext.
@@ -49,6 +50,7 @@ class FContext(object):
         self._request_headers[_OP_ID] = str(op_id)
 
     def get_request_headers(self):
+        """Returns request headers for this FConext."""
         return copy(self._request_headers)
 
     def get_request_header(self, key):
@@ -59,6 +61,15 @@ class FContext(object):
         return self._request_headers.get(key)
 
     def set_request_header(self, key, value):
+        """Set a string key value pair in the request headers dictionary.
+        Args:
+            key: string key to set in request headers
+            value: string value to set for the given key
+
+        Throws:
+            FContextHeaderException: if user tries to set _cid or _opid.
+            TypeError: if user passes non-string for key or value.
+        """
         if key in (_OP_ID, _C_ID):
             raise FContextHeaderException(
                 "Not allowed to overwrite internal _cid or _opid.")

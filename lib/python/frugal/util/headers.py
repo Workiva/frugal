@@ -4,34 +4,44 @@ from frugal.exceptions import FrugalVersionException
 
 
 _V0 = 0
+# Code for big endian unsigned char
 _UCHAR = '>B'
+# Code for big endian unsigned int
 _UINT = '>I'
+_UINT_LENGTH = 4
 
 
-class Writer(object):
+class _Headers(object):
 
     @staticmethod
-    def _write_headers_to_buffer(self, headers):
+    def _write_to_bytearray(headers):
         """Writes a given dictionary to a bytearray object and returns it
+        TODO : Point to Protocol doc in the repo
 
         Args:
             headers: dict of frugal headers to write
         Returns:
             bytearray containing binary headers
         """
-        size = self._compute_size(headers)
-        offset = 5
+        size = 0
 
-        buff = bytearray(size + offset)
+        for key, value in headers.iteritems():
+            size = size + 8 + len(key) + len(value)
+
+        print(size)
+        buff = bytearray(size + 5)
 
         pack_into(_UCHAR, buff, 0, _V0)
         pack_into(_UINT, buff, 1, size)
 
+        offset = 5
+
         for key, value in headers.iteritems():
-            pack_into(_UINT, buff, offset, len(key))
+            key_length = len(key)
+            pack_into(_UINT, buff, offset, key_length)
             offset += 4
 
-            pack_into('>{0}s'.format(str(len(key))), buff, offset, key)
+            pack_into('>{0}s'.format(str(key_length)), buff, offset, key)
             offset += len(key)
 
             pack_into(_UINT, buff, offset, len(value))
@@ -42,21 +52,11 @@ class Writer(object):
 
         return buff
 
-    def _compute_size(self, headers):
-        size = 0
-        for key, value in headers.iteritems():
-            size = size + 8 + len(key) + len(value)
-        return size
-
-
-class Reader(object):
-
     @staticmethod
-    def read_request_headers(buff):
+    def _read(buff):
         parsed_headers = {}
-
         version = unpack_from(_UCHAR, buff, 0)[0]
-
+        print("version: {}".format(version))
         if version is not _V0:
             raise FrugalVersionException(
                 "Wrong Frugal version.  Found version {0}.  Wanted version {1}"
@@ -70,19 +70,21 @@ class Reader(object):
             key_size = unpack_from(_UINT, buff, offset)[0]
             offset += 4
 
-            key = unpack_from(_string(key_size), buff, offset)[0]
+            # TODO: Check bounds.
+
+            key = unpack_from('>{0}s'.format(key_size), buff, offset)[0]
             offset += len(key)
+
+            # TODO: Check bounds.
 
             val_size = unpack_from(_UINT, buff, offset)[0]
             offset += 4
 
-            val = unpack_from(_string(val_size), buff, offset)[0]
-            offset += len(val)
+            # TODO: Check bounds.
 
+            val = unpack_from('>{0}s'.format(val_size), buff, offset)[0]
+            offset += len(val)
             parsed_headers[key] = val
 
         return parsed_headers
 
-
-def _string(length):
-    return '>{}s'.format(length)

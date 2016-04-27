@@ -1,5 +1,6 @@
 from threading import Lock
-from . import FScopeTransport
+
+from .scope_transport import FScopeTransport
 from frugal.exceptions import FException
 
 
