@@ -49,6 +49,9 @@ class FContext(object):
     def _set_op_id(self, op_id):
         self._request_headers[_OP_ID] = str(op_id)
 
+    def _set_response_op_id(self, op_id):
+        self._response_headers[_OP_ID] = str(op_id)
+
     def get_request_headers(self):
         """Returns request headers for this FConext."""
         return copy(self._request_headers)

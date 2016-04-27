@@ -1,40 +1,65 @@
 import unittest
 import mock
-from thrift.protocol.TBinaryProtocol import TBinaryProtocolFactory
-from thrift.transport.TTransport import TMemoryBuffer
 
-from frugal.protocol.protocol_factory import FProtocolFactory
 from frugal.protocol.protocol import FProtocol
-from frugal.context import FContext
+from frugal.context import FContext, _OP_ID
 
 
 class TestFProtocol(unittest.TestCase):
-
-#   def test_write_header(self):
-#
-#        t_protocol_factory = TBinaryProtocolFactory()
-#        f_protocol_factory = FProtocolFactory(t_protocol_factory)
-#
-#        transport = TMemoryBuffer()
-#
-#        protocol = f_protocol_factory.get_protocol(transport)
-#
-#        context = FContext("fooid")
-#        context.set_request_header("foo", "bar")
-#
-#        headers = context.get_request_headers()
-#
-#        protocol._write_headers(headers)
-#
-#        parsed_headers = protocol._read_headers(transport.getvalue())
-#
-#        self.assertEquals("fooid", parsed_headers['_cid'])
-#        self.assertEquals("bar", parsed_headers['foo'])
 
     def setUp(self):
         self.mock_wrapped_protocol = mock.Mock()
 
         self.protocol = FProtocol(self.mock_wrapped_protocol)
+
+    @mock.patch('frugal.protocol.protocol._Headers._read')
+    def test_read_request_headers(self, mock_read):
+        headers = {_OP_ID: "0"}
+        mock_read.return_value = headers
+
+        ctx = self.protocol.read_request_headers()
+
+        self.assertEqual(0, ctx._get_op_id())
+
+    @mock.patch('frugal.protocol.protocol._Headers._read')
+    def test_read_response_headers(self, mock_read):
+        headers = {_OP_ID: "0", "_cid": "someid"}
+        mock_read.return_value = headers
+
+        context = FContext("someid")
+
+        ctx = self.protocol.read_response_headers(context)
+
+        self.assertEqual("0", ctx.get_response_header(_OP_ID))
+        self.assertEqual("someid", ctx.get_response_header("_cid"))
+
+    @mock.patch('frugal.protocol.protocol._Headers._write_to_bytearray')
+    def test_write_request_headers(self, mock_write):
+        context = FContext("foo")
+
+        mock_write.return_value = "bar"
+
+        mock_trans = mock.Mock()
+        self.protocol.trans = mock_trans
+
+        self.protocol.write_request_headers(context)
+
+        mock_write.assert_called_with(context.get_request_headers())
+        mock_trans.write.assert_called_with("bar")
+
+    @mock.patch('frugal.protocol.protocol._Headers._write_to_bytearray')
+    def test_write_response_headers(self, mock_write):
+        context = FContext("foo")
+
+        mock_write.return_value = "bar"
+
+        mock_trans = mock.Mock()
+        self.protocol.trans = mock_trans
+
+        self.protocol.write_response_headers(context)
+
+        mock_write.assert_called_with(context.get_response_headers())
+        mock_trans.write.assert_called_with("bar")
 
     def test_writeMessageBegin(self):
         self.protocol.writeMessageBegin("name", "type", 1)

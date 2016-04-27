@@ -24,13 +24,21 @@ class FProtocol(TProtocolBase, object):
         super(FProtocol, self).__init__(self._wrapped_protocol.trans)
 
     def get_transport(self):
+        """Return the extended TProtocolBase's underlying tranpsort
+
+        Returns:
+            TTransportBase
+        """
         return self.trans
 
-    def write_request_headers(self, context):
-        self._write_headers(context.get_request_headers())
-
     def read_request_headers(self):
-        headers = self._read_headers(self.trans)
+        """Reads the request headers out of the underlying TTransportBase and
+        return an FContext
+
+        Returns:
+            FContext
+        """
+        headers = _Headers._read(self.get_transport())
 
         context = FContext()
 
@@ -38,28 +46,33 @@ class FProtocol(TProtocolBase, object):
             context._set_request_header(key, value)
 
         op_id = headers[_OP_ID]
-        context.set_response_op_id(op_id)
+        context._set_response_op_id(op_id)
         return context
 
-    def write_response_headers(self, context):
-        self._write_headers(context.get_response_headers())
-
     def read_response_headers(self, context):
-        headers = self._read_headers(self.trans)
+        headers = _Headers._read(self.get_transport())
 
         for key, value in headers.iteritems():
             context._set_response_header(key, value)
 
         return context
 
+    def write_request_headers(self, context):
+        """Write the request headers to the underlying TTranpsort."""
+
+        self._write_headers(context.get_request_headers())
+
+    def write_response_headers(self, context):
+        """Write the response headers to the underlying TTransport."""
+
+        self._write_headers(context.get_response_headers())
+
     def _write_headers(self, headers):
         buff = _Headers._write_to_bytearray(headers)
 
         self.get_transport().write(buff)
 
-    def _read_headers(self, buff1):
-        buff = buff1.getvalue()
-        return _Headers._read(buff)
+    # Thrift Transport pass through methods
 
     def writeMessageBegin(self, name, ttype, seqid):
         self._wrapped_protocol.writeMessageBegin(name, ttype, seqid)
