@@ -1,6 +1,6 @@
 from struct import pack_into, unpack_from, unpack
 
-from frugal.exceptions import FrugalVersionException
+from frugal.exceptions import FrugalVersionException, FProtocolException
 
 
 _V0 = 0
@@ -57,10 +57,6 @@ class _Headers(object):
         parsed_headers = {}
         version = unpack_from(_UCHAR, buff[:1])[0]
         print("VERSION: {}".format(version))
-        if version is not _V0:
-            raise FrugalVersionException(
-                "Wrong Frugal version.  Found version {0}.  Wanted version {1}"
-                .format(version, _V0))
 
         size = unpack_from(_UINT, buff[1:5])[0]
         print("SIZE: {}".format(size))
@@ -92,4 +88,54 @@ class _Headers(object):
             parsed_headers[key] = val
 
         return parsed_headers
+
+    @staticmethod
+    def decode_from_frame(frame):
+        frame_length = len(frame)
+        if frame_length < 4:
+            raise FProtocolException(
+                FProtocolException.INVALID_DATA,
+                "Invalid frame size: {}".format(frame_length)
+            )
+
+        version = unpack_from(_UCHAR, frame[:1])[0]
+
+        if version is not _V0:
+            raise FProtocolException(
+                FProtocolException.BAD_VERSION,
+                "Wrong Frugal version. Found {0}, wanted {1}."
+                .format(version, _V0))
+
+        headers_size = unpack_from('!I', frame[1:5])[0]
+        return _Headers._read_pairs(frame, 5, headers_size + 5)
+
+    @staticmethod
+    def _read_pairs(buff, start, end):
+        parsed_headers = {}
+        i = start
+        while i < end:
+            name_size = unpack_from(_UINT, buff[i:i + 4])[0]
+            i += 4
+
+            if i > end or i + name_size > end:
+                raise FProtocolException(FProtocolException.INVALID_DATA,
+                                         "invalid protocol header name")
+            name = unpack_from('>{0}s'.format(name_size),
+                               buff[i:i + name_size])[0]
+            i += name_size
+
+            val_size = unpack_from(_UINT, buff[i: i + 4])[0]
+            i += 4
+
+            if i > end or i + val_size > end:
+                raise FProtocolException(FProtocolException.INVALID_DATA,
+                                         "invalid protocol header value")
+
+            val = unpack_from('>{0}s'.format(val_size), buff[i:i + val_size])[0]
+            i += val_size
+            print("putting key {0} val {1}".format(name, val))
+            parsed_headers[name] = val
+
+        return parsed_headers
+
 

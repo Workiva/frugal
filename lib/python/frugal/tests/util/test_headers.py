@@ -1,6 +1,8 @@
 import unittest
+from struct import unpack_from
 
 from frugal.context import FContext
+from frugal.exceptions import FProtocolException
 from frugal.util.headers import _Headers
 
 
@@ -37,3 +39,67 @@ class TestHeaders(unittest.TestCase):
         self.assertEquals(expected["_opid"], actual["_opid"])
         self.assertEquals(expected["_cid"], actual["_cid"])
         self.assertEquals(expected["foo"], actual["foo"])
+
+    def test_decode_from_frame_throws_fprotocol_exception_frame_too_short(self):
+
+        frame = b'\x00'
+
+        try:
+            self.headers.decode_from_frame(frame)
+            self.fail()
+        except FProtocolException as ex:
+            self.assertEquals(FProtocolException.INVALID_DATA, ex.type)
+            self.assertEquals("Invalid frame size: 1", ex.message)
+
+    def test_decode_from_frame_throws_bad_version(self):
+
+        frame = b'\x01\x00\x00\x00'
+
+        try:
+            self.headers.decode_from_frame(frame)
+            self.fail()
+        except FProtocolException as ex:
+            self.assertEquals(FProtocolException.BAD_VERSION, ex.type)
+            self.assertEquals("Wrong Frugal version. Found 1, wanted 0.",
+                              ex.message)
+
+    def test_decode_from_frame_reads_pairs(self):
+        buff = b'\x00\x00\x00\x00 \x00\x00\x00\x05_opid\x00\x00\x00\x010\x00\x00\x00\x04_cid\x00\x00\x00\x06corrId'
+
+        headers = self.headers.decode_from_frame(buff)
+
+        self.assertEquals("0", headers["_opid"])
+        self.assertEquals("corrId", headers["_cid"])
+
+    def test_read_pairs(self):
+        buff = b'\x00\x00\x00\x00 \x00\x00\x00\x05_opid\x00\x00\x00\x010\x00\x00\x00\x04_cid\x00\x00\x00\x06corrId'
+        size = unpack_from('!I', buff[1:5])[0]
+        print("size {}".format(size))
+
+        headers = self.headers._read_pairs(buff, 5, size + 5)
+
+        self.assertEquals("0", headers["_opid"])
+        self.assertEquals("corrId", headers["_cid"])
+
+    def test_read_pars_bad_key_throws_error(self):
+        buff = b'\x00\x00\x00\x00 \x00\x00\x00\x20_opid\x00\x00\x00\x010\x00\x00\x00\x04_cid\x00\x00\x00\x06corrId'
+        size = unpack_from('!I', buff[1:5])[0]
+        print("size {}".format(size))
+
+        try:
+            self.headers._read_pairs(buff, 5, size + 5)
+        except FProtocolException as ex:
+            self.assertEquals(FProtocolException.INVALID_DATA, ex.type)
+            self.assertEquals("invalid protocol header name", ex.message)
+
+    def test_read_pars_bad_value_throws(self):
+        buff = b'\x00\x00\x00\x00 \x00\x00\x00\x05_opid\x00\x00\x00\x200\x00\x00\x00\x04_cid\x00\x00\x00\x06corrId'
+        size = unpack_from('!I', buff[1:5])[0]
+        print("size {}".format(size))
+
+        try:
+            self.headers._read_pairs(buff, 5, size + 5)
+        except FProtocolException as ex:
+            self.assertEquals(FProtocolException.INVALID_DATA, ex.type)
+            self.assertEquals("invalid protocol header value", ex.message)
+
