@@ -23,3 +23,17 @@ class TestHeaders(unittest.TestCase):
 
         self.assertEquals("0", headers["_opid"])
         self.assertEquals("corrId", headers["_cid"])
+
+    def test_write_read(self):
+        context = FContext("corrId")
+        context.set_request_header("foo", "bar")
+
+        expected = context.get_request_headers()
+
+        buff = self.headers._write_to_bytearray(expected)
+
+        actual = self.headers._read(buff)
+
+        self.assertEquals(expected["_opid"], actual["_opid"])
+        self.assertEquals(expected["_cid"], actual["_cid"])
+        self.assertEquals(expected["foo"], actual["foo"])

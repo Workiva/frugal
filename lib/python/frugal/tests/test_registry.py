@@ -20,9 +20,12 @@ class TestClientRegistry(unittest.TestCase):
         context = FContext("fooid")
         context._set_op_id(0)
         callback = self.fake_callback
+
         registry.register(context, callback)
-        self.assertRaises(FException,
-                          registry.register, context, callback)
+        try:
+            registry.register(context, callback)
+        except FException as ex:
+            self.assertEquals("context already registered", ex.message)
 
     def test_unregister(self):
         registry = FClientRegistry()

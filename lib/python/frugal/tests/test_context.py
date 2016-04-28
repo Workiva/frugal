@@ -1,7 +1,7 @@
 import unittest
 import mock
 
-from frugal.context import FContext
+from frugal.context import FContext, _DEFAULT_TIMEOUT
 from frugal.exceptions import FContextHeaderException
 
 
@@ -12,6 +12,11 @@ class TestContext(unittest.TestCase):
     def test_correlation_id(self):
         context = FContext("fooid")
         self.assertEqual("fooid", context.get_correlation_id())
+        self.assertEqual(_DEFAULT_TIMEOUT, context.get_timeout())
+
+    def test_timeout(self):
+        context = FContext("fooid", 123)
+        self.assertEqual(123, context.get_timeout())
 
     def test_op_id(self):
         context = FContext(self.correlation_id)

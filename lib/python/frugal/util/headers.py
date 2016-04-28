@@ -1,13 +1,13 @@
-from struct import pack_into, unpack_from
+from struct import pack_into, unpack_from, unpack
 
 from frugal.exceptions import FrugalVersionException
 
 
 _V0 = 0
 # Code for big endian unsigned char
-_UCHAR = '>B'
+_UCHAR = '!B'
 # Code for big endian unsigned int
-_UINT = '>I'
+_UINT = '!I'
 _UINT_LENGTH = 4
 
 
@@ -55,25 +55,29 @@ class _Headers(object):
     @staticmethod
     def _read(buff):
         parsed_headers = {}
-        version = unpack_from(_UCHAR, buff, 0)[0]
-        print("version: {}".format(version))
+        version = unpack_from(_UCHAR, buff[:1])[0]
+        print("VERSION: {}".format(version))
         if version is not _V0:
             raise FrugalVersionException(
                 "Wrong Frugal version.  Found version {0}.  Wanted version {1}"
                 .format(version, _V0))
 
-        size = unpack_from(_UINT, buff, 1)[0]
+        size = unpack_from(_UINT, buff[1:5])[0]
+        print("SIZE: {}".format(size))
 
         offset = 5  # since size is 4 bytes
 
         while offset < size:
-            key_size = unpack_from(_UINT, buff, offset)[0]
+            key_size = unpack_from(_UINT, buff[offset:offset + 4])[0]
+            print("key_size: {}".format(key_size))
             offset += 4
 
             # TODO: Check bounds.
 
-            key = unpack_from('>{0}s'.format(key_size), buff, offset)[0]
-            offset += len(key)
+            key = unpack_from('>{0}s'.format(key_size), buff[offset:offset+key_size])[0]
+            offset += key_size
+
+            print("read key {}".format(key))
 
             # TODO: Check bounds.
 
@@ -83,7 +87,8 @@ class _Headers(object):
             # TODO: Check bounds.
 
             val = unpack_from('>{0}s'.format(val_size), buff, offset)[0]
-            offset += len(val)
+            offset += val_size
+            print("read key {}, val {}".format(key, val))
             parsed_headers[key] = val
 
         return parsed_headers

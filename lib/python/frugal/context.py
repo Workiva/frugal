@@ -21,8 +21,6 @@ class FContext(object):
         self._request_headers = {}
         self._response_headers = {}
 
-        if not timeout:
-            timeout = _DEFAULT_TIMEOUT
         self._timeout = timeout
 
         if not correlation_id:
@@ -108,8 +106,7 @@ class FContext(object):
         return self._timeout
 
     def set_timeout(self, timeout):
-        if not timeout:
-            timeout = _DEFAULT_TIMEOUT
+        # TODO: check the type of timeout
         self._timeout = timeout
 
     def _check_string(self, string):
