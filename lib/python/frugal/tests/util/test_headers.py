@@ -40,6 +40,9 @@ class TestHeaders(unittest.TestCase):
         self.assertEquals(expected["_cid"], actual["_cid"])
         self.assertEquals(expected["foo"], actual["foo"])
 
+    def test_read(self):
+        pass
+
     def test_decode_from_frame_throws_fprotocol_exception_frame_too_short(self):
 
         frame = b'\x00'
@@ -53,7 +56,7 @@ class TestHeaders(unittest.TestCase):
 
     def test_decode_from_frame_throws_bad_version(self):
 
-        frame = b'\x01\x00\x00\x00'
+        frame = b'\x01\x00\x00\x00\x00'
 
         try:
             self.headers.decode_from_frame(frame)

@@ -1,5 +1,6 @@
 import json
 import logging
+import base64
 from datetime import timedelta
 import struct
 from threading import Lock
@@ -98,9 +99,6 @@ class TNatsServiceTransport(TTransportBase):
             logger.debug("Received DISCONNECT from Frugal server.")
             self.close()
         else:
-            # TODO call some function that will eventually execute frame
-            logger.debug("Message from server: subject: {0}, data: {1}"
-                         .format(msg.subject, msg.data))
             self._execute(msg.data)
 
     @gen.coroutine

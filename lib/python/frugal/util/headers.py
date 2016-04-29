@@ -90,9 +90,20 @@ class _Headers(object):
         return parsed_headers
 
     @staticmethod
+    def read(transport):
+        """ Read frugal frame from TTranpsort
+
+        Args:
+            transport: TTransport containing frugal frame
+        """
+        #buff = transport.readAll(4)
+        #frugal_frame_size = unpack(!I, buff)
+        pass
+
+    @staticmethod
     def decode_from_frame(frame):
         frame_length = len(frame)
-        if frame_length < 4:
+        if frame_length < 5:
             raise FProtocolException(
                 FProtocolException.INVALID_DATA,
                 "Invalid frame size: {}".format(frame_length)
