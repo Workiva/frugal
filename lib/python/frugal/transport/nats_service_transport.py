@@ -1,6 +1,5 @@
 import json
 import logging
-import base64
 from datetime import timedelta
 import struct
 from threading import Lock
@@ -99,7 +98,8 @@ class TNatsServiceTransport(TTransportBase):
             logger.debug("Received DISCONNECT from Frugal server.")
             self.close()
         else:
-            self._execute(msg.data)
+            wrapped = bytearray(msg.data)
+            self._execute(wrapped)
 
     @gen.coroutine
     def _handshake(self):
@@ -112,9 +112,8 @@ class TNatsServiceTransport(TTransportBase):
         yield self._nats_client.publish_request(self._connection_subject,
                                                 inbox,
                                                 handshake)
-        # TODO replace hardcoded time
-        msg = yield gen.with_timeout(
-            timedelta(milliseconds=30000), future)
+        timeout = timedelta(milliseconds=self._connection_timeout)
+        msg = yield gen.with_timeout(timeout, future)
 
         subjects = msg.data.split()
         if len(subjects) != 3:

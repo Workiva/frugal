@@ -106,7 +106,7 @@ class FClientRegistry(FRegistry):
         context._set_op_id(op_id)
 
         with self._handlers_lock:
-            self._handlers[op_id] = callback
+            self._handlers[str(op_id)] = callback
 
     def unregister(self, context):
         """Unregister the callback for a given FContext.
@@ -115,7 +115,7 @@ class FClientRegistry(FRegistry):
             context: FContext to unregister.
         """
         with self._handlers_lock:
-            self._handlers.pop(context._get_op_id(), None)
+            self._handlers.pop(str(context._get_op_id()), None)
 
     def execute(self, frame):
         """Dispatch a single Frugal message frame.
@@ -123,11 +123,10 @@ class FClientRegistry(FRegistry):
         Args:
             frame: an entire Frugal message frame.
         """
-        print("frame {}".format(frame))
-        headers = _Headers._read(frame)
+        headers = _Headers.decode_from_frame(frame)
         op_id = headers[_OP_ID]
 
-        self._handlers[op_id](TMemoryBuffer(frame))
+        self._handlers[op_id](TMemoryBuffer(frame[4:]))
 
     def _increment_and_get_next_op_id(self):
         with self._opid_lock:

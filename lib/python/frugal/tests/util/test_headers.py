@@ -1,4 +1,6 @@
 import unittest
+import mock
+from io import BytesIO
 from struct import unpack_from
 
 from frugal.context import FContext
@@ -21,7 +23,7 @@ class TestHeaders(unittest.TestCase):
     def test_read(self):
         buff = '\x00\x00\x00\x00 \x00\x00\x00\x05_opid\x00\x00\x00\x010\x00\x00\x00\x04_cid\x00\x00\x00\x06corrId'
 
-        headers = self.headers._read(buff)
+        headers = self.headers._read(BytesIO(buff))
 
         self.assertEquals("0", headers["_opid"])
         self.assertEquals("corrId", headers["_cid"])
@@ -34,14 +36,16 @@ class TestHeaders(unittest.TestCase):
 
         buff = self.headers._write_to_bytearray(expected)
 
-        actual = self.headers._read(buff)
+        actual = self.headers._read(BytesIO(buff))
 
         self.assertEquals(expected["_opid"], actual["_opid"])
         self.assertEquals(expected["_cid"], actual["_cid"])
         self.assertEquals(expected["foo"], actual["foo"])
 
-    def test_read(self):
-        pass
+    def test_read_from_transport(self):
+       transport = mock.Mock()
+
+       self.headers.read(transport)
 
     def test_decode_from_frame_throws_fprotocol_exception_frame_too_short(self):
 
@@ -56,7 +60,7 @@ class TestHeaders(unittest.TestCase):
 
     def test_decode_from_frame_throws_bad_version(self):
 
-        frame = b'\x01\x00\x00\x00\x00'
+        frame = b'\x00\x00\x00\x00\x01\x00\x00\x00\x00'
 
         try:
             self.headers.decode_from_frame(frame)
@@ -67,7 +71,7 @@ class TestHeaders(unittest.TestCase):
                               ex.message)
 
     def test_decode_from_frame_reads_pairs(self):
-        buff = b'\x00\x00\x00\x00 \x00\x00\x00\x05_opid\x00\x00\x00\x010\x00\x00\x00\x04_cid\x00\x00\x00\x06corrId'
+        buff = b'\x00\x00\x00\x00\x00\x00\x00\x00 \x00\x00\x00\x05_opid\x00\x00\x00\x010\x00\x00\x00\x04_cid\x00\x00\x00\x06corrId'
 
         headers = self.headers.decode_from_frame(buff)
 
@@ -93,10 +97,10 @@ class TestHeaders(unittest.TestCase):
             self.headers._read_pairs(buff, 5, size + 5)
         except FProtocolException as ex:
             self.assertEquals(FProtocolException.INVALID_DATA, ex.type)
-            self.assertEquals("invalid protocol header name", ex.message)
+            self.assertEquals("invalid protocol header name size: 32", ex.message)
 
     def test_read_pars_bad_value_throws(self):
-        buff = b'\x00\x00\x00\x00 \x00\x00\x00\x05_opid\x00\x00\x00\x200\x00\x00\x00\x04_cid\x00\x00\x00\x06corrId'
+        buff = b'\x00\x00\x00\x00 \x00\x00\x00\x05_opid\x00\x00\x01\x000\x00\x00\x00\x04_cid\x00\x00\x00\x06corrId'
         size = unpack_from('!I', buff[1:5])[0]
         print("size {}".format(size))
 
@@ -104,5 +108,6 @@ class TestHeaders(unittest.TestCase):
             self.headers._read_pairs(buff, 5, size + 5)
         except FProtocolException as ex:
             self.assertEquals(FProtocolException.INVALID_DATA, ex.type)
-            self.assertEquals("invalid protocol header value", ex.message)
+            self.assertEquals("invalid protocol header value size: 256",
+                              ex.message)
 

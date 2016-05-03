@@ -53,27 +53,23 @@ class _Headers(object):
         return buff
 
     @staticmethod
-    def _read(buff):
+    def _read(buff1):
+        buff = buff1.getvalue()
         parsed_headers = {}
         version = unpack_from(_UCHAR, buff[:1])[0]
-        print("VERSION: {}".format(version))
 
         size = unpack_from(_UINT, buff[1:5])[0]
-        print("SIZE: {}".format(size))
 
         offset = 5  # since size is 4 bytes
 
         while offset < size:
             key_size = unpack_from(_UINT, buff[offset:offset + 4])[0]
-            print("key_size: {}".format(key_size))
             offset += 4
 
             # TODO: Check bounds.
 
             key = unpack_from('>{0}s'.format(key_size), buff[offset:offset+key_size])[0]
             offset += key_size
-
-            print("read key {}".format(key))
 
             # TODO: Check bounds.
 
@@ -102,14 +98,17 @@ class _Headers(object):
 
     @staticmethod
     def decode_from_frame(frame):
-        frame_length = len(frame)
-        if frame_length < 5:
+        if len(frame) < 5:
             raise FProtocolException(
                 FProtocolException.INVALID_DATA,
-                "Invalid frame size: {}".format(frame_length)
+                "Invalid frame size: {}".format(len(frame))
             )
 
-        version = unpack_from(_UCHAR, frame[:1])[0]
+        entire_frame_length = unpack_from('!I', frame[:4])[0]
+        print("frame full length: {}".format(entire_frame_length))
+
+        version = unpack_from(_UCHAR, frame[4:5])[0]
+        print("version : {}".format(version))
 
         if version is not _V0:
             raise FProtocolException(
@@ -117,8 +116,9 @@ class _Headers(object):
                 "Wrong Frugal version. Found {0}, wanted {1}."
                 .format(version, _V0))
 
-        headers_size = unpack_from('!I', frame[1:5])[0]
-        return _Headers._read_pairs(frame, 5, headers_size + 5)
+        headers_size = unpack_from('!I', frame[5:9])[0]
+
+        return _Headers._read_pairs(frame, 9, headers_size + 9)
 
     @staticmethod
     def _read_pairs(buff, start, end):
@@ -130,7 +130,9 @@ class _Headers(object):
 
             if i > end or i + name_size > end:
                 raise FProtocolException(FProtocolException.INVALID_DATA,
-                                         "invalid protocol header name")
+                                         "invalid protocol header name size: {}"
+                                         .format(name_size))
+
             name = unpack_from('>{0}s'.format(name_size),
                                buff[i:i + name_size])[0]
             i += name_size
@@ -139,8 +141,10 @@ class _Headers(object):
             i += 4
 
             if i > end or i + val_size > end:
-                raise FProtocolException(FProtocolException.INVALID_DATA,
-                                         "invalid protocol header value")
+                raise FProtocolException(
+                    FProtocolException.INVALID_DATA,
+                    "invalid protocol header value size: {}".format(val_size)
+                )
 
             val = unpack_from('>{0}s'.format(val_size), buff[i:i + val_size])[0]
             i += val_size

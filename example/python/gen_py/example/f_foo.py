@@ -67,7 +67,7 @@ class Client(f_base_foo.Client, Iface):
     def blah(self, context, num, Str, event):
         future = concurrent.Future()
         print("calling blah")
-        self.send_blah(context, num, Str, event)
+        self.send_blah(context, future, num, Str, event)
         return future
 
     def send_ping(self, context, future):
@@ -81,9 +81,26 @@ class Client(f_base_foo.Client, Iface):
             oprot.writeMessageEnd()
             oprot.get_transport().flush()
 
-    def send_blah(self, context, num, Str, event):
+    def recv_ping(self, context, future):
+        def ping_callback(transport):
+            iprot = self._protocol_factory.get_protocol(transport)
+            ctx = iprot.read_response_headers(context)
+            (fname, mtype, fid) = iprot.readMessageBegin()
+            if mtype == TMessageType.EXCEPTION:
+                x = TApplicationException()
+                x.read(iprot)
+                iprot.readMessageEnd()
+                raise x
+            print("Received a ping response")
+            result = ping_result()
+            result.read(iprot)
+            iprot.readMessageEnd()
+            raise gen.Return(ctx)
+        return ping_callback
+
+    def send_blah(self, context, future, num, Str, event):
         oprot = self._oprot
-        self._transport.register(context, self.recv_blah)
+        self._transport.register(context, self.recv_blah(context, future))
         with self._write_lock:
             oprot.write_request_headers(context)
             oprot.writeMessageBegin('blah', TMessageType.CALL, 0)
@@ -95,44 +112,28 @@ class Client(f_base_foo.Client, Iface):
             oprot.writeMessageEnd()
             oprot.get_transport().flush()
 
-    def recv_blah(self, context, iprot, mtype, rseqid):
-        if mtype == TMessageType.EXCEPTION:
-            x = TApplicationException()
-            x.read(iprot)
-            iprot.readMessageEnd()
-            raise x
-        result = blah_result()
-        result.read(iprot)
-        iprot.readMessageEnd()
-        if result.success is not None:
-            return result.success
-        if result.awe is not None:
-            raise result.awe
-        if result.api is not None:
-            raise result.api
-        raise TApplicationException(TApplicationException.MISSING_RESULT,
-                                    "blah failed: unknown result")
-
-    def recv_ping(self, context, future):
-        def callback(transport):
-            print(transport.getvalue())
+    def recv_blah(self, context, future):
+        def blah_callback(transport):
             iprot = self._protocol_factory.get_protocol(transport)
             ctx = iprot.read_response_headers(context)
-            for key, value in ctx.get_response_headers().iteritems():
-                print("key {} val {}".format(key, value))
             (fname, mtype, fid) = iprot.readMessageBegin()
-            print("mtype: {}".format(mtype))
             if mtype == TMessageType.EXCEPTION:
                 x = TApplicationException()
                 x.read(iprot)
                 iprot.readMessageEnd()
                 raise x
-            print("Received a ping response")
-            result = ping_result()
+            result = blah_result()
             result.read(iprot)
             iprot.readMessageEnd()
-            raise gen.Return()
-        return callback
+            if result.success is not None:
+                return result.success
+            if result.awe is not None:
+                raise result.awe
+            if result.api is not None:
+                raise result.api
+            raise TApplicationException(TApplicationException.MISSING_RESULT,
+                                        "blah failed: unknown result")
+        return blah_callback
 
 
 class ping_args(object):
