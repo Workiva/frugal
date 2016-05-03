@@ -68,7 +68,12 @@ public class Main {
     private static void runServer(Connection conn, FTransportFactory transportFactory, FProtocolFactory protocolFactory) throws TException {
         FFoo.Iface handler = new FooHandler();
         FFoo.Processor processor = new FFoo.Processor(handler, new LoggingMiddleware());
-        FServer server = new FNatsServer(conn, "foo", 20 * 1000, 2, new FProcessorFactory(processor), transportFactory, protocolFactory);
+        FProcessorFactory processorFactory = new FProcessorFactory(processor);
+        String subject = "foo";
+        int heartbeatInterval = 20 * 1000;
+        int maxMissedHeartbeats = 2;
+
+        FServer server = new FNatsServer(conn, subject, heartbeatInterval, maxMissedHeartbeats, processorFactory, transportFactory, protocolFactory);
         System.out.println("Starting nats server on 'foo'");
         server.serve();
     }

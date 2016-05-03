@@ -72,11 +72,9 @@ class FServerRegistry(FRegistry):
         Args:
             frame: an entire Frugal message frame.
         """
-        tr = TMemoryBuffer(frame)
-        self._processor.process(
-            self._inputProtocolFactory.get_protocol(tr),
-            self._outputProtocol
-        )
+        wrapped_transport = TMemoryBuffer(frame)
+        iprot = self._inputProtocolFactory.get_protocol(wrapped_transport)
+        self._processor.process(iprot, self._outputProtocol)
 
 
 class FClientRegistry(FRegistry):

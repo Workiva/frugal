@@ -5,6 +5,7 @@ from tornado import concurrent, gen
 from gen_py.base import f_base_foo
 
 from frugal.registry import FClientRegistry
+from frugal.processor.processor import FProcessor
 from thrift.Thrift import TType, TMessageType, TApplicationException
 
 from .ttypes import Event, AwesomeException
@@ -115,7 +116,7 @@ class Client(f_base_foo.Client, Iface):
     def recv_blah(self, context, future):
         def blah_callback(transport):
             iprot = self._protocol_factory.get_protocol(transport)
-            ctx = iprot.read_response_headers(context)
+            iprot.read_response_headers(context)
             (fname, mtype, fid) = iprot.readMessageBegin()
             if mtype == TMessageType.EXCEPTION:
                 x = TApplicationException()
@@ -131,10 +132,76 @@ class Client(f_base_foo.Client, Iface):
                 raise result.awe
             if result.api is not None:
                 raise result.api
-            raise TApplicationException(TApplicationException.MISSING_RESULT,
-                                        "blah failed: unknown result")
+            raise TApplicationException(
+                TApplicationException.MISSING_RESULT,
+                "blah failed: unknown result"
+            )
+
         return blah_callback
 
+
+class Processor(f_base_foo.Processor, Iface, FProcessor):
+
+    def __init__(self, handler):
+        f_base_foo.Processor.__init__(self, handler)
+        self._process_map["ping"] = Processor.process_ping
+        self._process_map["blah"] = Processor.process_blah
+        self._process_map["oneWay"] = Processor.process_oneWay
+
+    def process(self, context, iprot, oprot):
+        (name, type, seqid) = iprot.readMessageBegin()
+        if name not in self._process_map:
+            iprot.skip(TType.STRUCT)
+            iprot.readMessageEnd()
+            x = TApplicationException(TApplicationException.UNKNOWN_METHOD,
+                                      "Unknown function {}".format(name))
+            oprot.writeMessageBegin(name, TMessageType.EXCEPTION, seqid)
+            x.write(oprot)
+            oprot.writeMessageEnd()
+            oprot.get_transport().flush()
+            return
+        else:
+            return self._process_map[name](self, context, iprot, oprot)
+
+    @gen.coroutine
+    def process_ping(self, context, iprot, oprot):
+        args = ping_args()
+        args.read(iprot)
+        iprot.readMessageEnd()
+        result = ping_result()
+        yield gen.maybe_future(self._handler.ping())
+        oprot.writeMessageBegin("ping", TMessageType.REPLY, 0)
+        result.write(oprot)
+        oprot.writeMessageEnd()
+        oprot.get_transport().flush()
+
+    @gen.coroutine
+    def process_blah(self, context, iprot, oprot):
+        args = blah_args()
+        args.read(iprot)
+        iprot.readMessageEnd()
+        result = blah_result()
+        try:
+            result.success = yield gen.maybe_future(
+                self._handler.blah(context, args.num, args.Str, args.event)
+            )
+        except AwesomeException as awe:
+            result.awe = awe
+        except api_exception as api:
+            result.api = api
+        oprot.writeMessageBegin("blah", TMessageType.REPLY, 0)
+        result.write(oprot)
+        oprot.writeMessageEnd()
+        oprot.get_transport().flush()
+
+    @gen.coroutine
+    def process_oneWay(self, context, iprot, oprot):
+        args = one_way_args()
+        args.read(iprot)
+        iprot.readMessageEnd()
+        yield gen.maybe_future(self._handler.one_way(context,
+                                                     args.id,
+                                                     args.req))
 
 class ping_args(object):
 

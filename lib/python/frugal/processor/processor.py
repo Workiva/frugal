@@ -17,7 +17,7 @@ class FProcessor(object):
 
 class FBaseProcessor(FProcessor):
 
-    def __init__(self, processor_function_map):
+    def __init__(self, processor_function_map={}):
         """ Create new instance of FBaseProcessor that will process requests
 
         Args:
@@ -40,9 +40,9 @@ class FBaseProcessor(FProcessor):
         """
 
         context = iprot.read_request_header()
-        message = iprot.readMessageBegin()
+        (name, type, seqid) = iprot.readMessageBegin()
 
-        processor_function = self._processor_function_map.get(message.name)
+        processor_function = self._processor_function_map.get(name)
 
         # If the function was in our dict, call it
         if processor_function:
@@ -53,11 +53,11 @@ class FBaseProcessor(FProcessor):
         iprot.readMessageEnd()
 
         ex = TApplicationException(TApplicationException.UNKNOWN_METHOD,
-                                   "Unknown function: {0}".format(message.name))
+                                   "Unknown function: {0}".format(name))
 
         with self._write_lock:
             oprot.write_response_headers(context)
-            oprot.writeMessageBegin(message.name, TMessageType.EXCEPTION, 0)
+            oprot.writeMessageBegin(name, TMessageType.EXCEPTION, 0)
 
             ex.write(oprot)
             oprot.writeMessageEnd()

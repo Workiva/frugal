@@ -50,6 +50,12 @@ class FProtocol(TProtocolBase, object):
         return context
 
     def read_response_headers(self, context):
+        """Read the response headers from the underlying transport and set them
+        on a given FContext
+
+        Returns:
+            FContext
+        """
         headers = _Headers._read(self.get_transport())
 
         for key, value in headers.iteritems():
