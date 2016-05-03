@@ -8,7 +8,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-// FSimpleServer is a simple, single-threaded FServer.
+// FSimpleServer is a simple FServer which starts a goroutine for each
+// connection.
 type FSimpleServer struct {
 	quit             chan struct{}
 	processorFactory FProcessorFactory
@@ -19,6 +20,10 @@ type FSimpleServer struct {
 	waterMu          sync.RWMutex
 }
 
+// NewFSimpleServerFactory5 creates a new FSimpleServer which is a simple
+// FServer that starts a goroutine for each connection.
+//
+// TODO 2.0.0: Rename this to NewFSimpleServerFactory4 in a major release.
 func NewFSimpleServerFactory5(
 	processorFactory FProcessorFactory,
 	serverTransport thrift.TServerTransport,
@@ -35,10 +40,16 @@ func NewFSimpleServerFactory5(
 	}
 }
 
+// Listen should not be called directly.
+//
+// TODO 2.0.0: Unexport this in a major release.
 func (p *FSimpleServer) Listen() error {
 	return p.serverTransport.Listen()
 }
 
+// AcceptLoop should not be called directly.
+//
+// TODO 2.0.0: Unexport this in a major release.
 func (p *FSimpleServer) AcceptLoop() error {
 	for {
 		client, err := p.serverTransport.Accept()
@@ -62,8 +73,7 @@ func (p *FSimpleServer) AcceptLoop() error {
 
 // Serve starts the server.
 func (p *FSimpleServer) Serve() error {
-	err := p.Listen()
-	if err != nil {
+	if err := p.Listen(); err != nil {
 		return err
 	}
 	p.AcceptLoop()

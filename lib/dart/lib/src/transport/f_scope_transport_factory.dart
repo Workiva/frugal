@@ -1,6 +1,7 @@
 part of frugal;
 
-/// Responsible for creating new FScopeTransport
+/// FScopeTransportFactory produces FScopeTransports and is typically used by
+/// an FScopeProvider.
 abstract class FScopeTransportFactory {
   FScopeTransport getTransport();
 }

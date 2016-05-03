@@ -4,8 +4,8 @@ import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.transport.FTransport;
 
 /**
- * FServiceProviders produce FTransports and FProtocolFactories for
- * use with Frugal service clients.
+ * FServiceProvider is the service equivalent of FScopeProvider. It produces
+ * FTransports and FProtocols for use by RPC service clients.
  */
 public class FServiceProvider {
 

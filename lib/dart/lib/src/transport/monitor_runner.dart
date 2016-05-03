@@ -5,8 +5,16 @@ class MonitorRunner {
   final Logger log = new Logger('FTransportMonitor');
   FTransportMonitor _monitor;
   TTransport _transport;
+  int _attempts = 0;
+  int _wait = 0;
+  bool _failed = false;
+  Completer _reopenCompleter;
+  Timer _reopenTimer;
 
   MonitorRunner(this._monitor, this._transport);
+
+  /// Indicates if the monitor is waiting to run or gave up.
+  bool get _sleeping => (_reopenTimer != null || _failed);
 
   Future onClose(cause) async {
     if (cause == null) {
@@ -16,43 +24,74 @@ class MonitorRunner {
     }
   }
 
+  void signalOpen() {
+    if (_sleeping) _signalOpen();
+  }
+
+  void _signalOpen() {
+    log.log(Level.INFO, 'successfully reopened transport');
+    _stop();
+    _monitor.onReopenSucceeded();
+    return;
+  }
+
+  void _stop({bool failed: false}) {
+    _attempts = 0;
+    _wait = 0;
+    _failed = failed;
+    _reopenCompleter?.complete();
+    _reopenCompleter = null;
+    _reopenTimer?.cancel();
+    _reopenTimer = null;
+  }
+
   void _handleCleanClose() {
-    log.info('transport was closed cleanly');
+    log.log(Level.INFO, 'transport was closed cleanly');
     _monitor.onClosedCleanly();
   }
 
   Future _handleUncleanClose(cause) async {
-    log.warning('transport was closed uncleanly because: $cause');
-    int wait = _monitor.onClosedUncleanly(cause);
-    if (wait < 0) {
-      log.warning('instructed not to reopen');
+    if (_reopenCompleter != null) {
+      // TODO: Should we reset _attemps/_wait? Or does this indicate something
+      // bigger is wrong?
+      log.log(Level.WARNING, 'received multiple unclean close calls!');
       return;
     }
-    await _attemptReopen(wait);
+
+    log.log(Level.WARNING, 'transport was closed uncleanly because: $cause');
+    _wait = _monitor.onClosedUncleanly(cause);
+    if (_wait < 0) {
+      log.log(Level.WARNING, 'instructed not to reopen');
+      _stop(failed: true);
+      return;
+    }
+    _reopenCompleter = new Completer();
+    _startReopenTimer();
+    await _reopenCompleter.future;
   }
 
-  Future _attemptReopen(int initialWait) async {
-    int wait = initialWait;
-    int prevAttempts = 0;
+  void _startReopenTimer() {
+    log.log(Level.INFO, 'attempting to reopen after $_wait ms');
+    _reopenTimer = new Timer(new Duration(milliseconds: _wait), _attemptReopen);
+  }
 
-    while (wait >= 0) {
-      log.info('attemptying to reopen after $wait ms');
-      await new Future.delayed(new Duration(milliseconds: wait));
-
-      try {
-        await _transport.open();
-      } on TTransportError catch (e) {
-        log.warning('failed to reopen transport due to: $e');
-        prevAttempts++;
-        wait = _monitor.onReopenFailed(prevAttempts, wait);
-        continue;
+  Future _attemptReopen() async {
+    // Not sleeping anymore.
+    _reopenTimer = null;
+    try {
+      await _transport.open();
+      _signalOpen();
+    } catch (e) {
+      log.log(Level.WARNING, 'failed to reopen transport due to: $e');
+      _attempts++;
+      _wait = _monitor.onReopenFailed(_attempts, _wait);
+      if (_wait >= 0) {
+        _startReopenTimer();
+        return;
       }
-
-      log.info('successfully reopened transport');
-      _monitor.onReopenSucceeded();
-      return;
+      _stop(failed: true);
+      log.log(Level.WARNING,
+          'ReopenFailed callback instructed not to reopen, terminating');
     }
-
-    log.warning('ReopenFailed callback instructed not to reopen, terminating');
   }
 }

@@ -27,13 +27,15 @@ var ErrTransportClosed = errors.New("frugal: transport was unexpectedly closed")
 var ErrTooLarge = thrift.NewTTransportException(REQUEST_TOO_LARGE,
 	"request was too large for the transport")
 
-// FScopeTransportFactory produces FScopeTransports which are used by pub/sub
-// scopes.
+// FScopeTransportFactory produces FScopeTransports and is typically used by an
+// FScopeProvider.
 type FScopeTransportFactory interface {
 	GetTransport() FScopeTransport
 }
 
-// FScopeTransport is a TTransport extension for pub/sub scopes.
+// FScopeTransport extends Thrift's TTransport and is used exclusively for
+// pub/sub scopes. Subscribers use an FScopeTransport to subscribe to a pub/sub
+// topic. Publishers use it to publish to a topic.
 type FScopeTransport interface {
 	thrift.TTransport
 
@@ -54,7 +56,19 @@ type FScopeTransport interface {
 	DiscardFrame()
 }
 
-// FTransport is a TTransport for services.
+// FTransport is Frugal's equivalent of Thrift's TTransport. FTransport extends
+// TTransport and exposes some additional methods. An FTransport typically has
+// an FRegistry, so it provides methods for setting the FRegistry and
+// registering and unregistering an FAsyncCallback to an FContext. It also
+// allows a way for setting an FTransportMonitor and a high-water mark provided
+// by an FServer.
+//
+// FTransport wraps a TTransport, meaning all existing TTransport
+// implementations will work in Frugal. However, all FTransports must used a
+// framed protocol, typically implemented by wrapping a TFramedTransport.
+//
+// Most Frugal language libraries include an FMuxTransport implementation,
+// which uses a worker pool to handle messages in parallel.
 type FTransport interface {
 	thrift.TTransport
 
@@ -80,7 +94,7 @@ type FTransport interface {
 	SetHighWatermark(watermark time.Duration)
 }
 
-// FTransportFactory produces FTransports which are used by services.
+// FTransportFactory produces FTransports by wrapping a provided TTransport.
 type FTransportFactory interface {
 	GetTransport(tr thrift.TTransport) FTransport
 }
@@ -203,36 +217,37 @@ func (f *fMuxTransport) Open() error {
 		}
 	}
 
-	go func() {
-		for {
-			frame, err := f.readFrame()
-			if err != nil {
-				defer f.close(err)
-				if err, ok := err.(thrift.TTransportException); ok && err.TypeId() == thrift.END_OF_FILE {
-					// EOF indicates remote peer disconnected.
-					return
-				}
-				if !f.IsOpen() {
-					// Indicates the transport was closed.
-					return
-				}
-				log.Error("frugal: error reading protocol frame, closing transport:", err)
-				return
-			}
-
-			select {
-			case f.workC <- &frameWrapper{frameBytes: frame, timestamp: time.Now()}:
-			case <-f.closedChan():
-				return
-			}
-		}
-	}()
-
+	go f.readLoop()
 	f.startWorkers()
 
 	f.open = true
 	log.Debug("frugal: transport opened")
 	return nil
+}
+
+func (f *fMuxTransport) readLoop() {
+	for {
+		frame, err := f.readFrame()
+		if err != nil {
+			defer f.close(err)
+			if err, ok := err.(thrift.TTransportException); ok && err.TypeId() == thrift.END_OF_FILE {
+				// EOF indicates remote peer disconnected.
+				return
+			}
+			if !f.IsOpen() {
+				// Indicates the transport was closed.
+				return
+			}
+			log.Error("frugal: error reading protocol frame, closing transport:", err)
+			return
+		}
+
+		select {
+		case f.workC <- &frameWrapper{frameBytes: frame, timestamp: time.Now()}:
+		case <-f.closedChan():
+			return
+		}
+	}
 }
 
 // Close will close the underlying TTransport and stops all goroutines.

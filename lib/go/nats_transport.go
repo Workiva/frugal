@@ -109,56 +109,20 @@ func (n *natsServiceTTransport) Open() error {
 			"frugal: listenTo and writeTo cannot be empty")
 	}
 
-	sub, err := n.conn.Subscribe(n.listenTo, func(msg *nats.Msg) {
-		if msg.Reply == disconnect {
-			// Remote client is disconnecting.
-			if n.isClient() {
-				log.Error("frugal: transport received unexpected disconnect from the server")
-			} else {
-				log.Debug("frugal: client transport closed cleanly")
-			}
-			n.Close()
-			return
-		}
-		n.writer.Write(msg.Data)
-	})
+	sub, err := n.conn.Subscribe(n.listenTo, n.handleMessage)
 	if err != nil {
 		return thrift.NewTTransportExceptionFromError(err)
 	}
 
 	// Handle heartbeats.
 	if n.heartbeatInterval > 0 {
-		hbSub, err := n.conn.Subscribe(n.heartbeatListen, func(msg *nats.Msg) {
-			select {
-			case n.recvHeartbeatChan() <- struct{}{}:
-			default:
-				log.Println("frugal: natsServiceTTransport received heartbeat dropped")
-			}
-			n.conn.Publish(n.heartbeatReply, nil)
-		})
+		hbSub, err := n.conn.Subscribe(n.heartbeatListen, n.handleHeartbeat)
 		if err != nil {
 			n.Close()
 			return thrift.NewTTransportExceptionFromError(err)
 		}
 		n.heartbeatSub = hbSub
-		go func() {
-			missed := uint(0)
-			for {
-				select {
-				case <-time.After(n.heartbeatTimeoutPeriod()):
-					missed++
-					if missed >= n.maxMissedHeartbeats {
-						log.Warn("frugal: server heartbeat expired")
-						n.Close()
-						return
-					}
-				case <-n.recvHeartbeatChan():
-					missed = 0
-				case <-n.closedChan():
-					return
-				}
-			}
-		}()
+		go n.heartbeatLoop()
 	}
 
 	n.fieldsMu.Lock()
@@ -170,6 +134,58 @@ func (n *natsServiceTTransport) Open() error {
 	n.fieldsMu.Unlock()
 
 	return nil
+}
+
+// handleMessage receives a NATS message and buffers its contents for reading.
+// If the message has a reply subject of "DISCONNECT", then the message is
+// signaling that the remote peer has disconnected.
+func (n *natsServiceTTransport) handleMessage(msg *nats.Msg) {
+	if msg.Reply == disconnect {
+		// Remote client is disconnecting.
+		if n.isClient() {
+			log.Error("frugal: transport received unexpected disconnect from the server")
+		} else {
+			log.Debug("frugal: client transport closed cleanly")
+		}
+		n.Close()
+		return
+	}
+	n.writer.Write(msg.Data)
+}
+
+// handleHeartbeat receives a NATS message representing a heartbeat from the
+// remote peer. A channel is signaled to allow the heartbeat loop to reset the
+// heartbeat count.
+func (n *natsServiceTTransport) handleHeartbeat(msg *nats.Msg) {
+	select {
+	case n.recvHeartbeatChan() <- struct{}{}:
+	default:
+		log.Println("frugal: natsServiceTTransport received heartbeat dropped")
+	}
+	n.conn.Publish(n.heartbeatReply, nil)
+}
+
+// heartbeatLoop waits for heartbeats to be received on the channel or if the
+// allowable interval passes, a counter is incremented. The counter is reset
+// when a heartbeat is received. If the counter exceeds the max missed
+// heartbeats value, the transport is closed.
+func (n *natsServiceTTransport) heartbeatLoop() {
+	missed := uint(0)
+	for {
+		select {
+		case <-time.After(n.heartbeatTimeoutPeriod()):
+			missed++
+			if missed >= n.maxMissedHeartbeats {
+				log.Warn("frugal: server heartbeat expired")
+				n.Close()
+				return
+			}
+		case <-n.recvHeartbeatChan():
+			missed = 0
+		case <-n.closedChan():
+			return
+		}
+	}
 }
 
 type natsConnectionHandshake struct {

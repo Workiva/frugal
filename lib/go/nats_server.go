@@ -191,12 +191,12 @@ func (n *FNatsServer) SetHighWatermark(watermark time.Duration) {
 // the server.
 func (n *FNatsServer) handleConnection(msg *nats.Msg) {
 	if msg.Reply == "" {
-		log.Warnf("frugal: discarding invalid connect message %+v\n", msg)
+		log.Warnf("frugal: discarding invalid connect message %+v", msg)
 		return
 	}
 	hs := &natsConnectionHandshake{}
 	if err := json.Unmarshal(msg.Data, hs); err != nil {
-		log.Errorf("frugal: could not deserialize connect message %+v\n", msg)
+		log.Errorf("frugal: could not deserialize connect message %+v", msg)
 		return
 	}
 	if hs.Version != natsV0 {
@@ -209,7 +209,7 @@ func (n *FNatsServer) handleConnection(msg *nats.Msg) {
 		tr, err        = n.accept(listenTo, msg.Reply, heartbeatReply)
 	)
 	if err != nil {
-		log.Errorf("frugal: error accepting client transport:", err)
+		log.Errorf("frugal: error accepting client transport: %s", err)
 		return
 	}
 
@@ -224,7 +224,7 @@ func (n *FNatsServer) handleConnection(msg *nats.Msg) {
 	connectMsg := n.heartbeatSubject + " " + heartbeatReply + " " +
 		strconv.FormatInt(int64(n.heartbeatInterval/time.Millisecond), 10)
 	if err := n.conn.PublishRequest(msg.Reply, listenTo, []byte(connectMsg)); err != nil {
-		log.Errorf("frugal: error publishing transport inbox:", err)
+		log.Errorf("frugal: error publishing transport inbox: %s", err)
 		tr.Close()
 	} else if n.isHeartbeating() {
 		go n.acceptHeartbeat(client)

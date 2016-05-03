@@ -36,6 +36,10 @@ public class FSimpleServer implements FServer {
         this.fProtocolFactory = fProtocolFactory;
     }
 
+    /**
+     * Do not call this directly.
+     * TODO 2.0.0: make private in a major release.
+     */
     public void acceptLoop() throws TException {
         while (!stopped) {
             TTransport client;
@@ -62,7 +66,7 @@ public class FSimpleServer implements FServer {
             setName("processor");
         }
 
-        public void run()  {
+        public void run() {
             try {
                 accept(client);
             } catch (TTransportException ttx) {
@@ -92,7 +96,7 @@ public class FSimpleServer implements FServer {
         acceptLoop();
     }
 
-    public void stop() throws TException{
+    public void stop() throws TException {
         stopped = true;
         tServerTransport.interrupt();
     }

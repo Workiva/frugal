@@ -10,7 +10,11 @@ import (
 
 const protocolV0 = 0x00
 
-// FProtocolFactory is a factory for FProtocol.
+// FProtocolFactory creates new FProtocol instances. It takes a
+// TProtocolFactory and a TTransport and returns an FProtocol which wraps a
+// TProtocol produced by the TProtocolFactory. The TProtocol itself wraps the
+// provided TTransport. This makes it easy to produce an FProtocol which uses
+// any existing Thrift transports and protocols in a composable manner.
 type FProtocolFactory struct {
 	protoFactory thrift.TProtocolFactory
 }
@@ -23,7 +27,13 @@ func (f *FProtocolFactory) GetProtocol(tr thrift.TTransport) *FProtocol {
 	return &FProtocol{f.protoFactory.GetProtocol(tr)}
 }
 
-// FProtocol is an extension of thrift TProtocol with the addition of headers
+// FProtocol is Frugal's equivalent of Thrift's TProtocol. It defines the
+// serialization protocol used for messages, such as JSON, binary, etc.
+// FProtocol actually extends TProtocol and adds support for serializing
+// FContext. In practice, FProtocol simply wraps a TProtocol and uses Thrift's
+// built-in serialization. FContext is encoded before the TProtocol
+// serialization of the message using a simple binary protocol. See the
+// protocol documentation for more details.
 type FProtocol struct {
 	thrift.TProtocol
 }

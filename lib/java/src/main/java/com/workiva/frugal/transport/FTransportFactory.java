@@ -3,7 +3,7 @@ package com.workiva.frugal.transport;
 import org.apache.thrift.transport.TTransport;
 
 /**
- * FTransportFactory is responsible for creating new FTransports.
+ * FTransportFactory produces FTransports by wrapping a provided TTransport.
  */
 public interface FTransportFactory {
 
@@ -14,4 +14,5 @@ public interface FTransportFactory {
      * @return new FTransport
      */
     FTransport getTransport(TTransport transport);
+
 }

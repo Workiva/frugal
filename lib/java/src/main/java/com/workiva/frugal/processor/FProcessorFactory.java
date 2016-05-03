@@ -3,7 +3,8 @@ package com.workiva.frugal.processor;
 import org.apache.thrift.transport.TTransport;
 
 /**
- * FProcessorFactory creates FProcessors. The default factory just returns a singleton instance.
+ * FProcessorFactory produces FProcessors and is used by an FServer. It takes a
+ * TTransport and returns an FProcessor wrapping it.
  */
 public class FProcessorFactory {
 

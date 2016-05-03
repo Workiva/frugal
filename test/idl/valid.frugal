@@ -10,6 +10,8 @@ struct Thing {}
 /** This is not a docstring. */
 struct Stuff {}
 
+typedef i32 Int
+
 // Exception
 exception InvalidOperation {
     1: i32 whatOp,
@@ -21,7 +23,7 @@ service Blah {
     /**@ Use this to ping the server. */
     void ping(),
     /**@ Use this to tell the sever how you feel. */
-    i64 bleh(1:Thing one, 2:Stuff Two) throws (1: InvalidOperation oops),
+    i64 bleh(1:Thing one, 2:Stuff Two, 3:list<Int> custom_ints) throws (1: InvalidOperation oops),
 }
 
 // This is a scope

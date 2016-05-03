@@ -5,7 +5,8 @@ provides additional functionality. Specifically, it includes support for
 request headers, request multiplexing, thread safety, and code-generated
 pub/sub APIs. Frugal is intended to act as a superset of Thrift, meaning it
 implements the same functionality as Thrift with some additional
-features.
+features. For a more detailed explanation, see the
+[documentation](documentation).
 
 Currently supported languages are Go, Java, and Dart.
 
@@ -234,4 +235,16 @@ example directory.
 ```
 $ cd example
 $ docker run -v "$(pwd):/data" drydock.workiva.org/workiva/frugal:17352 frugal -gen=go event.frugal
+```
+
+## Release
+
+To update the frugal version for release, use the python script provided in the `scripts` directory. Note: You must be in the root directory of frugal.
+
+```bash
+# Get PyYAML
+pip install pyyaml
+
+# Update frugal
+python scripts/update.py --version 1.2.0
 ```

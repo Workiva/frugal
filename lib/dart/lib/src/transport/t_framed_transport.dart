@@ -3,6 +3,7 @@ part of frugal;
 /// A framed implementation of TTransport. Has stream for consuming
 /// entire frames. Disallows direct reads.
 class _TFramedTransport extends TTransport {
+  final Logger log = new Logger('frugal.transport._TFramedTransport');
   static const int headerByteCount = 4;
   final Uint8List writeHeaderBytes = new Uint8List(headerByteCount);
 
@@ -22,14 +23,29 @@ class _TFramedTransport extends TTransport {
 
   _TFramedTransport(this.socket) {
     if (socket == null) {
-      throw new ArgumentError.notNull("socket");
+      throw new ArgumentError.notNull('socket');
     }
+    // Listen and react to state changes on the TSocket
+    socket.onState.listen((state) {
+      switch (state) {
+        case TSocketState.OPEN:
+          open();
+          break;
+        case TSocketState.CLOSED:
+          close();
+          break;
+        default:
+          // Should not happen.
+          log.log(Level.WARNING, 'Unhandled TSocketState $state');
+      }
+    });
   }
 
   void _reset({bool isOpen: false}) {
     _isOpen = isOpen;
     _writeBuffer.clear();
     _readBuffer.clear();
+    _messageSub?.cancel();
   }
 
   /// Stream for getting frame data.
@@ -38,6 +54,9 @@ class _TFramedTransport extends TTransport {
   @override
   bool get isOpen => _isOpen;
 
+  /// Opens the transport.
+  /// Will reset the write/read buffers and socket onMessage listener.
+  /// Will also open the underlying TSocket (if not already open).
   @override
   Future open() async {
     _reset(isOpen: true);
@@ -48,14 +67,13 @@ class _TFramedTransport extends TTransport {
   }
 
   /// Closes the transport.
-  /// Will also close the underlying TSocket.
+  /// Will reset the write/read buffers and socket onMessage listener.
+  /// Will also close the underlying TSocket (if not already closed).
+  @override
   Future close() async {
     _reset(isOpen: false);
     if (socket.isOpen) {
       await socket.close();
-    }
-    if (_messageSub != null) {
-      _messageSub.cancel();
     }
   }
 
@@ -63,7 +81,7 @@ class _TFramedTransport extends TTransport {
   /// to onFrame.
   int read(Uint8List buffer, int offset, int length) {
     throw new TTransportError(TTransportErrorType.UNKNOWN,
-        "frugal: cannot read directly from _TFramedSocket.");
+        'frugal: cannot read directly from _TFramedSocket.');
   }
 
   /// Handler for messages received on the TSocket.
@@ -88,7 +106,7 @@ class _TFramedTransport extends TTransport {
     if (_frameSize < 0) {
       // TODO: Put this error on an error stream and bubble it up.
       throw new TTransportError(TTransportErrorType.UNKNOWN,
-          "Read a negative frame size: $_frameSize");
+          'Read a negative frame size: $_frameSize');
     }
 
     // Grab up to the frame size in bytes
@@ -113,11 +131,11 @@ class _TFramedTransport extends TTransport {
   @override
   void write(Uint8List buffer, int offset, int length) {
     if (buffer == null) {
-      throw new ArgumentError.notNull("buffer");
+      throw new ArgumentError.notNull('buffer');
     }
 
     if (offset + length > buffer.length) {
-      throw new ArgumentError("The range exceeds the buffer length");
+      throw new ArgumentError('The range exceeds the buffer length');
     }
 
     _writeBuffer.addAll(buffer.sublist(offset, offset + length));

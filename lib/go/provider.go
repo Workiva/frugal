@@ -1,7 +1,8 @@
 package frugal
 
-// FScopeProvider produces Frugal FScopeTransports and FProtocols used by
-// pub/sub scopes.
+// FScopeProvider produces FScopeTransports and FProtocols for use by pub/sub
+// scopes. It does this by wrapping an FScopeTransportFactory and
+// FProtocolFactory.
 type FScopeProvider struct {
 	scopeTransportFactory FScopeTransportFactory
 	protocolFactory       *FProtocolFactory

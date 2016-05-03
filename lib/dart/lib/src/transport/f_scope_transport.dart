@@ -1,6 +1,8 @@
 part of frugal;
 
-/// Wraps a Thrift TTransport. Used for frugal Scopes.
+/// FScopeTransport extends Thrift's TTransport and is used exclusively for
+/// pub/sub scopes. Subscribers use an FScopeTransport to subscribe to a
+/// pub/sub topic. Publishers use it to publish to a topic.
 abstract class FScopeTransport extends TTransport {
   @override
   int read(Uint8List buffer, int offset, int length) {

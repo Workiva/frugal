@@ -19,10 +19,24 @@ const (
 	defaultTimeout = time.Minute
 )
 
-// FContext is the message context for a frugal message. A FContext should
-// belong to a single request for the lifetime of the request. It can be reused
-// once its request has completed, though they should generally not be reused.
-// This should only be constructed using NewFContext.
+// FContext is the context for a Frugal message. Every RPC has an FContext,
+// which can be used to set request headers, response headers, and the request
+// timeout. The default timeout is one minute. An FContext is also sent with
+// every publish message which is then received by subscribers.
+//
+// In addition to headers, the FContext also contains a correlation ID which
+// can be used for distributed tracing purposes. A random correlation ID is
+// generated for each FContext if one is not provided.
+//
+// FContext also plays a key role in Frugal's multiplexing support. A unique,
+// per-request operation ID is set on every FContext before a request is made.
+// This operation ID is sent in the request and included in the response, which
+// is then used to correlate a response to a request. The operation ID is an
+// internal implementation detail and is not exposed to the user.
+//
+// An FContext should belong to a single request for the lifetime of that
+// request. It can be reused once the request has completed, though they should
+// generally not be reused.
 type FContext struct {
 	requestHeaders  map[string]string
 	responseHeaders map[string]string
@@ -169,7 +183,8 @@ func (c *FContext) addResponseHeader(name, value string) {
 	c.mu.Unlock()
 }
 
-// generateCorrelationID returns a random string id
-func generateCorrelationID() string {
+// generateCorrelationID returns a random string id. It's assigned to a var for
+// testability purposes.
+var generateCorrelationID = func() string {
 	return strings.Replace(uuid.RandomUUID().String(), "-", "", -1)
 }

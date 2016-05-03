@@ -3,6 +3,8 @@ test/idl/constants.thrift
 target/
 *.iml
 .idea
+*.pyc
+
 
 # Don’t commit the following directories created by pub.
 .buildlog
@@ -19,6 +21,7 @@ packages
 
 pubspec.lock
 
+# Ignore generated code and cross results
 skynet.Dockerfile
 
 # python specific
@@ -30,3 +33,9 @@ skynet.Dockerfile
 unit_tests.xml
 lib/python/frugal.egg-info/
 lib/python/frugalc
+
+# Integration tests
+test/integration/log/*
+test/integration/results.json
+test/integration/*/gen*
+test/integration/go/bin/*

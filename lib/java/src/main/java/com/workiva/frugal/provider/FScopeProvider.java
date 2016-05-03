@@ -6,8 +6,9 @@ import com.workiva.frugal.transport.FScopeTransport;
 import com.workiva.frugal.transport.FScopeTransportFactory;
 
 /**
- * FScopeProviders produce FScopeTransports and FProtocols for
- * use with Frugal Publishers and Subscribers.
+ * FScopeProvider produces FScopeTransports and FProtocols for use by pub/sub
+ * scopes. It does this by wrapping an FScopeTransportFactory and
+ * FProtocolFactory.
  */
 public class FScopeProvider {
 

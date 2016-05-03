@@ -1,12 +1,13 @@
 package com.workiva.frugal.transport;
 
-import com.workiva.frugal.transport.FScopeTransport;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * FSubscription to a pub/sub topic.
+ * FSubscription is a subscription to a pub/sub topic created by a scope. The
+ * topic subscription is actually handled by an FScopeTransport, which the
+ * FSubscription wraps. Each FSubscription should have its own FScopeTransport.
+ * The FSubscription is used to unsubscribe from the topic.
  */
 public class FSubscription {
 
@@ -49,7 +50,7 @@ public class FSubscription {
      * subscription has been closed.
      *
      * @return The Exception queue.
-     * @deprecated TODO: remove in a future release.
+     * @deprecated TODO 2.0.0: remove in a future release.
      */
     @Deprecated
     public BlockingQueue<Exception> onError() {

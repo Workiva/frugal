@@ -1,6 +1,9 @@
 package frugal
 
-// Subscription is a subscription to a pub/sub topic.
+// FSubscription is a subscription to a pub/sub topic created by a scope. The
+// topic subscription is actually handled by an FScopeTransport, which the
+// FSubscription wraps. Each FSubscription should have its own FScopeTransport.
+// The FSubscription is used to unsubscribe from the topic.
 type FSubscription struct {
 	topic     string
 	transport FScopeTransport
@@ -32,7 +35,7 @@ func (s *FSubscription) Topic() string {
 // subscription. If an error is returned on this channel, the Subscription has
 // been closed.
 //
-// DEPRECATED. TODO: Remove in a future release.
+// DEPRECATED. TODO 2.0.0: Remove in a future release.
 func (s *FSubscription) Error() <-chan error {
 	return s.errorC
 }

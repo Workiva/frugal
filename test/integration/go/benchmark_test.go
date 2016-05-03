@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"reflect"
 	"testing"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
@@ -10,7 +11,7 @@ import (
 
 func newBenchmarkMiddleware() frugal.ServiceMiddleware {
 	return func(next frugal.InvocationHandler) frugal.InvocationHandler {
-		return func(service, method string, args frugal.Arguments) frugal.Results {
+		return func(service reflect.Value, method reflect.Method, args frugal.Arguments) frugal.Results {
 			return next(service, method, args)
 		}
 	}

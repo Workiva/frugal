@@ -6,6 +6,10 @@ const System SYSTEM_BAR = "bar"
 
 const System SYSTEM_BAZ = "baz"
 
+const bool t = true
+
+const bool f = false
+
 struct SchemaProperty {
 	1: string id,
 	2: string title,

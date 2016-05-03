@@ -334,7 +334,6 @@ func generateThrift(frugal *parser.Frugal, idlDir, file, out, gen string) error 
 	}
 	args = append(args, "-gen", gen)
 	args = append(args, file)
-	// TODO: make thrift command configurable
 	if out, err := exec.Command("thrift", args...).CombinedOutput(); err != nil {
 		fmt.Println(string(out))
 		return err

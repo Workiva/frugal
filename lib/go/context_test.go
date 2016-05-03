@@ -13,6 +13,19 @@ func TestCorrelationID(t *testing.T) {
 	assert.Equal(t, corid, ctx.CorrelationID())
 }
 
+// Ensures NewFContext creates an FContext and generates a correlation id if
+// one is not supplied.
+func TestNewCorrelationID(t *testing.T) {
+	cid := "abc"
+	oldCID := generateCorrelationID
+	defer func() { generateCorrelationID = oldCID }()
+	generateCorrelationID = func() string { return cid }
+
+	ctx := NewFContext("")
+
+	assert.Equal(t, cid, ctx.CorrelationID())
+}
+
 // Ensures the "_opid" request header for an FContext is returned for calls to
 // opID.
 func TestOpID(t *testing.T) {

@@ -8,6 +8,7 @@ import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Matchers;
 
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -79,13 +80,30 @@ public class FNatsScopeTransportTest {
         when(conn.getState()).thenReturn(Constants.ConnState.CONNECTED);
         ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
 
-        when(conn.subscribe(topicCaptor.capture(), any(MessageHandler.class))).thenReturn(mockSub);
+        when(conn.subscribe(topicCaptor.capture(), (String) Matchers.isNull(), any(MessageHandler.class))).thenReturn(mockSub);
 
         transport.subscribe(topic);
 
         assertTrue(transport.isOpen());
         assertEquals(mockSub, transport.sub);
 
+        assertEquals(formattedSubject, topicCaptor.getValue());
+    }
+
+    @Test
+    public void testSubscribeQueue() throws Exception {
+        transport = new FNatsScopeTransport.Factory(conn, "foo").getTransport();
+        when(conn.getState()).thenReturn(Constants.ConnState.CONNECTED);
+        ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> queueCaptor = ArgumentCaptor.forClass(String.class);
+
+        when(conn.subscribe(topicCaptor.capture(), queueCaptor.capture(), any(MessageHandler.class))).thenReturn(mockSub);
+
+        transport.subscribe(topic);
+
+        assertTrue(transport.isOpen());
+        assertEquals(mockSub, transport.sub);
+        assertEquals("foo", queueCaptor.getValue());
         assertEquals(formattedSubject, topicCaptor.getValue());
     }
 

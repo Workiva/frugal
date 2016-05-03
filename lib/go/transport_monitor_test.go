@@ -2,6 +2,7 @@ package frugal
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -255,87 +256,135 @@ func TestAttemptReopenFailNoRetry(t *testing.T) {
 
 type mockFTransportMonitor struct {
 	mock.Mock
+	sync.Mutex
 }
 
 func (m *mockFTransportMonitor) OnClosedCleanly() {
+	m.Lock()
+	defer m.Unlock()
 	m.Called()
 }
 
 func (m *mockFTransportMonitor) OnClosedUncleanly(cause error) (bool, time.Duration) {
+	m.Lock()
+	defer m.Unlock()
 	args := m.Called(cause)
 	return args.Get(0).(bool), args.Get(1).(time.Duration)
 }
 
 func (m *mockFTransportMonitor) OnReopenFailed(prevAttempts uint, prevWait time.Duration) (bool, time.Duration) {
+	m.Lock()
+	defer m.Unlock()
 	args := m.Called(prevAttempts, prevWait)
 	return args.Get(0).(bool), args.Get(1).(time.Duration)
 }
 
 func (m *mockFTransportMonitor) OnReopenSucceeded() {
+	m.Lock()
+	defer m.Unlock()
 	m.Called()
+}
+
+func (m *mockFTransportMonitor) AssertExpectations(t *testing.T) {
+	m.Lock()
+	defer m.Unlock()
+	m.Mock.AssertExpectations(t)
 }
 
 type mockFTransport struct {
 	mock.Mock
+	sync.Mutex
 }
 
 func (m *mockFTransport) Open() error {
+	m.Lock()
+	defer m.Unlock()
 	args := m.Called()
 	return args.Error(0)
 }
 
 func (m *mockFTransport) IsOpen() bool {
+	m.Lock()
+	defer m.Unlock()
 	args := m.Called()
 	return args.Get(0).(bool)
 }
 
 func (m *mockFTransport) RemainingBytes() (num_bytes uint64) {
+	m.Lock()
+	defer m.Unlock()
 	args := m.Called()
 	return args.Get(0).(uint64)
 }
 
 func (m *mockFTransport) Flush() (err error) {
+	m.Lock()
+	defer m.Unlock()
 	args := m.Called()
 	return args.Error(0)
 }
 
 func (m *mockFTransport) Read(p []byte) (n int, err error) {
+	m.Lock()
+	defer m.Unlock()
 	args := m.Called(p)
 	return args.Get(0).(int), args.Error(1)
 }
 
 func (m *mockFTransport) Write(p []byte) (n int, err error) {
+	m.Lock()
+	defer m.Unlock()
 	args := m.Called(p)
 	return args.Get(0).(int), args.Error(1)
 }
 
 func (m *mockFTransport) Close() error {
+	m.Lock()
+	defer m.Unlock()
 	args := m.Called()
 	return args.Error(0)
 }
 
 func (m *mockFTransport) SetRegistry(fr FRegistry) {
+	m.Lock()
+	defer m.Unlock()
 	m.Called(fr)
 }
 
 func (m *mockFTransport) Register(fc *FContext, fac FAsyncCallback) error {
+	m.Lock()
+	defer m.Unlock()
 	args := m.Called(fc, fac)
 	return args.Error(0)
 }
 
 func (m *mockFTransport) Unregister(fc *FContext) {
+	m.Lock()
+	defer m.Unlock()
 	m.Called(fc)
 }
 
 func (m *mockFTransport) Closed() <-chan error {
+	m.Lock()
+	defer m.Unlock()
 	args := m.Called()
 	return args.Get(0).(<-chan error)
 }
 
 func (m *mockFTransport) SetMonitor(mon FTransportMonitor) {
+	m.Lock()
+	defer m.Unlock()
 	m.Called(mon)
 }
 
 func (m *mockFTransport) SetHighWatermark(watermark time.Duration) {
+	m.Lock()
+	defer m.Unlock()
 	m.Called(watermark)
+}
+
+func (m *mockFTransport) AssertExpectations(t *testing.T) {
+	m.Lock()
+	defer m.Unlock()
+	m.Mock.AssertExpectations(t)
 }

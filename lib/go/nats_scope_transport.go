@@ -17,22 +17,35 @@ const frameBufferSize = 5
 
 // FNatsScopeTransportFactory creates FNatsScopeTransports.
 type FNatsScopeTransportFactory struct {
-	conn *nats.Conn
+	conn  *nats.Conn
+	queue string
 }
 
+// NewFNatsScopeTransportFactory creates an FNatsScopeTransportFactory using
+// the provided NATS connection. Subscribers using this transport will not use
+// a queue.
 func NewFNatsScopeTransportFactory(conn *nats.Conn) *FNatsScopeTransportFactory {
-	return &FNatsScopeTransportFactory{conn}
+	return &FNatsScopeTransportFactory{conn: conn}
+}
+
+// NewFNatsScopeTransportFactoryWithQueue creates an FNatsScopeTransportFactory
+// using the provided NATS connection. Subscribers using this transport will
+// subscribe to the provided queue, forming a queue group. When a queue group
+// is formed, only one member receives the message.
+func NewFNatsScopeTransportFactoryWithQueue(conn *nats.Conn, queue string) *FNatsScopeTransportFactory {
+	return &FNatsScopeTransportFactory{conn: conn, queue: queue}
 }
 
 // GetTransport creates a new NATS FScopeTransport.
 func (n *FNatsScopeTransportFactory) GetTransport() FScopeTransport {
-	return NewNatsFScopeTransport(n.conn)
+	return NewNatsFScopeTransportWithQueue(n.conn, n.queue)
 }
 
 // fNatsScopeTransport implements FScopeTransport.
 type fNatsScopeTransport struct {
 	conn         *nats.Conn
 	subject      string
+	queue        string
 	frameBuffer  chan []byte
 	closeChan    chan struct{}
 	currentFrame []byte
@@ -46,9 +59,17 @@ type fNatsScopeTransport struct {
 }
 
 // NewNatsFScopeTransport creates a new FScopeTransport which is used for
-// pub/sub.
+// pub/sub. Subscribers using this transport will not use a queue.
 func NewNatsFScopeTransport(conn *nats.Conn) FScopeTransport {
 	return &fNatsScopeTransport{conn: conn}
+}
+
+// NewNatsFScopeTransportWithQueue creates a new FScopeTransport which is used
+// for pub/sub. Subscribers using this transport will subscribe to the provided
+// queue, forming a queue group. When a queue group is formed, only one member
+// receives the message.
+func NewNatsFScopeTransportWithQueue(conn *nats.Conn, queue string) FScopeTransport {
+	return &fNatsScopeTransport{conn: conn, queue: queue}
 }
 
 // LockTopic sets the publish topic and locks the transport for exclusive
@@ -111,23 +132,25 @@ func (n *fNatsScopeTransport) Open() error {
 	n.closeChan = make(chan struct{})
 	n.frameBuffer = make(chan []byte, frameBufferSize)
 
-	sub, err := n.conn.Subscribe(n.formattedSubject(), func(msg *nats.Msg) {
-		if len(msg.Data) < 4 {
-			log.Warn("frugal: Discarding invalid scope message frame")
-			return
-		}
-		// Discard frame size.
-		select {
-		case n.frameBuffer <- msg.Data[4:]:
-		case <-n.closeChan:
-		}
-	})
+	sub, err := n.conn.QueueSubscribe(n.formattedSubject(), n.queue, n.handleMessage)
 	if err != nil {
 		return thrift.NewTTransportExceptionFromError(err)
 	}
 	n.sub = sub
 	n.isOpen = true
 	return nil
+}
+
+func (n *fNatsScopeTransport) handleMessage(msg *nats.Msg) {
+	if len(msg.Data) < 4 {
+		log.Warn("frugal: Discarding invalid scope message frame")
+		return
+	}
+	// Discard frame size.
+	select {
+	case n.frameBuffer <- msg.Data[4:]:
+	case <-n.closeChan:
+	}
 }
 
 func (n *fNatsScopeTransport) IsOpen() bool {
@@ -187,7 +210,7 @@ func (n *fNatsScopeTransport) Read(p []byte) (int, error) {
 	n.currentFrame = n.currentFrame[num:]
 	if len(n.currentFrame) == 0 {
 		// The entire frame was copied, clear it.
-		n.currentFrame = nil
+		n.DiscardFrame()
 	}
 	return num, nil
 }

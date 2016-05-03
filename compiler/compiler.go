@@ -79,13 +79,26 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 	// Process options for specific generators.
 	lang, options := cleanGenParam(gen)
 
+	_, genWithFrugal := options["gen_with_frugal"]
+
 	// Resolve Frugal generator.
 	var g generator.ProgramGenerator
 	switch lang {
 	case "dart":
 		g = generator.NewProgramGenerator(dartlang.NewGenerator(options), false)
 	case "go":
-		g = generator.NewProgramGenerator(golang.NewGenerator(options), false)
+		// TODO: Remove this once gen_with frugal is no longer experimental
+		// and is the default.
+		if !genWithFrugal && !globals.GenWithFrugalWarn {
+			fmt.Println("\x1b[33m" +
+				"Consider using the \"gen_with_frugal\" language option " +
+				"to have Frugal generate code in place of Thrift.\nThis is an " +
+				"experimental feature. Please file a GitHub issue if you encounter " +
+				"problems." +
+				"\x1b[0m")
+			globals.GenWithFrugalWarn = true
+		}
+		g = generator.NewProgramGenerator(golang.NewGenerator(options, genWithFrugal), false)
 	case "java":
 		g = generator.NewProgramGenerator(java.NewGenerator(options), true)
 	default:
@@ -107,9 +120,17 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		return nil, err
 	}
 
-	// Generate intermediate Thrift IDL for Frugal. If this is already a
-	// .thrift file, do not generate an intermediate IDL.
-	if !isThrift {
+	if genWithFrugal {
+		// If not using frugal, add parsed includes here
+		// preserve what thrift does to keep ordering in the file
+		for _, include := range frugal.Thrift.Includes {
+			generateInclude(frugal, include)
+		}
+	}
+
+	if !genWithFrugal && !isThrift {
+		// Generate intermediate Thrift IDL for Frugal. If this is already a
+		// .thrift file, do not generate an intermediate IDL.
 		logv(fmt.Sprintf("Generating intermediate Thrift file %s",
 			filepath.Join(dir, fmt.Sprintf("%s.thrift", frugal.Name))))
 		idlFile, err := generateThriftIDL(dir, frugal)
@@ -123,15 +144,17 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		return frugal, nil
 	}
 
-	// Generate Thrift code.
-	logv(fmt.Sprintf("Generating \"%s\" Thrift code for %s", lang, file))
-	if err := generateThrift(frugal, dir, file, out, gen); err != nil {
-		return nil, err
+	if !genWithFrugal {
+		// Generate Thrift code.
+		logv(fmt.Sprintf("Generating \"%s\" Thrift code for %s", lang, file))
+		if err := generateThrift(frugal, dir, file, out, gen); err != nil {
+			return nil, err
+		}
 	}
 
 	// Generate Frugal code.
 	logv(fmt.Sprintf("Generating \"%s\" Frugal code for %s", lang, frugal.File))
-	return frugal, g.Generate(frugal, fullOut)
+	return frugal, g.Generate(frugal, fullOut, genWithFrugal)
 }
 
 // exists determines if the file at the given path exists.

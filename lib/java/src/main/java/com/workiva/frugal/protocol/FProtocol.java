@@ -7,7 +7,13 @@ import org.apache.thrift.protocol.*;
 import java.nio.ByteBuffer;
 
 /**
- * FProtocol is an extension of thrift TProtocol with the addition of headers.
+ * FProtocol is Frugal's equivalent of Thrift's TProtocol. It defines the
+ * serialization protocol used for messages, such as JSON, binary, etc. FProtocol
+ * actually extends TProtocol and adds support for serializing FContext. In
+ * practice, FProtocol simply wraps a TProtocol and uses Thrift's built-in
+ * serialization. FContext is encoded before the TProtocol serialization of the
+ * message using a simple binary protocol. See the protocol documentation for more
+ * details.
  */
 public class FProtocol extends TProtocol {
 

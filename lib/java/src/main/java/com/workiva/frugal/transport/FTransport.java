@@ -12,7 +12,18 @@ import org.apache.thrift.transport.TTransport;
 import java.util.logging.Logger;
 
 /**
- * FTransport is a Thrift TTransport for services.
+ * FTransport is Frugal's equivalent of Thrift's TTransport. FTransport extends
+ * TTransport and exposes some additional methods. An FTransport typically has an
+ * FRegistry, so it provides methods for setting the FRegistry and registering and
+ * unregistering an FAsyncCallback to an FContext. It also allows a way for
+ * setting an FTransportMonitor and a high-water mark provided by an FServer.
+ * <p/>
+ * FTransport wraps a TTransport, meaning all existing TTransport implementations
+ * will work in Frugal. However, all FTransports must used a framed protocol,
+ * typically implemented by wrapping a TFramedTransport.
+ * <p/>
+ * Most Frugal language libraries include an FMuxTransport implementation, which
+ * uses a worker pool to handle messages in parallel.
  */
 public abstract class FTransport extends TTransport {
 
@@ -121,4 +132,5 @@ public abstract class FTransport extends TTransport {
             }, "transport-monitor").start();
         }
     }
+
 }

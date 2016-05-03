@@ -74,6 +74,7 @@ func TestWriteHeaderErroredWrite(t *testing.T) {
 	proto := &FProtocol{tProtocolFactory.GetProtocol(mft)}
 	expectedErr := thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION, fmt.Sprintf("frugal: error writing protocol headers: %s", writeErr))
 	assert.Equal(expectedErr, proto.writeHeader(basicHeaders))
+	mft.AssertExpectations(t)
 }
 
 // Ensures writeHeader returns an error if transport Write fails to write all
@@ -85,6 +86,7 @@ func TestWriteHeaderBadWrite(t *testing.T) {
 	proto := &FProtocol{tProtocolFactory.GetProtocol(mft)}
 	expectedErr := thrift.NewTTransportException(thrift.UNKNOWN_PROTOCOL_EXCEPTION, "frugal: failed to write complete protocol headers")
 	assert.Equal(expectedErr, proto.writeHeader(basicHeaders))
+	mft.AssertExpectations(t)
 }
 
 // Ensures writeHeader properly encodes header bytes.
@@ -94,6 +96,52 @@ func TestWriteHeader(t *testing.T) {
 	mft.On("Write", basicFrame).Return(len(basicFrame), nil)
 	proto := &FProtocol{tProtocolFactory.GetProtocol(mft)}
 	assert.Nil(proto.writeHeader(basicHeaders))
+	mft.AssertExpectations(t)
+}
+
+// Ensures WriteRequestHeader properly encodes header bytes and
+// ReadRequestHeader properly decodes them.
+func TestWriteReadRequestHeader(t *testing.T) {
+	assert := assert.New(t)
+	transport := &thrift.TMemoryBuffer{Buffer: &bytes.Buffer{}}
+	proto := &FProtocol{tProtocolFactory.GetProtocol(transport)}
+	ctx := NewFContext("123")
+	ctx.AddRequestHeader("hello", "world")
+	ctx.AddRequestHeader("foo", "bar")
+	assert.Nil(proto.WriteRequestHeader(ctx))
+	ctx, err := proto.ReadRequestHeader()
+	assert.Nil(err)
+	header, ok := ctx.RequestHeader("hello")
+	assert.True(ok)
+	assert.Equal("world", header)
+	header, ok = ctx.RequestHeader("foo")
+	assert.True(ok)
+	assert.Equal("bar", header)
+	assert.Equal("123", ctx.CorrelationID())
+	assert.Equal(uint64(0), ctx.opID())
+}
+
+// Ensures WriteResponseHeader properly encodes header bytes and
+// ReadResponseHeader properly decodes them.
+func TestWriteReadResponseHeader(t *testing.T) {
+	assert := assert.New(t)
+	transport := &thrift.TMemoryBuffer{Buffer: &bytes.Buffer{}}
+	proto := &FProtocol{tProtocolFactory.GetProtocol(transport)}
+	ctx := NewFContext("123")
+	ctx.AddResponseHeader("hello", "world")
+	ctx.AddResponseHeader("foo", "bar")
+	assert.Nil(proto.WriteResponseHeader(ctx))
+	ctx = NewFContext("123")
+	err := proto.ReadResponseHeader(ctx)
+	assert.Nil(err)
+	header, ok := ctx.ResponseHeader("hello")
+	assert.True(ok)
+	assert.Equal("world", header)
+	header, ok = ctx.ResponseHeader("foo")
+	assert.True(ok)
+	assert.Equal("bar", header)
+	assert.Equal("123", ctx.CorrelationID())
+	assert.Equal(uint64(0), ctx.opID())
 }
 
 // Ensures readHeader returns an error if there are not enough frame bytes to

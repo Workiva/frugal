@@ -38,6 +38,42 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 	return &Generator{&generator.BaseGenerator{Options: options}}
 }
 
+// TODO Unimplmented methods
+func (g *Generator) SetupGenerator(outputDir string) error {
+	return nil
+}
+
+func (g *Generator) TeardownGenerator() error {
+	return nil
+}
+
+func (g *Generator) GenerateConstantsContents([]*parser.Constant) error {
+	return nil
+}
+
+func (g *Generator) GenerateTypeDef(*parser.TypeDef) error {
+	return nil
+}
+
+func (g *Generator) GenerateEnum(*parser.Enum) error {
+	return nil
+}
+func (g *Generator) GenerateStruct(*parser.Struct) error {
+	return nil
+}
+
+func (g *Generator) GenerateUnion(*parser.Struct) error {
+	return nil
+}
+
+func (g *Generator) GenerateException(*parser.Struct) error {
+	return nil
+}
+
+func (g *Generator) GenerateServiceArgsResults(string, string, []*parser.Struct) error {
+	return nil
+}
+
 func (g *Generator) GetOutputDir(dir string) string {
 	if pkg, ok := g.Frugal.Thrift.Namespace(lang); ok {
 		dir = filepath.Join(dir, toLibraryName(pkg))
@@ -98,11 +134,17 @@ func (g *Generator) addToPubspec(dir string) error {
 	pubFilePath := filepath.Join(dir, "pubspec.yaml")
 
 	deps := map[interface{}]interface{}{
-		"thrift": dep{Hosted: hostedDep{Name: "thrift", URL: "https://pub.workiva.org"}, Version: "^0.0.5"},
+		"thrift": dep{
+			Hosted:  hostedDep{Name: "thrift", URL: "https://pub.workiva.org"},
+			Version: "^0.0.6",
+		},
 	}
 
 	if g.Frugal.ContainsFrugalDefinitions() {
-		deps["frugal"] = dep{Hosted: hostedDep{Name: "frugal", URL: "https://pub.workiva.org"}, Version: "^1.1.1"}
+		deps["frugal"] = dep{
+			Hosted:  hostedDep{Name: "frugal", URL: "https://pub.workiva.org"},
+			Version: fmt.Sprintf("^%s", globals.Version),
+		}
 	}
 
 	includesSet := make(map[string]bool)
@@ -577,6 +619,8 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 		return contents
 	}
 
+	// TODO 2.0.0: Dart TimeoutException should be wrapped in an FTimeoutException.
+	// This should happen in a major release since it's an API change.
 	contents += tabtabtab + "return await controller.stream.first.timeout(ctx.timeout);\n"
 	contents += tabtab + "} finally {\n"
 	contents += tabtabtab + "_transport.unregister(ctx);\n"

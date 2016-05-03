@@ -1,5 +1,10 @@
 package com.workiva.frugal.middleware;
 
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
+
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
@@ -8,41 +13,52 @@ import java.lang.reflect.Proxy;
  *
  * @param <T> the service handler type.
  */
-public abstract class InvocationHandler<T> implements java.lang.reflect.InvocationHandler {
+public abstract class InvocationHandler<T> implements java.lang.reflect.InvocationHandler, MethodInterceptor {
 
-    private final InvocationContext<T> context;
+    private final T next;
 
     /**
      * Creates a new InvocationHandler wrapping the given InvocationContext.
      *
-     * @param next the next InvocationContext in the call chain.
+     * @param next the next target in the call chain.
      */
-    public InvocationHandler(InvocationContext<T> next) {
-        context = next;
+    public InvocationHandler(T next) {
+        this.next = next;
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        return invoke(context.service, method, context.target, args);
+        try {
+            return invoke(method, next, args);
+        } catch (InvocationTargetException e) {
+            throw e.getCause();
+        }
+    }
+
+    @Override
+    public Object intercept(Object target, Method method, Object[] args, MethodProxy proxy) throws Throwable {
+        try {
+            return invoke(method, next, args);
+        } catch (InvocationTargetException e) {
+            throw e.getCause();
+        }
     }
 
     /**
      * Called when the middleware is invoked by a service call.
      *
-     * @param service  the name of the service being invoked.
      * @param method   the method being invoked.
      * @param receiver the method receiver being invoked.
      * @param args     the method arguments. The first argument will always be the FContext.
      * @return the method return value.
      * @throws Throwable thrown by the wrapped method.
      */
-    public abstract Object invoke(String service, Method method, T receiver, Object[] args) throws Throwable;
+    public abstract Object invoke(Method method, T receiver, Object[] args) throws Throwable;
 
     /**
      * Applies ServiceMiddleware to the provided target object by constructing a dynamic proxy. This should only be
      * called by generated code.
      *
-     * @param service    the name of the service.
      * @param target     the service handler.
      * @param iface      the interface class the handler implements.
      * @param middleware the middleware to apply.
@@ -50,22 +66,38 @@ public abstract class InvocationHandler<T> implements java.lang.reflect.Invocati
      * @return handler proxy.
      */
     @SuppressWarnings("unchecked")
-    public static <T> T composeMiddleware(String service, T target, Class iface, ServiceMiddleware[] middleware) {
-        InvocationHandler<T> handler = new InvocationHandler<T>(new InvocationContext<>(service, target)) {
-            @Override
-            public Object invoke(String service, Method method, T receiver, Object[] args) throws Throwable {
-                return method.invoke(receiver, args);
-            }
-        };
-
+    public static <T> T composeMiddleware(T target, Class iface, ServiceMiddleware[] middleware) {
         ClassLoader classLoader = target.getClass().getClassLoader();
         Class[] ifaces = new Class[]{iface};
-        T proxy = (T) Proxy.newProxyInstance(classLoader, ifaces, handler);
         for (ServiceMiddleware m : middleware) {
-            handler = m.apply(new InvocationContext<>(service, proxy));
-            proxy = (T) Proxy.newProxyInstance(classLoader, ifaces, handler);
+            InvocationHandler handler = m.apply(target);
+            target = (T) Proxy.newProxyInstance(classLoader, ifaces, handler);
         }
-        return proxy;
+        return target;
+    }
+
+    /**
+     * Applies ServiceMiddleware to the provided target object by constructing a dynamic proxy. The difference between
+     * this and {@link InvocationHandler#composeMiddleware(Object, Class, ServiceMiddleware[])} is that this can be
+     * used to proxy concrete classes while the latter only interfaces. This should only be called by generated code.
+     *
+     * TODO 2.0.0: The only reason this is needed is because scope publishers and subscribers are generated as concrete
+     * classes which do not implement an interface. Remove this in a major release and use composeMiddleware once we
+     * generate publisher and subscriber interfaces.
+     *
+     * @param target     the service handler.
+     * @param clazz      the handler class.
+     * @param middleware the middleware to apply.
+     * @param <T>        the handler type.
+     * @return handler proxy.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T composeMiddlewareClass(T target, Class clazz, ServiceMiddleware[] middleware) {
+        for (ServiceMiddleware m : middleware) {
+            InvocationHandler handler = m.apply(target);
+            target = (T) Enhancer.create(clazz, handler);
+        }
+        return target;
     }
 
 }

@@ -1,5 +1,4 @@
 
-import com.workiva.frugal.middleware.InvocationContext;
 import com.workiva.frugal.middleware.InvocationHandler;
 import com.workiva.frugal.middleware.ServiceMiddleware;
 import com.workiva.frugal.processor.FProcessorFactory;
@@ -15,6 +14,7 @@ import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.transport.TTransportException;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -77,7 +77,7 @@ public class Main {
         FTransport transport = transportFactory.getTransport(TNatsServiceTransport.client(conn, "foo", 5000, 2));
         transport.open();
         try {
-            handleClient(new FFoo.Client(transport, protocolFactory));
+            handleClient(new FFoo.Client(transport, protocolFactory, new RetryMiddleware()));
         } finally {
             transport.close();
         }
@@ -136,14 +136,39 @@ public class Main {
     private static class LoggingMiddleware implements ServiceMiddleware {
 
         @Override
-        public <T> InvocationHandler<T> apply(InvocationContext<T> next) {
+        public <T> InvocationHandler<T> apply(T next) {
             return new InvocationHandler<T>(next) {
                 @Override
-                public Object invoke(String service, Method method, Object receiver, Object[] args) throws Throwable {
-                    System.out.printf("==== CALLING %s.%s ====\n", service, method.getName());
+                public Object invoke(Method method, Object receiver, Object[] args) throws Throwable {
+                    System.out.printf("==== CALLING %s.%s ====\n", method.getDeclaringClass().getName(), method.getName());
                     Object ret = method.invoke(receiver, args);
-                    System.out.printf("==== CALLED  %s.%s ====\n", service, method.getName());
+                    System.out.printf("==== CALLED  %s.%s ====\n", method.getDeclaringClass().getName(), method.getName());
                     return ret;
+                }
+            };
+        }
+
+    }
+
+    private static class RetryMiddleware implements ServiceMiddleware {
+
+        @Override
+        public <T> InvocationHandler<T> apply(T next) {
+            return new InvocationHandler<T>(next) {
+                @Override
+                public Object invoke(Method method, T receiver, Object[] args) throws Throwable {
+                    Throwable ex = null;
+                    for (int i = 0; i < 5; i++) {
+                        try {
+                            return method.invoke(receiver, args);
+                        } catch (InvocationTargetException e) {
+                            ex = e.getCause();
+                            System.out.printf("%s.%s failed (%s), retrying...\n", method.getDeclaringClass().getName(),
+                                    method.getName(), e.getCause());
+                            Thread.sleep(500);
+                        }
+                    }
+                    throw ex;
                 }
             };
         }

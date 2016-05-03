@@ -5,7 +5,10 @@ import com.workiva.frugal.protocol.FProtocol;
 import org.apache.thrift.TException;
 
 /**
- * FProcessorFunction performs an operation on the provided input/output protocols.
+ * FProcessorFunction is used internally by generated code. An FProcessor
+ * registers an FProcessorFunction for each service method. Like FProcessor, an
+ * FProcessorFunction exposes a single process call, which is used to handle a
+ * method invocation.
  */
 public interface FProcessorFunction {
 

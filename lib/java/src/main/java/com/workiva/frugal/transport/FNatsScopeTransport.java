@@ -29,6 +29,7 @@ public class FNatsScopeTransport extends FScopeTransport {
 
     private final Connection conn;
     protected String subject;
+    protected final String queue;
     protected BlockingQueue<byte[]> frameBuffer;
     private byte[] currentFrame;
     private int currentFramePos;
@@ -40,17 +41,49 @@ public class FNatsScopeTransport extends FScopeTransport {
 
     private static Logger LOGGER = Logger.getLogger(FNatsScopeTransport.class.getName());
 
-    protected FNatsScopeTransport(Connection conn) {
+    /**
+     * Creates a new FNatsScopeTransport which is used for pub/sub. Subscribers using this transport will subscribe to
+     * the provided queue, forming a queue group. When a queue group is formed, only one member receives the message. If
+     * the queue is null, then the subscriber does not join a queue group.
+     *
+     * @param conn  NATS connection
+     * @param queue subscription queue
+     */
+    protected FNatsScopeTransport(Connection conn, String queue) {
         this.conn = conn;
         this.lock = new ReentrantLock();
+        this.queue = queue;
     }
 
+    /**
+     * An FScopeTransportFactory implementation which creates FScopeTransports backed by NATS.
+     */
     public static class Factory implements FScopeTransportFactory {
 
-        private Connection conn;
+        private final Connection conn;
+        private final String queue;
 
+        /**
+         * Creates a NATS FScopeTransportFactory using the provided NATS connection. Subscribers using this transport
+         * will not use a queue.
+         *
+         * @param conn NATS connection
+         */
         public Factory(Connection conn) {
+            this(conn, null);
+        }
+
+        /**
+         * Creates a NATS FScopeTransportFactory using the provided NATS connection. Subscribers using this transport
+         * will subscribe to the provided queue, forming a queue group. When a queue group is formed, only one member
+         * receives the message.
+         *
+         * @param conn  NATS connection
+         * @param queue subscription queue
+         */
+        public Factory(Connection conn, String queue) {
             this.conn = conn;
+            this.queue = queue;
         }
 
         /**
@@ -59,7 +92,7 @@ public class FNatsScopeTransport extends FScopeTransport {
          * @return A new FScopeTransport instance.
          */
         public FNatsScopeTransport getTransport() {
-            return new FNatsScopeTransport(this.conn);
+            return new FNatsScopeTransport(this.conn, this.queue);
         }
     }
 
@@ -115,7 +148,7 @@ public class FNatsScopeTransport extends FScopeTransport {
 
         frameBuffer = new ArrayBlockingQueue<>(FRAME_BUFFER_SIZE);
 
-        sub = conn.subscribe(getFormattedSubject(), new MessageHandler() {
+        sub = conn.subscribe(getFormattedSubject(), queue, new MessageHandler() {
             @Override
             public void onMessage(Message msg) {
                 if (msg.getData().length < 4) {

@@ -1,6 +1,18 @@
 part of frugal;
 
-/// FTransport is a TTransport for services.
+/// FTransport is Frugal's equivalent of Thrift's TTransport. FTransport
+/// extends TTransport and exposes some additional methods. An FTransport
+/// typically has an FRegistry, so it provides methods for setting the
+/// FRegistry and registering and unregistering an FAsyncCallback to an
+/// FContext. It also allows a way for setting an FTransportMonitor and a
+/// high-water mark provided by an FServer.
+///
+/// FTransport wraps a TTransport, meaning all existing TTransport
+/// implementations will work in Frugal. However, all FTransports must used a
+/// framed protocol, typically implemented by wrapping a TFramedTransport.
+///
+/// Most Frugal language libraries include an FMuxTransport implementation,
+/// which uses a worker pool to handle messages in parallel.
 abstract class FTransport extends TTransport {
   static const REQUEST_TOO_LARGE = 100;
   static const RESPONSE_TOO_LARGE = 101;
@@ -54,6 +66,6 @@ abstract class FTransport extends TTransport {
   }
 
   Future _signalClose(cause) async {
-    if (_monitor != null) await _monitor.onClose(cause);
+    await _monitor?.onClose(cause);
   }
 }
