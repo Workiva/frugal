@@ -28,10 +28,10 @@ class TestFProtocol(unittest.TestCase):
 
         context = FContext("someid")
 
-        ctx = self.protocol.read_response_headers(context)
+        self.protocol.read_response_headers(context)
 
-        self.assertEqual("0", ctx.get_response_header(_OP_ID))
-        self.assertEqual("someid", ctx.get_response_header("_cid"))
+        self.assertEqual("0", context.get_response_header(_OP_ID))
+        self.assertEqual("someid", context.get_response_header("_cid"))
 
     @mock.patch('frugal.protocol.protocol._Headers._write_to_bytearray')
     def test_write_request_headers(self, mock_write):
@@ -102,11 +102,6 @@ class TestFProtocol(unittest.TestCase):
         self.protocol.readFieldBegin()
 
         self.mock_wrapped_protocol.readFieldBegin.assert_called_with()
-
-    def test_readField(self):
-        self.protocol.readField()
-
-        self.mock_wrapped_protocol.readField.assert_called_with()
 
     def test_readStructEnd(self):
         self.protocol.readStructEnd()
