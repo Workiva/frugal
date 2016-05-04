@@ -1,10 +1,8 @@
-from threading import Lock
 
 from tornado import concurrent, gen
 
-from gen_py.base import f_base_foo
+from gen_py.base import f_base_foo as FBaseFoo
 
-from frugal.registry import FClientRegistry
 from frugal.processor.processor import FProcessor
 from thrift.Thrift import TType, TMessageType, TApplicationException
 
@@ -12,19 +10,42 @@ from .ttypes import Event, AwesomeException
 from gen_py.base.ttypes import api_exception
 
 
-class Iface(f_base_foo.Iface):
-
-    def blah(self, context, num, Str, event):
-        pass
+class Iface(FBaseFoo.Iface):
+    """
+    @
+    This is a frugal service.  Frugal will generate bindings that include
+    a frugal Context for each service call.
+    """
 
     def ping(self, context):
+        """
+        @ Ping the server.
+        """
+        pass
+
+    def blah(self, context, num, Str, event):
+        """
+        @ Blah the server.
+
+        Parameters:
+            - num
+            - Str
+            - event
+        """
         pass
 
     def one_way(self, context, id, req):
+        """
+        @ oneway methods don't receive a response from the server.
+
+        Parameters:
+            - id
+            - req
+        """
         pass
 
 
-class Client(f_base_foo.Client, Iface):
+class Client(FBaseFoo.Client, Iface):
 
     def __init__(self, transport, protocol_factory):
         """Initialize a Client with a transport and protocol factory creating a
@@ -34,13 +55,7 @@ class Client(f_base_foo.Client, Iface):
                 transport: FTransport
                 protocol_factory: FProtocolFactory
         """
-        f_base_foo.Client.__init__(self, transport, protocol_factory)
-        self._transport = transport
-        self._transport.set_registry(FClientRegistry())
-        self._protocol_factory = protocol_factory
-        self._iprot = self._protocol_factory.get_protocol(self._transport)
-        self._oprot = self._protocol_factory.get_protocol(self._transport)
-        self._write_lock = Lock()
+        FBaseFoo .Client.__init__(self, transport, protocol_factory)
 
     def one_way(self, context, id, req):
         """ oneway methods don't receive a response from the server
@@ -144,10 +159,10 @@ class Client(f_base_foo.Client, Iface):
         return blah_callback
 
 
-class Processor(f_base_foo.Processor, Iface, FProcessor):
+class Processor(FBaseFoo.Processor, Iface, FProcessor):
 
     def __init__(self, handler):
-        f_base_foo.Processor.__init__(self, handler)
+        FBaseFoo.Processor.__init__(self, handler)
         self._process_map["ping"] = Processor.process_ping
         self._process_map["blah"] = Processor.process_blah
         self._process_map["oneWay"] = Processor.process_oneWay
@@ -206,6 +221,7 @@ class Processor(f_base_foo.Processor, Iface, FProcessor):
         yield gen.maybe_future(self._handler.one_way(context,
                                                      args.id,
                                                      args.req))
+
 
 class ping_args(object):
 
@@ -500,7 +516,7 @@ class one_way_args(object):
             oprot.writeFieldEnd()
         if self.req is not None:
             oprot.writeFieldBegin('req', TType.MAP, 2)
-            oprot.writeMapBegin('req', TType.MAP, 2)
+            oprot.writeMapBegin(TType.I32, TType.STRING, len(self.req))
             for kiter7, viter8 in self.req.items():
                 oprot.writeI32(kiter7)
                 oprot.writeString(viter8)

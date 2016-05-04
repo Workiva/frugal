@@ -65,7 +65,7 @@ def main():
     print("sending blah")
     b = yield foo_client.blah(ctx, 100, "awesomesauce", event)
     print("Blah response {}".format(b))
-    print("Response header foo: {}".format(ctx.get_request_header("foo")))
+    print("Response header foo: {}".format(ctx.get_response_header("foo")))
 
 if __name__ == '__main__':
     io_loop = ioloop.IOLoop.instance()
