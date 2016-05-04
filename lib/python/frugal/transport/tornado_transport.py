@@ -56,7 +56,7 @@ class FMuxTornadoTransport(FTransport):
             self._registry.unregister(context)
 
     def read(self):
-        print("called read")
+        raise StandardError("you're doing it wrong")
 
     def write(self, buff):
         self._transport.write(buff)

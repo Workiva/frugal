@@ -67,7 +67,6 @@ class Client(f_base_foo.Client, Iface):
 
     def blah(self, context, num, Str, event):
         future = concurrent.Future()
-        print("calling blah")
         self.send_blah(context, future, num, Str, event)
         return future
 
@@ -85,18 +84,18 @@ class Client(f_base_foo.Client, Iface):
     def recv_ping(self, context, future):
         def ping_callback(transport):
             iprot = self._protocol_factory.get_protocol(transport)
-            ctx = iprot.read_response_headers(context)
+            iprot.read_response_headers(context)
             (fname, mtype, fid) = iprot.readMessageBegin()
             if mtype == TMessageType.EXCEPTION:
                 x = TApplicationException()
                 x.read(iprot)
                 iprot.readMessageEnd()
+                future.set_exception(x)
                 raise x
-            print("Received a ping response")
             result = ping_result()
             result.read(iprot)
             iprot.readMessageEnd()
-            raise gen.Return(ctx)
+            future.set_result('')
         return ping_callback
 
     def send_blah(self, context, future, num, Str, event):
@@ -122,21 +121,26 @@ class Client(f_base_foo.Client, Iface):
                 x = TApplicationException()
                 x.read(iprot)
                 iprot.readMessageEnd()
+                future.set_exception(x)
                 raise x
             result = blah_result()
             result.read(iprot)
             iprot.readMessageEnd()
             if result.success is not None:
-                return result.success
+                future.set_result(result.success)
+                return
             if result.awe is not None:
-                raise result.awe
+                future.set_exception(result.awe)
+                return
             if result.api is not None:
-                raise result.api
-            raise TApplicationException(
+                future.set_exception(result.awe)
+                return
+            x = TApplicationException(
                 TApplicationException.MISSING_RESULT,
                 "blah failed: unknown result"
             )
-
+            future.set_exception(x)
+            raise x
         return blah_callback
 
 
@@ -253,7 +257,6 @@ class ping_result(object):
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
-            print(ftype)
             if ftype == TType.STOP:
                 break
             else:

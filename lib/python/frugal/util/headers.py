@@ -28,7 +28,6 @@ class _Headers(object):
         for key, value in headers.iteritems():
             size = size + 8 + len(key) + len(value)
 
-        print(size)
         buff = bytearray(size + 5)
 
         pack_into(_UCHAR, buff, 0, _V0)
@@ -54,14 +53,17 @@ class _Headers(object):
 
     @staticmethod
     def _read(buff1):
-        buff = buff1.getvalue()
+        buff = buff1.read(1)
         parsed_headers = {}
         version = unpack_from(_UCHAR, buff[:1])[0]
+        # TODO: Check the version!
 
-        size = unpack_from(_UINT, buff[1:5])[0]
+        buff = buff1.read(4)
+        size = unpack_from(_UINT, buff[0:4])[0]
 
-        offset = 5  # since size is 4 bytes
+        offset = 0  # since size is 4 bytes
 
+        buff = buff1.read(size)
         while offset < size:
             key_size = unpack_from(_UINT, buff[offset:offset + 4])[0]
             offset += 4
@@ -80,7 +82,6 @@ class _Headers(object):
 
             val = unpack_from('>{0}s'.format(val_size), buff, offset)[0]
             offset += val_size
-            print("read key {}, val {}".format(key, val))
             parsed_headers[key] = val
 
         return parsed_headers
@@ -104,11 +105,10 @@ class _Headers(object):
                 "Invalid frame size: {}".format(len(frame))
             )
 
-        entire_frame_length = unpack_from('!I', frame[:4])[0]
-        print("frame full length: {}".format(entire_frame_length))
+        # TODO: What do we do with this?
+        unpack_from('!I', frame[:4])[0]
 
         version = unpack_from(_UCHAR, frame[4:5])[0]
-        print("version : {}".format(version))
 
         if version is not _V0:
             raise FProtocolException(
@@ -148,7 +148,6 @@ class _Headers(object):
 
             val = unpack_from('>{0}s'.format(val_size), buff[i:i + val_size])[0]
             i += val_size
-            print("putting key {0} val {1}".format(name, val))
             parsed_headers[name] = val
 
         return parsed_headers

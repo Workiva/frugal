@@ -61,8 +61,6 @@ class FProtocol(TProtocolBase, object):
         for key, value in headers.iteritems():
             context._set_response_header(key, value)
 
-        return context
-
     def write_request_headers(self, context):
         """Write the request headers to the underlying TTranpsort."""
 
@@ -92,20 +90,65 @@ class FProtocol(TProtocolBase, object):
     def writeStructEnd(self):
         self._wrapped_protocol.writeStructEnd()
 
+    def writeFieldBegin(self, name, ttype, fid):
+        self._wrapped_protocol.writeFieldBegin(name, ttype, fid)
+
+    def writeFieldEnd(self):
+        self._wrapped_protocol.writeFieldEnd()
+
     def writeFieldStop(self):
         self._wrapped_protocol.writeFieldStop()
 
+    def writeMapBegin(self, ktype, vtype, size):
+        self._wrapped_protocol.writeMapBegin(ktype, vtype, size)
+
+    def writeMapEnd(self):
+        self._wrapped_protocol.writeMapEnd()
+
+    def writeListBegin(self, etype, size):
+        self._wrapped_protocol.writeListBegin(etype, size)
+
+    def writeListEnd(self):
+        self._wrapped_protocol.writeListEnd()
+
+    def writeSetBegin(self, etype, size):
+        self._wrapped_protocol.writeSetBegin(etype, size)
+
+    def writeSetEnd(self):
+        self._wrapped_protocol.writeSetEnd()
+
+    def writeBool(self, bool_val):
+        self._wrapped_protocol.writeBool(bool_val)
+
+    def writeByte(self, byte):
+        self._wrapped_protocol.writeByte(byte)
+
+    def writeI16(self, i16):
+        self._wrapped_protocol.writeI16(i16)
+
+    def writeI32(self, i32):
+        self._wrapped_protocol.writeI32(i32)
+
+    def writeI64(self, i64):
+        self._wrapped_protocol.writeI64(i64)
+
+    def writeDouble(self, dub):
+        self._wrapped_protocol.writeDouble(dub)
+
+    def writeString(self, str_val):
+        self._wrapped_protocol.writeString(str_val)
+
     def readMessageBegin(self):
-        self._wrapped_protocol.readMessageBegin()
+        return self._wrapped_protocol.readMessageBegin()
 
     def readStructBegin(self):
-        self._wrapped_protocol.readStructBegin()
+        return self._wrapped_protocol.readStructBegin()
 
     def readFieldBegin(self):
-        self._wrapped_protocol.readFieldBegin()
+        return self._wrapped_protocol.readFieldBegin()
 
     def readField(self):
-        self._wrapped_protocol.readField()
+        return self._wrapped_protocol.readField()
 
     def readStructEnd(self):
-        self._wrapped_protocol.readStructEnd()
+        return self._wrapped_protocol.readStructEnd()

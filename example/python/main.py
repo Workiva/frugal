@@ -59,12 +59,13 @@ def main():
 
     f = yield foo_client.ping(FContext())
     print("ping future: {}".format(f))
-    #ctx = FContext()
-    #event = Event(42, "hello world")
-    #print("sending blah")
-    #b = yield foo_client.blah(ctx, 100, "awesomesauce", event)
-    #print("Blah response {}".format(b))
-    #print("Response header foo: {}".format(ctx.get_request_header("foo")))
+
+    ctx = FContext()
+    event = Event(42, "hello world")
+    print("sending blah")
+    b = yield foo_client.blah(ctx, 100, "awesomesauce", event)
+    print("Blah response {}".format(b))
+    print("Response header foo: {}".format(ctx.get_request_header("foo")))
 
 if __name__ == '__main__':
     io_loop = ioloop.IOLoop.instance()
