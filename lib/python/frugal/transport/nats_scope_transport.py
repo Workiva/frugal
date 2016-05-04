@@ -1,5 +1,7 @@
 from threading import Lock
 
+from tornado import gen
+
 from .scope_transport import FScopeTransport
 from frugal.exceptions import FException
 
@@ -10,7 +12,7 @@ class FNatsScopeTransport(FScopeTransport):
         """Create a new instance of an FNatsScopeTransport for pub/sub."""
         self._conn = conn
         self._subject = ""
-        self._lock = Lock()
+        self._topic_lock = Lock()
         self._pull = False
 
     def lock_topic(self, topic):
@@ -24,7 +26,7 @@ class FNatsScopeTransport(FScopeTransport):
         if self._pull:
             raise FException("Subscriber cannot lock topic.")
 
-        self._lock.acquire()
+        self._topic_lock.acquire()
         self._subject = topic
 
     def unlock_topic(self):
@@ -37,7 +39,7 @@ class FNatsScopeTransport(FScopeTransport):
             raise FException("Subscriber cannot unlock topic.")
 
         self._subject = ""
-        self._lock.release()
+        self._topic_lock.release()
 
     def subscribe(self, topic):
         """Opens the Transport to receive messages on the subscription.
@@ -49,6 +51,7 @@ class FNatsScopeTransport(FScopeTransport):
         self._subject = topic
         self.open()
 
+    @gen.coroutine
     def open(self):
         # TODO
-        pass
+        raise gen.Return(True)

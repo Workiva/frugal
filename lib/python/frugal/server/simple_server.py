@@ -10,8 +10,11 @@ logger = logging.getLogger(__name__)
 class FSimpleServer(FServer):
     """Simple single-threaded server that just pumps around one transport."""
 
-    def __init__(self, processor_factory, transport,
-                 transport_factory, protocol_factory):
+    def __init__(self,
+                 processor_factory,
+                 transport,
+                 transport_factory,
+                 protocol_factory):
         """Initalize an FSimpleServer
 
         Args:

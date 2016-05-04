@@ -45,3 +45,23 @@ class Client(Iface):
         pass
 
 
+class Processor(Iface, FProcessor):
+
+    def __init__(self, handler):
+        self._handler = handler
+        self._process_map = {}
+        self._process_map["basePing"] = Processor.process_basePing
+
+    def process(self, context, iprot, oprot):
+        (name, type, seqid) = iprot.readMessageBegin()
+        if name not in self._process_map:
+            iprot.skip(TType.STRUCT)
+            iprot.readMessageEnd()
+            x = TApplicationException(TApplicationException.UNKNOWN_METHOD,
+                                      "Unknown function {}".format(name))
+            oprot.writeMessageBegin(name, TMessageType.EXCEPTION, seqid)
+            x.write(oprot)
+            oprot.writeMessageEnd()
+            oprot.get_transport().flush()
+        else:
+            return
