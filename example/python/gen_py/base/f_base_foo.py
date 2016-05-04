@@ -1,5 +1,6 @@
 from Queue import Queue
 
+from frugal.processor.processor import FProcessor
 from frugal.registry import FClientRegistry
 
 
