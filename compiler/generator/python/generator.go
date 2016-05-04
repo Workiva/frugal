@@ -148,9 +148,9 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 		"Args:",
 		tab + "provider: FScopeProvider",
 	}, tabtab)
-	publisher += "\n\n"
+	publisher += "\n"
 
-	publisher += tabtab + "self._transport, self._protocol = provider.new()\n"
+	publisher += tabtab + "self._transport, self._protocol = provider.new()\n\n"
 
 	publisher += tab + "def open(self):\n"
 	publisher += tabtab + "self._transport.open()\n\n"
