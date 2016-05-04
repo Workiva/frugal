@@ -31,6 +31,21 @@ class FProtocol(TProtocolBase, object):
         """
         return self.trans
 
+    def write_request_headers(self, context):
+        """Write the request headers to the underlying TTranpsort."""
+
+        self._write_headers(context.get_request_headers())
+
+    def write_response_headers(self, context):
+        """Write the response headers to the underlying TTransport."""
+
+        self._write_headers(context.get_response_headers())
+
+    def _write_headers(self, headers):
+        buff = _Headers._write_to_bytearray(headers)
+
+        self.get_transport().write(buff)
+
     def read_request_headers(self):
         """Reads the request headers out of the underlying TTransportBase and
         return an FContext
@@ -60,21 +75,6 @@ class FProtocol(TProtocolBase, object):
 
         for key, value in headers.iteritems():
             context._set_response_header(key, value)
-
-    def write_request_headers(self, context):
-        """Write the request headers to the underlying TTranpsort."""
-
-        self._write_headers(context.get_request_headers())
-
-    def write_response_headers(self, context):
-        """Write the response headers to the underlying TTransport."""
-
-        self._write_headers(context.get_response_headers())
-
-    def _write_headers(self, headers):
-        buff = _Headers._write_to_bytearray(headers)
-
-        self.get_transport().write(buff)
 
     # Thrift Transport pass through methods
 
@@ -141,14 +141,56 @@ class FProtocol(TProtocolBase, object):
     def readMessageBegin(self):
         return self._wrapped_protocol.readMessageBegin()
 
+    def readMessageEnd(self):
+        return self._wrapped_protocol.readMessageEnd()
+
     def readStructBegin(self):
         return self._wrapped_protocol.readStructBegin()
+
+    def readStructEnd(self):
+        return self._wrapped_protocol.readStructEnd()
 
     def readFieldBegin(self):
         return self._wrapped_protocol.readFieldBegin()
 
-    def readField(self):
-        return self._wrapped_protocol.readField()
+    def readFieldEnd(self):
+        return self._wrapped_protocol.readFieldEnd()
 
-    def readStructEnd(self):
-        return self._wrapped_protocol.readStructEnd()
+    def readMapBegin(self):
+        return self._wrapped_protocol.readMapBegin()
+
+    def readMapEnd(self):
+        return self._wrapped_protocol.readMapEnd()
+
+    def readListBegin(self):
+        return self._wrapped_protocol.readListBegin()
+
+    def readListEnd(self):
+        return self._wrapped_protocol.readListEnd()
+
+    def readSetBegin(self):
+        return self._wrapped_protocol.readSetBegin()
+
+    def readSetEnd(self):
+        return self._wrapped_protocol.readSetEnd()
+
+    def readBool(self):
+        return self._wrapped_protocol.readBool()
+
+    def readByte(self):
+        return self._wrapped_protocol.readByte()
+
+    def readI16(self):
+        return self._wrapped_protocol.readI16()
+
+    def readI32(self):
+        return self._wrapped_protocol.readI32()
+
+    def readI64(self):
+        return self._wrapped_protocol.readI64()
+
+    def readDouble(self):
+        return self._wrapped_protocol.readDouble()
+
+    def readString(self):
+        return self._wrapped_protocol.readString()
