@@ -195,7 +195,7 @@ func (g *Generator) generatePublishMethod(scope *parser.Scope, op *parser.Operat
 	method += tabtab + "oprot = self._protocol\n"
 	method += tabtab + "self._transport.lock_topic(topic)\n"
 	method += tabtab + "try:\n"
-	method += tabtabtab + "oprot.writeRequestHeader(ctx)\n"
+	method += tabtabtab + "oprot.write_request_headers(ctx)\n"
 	method += tabtabtab + "oprot.writeMessageBegin(op, TMessageType.CALL, 0)\n"
 	method += tabtabtab + "req.write(oprot)\n"
 	method += tabtabtab + "oprot.writeMessageEnd()\n"
