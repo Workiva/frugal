@@ -1,5 +1,3 @@
-from .tornado_transport import FMuxTornadoTransport
-
 
 class FTransportFactory(object):
     """FTransportFactory is responsible for creating new FTransports."""
@@ -24,20 +22,4 @@ class FScopeTransportFactory(FTransportFactory):
         Returns:
             FScopeTransport
         """
-
         pass
-
-
-class FMuxTransportFactory(FTransportFactory):
-    """Factory for creating FMuxTransports."""
-
-    def get_transport(self, thrift_transport):
-        """ Returns a new FMuxTransport wrapping the given TTransport
-
-        Args:
-            thrift_transport: TTransport to wrap
-        Returns:
-            new FTransport
-        """
-
-        return FMuxTornadoTransport(thrift_transport)

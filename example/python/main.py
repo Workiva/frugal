@@ -12,7 +12,7 @@ from nats.io.client import Client as NATS
 from frugal.context import FContext
 from frugal.protocol.protocol_factory import FProtocolFactory
 from frugal.provider import FScopeProvider
-from frugal.transport.transport_factory import FMuxTransportFactory
+from frugal.transport.tornado_transport import FMuxTornadoTransportFactory
 from frugal.transport.nats_scope_transport import FNatsScopeTransportFactory
 from frugal.transport.nats_service_transport import TNatsServiceTransport
 
@@ -46,7 +46,7 @@ def main():
 
     yield nats_client.connect(**options)
 
-    transport_factory = FMuxTransportFactory()
+    transport_factory = FMuxTornadoTransportFactory()
     nats_transport = TNatsServiceTransport(nats_client, "foo", 60000, 5)
     tornado_transport = transport_factory.get_transport(nats_transport)
 
