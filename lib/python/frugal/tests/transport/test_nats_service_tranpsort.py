@@ -82,5 +82,3 @@ class TestTNatsServiceTransport(AsyncTestCase):
 
         self.transport.write(buff)
 
-        # Assert unpacking self._wbuf has what we've written
-

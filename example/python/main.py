@@ -11,9 +11,12 @@ from nats.io.client import Client as NATS
 
 from frugal.context import FContext
 from frugal.protocol.protocol_factory import FProtocolFactory
+from frugal.provider import FScopeProvider
 from frugal.transport.transport_factory import FMuxTransportFactory
+from frugal.transport.nats_scope_transport import FNatsScopeTransportFactory
 from frugal.transport.nats_service_transport import TNatsServiceTransport
 
+from gen_py.example.events_publisher import EventsPublisher
 from gen_py.example.f_foo import Client as FFooClient
 from gen_py.example.ttypes import Event
 
@@ -55,10 +58,10 @@ def main():
 
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
     foo_client = FFooClient(tornado_transport, prot_factory)
+
     foo_client.one_way(FContext(), 99, {99: "request"})
 
-    f = yield foo_client.ping(FContext())
-    print("ping future: {}".format(f))
+    yield foo_client.ping(FContext())
 
     ctx = FContext()
     event = Event(42, "hello world")
@@ -67,7 +70,30 @@ def main():
     print("Blah response {}".format(b))
     print("Response header foo: {}".format(ctx.get_response_header("foo")))
 
-if __name__ == '__main__':
+    yield tornado_transport.close()
+
+    ####################################
+    # Publisher                        #
+    ####################################
+
+    yield nats_client.connect(**options)
+
+    scope_transport_factory = FNatsScopeTransportFactory(nats_client)
+    provider = FScopeProvider(scope_transport_factory, prot_factory)
+
+    publisher = EventsPublisher(provider)
+    yield publisher.open()
+
+    event = Event(66, "boomtown")
+    yield publisher.publish_event_created(FContext(), "barUser", event)
+    yield publisher.close()
+
+
+def start():
     io_loop = ioloop.IOLoop.instance()
     io_loop.add_callback(main)
     io_loop.start()
+
+
+if __name__ == '__main__':
+    start()

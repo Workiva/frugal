@@ -26,3 +26,8 @@ class FProtocolException(FException):
     def __init__(self, type=UNKNOWN, message=None):
         super(FProtocolException, self).__init__(message)
         self.type = type
+
+class FMessageSizeException(FException):
+
+    def __init__(self, message=None):
+        super(FMessageSizeException, self).__init__(message)

@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 PYTHON := python
 PIP := pip
-
+HOME := $(PWD)
 BUILD_DIR := .build
 
 all: deps
@@ -39,3 +39,9 @@ xunit:
 
 test_local:
 	./run_tests_local.sh
+
+setup_example:
+	echo $(HOME)
+	deactivate
+	cd ../../example/python && rmvirtualenv frugal-example && mkvirtualenv frugal-example -a $PWD && pip install -Ur requirements_dev.txt
+	cd $(HOME) && pip install -e .

@@ -166,11 +166,20 @@ class TNatsServiceTransport(TTransportBase):
     def close(self):
         """Close the transport asynchronously"""
 
-        if self._is_open:
-            # TODO check close callback
-            # unsub from heartbeat
+        if not self._is_open:
+            return
 
-            yield self._nats_client.close()
+        # TODO check close callback
+        # unsub from heartbeat
+        yield self._nats_client.publish(self._write_to, _DISCONNECT)
+
+        if self._heartbeat_sub_id:
+            self._heartbeat_sub_id = None
+
+        if self._heartbeat_timer.is_running():
+            self._heartbeat_timer.stop()
+
+        yield self._nats_client.close()
 
     def read(self, buff, offset, length):
         raise Exception("Don't call this.")
