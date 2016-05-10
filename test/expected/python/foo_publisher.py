@@ -50,7 +50,7 @@ class FooPublisher(object):
         oprot = self._protocol
         self._transport.lock_topic(topic)
         try:
-            oprot.writeRequestHeader(ctx)
+            oprot.write_request_headers(ctx)
             oprot.writeMessageBegin(op, TMessageType.CALL, 0)
             req.write(oprot)
             oprot.writeMessageEnd()
@@ -73,7 +73,7 @@ class FooPublisher(object):
         oprot = self._protocol
         self._transport.lock_topic(topic)
         try:
-            oprot.writeRequestHeader(ctx)
+            oprot.write_request_headers(ctx)
             oprot.writeMessageBegin(op, TMessageType.CALL, 0)
             req.write(oprot)
             oprot.writeMessageEnd()

@@ -137,8 +137,8 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	publisher += fmt.Sprintf("class %sPublisher(object):\n", scope.Name)
 	if scope.Comment != nil {
 		publisher += g.generateDocString(scope.Comment, tab)
-		publisher += "\n"
 	}
+	publisher += "\n"
 
 	publisher += tab + fmt.Sprintf("_DELIMITER = '%s'\n\n", globals.TopicDelimiter)
 
