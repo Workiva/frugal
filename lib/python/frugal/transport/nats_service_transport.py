@@ -166,20 +166,28 @@ class TNatsServiceTransport(TTransportBase):
     def close(self):
         """Close the transport asynchronously"""
 
+        logger.debug("Closing FNatsServiceTransport.")
+
         if not self._is_open:
             return
 
-        # TODO check close callback
-        # unsub from heartbeat
-        yield self._nats_client.publish(self._write_to, _DISCONNECT)
-
-        if self._heartbeat_sub_id:
-            self._heartbeat_sub_id = None
+        yield self._nats_client.publish_request(self._write_to,
+                                                _DISCONNECT,
+                                                "")
 
         if self._heartbeat_timer.is_running():
             self._heartbeat_timer.stop()
 
-        yield self._nats_client.close()
+        # Typically this is used to unsubscribe after X number of messages
+        # per the nats protocol, giving it an empty string should just UNSUB
+        yield self._nats_client.auto_unsubscribe(self._heartbeat_sub_id, b'')
+
+        if self._heartbeat_sub_id:
+            self._heartbeat_sub_id = None
+
+        yield self._nats_client.auto_unsubscribe(self._listen_to, b'')
+
+        self._is_open = False
 
     def read(self, buff, offset, length):
         raise Exception("Don't call this.")
@@ -196,7 +204,7 @@ class TNatsServiceTransport(TTransportBase):
     def flush(self):
         """Flush publishes whatever is in the buffer to NATS"""
         frame = self._wbuf.getvalue()
-        frame_length = struct.pack('>I', len(frame))
+        frame_length = struct.pack('!I', len(frame))
         self._wbuf = BytesIO()
         yield self._nats_client.publish(self._write_to,
                                         frame_length + frame)

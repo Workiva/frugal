@@ -5,7 +5,8 @@ from .server import FServer
 logger = logging.getLogger(__name__)
 
 # TODO: implement this.
-DEFAULT_MAX_MISSED_HEARTBEATS = 2
+_DEFAULT_MAX_MISSED_HEARTBEATS = 2
+_QUEUE = "rpc"
 
 
 class FNatsServer(FServer):
@@ -14,7 +15,7 @@ class FNatsServer(FServer):
                  nats_client,
                  subject,
                  heartbeat_interval,
-                 max_missed_heartbeats=DEFAULT_MAX_MISSED_HEARTBEATS):
+                 max_missed_heartbeats=_DEFAULT_MAX_MISSED_HEARTBEATS):
         self._nats_client = nats_client
         self._subject = subject
         self._heartbeat_interval = heartbeat_interval
@@ -22,5 +23,11 @@ class FNatsServer(FServer):
 
     def serve(self):
         pass
-        # self.connection.QueueSubscribe(self.subject, queue, callback)
 
+
+
+    class _Client(object):
+
+        def __init__(self, transport, heartbeat):
+            self._transport = transport
+            self._heartbeat = heartbeat

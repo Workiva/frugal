@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class FNatsScopeTransport(FScopeTransport):
 
-    def __init__(self, nats_client=None, queue=""):
+    def __init__(self, nats_client=None, queue=b''):
         """Create a new instance of an FNatsScopeTransport for pub/sub."""
         self._nats_client = nats_client
         self._queue = queue
@@ -69,6 +69,10 @@ class FNatsScopeTransport(FScopeTransport):
     def is_open(self):
         return self._nats_client.is_connected() and self._is_open
 
+    def _on_message_callback(context, req):
+        logger.info("Got a message with context: {}".format(context))
+        logger.info("Got a message with req: {}".format(req))
+
     @gen.coroutine
     def open(self):
         """ Asynchronously opens the transport. Throws exception if the provided
@@ -93,21 +97,32 @@ class FNatsScopeTransport(FScopeTransport):
         if not self._subject:
             raise TTransportException(message="Subject cannot be empty.")
 
-        yield self._nats_client.subscribe(self._subject,
-                                   self._queue,
-                                   self._on_message_callback)
+        self._sub_id = yield self._nats_client.subscribe(
+            "frugal.{}".format(self._subject),
+            self._queue,
+            self._on_message_callback
+        )
 
         self._is_open = True
 
         raise gen.Return(self)
 
-    def _on_message_callback(self, msg=None):
-        if len(msg.data) < 4:
-            logger.warning("discarding invalid message frame")
-
     @gen.coroutine
     def close(self):
-        yield self._nats_client.close()
+        logger.debug("Closing FNatsScopeTransport.")
+
+        if not self._is_open:
+            return
+
+        if not self._pull:
+            self._is_open = False
+            return
+
+        # Unsubscribe
+        self._nats_client.auto_unsubscribe(self._sub_id, "")
+        self._sub_id = None
+
+        self._is_open = False
 
     def read(self):
         pass
@@ -126,7 +141,10 @@ class FNatsScopeTransport(FScopeTransport):
         if not self.is_open():
             raise TTransportException(TTransportException.NOT_OPEN,
                                       "Nats not connected!")
-        size = len(buff) + len(self._write_buffer.getvalue()) + 4
+        wbuf_length = len(self._write_buffer.getvalue())
+
+        size = len(buff) + wbuf_length
+
         if size > _MAX_NATS_MESSAGE_SIZE:
             raise FMessageSizeException("Message exceeds NATS max message size")
 
@@ -137,13 +155,14 @@ class FNatsScopeTransport(FScopeTransport):
         if not self.is_open():
             raise TTransportException(TTransportException.NOT_OPEN,
                                       "Nats not connected!")
+
         frame = self._write_buffer.getvalue()
         frame_length = struct.pack('!I', len(frame))
         self._write_buffer = BytesIO()
+
         formatted_subject = self._get_formatted_subject()
-        print(formatted_subject)
-        yield self._nats_client.publish(formatted_subject,
-                                 frame_length + frame)
+
+        yield self._nats_client.publish(formatted_subject, frame_length + frame)
 
     def _get_formatted_subject(self):
         return "{}{}".format(_FRUGAL_PREFIX, self._subject)
@@ -151,7 +170,7 @@ class FNatsScopeTransport(FScopeTransport):
 
 class FNatsScopeTransportFactory(FScopeTransportFactory):
 
-    def __init__(self, nats_client, queue=None):
+    def __init__(self, nats_client, queue=b''):
         self._nats_client = nats_client
         self._queue = queue
 
