@@ -4,6 +4,7 @@ from thrift.Thrift import TType, TException
 class Event(object):
 
     thrift_spec = (
+        None,
         (1, TType.I64, 'ID', None, -1, ),
         (2, TType.STRING, 'Message', None, None, ),
     )
@@ -73,6 +74,7 @@ class Event(object):
 class AwesomeException(TException):
 
     thrift_spec = (
+        None,
         (1, TType.I64, 'ID', None, -1, ),
         (2, TType.STRING, 'Reason', None, None, ),
     )

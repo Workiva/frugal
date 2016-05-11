@@ -46,6 +46,12 @@ def main():
 
     yield nats_client.connect(**options)
 
+    prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
+
+    #################################
+    # Client                        #
+    #################################
+
     transport_factory = FMuxTornadoTransportFactory()
     nats_transport = TNatsServiceTransport(nats_client, "foo", 60000, 5)
     tornado_transport = transport_factory.get_transport(nats_transport)
@@ -56,7 +62,6 @@ def main():
         logging.error(ex)
         raise gen.Return()
 
-    prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
     foo_client = FFooClient(tornado_transport, prot_factory)
 
     foo_client.one_way(FContext(), 99, {99: "request"})
@@ -76,24 +81,19 @@ def main():
     # Publisher                        #
     ####################################
 
-    yield nats_client.connect(**options)
-
     scope_transport_factory = FNatsScopeTransportFactory(nats_client)
     provider = FScopeProvider(scope_transport_factory, prot_factory)
 
     publisher = EventsPublisher(provider)
     yield publisher.open()
 
-    event = Event(66, "boomtown")
+    event = Event(42, "boomtown")
     yield publisher.publish_event_created(FContext(), "barUser", event)
     yield publisher.close()
 
-
-def start():
-    io_loop = ioloop.IOLoop.instance()
-    io_loop.add_callback(main)
-    io_loop.start()
+    yield nats_client.close()
 
 
 if __name__ == '__main__':
-    start()
+    # Since we can exit after the client calls use `run_sync`
+    ioloop.IOLoop.instance().run_sync(main)

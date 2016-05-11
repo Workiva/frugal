@@ -1,11 +1,10 @@
 from thrift.Thrift import TMessageType
 from tornado import gen
 
-_DELIMETER = "."
-
 
 class EventsPublisher(object):
 
+    _DELIMETER = "."
 
     def __init__(self, scope_provider):
         """Creates an instance of EventsPublisher
@@ -30,12 +29,11 @@ class EventsPublisher(object):
     def publish_event_created(self, ctx, user, req):
         op = "EventCreated"
         prefix = "foo.{}".format(user)
-        topic = "{prefix}{delimeter}Event{delimeter}{op}".format(
+        topic = "{prefix}{delimeter}Events{delimeter}{op}".format(
             prefix=prefix,
-            delimeter=_DELIMETER,
+            delimeter=self._DELIMETER,
             op=op
         )
-        print("locking topic {}".format(topic))
         self._trans.lock_topic(topic)
         try:
             self._prot.write_request_headers(ctx)

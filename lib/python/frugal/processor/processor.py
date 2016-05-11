@@ -17,13 +17,16 @@ class FProcessor(object):
 
 class FBaseProcessor(FProcessor):
 
-    def __init__(self, processor_function_map={}):
+    def __init__(self, processor_function_map=None):
         """ Create new instance of FBaseProcessor that will process requests
 
         Args:
             processor_function_map: dict keyed by rpc call name for
                                     processor functions
         """
+        if processor_function_map is None:
+            processor_function_map = {}
+
         self._processor_function_map = processor_function_map
         self._write_lock = Lock()
 
