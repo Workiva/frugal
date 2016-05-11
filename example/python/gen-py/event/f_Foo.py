@@ -10,9 +10,10 @@ from tornado.concurrent import Future
 from thrift.Thrift import TApplicationException
 from thrift.Thrift import TMessageType
 
-from base import f_BaseFoo
-from base.ttypes import api_exception
-from event.ttypes import AwesomeException
+from base import *
+from base.ttypes import *
+
+from event.ttypes import *
 from event.Foo import *
 
 
