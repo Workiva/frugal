@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/Workiva/frugal/compiler/generator"
 	"github.com/Workiva/frugal/compiler/globals"
@@ -86,11 +85,11 @@ func (g *Generator) GenerateDependencies(dir string) error {
 func (g *Generator) GenerateFile(name, outputDir string, fileType generator.FileType) (*os.File, error) {
 	switch fileType {
 	case generator.PublishFile:
-		return g.CreateFile(strings.ToLower(name)+"_publisher", outputDir, lang, false)
+		return g.CreateFile(fmt.Sprintf("f_%s_publisher", name), outputDir, lang, false)
 	case generator.SubscribeFile:
-		return g.CreateFile(strings.ToLower(name)+"_subscriber", outputDir, lang, false)
+		return g.CreateFile(fmt.Sprintf("f_%s_subscriber", name), outputDir, lang, false)
 	case generator.CombinedServiceFile:
-		return g.CreateFile("f"+strings.ToLower(name), outputDir, lang, false)
+		return g.CreateFile(fmt.Sprintf("f_%s", name), outputDir, lang, false)
 	default:
 		return nil, fmt.Errorf("Bad file type for Python generator: %s", fileType)
 	}

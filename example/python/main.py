@@ -1,5 +1,6 @@
 import logging
 import sys
+sys.path.append('gen-py')
 
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TTransport
@@ -16,9 +17,9 @@ from frugal.transport.tornado_transport import FMuxTornadoTransportFactory
 from frugal.transport.nats_scope_transport import FNatsScopeTransportFactory
 from frugal.transport.nats_service_transport import TNatsServiceTransport
 
-from gen_py.example.events_publisher import EventsPublisher
-from gen_py.example.f_foo import Client as FFooClient
-from gen_py.example.ttypes import Event
+from event.f_Events_publisher import EventsPublisher
+from event.f_Foo import Client as FFooClient
+from event.ttypes import Event
 
 
 root = logging.getLogger()
@@ -59,16 +60,17 @@ def main():
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
     foo_client = FFooClient(tornado_transport, prot_factory)
 
+    print 'one_way()'
     foo_client.one_way(FContext(), 99, {99: "request"})
 
     yield foo_client.ping(FContext())
 
     ctx = FContext()
     event = Event(42, "hello world")
-    print("sending blah")
+    print 'blah()'
     b = yield foo_client.blah(ctx, 100, "awesomesauce", event)
-    print("Blah response {}".format(b))
-    print("Response header foo: {}".format(ctx.get_response_header("foo")))
+    print 'Blah response {}'.format(b)
+    print 'Response header foo: {}'.format(ctx.get_response_header("foo"))
 
     yield tornado_transport.close()
 
@@ -76,17 +78,17 @@ def main():
     # Publisher                        #
     ####################################
 
-    yield nats_client.connect(**options)
+    #yield nats_client.connect(**options)
 
-    scope_transport_factory = FNatsScopeTransportFactory(nats_client)
-    provider = FScopeProvider(scope_transport_factory, prot_factory)
+    #scope_transport_factory = FNatsScopeTransportFactory(nats_client)
+    #provider = FScopeProvider(scope_transport_factory, prot_factory)
 
-    publisher = EventsPublisher(provider)
-    yield publisher.open()
+    #publisher = EventsPublisher(provider)
+    #yield publisher.open()
 
-    event = Event(66, "boomtown")
-    yield publisher.publish_event_created(FContext(), "barUser", event)
-    yield publisher.close()
+    #event = Event(66, "boomtown")
+    #yield publisher.publish_event_created(FContext(), "barUser", event)
+    #yield publisher.close()
 
 
 def start():
