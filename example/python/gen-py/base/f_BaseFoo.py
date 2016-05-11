@@ -8,11 +8,11 @@ from threading import Lock
 
 from thrift.Thrift import TApplicationException
 from thrift.Thrift import TMessageType
-from thrift.Thrift import TType
 from tornado import gen
 from tornado.concurrent import Future
 
 from frugal.processor import FBaseProcessor
+from frugal.processor import FProcessorFunction
 from frugal.registry import FClientRegistry
 
 from base.BaseFoo import basePing_args
@@ -84,34 +84,28 @@ class Client(Iface):
         return basePing_callback
 
 
-class Processor(Iface, FBaseProcessor):
+class Processor(FBaseProcessor):
 
     def __init__(self, handler):
+        super(Processor, self).__init__()
+        self.add_to_processor_map('basePing',
+                                  _basePing(handler, self.get_write_lock()))
+
+
+class _basePing(FProcessorFunction):
+
+    def __init__(self, handler, lock):
         self._handler = handler
-        self._process_map = {}
-        self._process_map["basePing"] = self._process_basePing
+        self._lock = lock
 
+    @gen.coroutine
     def process(self, context, iprot, oprot):
-        (name, type, seqid) = iprot.readMessageBegin()
-        if name not in self._process_map:
-            iprot.skip(TType.STRUCT)
-            iprot.readMessageEnd()
-            x = TApplicationException(TApplicationException.UNKNOWN_METHOD,
-                                      "Unknown function {}".format(name))
-            oprot.writeMessageBegin(name, TMessageType.EXCEPTION, seqid)
-            x.write(oprot)
-            oprot.writeMessageEnd()
-            oprot.get_transport().flush()
-        else:
-            return
-
-    def _process_basePing(self, context, iprot, oprot):
         args = basePing_args()
         args.read(iprot)
         iprot.readMessageEnd()
         result = basePing_result()
         yield gen.maybe_future(self._handler.base_ping(context))
-        with self.get_write_lock():
+        with self._lock:
             oprot.writeMessageBegin('basePing', TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()

@@ -4,6 +4,7 @@
 # DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 #
 
+from frugal.processor import FProcessorFunction
 from tornado import gen
 from tornado.concurrent import Future
 from thrift.Thrift import TApplicationException
@@ -167,29 +168,46 @@ class Client(f_BaseFoo.Client, Iface):
         return blah_callback
 
 
-class Processor(f_BaseFoo.Processor, Iface):
+class Processor(f_BaseFoo.Processor):
 
     def __init__(self, handler):
         super(Processor, self).__init__(handler)
-        self.add_to_processor_map('ping', self._process_ping)
-        self.add_to_processor_map('blah', self._process_blah)
-        self.add_to_processor_map('oneWay', self._process_oneWay)
+        self.add_to_processor_map('ping',
+                                  _ping(handler, self.get_write_lock()))
+        self.add_to_processor_map('blah',
+                                  _blah(handler, self.get_write_lock()))
+        self.add_to_processor_map('oneWay',
+                                  _oneWay(handler, self.get_write_lock()))
+
+
+class _ping(FProcessorFunction):
+
+    def __init__(self, handler, lock):
+        self._handler = handler
+        self._lock = lock
 
     @gen.coroutine
-    def _process_ping(self, context, iprot, oprot):
+    def process(self, context, iprot, oprot):
         args = ping_args()
         args.read(iprot)
         iprot.readMessageEnd()
         result = ping_result()
         yield gen.maybe_future(self._handler.ping(context))
-        with self.get_write_lock():
+        with self._lock:
             oprot.writeMessageBegin("ping", TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()
             oprot.get_transport().flush()
 
+
+class _blah(FProcessorFunction):
+
+    def __init__(self, handler, lock):
+        self._handler = handler
+        self._lock = lock
+
     @gen.coroutine
-    def _process_blah(self, context, iprot, oprot):
+    def process(self, context, iprot, oprot):
         args = blah_args()
         args.read(iprot)
         iprot.readMessageEnd()
@@ -202,14 +220,21 @@ class Processor(f_BaseFoo.Processor, Iface):
             result.awe = awe
         except api_exception as api:
             result.api = api
-        with self.get_write_lock():
+        with self._lock:
             oprot.writeMessageBegin("blah", TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()
             oprot.get_transport().flush()
 
+
+class _oneWay(FProcessorFunction):
+
+    def __init__(self, handler, lock):
+        self._handler = handler
+        self._lock = lock
+
     @gen.coroutine
-    def _process_oneWay(self, context, iprot, oprot):
+    def process(self, context, iprot, oprot):
         args = oneWay_args()
         args.read(iprot)
         iprot.readMessageEnd()
