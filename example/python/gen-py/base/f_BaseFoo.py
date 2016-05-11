@@ -15,8 +15,7 @@ from frugal.processor import FBaseProcessor
 from frugal.processor import FProcessorFunction
 from frugal.registry import FClientRegistry
 
-from base.BaseFoo import basePing_args
-from base.BaseFoo import basePing_result
+from base.BaseFoo import *
 
 
 class Iface(object):

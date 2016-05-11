@@ -13,11 +13,7 @@ from thrift.Thrift import TMessageType
 from base import f_BaseFoo
 from base.ttypes import api_exception
 from event.ttypes import AwesomeException
-from event.Foo import blah_args
-from event.Foo import blah_result
-from event.Foo import oneWay_args
-from event.Foo import ping_args
-from event.Foo import ping_result
+from event.Foo import *
 
 
 class Iface(f_BaseFoo.Iface):
