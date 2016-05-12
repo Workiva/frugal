@@ -16,6 +16,7 @@ const (
 	tab              = "    "
 	tabtab           = tab + tab
 	tabtabtab        = tab + tab + tab
+	tabtabtabtab     = tab + tab + tab + tab
 )
 
 type Generator struct {
@@ -23,7 +24,11 @@ type Generator struct {
 }
 
 func NewGenerator(options map[string]string) generator.LanguageGenerator {
-	return &Generator{&generator.BaseGenerator{Options: options}}
+	gen := &Generator{&generator.BaseGenerator{Options: options}}
+	if _, ok := options["tornado"]; ok {
+		return &TornadoGenerator{gen}
+	}
+	return gen
 }
 
 // TODO Unimplemented methods
@@ -231,6 +236,49 @@ func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 	// TODO
 	globals.PrintWarning(fmt.Sprintf("%s: service generation is not implemented for Python", s.Name))
 	return nil
+}
+
+func (g *Generator) generateServiceInterface(service *parser.Service) string {
+	contents := ""
+	if service.Extends != "" {
+		contents += fmt.Sprintf("class Iface(f_%s.Iface):\n", service.ExtendsService())
+	} else {
+		contents += "class Iface(object):\n"
+	}
+	if service.Comment != nil {
+		contents += g.generateDocString(service.Comment, tab)
+	}
+	contents += "\n"
+
+	for _, method := range service.Methods {
+		contents += g.generateMethodSignature(method)
+		contents += tabtab + "pass\n\n"
+	}
+
+	return contents
+}
+
+func (g *Generator) generateMethodSignature(method *parser.Method) string {
+	contents := ""
+	docstr := []string{"Args:", tab + "ctx: FContext"}
+	for _, arg := range method.Arguments {
+		docstr = append(docstr, tab+fmt.Sprintf("%s: %s", arg.Name, arg.Type)) // TODO: convert thrift type to python type name
+	}
+	if method.Comment != nil {
+		docstr[0] = "\n" + tabtab + docstr[0]
+		docstr = append(method.Comment, docstr...)
+	}
+	contents += tab + fmt.Sprintf("def %s(self, ctx%s):\n", method.Name, g.generateArgs(method.Arguments))
+	contents += g.generateDocString(docstr, tabtab)
+	return contents
+}
+
+func (g *Generator) generateArgs(args []*parser.Field) string {
+	argsStr := ""
+	for _, arg := range args {
+		argsStr += ", " + arg.Name
+	}
+	return argsStr
 }
 
 func (g *Generator) generateDocString(lines []string, tab string) string {
