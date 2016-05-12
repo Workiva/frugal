@@ -1,4 +1,3 @@
-
 import logging
 import sys
 
@@ -39,14 +38,14 @@ def main():
     yield nats_client.connect(**options)
 
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
-    scope_transport_factory = FNatsScopeTransportFactory(nats_client)
-    provider = FScopeProvider(scope_transport_factory, prot_factory)
+    scope_transport_factory = FNatsServiceTransportFactory(nats_client)
+
+    provider = FServiceProvider(scope_transport_factory, prot_factory)
 
     subscriber = EventsSubscriber(provider)
 
     def event_handler(ctx, req):
-        print "Received an event with ID: {} and Message {}".format(req.ID,
-                                                                    req.Message)
+        print "Received an event"
 
     yield subscriber.subscribe_event_created("barUser", event_handler)
 

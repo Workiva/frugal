@@ -24,10 +24,7 @@ class FBaseProcessor(FProcessor):
             processor_function_map: dict keyed by rpc call name for
                                     processor functions
         """
-        if processor_function_map is None:
-            processor_function_map = {}
-
-        self._processor_function_map = processor_function_map
+        self._processor_function_map = processor_function_map or {}
         self._write_lock = Lock()
 
     def process(self, iprot, oprot):

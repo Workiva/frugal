@@ -56,7 +56,12 @@ class _Headers(object):
         buff = buff1.read(1)
         parsed_headers = {}
         version = unpack_from(_UCHAR, buff[:1])[0]
-        # TODO: Check the version!
+
+        if version is not _V0:
+            raise FProtocolException(
+                FProtocolException.BAD_VERSION,
+                "Wrong Frugal version. Found {0}, wanted {1}."
+                .format(version, _V0))
 
         buff = buff1.read(4)
         size = unpack_from(_UINT, buff[0:4])[0]
@@ -70,7 +75,8 @@ class _Headers(object):
 
             # TODO: Check bounds.
 
-            key = unpack_from('>{0}s'.format(key_size), buff[offset:offset+key_size])[0]
+            key = unpack_from('>{0}s'.format(key_size),
+                              buff[offset:offset+key_size])[0]
             offset += key_size
 
             # TODO: Check bounds.
@@ -85,17 +91,6 @@ class _Headers(object):
             parsed_headers[key] = val
 
         return parsed_headers
-
-    @staticmethod
-    def read(transport):
-        """ Read frugal frame from TTranpsort
-
-        Args:
-            transport: TTransport containing frugal frame
-        """
-        #buff = transport.readAll(4)
-        #frugal_frame_size = unpack(!I, buff)
-        pass
 
     @staticmethod
     def decode_from_frame(frame):

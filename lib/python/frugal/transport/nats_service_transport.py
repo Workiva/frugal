@@ -171,21 +171,19 @@ class TNatsServiceTransport(TTransportBase):
         if not self._is_open:
             return
 
-        yield self._nats_client.publish_request(self._write_to,
-                                                _DISCONNECT,
-                                                "")
+        yield self._nats_client.publish_request(self._write_to, _DISCONNECT, "")
 
         if self._heartbeat_timer.is_running():
             self._heartbeat_timer.stop()
 
         # Typically this is used to unsubscribe after X number of messages
         # per the nats protocol, giving it an empty string should just UNSUB
-        yield self._nats_client.auto_unsubscribe(self._heartbeat_sub_id, b'')
+        yield self._nats_client.auto_unsubscribe(self._heartbeat_sub_id, "")
 
         if self._heartbeat_sub_id:
             self._heartbeat_sub_id = None
 
-        yield self._nats_client.auto_unsubscribe(self._listen_to, b'')
+        yield self._nats_client.auto_unsubscribe(self._listen_to, "")
 
         self._is_open = False
 

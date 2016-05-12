@@ -20,15 +20,22 @@ class EventsSubscriber(object):
 
         transport, protocol = self._provider.new()
 
-        yield transport.subscribe(topic)
+        yield transport.subscribe(topic, self.recv_EventCreated(protocol,
+                                                                op,
+                                                                event_handler))
 
-    def recv_EventCreated(op, iprot):
-        name, type, seqid = iprot.readMessageBegin()
-        if name != op:
-            iprot.skip(TType.STRUCT)
+    def recv_EventCreated(self, iprot, op, event_handler):
+        def event_created_callback(msg=None):
+            context = iprot.read_request_headers()
+            (mname, mtype, mid) = iprot.readMessageBegin()
+            if mname != op:
+                iprot.skip(TType.STRUCT)
+                iprot.readMessageEnd()
+                raise TApplicationException(
+                    TApplicationException.UNKNOWN_METHOD
+                )
+            req = Event()
+            req.read(iprot)
             iprot.readMessageEnd()
-            raise TApplicationException(TApplicationException.UNKNOWN_METHOD)
-        req = Event()
-        req.read(iprot)
-        iprot.readMessageEnd()
-        return req
+            return event_handler(context, req)
+        return event_created_callback
