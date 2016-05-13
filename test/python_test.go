@@ -7,10 +7,10 @@ import (
 	"github.com/Workiva/frugal/compiler"
 )
 
-func TestValidPython(t *testing.T) {
+func TestValidPythonTornado(t *testing.T) {
 	options := compiler.Options{
 		File:  validFile,
-		Gen:   "py",
+		Gen:   "py:tornado",
 		Out:   outputDir,
 		Delim: delim,
 	}
@@ -18,8 +18,12 @@ func TestValidPython(t *testing.T) {
 		t.Fatal("Unexpected error", err)
 	}
 
-	pubPath := filepath.Join(outputDir, "valid", "foo_publisher.py")
-	compareFiles(t, "expected/python/foo_publisher.py", pubPath)
-	pubPath = filepath.Join(outputDir, "valid", "blah_publisher.py")
-	compareFiles(t, "expected/python/blah_publisher.py", pubPath)
+	pubPath := filepath.Join(outputDir, "valid", "f_Foo_publisher.py")
+	compareFiles(t, "expected/python/f_Foo_publisher.py", pubPath)
+	pubPath = filepath.Join(outputDir, "valid", "f_blah_publisher.py")
+	compareFiles(t, "expected/python/f_blah_publisher.py", pubPath)
+	servicePath := filepath.Join(outputDir, "valid", "f_Blah.py")
+	compareFiles(t, "expected/python/f_Blah.py", servicePath)
+	initPath := filepath.Join(outputDir, "valid", "__init__.py")
+	compareFiles(t, "expected/python/__init__.py", initPath)
 }
