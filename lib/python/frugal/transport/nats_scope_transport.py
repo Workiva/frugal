@@ -3,7 +3,7 @@ import logging
 from threading import Lock
 import struct
 
-from thrift.transport.TTransport import TTransportException
+from thrift.transport.TTransport import TTransportException, TMemoryBuffer
 from tornado import gen
 
 from .scope_transport import FScopeTransport
@@ -28,7 +28,6 @@ class FNatsScopeTransport(FScopeTransport):
         self._pull = False
         self._is_open = False
         self._write_buffer = None
-        self._read_buffer = BytesIO(b'')
 
     def lock_topic(self, topic):
         """Sets the publish topic and locks the transport for exclusive access.
@@ -94,13 +93,18 @@ class FNatsScopeTransport(FScopeTransport):
         if not self._subject:
             raise TTransportException(message="Subject cannot be empty.")
 
+        def on_message(msg=None):
+            print "MESSAGE DATA: {}".format(msg.data[4:])
+            callback(TMemoryBuffer(msg.data[4:]))
+
         self._sub_id = yield self._nats_client.subscribe(
             "frugal.{}".format(self._subject),
             self._queue,
-            callback
+            on_message
         )
 
         self._is_open = True
+        logger.debug("FNatsScopeTransport open.")
 
     @gen.coroutine
     def close(self):

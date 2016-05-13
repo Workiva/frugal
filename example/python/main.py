@@ -77,10 +77,10 @@ def run_client(nats_client, prot_factory):
 
     ctx = FContext()
     event = Event(42, "hello world")
-    print("sending blah")
+    print "sending blah"
     b = yield foo_client.blah(ctx, 100, "awesomesauce", event)
-    print("Blah response {}".format(b))
-    print("Response header foo: {}".format(ctx.get_response_header("foo")))
+    print "Blah response {}".format(b)
+    print "Response header foo: {}".format(ctx.get_response_header("foo"))
 
     yield tornado_transport.close()
 
@@ -93,10 +93,9 @@ def run_publisher(nats_client, prot_factory):
     publisher = EventsPublisher(provider)
     yield publisher.open()
 
-    event = Event(42, "boomtown")
+    event = Event(42, "hello, world!!!")
     yield publisher.publish_event_created(FContext(), "barUser", event)
     yield publisher.close()
-
 
 
 if __name__ == '__main__':

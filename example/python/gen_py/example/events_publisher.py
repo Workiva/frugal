@@ -6,24 +6,22 @@ class EventsPublisher(object):
 
     _DELIMETER = "."
 
-    def __init__(self, scope_provider):
+    def __init__(self, provider):
         """Creates an instance of EventsPublisher
 
         Args:
             scope_provider: FScopeProvider
         """
-        self._scope_provider = scope_provider
+        self._transport, protocol_factory = provider.new()
+        self._protocol = protocol_factory.get_protocol(self._transport)
 
     @gen.coroutine
     def open(self):
-        (trans, prot) = self._scope_provider.new()
-        self._trans = trans
-        self._prot = prot
-        yield self._trans.open()
+        yield self._transport.open()
 
     @gen.coroutine
     def close(self):
-        yield self._trans.close()
+        yield self._transport.close()
 
     @gen.coroutine
     def publish_event_created(self, ctx, user, req):
@@ -34,12 +32,13 @@ class EventsPublisher(object):
             delimeter=self._DELIMETER,
             op=op
         )
-        self._trans.lock_topic(topic)
+        self._transport.lock_topic(topic)
         try:
-            self._prot.write_request_headers(ctx)
-            self._prot.writeMessageBegin(op, TMessageType.CALL, 0)
-            req.write(self._prot)
-            self._prot.writeMessageEnd()
-            self._trans.flush()
+            self._protocol.write_request_headers(ctx)
+            self._protocol.writeMessageBegin(op, TMessageType.CALL, 0)
+            print "BEFORE WRITE {} {}".format(req.ID, req.Message)
+            req.write(self._protocol)
+            self._protocol.writeMessageEnd()
+            self._transport.flush()
         finally:
-            self._trans.unlock_topic()
+            self._transport.unlock_topic()

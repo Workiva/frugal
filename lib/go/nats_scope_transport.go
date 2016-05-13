@@ -147,6 +147,7 @@ func (n *fNatsScopeTransport) handleMessage(msg *nats.Msg) {
 		return
 	}
 	// Discard frame size.
+	fmt.Printf("Message data %s", msg.Data[4:])
 	select {
 	case n.frameBuffer <- msg.Data[4:]:
 	case <-n.closeChan:

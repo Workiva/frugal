@@ -18,11 +18,10 @@ class FScopeProvider(object):
     def new(self):
         """Return a tupled FScopeTransport and FProtocol.
         Returns:
-            (FScopeTransport, FProtocol)
+            (FScopeTransport, FProtocolFactory)
         """
         transport = self._transport_factory.get_transport()
-        protocol = self._protocol_factory.get_protocol(transport)
-        return transport, protocol
+        return transport, self._protocol_factory
 
 
 class FServiceProvider(object):

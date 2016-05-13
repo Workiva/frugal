@@ -2,7 +2,14 @@ from thrift.Thrift import TType, TException
 
 
 class Event(object):
+    """
+    @
+    This docstring gets added to the generated code because it has the @ sign.
 
+    Attributes:
+        - ID: @ ID is a unique identifier for an event.
+        - Message: @ Message contains the event payload.
+    """
     thrift_spec = (
         None,
         (1, TType.I64, 'ID', None, -1, ),
