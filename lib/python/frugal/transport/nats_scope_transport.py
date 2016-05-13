@@ -28,6 +28,7 @@ class FNatsScopeTransport(FScopeTransport):
         self._pull = False
         self._is_open = False
         self._write_buffer = None
+        self._read_buffer = BytesIO(b'')
 
     def lock_topic(self, topic):
         """Sets the publish topic and locks the transport for exclusive access.
@@ -56,7 +57,7 @@ class FNatsScopeTransport(FScopeTransport):
         self._topic_lock.release()
 
     @gen.coroutine
-    def subscribe(self, topic):
+    def subscribe(self, topic, callback=None):
         """Opens the Transport to receive messages on the subscription.
 
         Args:
@@ -64,17 +65,13 @@ class FNatsScopeTransport(FScopeTransport):
         """
         self._pull = True
         self._subject = topic
-        yield self.open()
+        yield self.open(callback)
 
     def is_open(self):
         return self._nats_client.is_connected() and self._is_open
 
-    def _on_message_callback(context, req):
-        logger.info("Got a message with context: {}".format(context))
-        logger.info("Got a message with req: {}".format(req))
-
     @gen.coroutine
-    def open(self):
+    def open(self, callback=None):
         """ Asynchronously opens the transport. Throws exception if the provided
         NATS client is not connected or if the transport is already open.
 
@@ -100,12 +97,10 @@ class FNatsScopeTransport(FScopeTransport):
         self._sub_id = yield self._nats_client.subscribe(
             "frugal.{}".format(self._subject),
             self._queue,
-            self._on_message_callback
+            callback
         )
 
         self._is_open = True
-
-        raise gen.Return(self)
 
     @gen.coroutine
     def close(self):
@@ -124,7 +119,8 @@ class FNatsScopeTransport(FScopeTransport):
 
         self._is_open = False
 
-    def read(self):
+    def read(self, sz):
+        # Don't call this
         pass
 
     def write(self, buff):

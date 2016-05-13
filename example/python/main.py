@@ -35,24 +35,31 @@ root.addHandler(ch)
 
 @gen.coroutine
 def main():
-
     logging.info("Starting...")
 
-    # Create & connect to NATS Client using python-nats
     nats_client = NATS()
     options = {
         "verbose": True,
         "servers": ["nats://127.0.0.1:4222"]
     }
 
+    logging.debug("Connecting to NATS")
     yield nats_client.connect(**options)
 
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
 
-    #################################
-    # Client                        #
-    #################################
+    if "-client" in sys.argv or len(sys.argv) == 1:
+        logging.debug("Running FFooClient")
+        yield run_client(nats_client, prot_factory)
+    if "-publisher" in sys.argv or len(sys.argv) == 1:
+        logging.debug("Running EventsPublisher")
+        yield run_publisher(nats_client, prot_factory)
 
+    yield nats_client.close()
+
+
+@gen.coroutine
+def run_client(nats_client, prot_factory):
     transport_factory = FMuxTornadoTransportFactory()
     nats_transport = TNatsServiceTransport(nats_client, "foo", 60000, 5)
     tornado_transport = transport_factory.get_transport(nats_transport)
@@ -79,21 +86,18 @@ def main():
 
     yield tornado_transport.close()
 
-    ####################################
-    # Publisher                        #
-    ####################################
 
-    #scope_transport_factory = FNatsScopeTransportFactory(nats_client)
-    #provider = FScopeProvider(scope_transport_factory, prot_factory)
+@gen.coroutine
+def run_publisher(nats_client, prot_factory):
+    scope_transport_factory = FNatsScopeTransportFactory(nats_client)
+    provider = FScopeProvider(scope_transport_factory, prot_factory)
 
-    #publisher = EventsPublisher(provider)
-    #yield publisher.open()
+    publisher = EventsPublisher(provider)
+    yield publisher.open()
 
-    #event = Event(42, "boomtown")
-    #yield publisher.publish_event_created(FContext(), "barUser", event)
-    #yield publisher.close()
-
-    yield nats_client.close()
+    event = Event(42, "boomtown")
+    yield publisher.publish_event_created(FContext(), "barUser", event)
+    yield publisher.close()
 
 
 if __name__ == '__main__':

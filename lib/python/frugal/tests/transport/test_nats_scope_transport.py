@@ -35,10 +35,10 @@ class TestFNatsScopeTransport(AsyncTestCase):
 
     def test_subscriber(self):
         expected = "topic"
-        self.publisher_transport.subscribe(expected)
+        self.subscriber_transport.subscribe(expected)
 
-        self.assertTrue(self.publisher_transport._pull)
-        self.assertEqual(expected, self.publisher_transport._subject)
+        self.assertTrue(self.subscriber_transport._pull)
+        self.assertEqual(expected, self.subscriber_transport._subject)
 
     def test_subscriber_cannot_lock_topic(self):
         expected = "topic"
@@ -109,11 +109,6 @@ class TestFNatsScopeTransport(AsyncTestCase):
 
         self.nats_client.subscribe.assert_called()
         self.assertTrue(self.subscriber_transport.is_open())
-
-    def test_on_message_callback_when_something(self):
-        msg = Message("som")
-
-        self.subscriber_transport._on_message_callback(msg)
 
     def test_write_throws_if_transport_not_open(self):
         try:

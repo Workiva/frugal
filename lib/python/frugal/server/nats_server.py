@@ -24,6 +24,23 @@ class FNatsServer(FServer):
     def serve(self):
         pass
 
+    def stop(self):
+        pass
+
+    def set_high_watermark(self):
+        pass
+
+    def get_high_watermark(self, watermark):
+        pass
+
+    def _new_frugal_inbox(self, prefix):
+        pass
+
+    def _accept(self, listen_to, reply_to, heartbeat_subject):
+        pass
+
+    def _remove(self, heartbeat):
+        pass
 
 
     class _Client(object):
@@ -31,3 +48,10 @@ class FNatsServer(FServer):
         def __init__(self, transport, heartbeat):
             self._transport = transport
             self._heartbeat = heartbeat
+
+        def start(self):
+            pass
+
+        def kill(self):
+            pass
+
