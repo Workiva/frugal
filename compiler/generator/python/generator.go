@@ -158,7 +158,8 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	}, tabtab)
 	publisher += "\n"
 
-	publisher += tabtab + "self._transport, self._protocol = provider.new()\n\n"
+	publisher += tabtab + "self._transport, protocol_factory = provider.new()\n"
+	publisher += tabtab + "self._protocol = protocol_factory.get_protocol(self._transport)\n\n"
 
 	publisher += tab + "def open(self):\n"
 	publisher += tabtab + "self._transport.open()\n\n"

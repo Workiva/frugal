@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Workiva/frugal/compiler/globals"
 	"github.com/Workiva/frugal/compiler/parser"
 )
 
@@ -41,6 +42,22 @@ func (t *TornadoGenerator) GenerateServiceImports(file *os.File, s *parser.Servi
 	imports += fmt.Sprintf("from %s.%s import *\n", namespace, s.Name)
 	imports += fmt.Sprintf("from %s.ttypes import *\n", namespace)
 
+	_, err := file.WriteString(imports)
+	return err
+}
+
+func (t *TornadoGenerator) GenerateScopeImports(file *os.File, s *parser.Scope) error {
+	imports := "from thrift.Thrift import TApplicationException\n"
+	imports += "from thrift.Thrift import TMessageType\n"
+	imports += "from thrift.Thrift import TType\n"
+	imports += "from tornado import gen\n"
+	imports += "from frugal.subscription import FSubscription\n\n"
+
+	namespace, ok := t.Frugal.Thrift.Namespace(lang)
+	if !ok {
+		namespace = t.Frugal.Name
+	}
+	imports += fmt.Sprintf("from %s.ttypes import *\n", namespace)
 	_, err := file.WriteString(imports)
 	return err
 }
@@ -235,4 +252,81 @@ func (t *TornadoGenerator) generateProcessorFunction(method *parser.Method) stri
 	contents += "\n\n"
 
 	return contents
+}
+
+func (t *TornadoGenerator) GenerateSubscriber(file *os.File, scope *parser.Scope) error {
+	subscriber := ""
+	subscriber += fmt.Sprintf("class %sSubscriber(object):\n", scope.Name)
+	if scope.Comment != nil {
+		subscriber += t.generateDocString(scope.Comment, tab)
+	}
+	subscriber += "\n"
+
+	subscriber += tab + fmt.Sprintf("_DELIMITER = '%s'\n\n", globals.TopicDelimiter)
+
+	subscriber += tab + "def __init__(self, provider):\n"
+	subscriber += t.generateDocString([]string{
+		fmt.Sprintf("Create a new %sSubscriber.\n", scope.Name),
+		"Args:",
+		tab + "provider: FScopeProvider",
+	}, tabtab)
+	subscriber += "\n"
+	subscriber += tabtab + "self._transport, self._protocol_factory = provider.new()\n\n"
+
+	for _, op := range scope.Operations {
+		subscriber += t.generateSubscribeMethod(scope, op)
+		subscriber += "\n\n"
+	}
+
+	_, err := file.WriteString(subscriber)
+	return err
+}
+
+func (t *TornadoGenerator) generateSubscribeMethod(scope *parser.Scope, op *parser.Operation) string {
+	args := ""
+	docstr := []string{}
+	if len(scope.Prefix.Variables) > 0 {
+		docstr = append(docstr, "Args:")
+		prefix := ""
+		for _, variable := range scope.Prefix.Variables {
+			docstr = append(docstr, tab+fmt.Sprintf("%s: string", variable))
+			args += prefix + variable
+			prefix = ", "
+		}
+		args += ", "
+	}
+	docstr = append(docstr, tab+fmt.Sprintf("%s_handler: function which takes %s", op.Name, op.Type))
+	if op.Comment != nil {
+		docstr[0] = "\n" + tabtab + docstr[0]
+		docstr = append(op.Comment, docstr...)
+	}
+	method := tab + "@gen.coroutine\n"
+	method += tab + fmt.Sprintf("def subscribe_%s(self, %s%s_handler):\n", op.Name, args, op.Name)
+	method += t.generateDocString(docstr, tabtab)
+	method += "\n"
+
+	method += tabtab + fmt.Sprintf("op = '%s'\n", op.Name)
+	method += tabtab + fmt.Sprintf("prefix = %s\n", generatePrefixStringTemplate(scope))
+	method += tabtab + fmt.Sprintf("topic = '%%s%s%%s%%s' %% (prefix, self._DELIMITER, op)\n\n", scope.Name)
+
+	method += tabtab + fmt.Sprintf(
+		"yield self._transport.subscribe(topic, self._recv_%s(self._protocol_factory, op, %s_handler)\n\n",
+		op.Name, op.Name)
+
+	method += tab + fmt.Sprintf("def recv_%s(self, protocol_factory, op, handler):\n", op.Name)
+	method += tabtab + "def callback(transport):\n"
+	method += tabtabtab + "iprot = protocol_factory.get_protocol(transport)\n"
+	method += tabtabtab + "ctx = iprot.read_request_headers()\n"
+	method += tabtabtab + "mname, _, _ = iprot.readMessageBegin()\n"
+	method += tabtabtab + "if mname != op:\n"
+	method += tabtabtabtab + "iprot.skip(TType.STRUCT)\n"
+	method += tabtabtabtab + "iprot.readMessageEnd()\n"
+	method += tabtabtabtab + "raise TApplicationException(TApplicationException.UNKNOWN_METHOD)\n"
+	method += tabtabtab + fmt.Sprintf("req = %s()\n", op.Type.Name)
+	method += tabtabtab + "req.read(iprot)\n"
+	method += tabtabtab + "iprot.readMessageEnd()\n"
+	method += tabtabtab + "handler(ctx, req)\n"
+	method += tabtab + "return callback\n\n"
+
+	return method
 }

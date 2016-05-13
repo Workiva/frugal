@@ -12,23 +12,18 @@ from thrift.Thrift import TType
 from tornado import gen
 from frugal.subscription import FSubscription
 
-from event.ttypes import *
+from valid.ttypes import *
 
 
 
 
-class EventsSubscriber(object):
-    """
-    This docstring gets added to the generated code because it has
-    the @ sign. Prefix specifies topic prefix tokens, which can be static or
-    variable.
-    """
+class blahSubscriber(object):
 
     _DELIMITER = '.'
 
     def __init__(self, provider):
         """
-        Create a new EventsSubscriber.
+        Create a new blahSubscriber.
 
         Args:
             provider: FScopeProvider
@@ -37,22 +32,18 @@ class EventsSubscriber(object):
         self._transport, self._protocol_factory = provider.new()
 
     @gen.coroutine
-    def subscribe_EventCreated(self, user, EventCreated_handler):
+    def subscribe_DoStuff(self, DoStuff_handler):
         """
-        This is a docstring.
-        
-        Args:
-            user: string
-            EventCreated_handler: function which takes Event
+            DoStuff_handler: function which takes Thing
         """
 
-        op = 'EventCreated'
-        prefix = 'foo.%s.' % (user)
-        topic = '%sEvents%s%s' % (prefix, self._DELIMITER, op)
+        op = 'DoStuff'
+        prefix = ''
+        topic = '%sblah%s%s' % (prefix, self._DELIMITER, op)
 
-        yield self._transport.subscribe(topic, self._recv_EventCreated(self._protocol_factory, op, EventCreated_handler)
+        yield self._transport.subscribe(topic, self._recv_DoStuff(self._protocol_factory, op, DoStuff_handler)
 
-    def recv_EventCreated(self, protocol_factory, op, handler):
+    def recv_DoStuff(self, protocol_factory, op, handler):
         def callback(transport):
             iprot = protocol_factory.get_protocol(transport)
             ctx = iprot.read_request_headers()
@@ -61,7 +52,7 @@ class EventsSubscriber(object):
                 iprot.skip(TType.STRUCT)
                 iprot.readMessageEnd()
                 raise TApplicationException(TApplicationException.UNKNOWN_METHOD)
-            req = Event()
+            req = Thing()
             req.read(iprot)
             iprot.readMessageEnd()
             handler(ctx, req)
