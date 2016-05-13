@@ -78,7 +78,11 @@ func (g *Generator) GetOutputDir(dir string) string {
 }
 
 func (g *Generator) DefaultOutputDir() string {
-	return defaultOutputDir
+	dir := defaultOutputDir
+	if _, ok := g.Options["tornado"]; ok {
+		dir += ".tornado"
+	}
+	return dir
 }
 
 func (g *Generator) PostProcess(f *os.File) error { return nil }

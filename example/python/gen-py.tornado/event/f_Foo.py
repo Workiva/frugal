@@ -4,59 +4,67 @@
 # DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 #
 
+
+
+from threading import Lock
+
+from frugal.processor import FBaseProcessor
 from frugal.processor import FProcessorFunction
-from tornado import gen
-from tornado.concurrent import Future
+from frugal.registry import FClientRegistry
 from thrift.Thrift import TApplicationException
 from thrift.Thrift import TMessageType
+from tornado import gen
+from tornado.concurrent import Future
 
-from base import *
-from base.ttypes import *
-
-from event.ttypes import *
+import base
 from event.Foo import *
+from event.ttypes import *
 
 
-class Iface(f_BaseFoo.Iface):
+class Iface(base.f_BaseFoo.Iface):
     """
-    This is a frugal service.  Frugal will generate bindings that include
+    This is a thrift service. Frugal will generate bindings that include 
     a frugal Context for each service call.
     """
 
-    def ping(self, context):
+    def ping(self, ctx):
         """
         Ping the server.
+        
+        Args:
+            ctx: FContext
         """
         pass
 
-    def blah(self, context, num, Str, event):
+    def blah(self, ctx, num, Str, event):
         """
         Blah the server.
-
-        Parameters:
-            - num
-            - Str
-            - event
+        
+        Args:
+            ctx: FContext
+            num: i32
+            Str: string
+            event: Event
         """
         pass
 
-    def one_way(self, context, id, req):
+    def oneWay(self, ctx, id, req):
         """
         oneway methods don't receive a response from the server.
-
-        Parameters:
-            - id
-            - req
+        
+        Args:
+            ctx: FContext
+            id: id
+            req: request
         """
         pass
 
 
-class Client(f_BaseFoo.Client, Iface):
+class Client(base.f_BaseFoo.Client, Iface):
 
     def __init__(self, transport, protocol_factory):
         """
-        Initialize a Client with a transport and protocol factory creating a
-        new FClientRegistry
+        Create a new Client with a transport and protocol factory.
 
         Args:
             transport: FTransport
@@ -64,51 +72,33 @@ class Client(f_BaseFoo.Client, Iface):
         """
         super(Client, self).__init__(transport, protocol_factory)
 
-    def one_way(self, context, id, req):
+    def ping(self, ctx):
         """
-        oneway methods don't receive a response from the server
-
+        Ping the server.
+        
         Args:
-            context: FContext
-            req: dict key values to send (will be converted to JSON string)
+            ctx: FContext
         """
-        oprot = self._oprot
-        with self._write_lock:
-            oprot.write_request_headers(context)
-            oprot.writeMessageBegin("oneWay", TMessageType.ONEWAY, 0)
-            args = oneWay_args()
-            args.id = id
-            args.req = req
-            args.write(oprot)
-            oprot.writeMessageEnd()
-            oprot.get_transport().flush()
-
-    def ping(self, context):
         future = Future()
-        self._send_ping(context, future)
+        self._send_ping(ctx, future)
         return future
 
-    def blah(self, context, num, Str, event):
-        future = Future()
-        self._send_blah(context, future, num, Str, event)
-        return future
-
-    def _send_ping(self, context, future):
+    def _send_ping(self, ctx, future):
         oprot = self._oprot
-        self._transport.register(context, self._recv_ping(context, future))
+        self._transport.register(ctx, self._recv_ping(ctx, future))
         with self._write_lock:
-            oprot.write_request_headers(context)
+            oprot.write_request_headers(ctx)
             oprot.writeMessageBegin('ping', TMessageType.CALL, 0)
             args = ping_args()
             args.write(oprot)
             oprot.writeMessageEnd()
             oprot.get_transport().flush()
 
-    def _recv_ping(self, context, future):
+    def _recv_ping(self, ctx, future):
         def ping_callback(transport):
             iprot = self._protocol_factory.get_protocol(transport)
-            iprot.read_response_headers(context)
-            fname, mtype, fid = iprot.readMessageBegin()
+            iprot.read_response_headers(ctx)
+            _, mtype, _ = iprot.readMessageBegin()
             if mtype == TMessageType.EXCEPTION:
                 x = TApplicationException()
                 x.read(iprot)
@@ -121,11 +111,25 @@ class Client(f_BaseFoo.Client, Iface):
             future.set_result(None)
         return ping_callback
 
-    def _send_blah(self, context, future, num, Str, event):
+    def blah(self, ctx, num, Str, event):
+        """
+        Blah the server.
+        
+        Args:
+            ctx: FContext
+            num: i32
+            Str: string
+            event: Event
+        """
+        future = Future()
+        self._send_blah(ctx, future, num, Str, event)
+        return future
+
+    def _send_blah(self, ctx, future, num, Str, event):
         oprot = self._oprot
-        self._transport.register(context, self._recv_blah(context, future))
+        self._transport.register(ctx, self._recv_blah(ctx, future))
         with self._write_lock:
-            oprot.write_request_headers(context)
+            oprot.write_request_headers(ctx)
             oprot.writeMessageBegin('blah', TMessageType.CALL, 0)
             args = blah_args()
             args.num = num
@@ -135,11 +139,11 @@ class Client(f_BaseFoo.Client, Iface):
             oprot.writeMessageEnd()
             oprot.get_transport().flush()
 
-    def _recv_blah(self, context, future):
+    def _recv_blah(self, ctx, future):
         def blah_callback(transport):
             iprot = self._protocol_factory.get_protocol(transport)
-            iprot.read_response_headers(context)
-            fname, mtype, fid = iprot.readMessageBegin()
+            iprot.read_response_headers(ctx)
+            _, mtype, _ = iprot.readMessageBegin()
             if mtype == TMessageType.EXCEPTION:
                 x = TApplicationException()
                 x.read(iprot)
@@ -149,32 +153,51 @@ class Client(f_BaseFoo.Client, Iface):
             result = blah_result()
             result.read(iprot)
             iprot.readMessageEnd()
-            if result.success is not None:
-                future.set_result(result.success)
-                return
             if result.awe is not None:
                 future.set_exception(result.awe)
                 return
             if result.api is not None:
                 future.set_exception(result.api)
                 return
-            x = TApplicationException(TApplicationException.MISSING_RESULT,
-                                      "blah failed: unknown result")
+            if result.success is not None:
+                future.set_result(result.success)
+                return
+            x = TApplicationException(TApplicationException.MISSING_RESULT, "blah failed: unknown result")
             future.set_exception(x)
             raise x
         return blah_callback
 
+    def oneWay(self, ctx, id, req):
+        """
+        oneway methods don't receive a response from the server.
+        
+        Args:
+            ctx: FContext
+            id: id
+            req: request
+        """
+        self._send_oneWay(ctx, id, req)
 
-class Processor(f_BaseFoo.Processor):
+    def _send_oneWay(self, ctx, id, req):
+        oprot = self._oprot
+        with self._write_lock:
+            oprot.write_request_headers(ctx)
+            oprot.writeMessageBegin('oneWay', TMessageType.CALL, 0)
+            args = oneWay_args()
+            args.id = id
+            args.req = req
+            args.write(oprot)
+            oprot.writeMessageEnd()
+            oprot.get_transport().flush()
+
+
+class Processor(base.f_BaseFoo.Processor):
 
     def __init__(self, handler):
         super(Processor, self).__init__(handler)
-        self.add_to_processor_map('ping',
-                                  _ping(handler, self.get_write_lock()))
-        self.add_to_processor_map('blah',
-                                  _blah(handler, self.get_write_lock()))
-        self.add_to_processor_map('oneWay',
-                                  _oneWay(handler, self.get_write_lock()))
+        self.add_to_processor_map('ping', _ping(handler, self.get_write_lock()))
+        self.add_to_processor_map('blah', _blah(handler, self.get_write_lock()))
+        self.add_to_processor_map('oneWay', _oneWay(handler, self.get_write_lock()))
 
 
 class _ping(FProcessorFunction):
@@ -184,14 +207,14 @@ class _ping(FProcessorFunction):
         self._lock = lock
 
     @gen.coroutine
-    def process(self, context, iprot, oprot):
+    def process(self, ctx, iprot, oprot):
         args = ping_args()
         args.read(iprot)
         iprot.readMessageEnd()
         result = ping_result()
-        yield gen.maybe_future(self._handler.ping(context))
+        yield gen.maybe_future(self._handler.ping(ctx))
         with self._lock:
-            oprot.writeMessageBegin("ping", TMessageType.REPLY, 0)
+            oprot.writeMessageBegin('ping', TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()
             oprot.get_transport().flush()
@@ -204,21 +227,19 @@ class _blah(FProcessorFunction):
         self._lock = lock
 
     @gen.coroutine
-    def process(self, context, iprot, oprot):
+    def process(self, ctx, iprot, oprot):
         args = blah_args()
         args.read(iprot)
         iprot.readMessageEnd()
         result = blah_result()
         try:
-            result.success = yield gen.maybe_future(
-                self._handler.blah(context, args.num, args.Str, args.event)
-            )
+            result.success = yield gen.maybe_future(self._handler.blah(ctx, args.num, args.Str, args.event))
         except AwesomeException as awe:
             result.awe = awe
-        except api_exception as api:
+        except base.api_exception as api:
             result.api = api
         with self._lock:
-            oprot.writeMessageBegin("blah", TMessageType.REPLY, 0)
+            oprot.writeMessageBegin('blah', TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()
             oprot.get_transport().flush()
@@ -231,10 +252,10 @@ class _oneWay(FProcessorFunction):
         self._lock = lock
 
     @gen.coroutine
-    def process(self, context, iprot, oprot):
+    def process(self, ctx, iprot, oprot):
         args = oneWay_args()
         args.read(iprot)
         iprot.readMessageEnd()
-        yield gen.maybe_future(self._handler.one_way(context, args.id,
-                                                     args.req))
+        yield gen.maybe_future(self._handler.oneWay(ctx, args.id, args.req))
+
 

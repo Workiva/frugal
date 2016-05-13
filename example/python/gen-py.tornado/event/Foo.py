@@ -3,7 +3,7 @@
 #
 # DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 #
-#  options string: py
+#  options string: py:tornado
 #
 
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException
@@ -18,6 +18,9 @@ try:
 except:
   fastbinary = None
 
+from tornado import gen
+from tornado import concurrent
+from thrift.transport import TTransport
 
 class Iface(base.BaseFoo.Iface):
   """
@@ -57,26 +60,27 @@ class Client(base.BaseFoo.Client, Iface):
   This is a thrift service. Frugal will generate bindings that include
   a frugal Context for each service call.
   """
-  def __init__(self, iprot, oprot=None):
-    base.BaseFoo.Client.__init__(self, iprot, oprot)
+  def __init__(self, transport, iprot_factory, oprot_factory=None):
+    base.BaseFoo.Client.__init__(self, transport, iprot_factory, oprot_factory)
 
   def ping(self):
     """
     Ping the server.
     """
+    self._seqid += 1
+    future = self._reqs[self._seqid] = concurrent.Future()
     self.send_ping()
-    self.recv_ping()
+    return future
 
   def send_ping(self):
-    self._oprot.writeMessageBegin('ping', TMessageType.CALL, self._seqid)
+    oprot = self._oprot_factory.getProtocol(self._transport)
+    oprot.writeMessageBegin('ping', TMessageType.CALL, self._seqid)
     args = ping_args()
-    args.write(self._oprot)
-    self._oprot.writeMessageEnd()
-    self._oprot.trans.flush()
+    args.write(oprot)
+    oprot.writeMessageEnd()
+    oprot.trans.flush()
 
-  def recv_ping(self):
-    iprot = self._iprot
-    (fname, mtype, rseqid) = iprot.readMessageBegin()
+  def recv_ping(self, iprot, mtype, rseqid):
     if mtype == TMessageType.EXCEPTION:
       x = TApplicationException()
       x.read(iprot)
@@ -96,22 +100,23 @@ class Client(base.BaseFoo.Client, Iface):
      - Str
      - event
     """
+    self._seqid += 1
+    future = self._reqs[self._seqid] = concurrent.Future()
     self.send_blah(num, Str, event)
-    return self.recv_blah()
+    return future
 
   def send_blah(self, num, Str, event):
-    self._oprot.writeMessageBegin('blah', TMessageType.CALL, self._seqid)
+    oprot = self._oprot_factory.getProtocol(self._transport)
+    oprot.writeMessageBegin('blah', TMessageType.CALL, self._seqid)
     args = blah_args()
     args.num = num
     args.Str = Str
     args.event = event
-    args.write(self._oprot)
-    self._oprot.writeMessageEnd()
-    self._oprot.trans.flush()
+    args.write(oprot)
+    oprot.writeMessageEnd()
+    oprot.trans.flush()
 
-  def recv_blah(self):
-    iprot = self._iprot
-    (fname, mtype, rseqid) = iprot.readMessageBegin()
+  def recv_blah(self, iprot, mtype, rseqid):
     if mtype == TMessageType.EXCEPTION:
       x = TApplicationException()
       x.read(iprot)
@@ -136,16 +141,18 @@ class Client(base.BaseFoo.Client, Iface):
      - id
      - req
     """
+    self._seqid += 1
     self.send_oneWay(id, req)
 
   def send_oneWay(self, id, req):
-    self._oprot.writeMessageBegin('oneWay', TMessageType.ONEWAY, self._seqid)
+    oprot = self._oprot_factory.getProtocol(self._transport)
+    oprot.writeMessageBegin('oneWay', TMessageType.ONEWAY, self._seqid)
     args = oneWay_args()
     args.id = id
     args.req = req
-    args.write(self._oprot)
-    self._oprot.writeMessageEnd()
-    self._oprot.trans.flush()
+    args.write(oprot)
+    oprot.writeMessageEnd()
+    oprot.trans.flush()
 
 class Processor(base.BaseFoo.Processor, Iface, TProcessor):
   def __init__(self, handler):
@@ -166,64 +173,43 @@ class Processor(base.BaseFoo.Processor, Iface, TProcessor):
       oprot.trans.flush()
       return
     else:
-      self._processMap[name](self, seqid, iprot, oprot)
-    return True
+      return self._processMap[name](self, seqid, iprot, oprot)
 
+  @gen.coroutine
   def process_ping(self, seqid, iprot, oprot):
     args = ping_args()
     args.read(iprot)
     iprot.readMessageEnd()
     result = ping_result()
-    try:
-      self._handler.ping()
-      msg_type = TMessageType.REPLY
-    except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
-      raise
-    except Exception as ex:
-      msg_type = TMessageType.EXCEPTION
-      logging.exception(ex)
-      result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
-    oprot.writeMessageBegin("ping", msg_type, seqid)
+    yield gen.maybe_future(self._handler.ping())
+    oprot.writeMessageBegin("ping", TMessageType.REPLY, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
     oprot.trans.flush()
 
+  @gen.coroutine
   def process_blah(self, seqid, iprot, oprot):
     args = blah_args()
     args.read(iprot)
     iprot.readMessageEnd()
     result = blah_result()
     try:
-      result.success = self._handler.blah(args.num, args.Str, args.event)
-      msg_type = TMessageType.REPLY
-    except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
-      raise
+      result.success = yield gen.maybe_future(self._handler.blah(args.num, args.Str, args.event))
     except AwesomeException as awe:
-      msg_type = TMessageType.REPLY
       result.awe = awe
     except base.ttypes.api_exception as api:
-      msg_type = TMessageType.REPLY
       result.api = api
-    except Exception as ex:
-      msg_type = TMessageType.EXCEPTION
-      logging.exception(ex)
-      result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
-    oprot.writeMessageBegin("blah", msg_type, seqid)
+    oprot.writeMessageBegin("blah", TMessageType.REPLY, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
     oprot.trans.flush()
 
+  @gen.coroutine
   def process_oneWay(self, seqid, iprot, oprot):
     args = oneWay_args()
     args.read(iprot)
     iprot.readMessageEnd()
-    try:
-      self._handler.oneWay(args.id, args.req)
-      msg_type = TMessageType.REPLY
-    except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
-      raise
-    except:
-      pass
+    yield gen.maybe_future(self._handler.oneWay(args.id, args.req))
 
 
 # HELPER FUNCTIONS AND STRUCTURES

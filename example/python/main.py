@@ -1,6 +1,6 @@
 import logging
 import sys
-sys.path.append('gen-py')
+sys.path.append('gen-py.tornado')
 
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TTransport
@@ -72,9 +72,13 @@ def run_client(nats_client, prot_factory):
 
     foo_client = FFooClient(tornado_transport, prot_factory)
 
-    print 'one_way()'
-    foo_client.one_way(FContext(), 99, {99: "request"})
+    print 'oneWay()'
+    foo_client.oneWay(FContext(), 99, {99: "request"})
 
+    print 'basePing()'
+    yield foo_client.basePing(FContext())
+
+    print 'ping()'
     yield foo_client.ping(FContext())
 
     ctx = FContext()

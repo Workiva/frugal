@@ -3,10 +3,9 @@
 #
 # DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 #
-#  options string: py
+#  options string: py:tornado
 #
 
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException
 from ttypes import *
 
-DEFAULT_ID = -1
