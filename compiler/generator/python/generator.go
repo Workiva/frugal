@@ -300,7 +300,7 @@ func (g *Generator) generateMethodSignature(method *parser.Method) string {
 	contents := ""
 	docstr := []string{"Args:", tab + "ctx: FContext"}
 	for _, arg := range method.Arguments {
-		docstr = append(docstr, tab+fmt.Sprintf("%s: %s", arg.Name, arg.Type)) // TODO: convert thrift type to python type name
+		docstr = append(docstr, tab+fmt.Sprintf("%s: %s", arg.Name, g.getPythonTypeName(arg.Type)))
 	}
 	if method.Comment != nil {
 		docstr[0] = "\n" + tabtab + docstr[0]
@@ -334,4 +334,38 @@ func (g *Generator) generateDocString(lines []string, tab string) string {
 	}
 	docstr += tab + "\"\"\"\n"
 	return docstr
+}
+
+func (g *Generator) getPythonTypeName(t *parser.Type) string {
+	t = g.Frugal.UnderlyingType(t)
+	switch t.Name {
+	case "bool":
+		return "boolean"
+	case "byte", "i8":
+		return "int (signed 8 bits)"
+	case "i16":
+		return "int (signed 16 bits)"
+	case "i32":
+		return "int (signed 32 bits)"
+	case "i64":
+		return "int (signed 64 bits)"
+	case "double":
+		return "float"
+	case "string":
+		return "string"
+	case "binary":
+		return "binary string"
+	case "list":
+		typ := g.Frugal.UnderlyingType(t.ValueType)
+		return fmt.Sprintf("list of %s", g.getPythonTypeName(typ))
+	case "set":
+		typ := g.Frugal.UnderlyingType(t.ValueType)
+		return fmt.Sprintf("set of %s", g.getPythonTypeName(typ))
+	case "map":
+		return fmt.Sprintf("dict of <%s, %s>",
+			g.getPythonTypeName(t.KeyType), g.getPythonTypeName(t.ValueType))
+	default:
+		// Custom type, either typedef or struct.
+		return t.Name
+	}
 }

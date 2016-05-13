@@ -42,7 +42,7 @@ class Iface(base.f_BaseFoo.Iface):
         
         Args:
             ctx: FContext
-            num: i32
+            num: int (signed 32 bits)
             Str: string
             event: Event
         """
@@ -54,8 +54,8 @@ class Iface(base.f_BaseFoo.Iface):
         
         Args:
             ctx: FContext
-            id: id
-            req: request
+            id: int (signed 64 bits)
+            req: dict of <int (signed 32 bits), string>
         """
         pass
 
@@ -117,7 +117,7 @@ class Client(base.f_BaseFoo.Client, Iface):
         
         Args:
             ctx: FContext
-            num: i32
+            num: int (signed 32 bits)
             Str: string
             event: Event
         """
@@ -173,8 +173,8 @@ class Client(base.f_BaseFoo.Client, Iface):
         
         Args:
             ctx: FContext
-            id: id
-            req: request
+            id: int (signed 64 bits)
+            req: dict of <int (signed 32 bits), string>
         """
         self._send_oneWay(ctx, id, req)
 

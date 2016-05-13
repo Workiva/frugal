@@ -39,7 +39,7 @@ class Iface(object):
             ctx: FContext
             one: Thing
             Two: Stuff
-            custom_ints: list<Int>
+            custom_ints: list of int (signed 32 bits)
         """
         pass
 
@@ -107,7 +107,7 @@ class Client(Iface):
             ctx: FContext
             one: Thing
             Two: Stuff
-            custom_ints: list<Int>
+            custom_ints: list of int (signed 32 bits)
         """
         future = Future()
         self._send_bleh(ctx, future, one, Two, custom_ints)
