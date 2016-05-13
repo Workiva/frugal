@@ -241,7 +241,7 @@ func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 func (g *Generator) generateServiceInterface(service *parser.Service) string {
 	contents := ""
 	if service.Extends != "" {
-		contents += fmt.Sprintf("class Iface(f_%s.Iface):\n", service.ExtendsService())
+		contents += fmt.Sprintf("class Iface(%s.Iface):\n", g.getServiceExtendsName(service))
 	} else {
 		contents += "class Iface(object):\n"
 	}
@@ -258,6 +258,40 @@ func (g *Generator) generateServiceInterface(service *parser.Service) string {
 	return contents
 }
 
+func (g *Generator) getServiceExtendsName(service *parser.Service) string {
+	serviceName := "f_" + service.ExtendsService()
+	include := service.ExtendsInclude()
+	if include != "" {
+		if inc, ok := g.Frugal.NamespaceForInclude(include, lang); ok {
+			include = inc
+		}
+		serviceName = include + "." + serviceName
+	}
+	return serviceName
+}
+
+func (g *Generator) generateProcessor(service *parser.Service) string {
+	contents := ""
+	if service.Extends != "" {
+		contents += fmt.Sprintf("class Processor(%s.Processor):\n\n", g.getServiceExtendsName(service))
+	} else {
+		contents += "class Processor(FBaseProcessor):\n\n"
+	}
+
+	contents += tab + "def __init__(self, handler):\n"
+	if service.Extends != "" {
+		contents += tabtab + "super(Processor, self).__init__(handler)\n"
+	} else {
+		contents += tabtab + "super(Processor, self).__init__()\n"
+	}
+	for _, method := range service.Methods {
+		contents += tabtab + fmt.Sprintf("self.add_to_processor_map('%s', _%s(handler, self.get_write_lock()))\n",
+			method.Name, method.Name)
+	}
+	contents += "\n\n"
+	return contents
+}
+
 func (g *Generator) generateMethodSignature(method *parser.Method) string {
 	contents := ""
 	docstr := []string{"Args:", tab + "ctx: FContext"}
@@ -268,15 +302,23 @@ func (g *Generator) generateMethodSignature(method *parser.Method) string {
 		docstr[0] = "\n" + tabtab + docstr[0]
 		docstr = append(method.Comment, docstr...)
 	}
-	contents += tab + fmt.Sprintf("def %s(self, ctx%s):\n", method.Name, g.generateArgs(method.Arguments))
+	contents += tab + fmt.Sprintf("def %s(self, ctx%s):\n", method.Name, g.generateClientArgs(method.Arguments))
 	contents += g.generateDocString(docstr, tabtab)
 	return contents
 }
 
-func (g *Generator) generateArgs(args []*parser.Field) string {
+func (g *Generator) generateClientArgs(args []*parser.Field) string {
+	return g.generateArgs(args, "")
+}
+
+func (g *Generator) generateServerArgs(args []*parser.Field) string {
+	return g.generateArgs(args, "args.")
+}
+
+func (g *Generator) generateArgs(args []*parser.Field, prefix string) string {
 	argsStr := ""
 	for _, arg := range args {
-		argsStr += ", " + arg.Name
+		argsStr += fmt.Sprintf(", %s%s", prefix, arg.Name)
 	}
 	return argsStr
 }
