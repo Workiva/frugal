@@ -85,7 +85,6 @@ class _Headers(object):
             offset += 4
 
             # TODO: Check bounds.
-
             val = unpack_from('>{0}s'.format(val_size), buff, offset)[0]
             offset += val_size
             parsed_headers[key] = val

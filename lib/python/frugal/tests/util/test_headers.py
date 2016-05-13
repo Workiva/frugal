@@ -42,11 +42,6 @@ class TestHeaders(unittest.TestCase):
         self.assertEquals(expected["_cid"], actual["_cid"])
         self.assertEquals(expected["foo"], actual["foo"])
 
-    def test_read_from_transport(self):
-       transport = mock.Mock()
-
-       self.headers.read(transport)
-
     def test_decode_from_frame_throws_fprotocol_exception_frame_too_short(self):
 
         frame = b'\x00'
