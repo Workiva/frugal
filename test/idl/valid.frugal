@@ -2,6 +2,9 @@
 
 namespace java foo
 
+include "validStructs.frugal"
+include "ValidTypes.frugal"
+
 /**@
  * This is a docstring.
  */
@@ -24,6 +27,9 @@ service Blah {
     void ping(),
     /**@ Use this to tell the sever how you feel. */
     i64 bleh(1:Thing one, 2:Stuff Two, 3:list<Int> custom_ints) throws (1: InvalidOperation oops),
+
+    validStructs.Thing getThing(),
+    ValidTypes.MyInt getMyInt(),
 }
 
 // This is a scope

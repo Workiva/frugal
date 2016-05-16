@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-const Version = "1.3.0"
+const Version = "1.3.1"
 
 var (
 	TopicDelimiter  string = "."

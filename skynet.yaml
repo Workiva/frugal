@@ -28,8 +28,7 @@ scripts:
 
   - cd $GOPATH/src/github.com/Workiva/frugal
   - export GOPATH=$GOPATH:$PWD
-  - go get -d ./compiler .
-  - go install
+  - godep go install
 
   - frugal=$PWD
   - go get -d -t ./lib/go .

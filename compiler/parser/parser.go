@@ -9,6 +9,10 @@ import (
 
 // ParseFrugal parses the given Frugal file into its semantic representation.
 func ParseFrugal(filePath string) (*Frugal, error) {
+	return parseFrugal(filePath, []string{})
+}
+
+func parseFrugal(filePath string, visitedIncludes []string) (*Frugal, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -19,6 +23,11 @@ func ParseFrugal(filePath string) (*Frugal, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if contains(visitedIncludes, name) {
+		return nil, fmt.Errorf("Circular include: %s", append(visitedIncludes, name))
+	}
+	visitedIncludes = append(visitedIncludes, name)
 
 	parsed, err := ParseReader(filePath, file)
 	if err != nil {
@@ -39,7 +48,7 @@ func ParseFrugal(filePath string) (*Frugal, error) {
 			return nil, fmt.Errorf("Bad include name: %s", include)
 		}
 
-		parsedIncl, err := ParseFrugal(filepath.Join(frugal.Dir, include))
+		parsedIncl, err := parseFrugal(filepath.Join(frugal.Dir, include), visitedIncludes)
 		if err != nil {
 			return nil, err
 		}
@@ -73,4 +82,13 @@ func getName(f *os.File) (string, error) {
 		return "", fmt.Errorf("Invalid file: %s", f.Name())
 	}
 	return parts[0], nil
+}
+
+func contains(arr []string, e string) bool {
+	for _, item := range arr {
+		if item == e {
+			return true
+		}
+	}
+	return false
 }

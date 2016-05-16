@@ -51,9 +51,10 @@ brew install Workiva/workiva/thrift
 
 Expect the build to take about 3 minutes.
 
-Install Frugal
+Install Frugal using [godep](https://github.com/tools/godep)
 ```
-$ go get github.com/Workiva/frugal
+$ git clone https://github.com/Workiva/frugal.git
+$ godep go install
 ```
 
 If you don't have a Go environment setup or don't want to install Thrift you

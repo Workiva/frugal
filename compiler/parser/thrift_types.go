@@ -489,7 +489,7 @@ func (t *Thrift) validateExceptions(includes map[string]*Frugal) error {
 func (t *Thrift) validateStructLike(s *Struct, includes map[string]*Frugal) error {
 	for _, field := range s.Fields {
 		if !t.isValidType(field.Type, includes) {
-			return fmt.Errorf("invalid type '%s' on struct '%s'", field.Type.Name, s.Name)
+			return fmt.Errorf("invalid type '%s' on struct '%s'", field.Type.String(), s.Name)
 		}
 	}
 	return nil

@@ -76,7 +76,7 @@ func main() {
 		},
 	}
 
-	app.Action = func(c *cli.Context) {
+	app.Action = func(c *cli.Context) error {
 		if help {
 			cli.ShowAppHelp(c)
 			os.Exit(0)
@@ -115,6 +115,8 @@ func main() {
 			fmt.Printf("Failed to generate %s:\n\t%s\n", options.File, err.Error())
 			os.Exit(1)
 		}
+
+		return nil
 	}
 
 	app.Run(os.Args)

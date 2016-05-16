@@ -52,32 +52,10 @@ public class FSimpleServer implements FServer {
                 throw e;
             }
             if (client != null) {
-                ProcessorThread processorThread = new ProcessorThread(client);
-                processorThread.run();
-            }
-        }
-    }
-
-    private class ProcessorThread extends Thread {
-        TTransport client;
-
-        ProcessorThread(TTransport client) {
-            this.client = client;
-            setName("processor");
-        }
-
-        public void run() {
-            try {
-                accept(client);
-            } catch (TTransportException ttx) {
-                // Client died, just move on
-            } catch (TException tx) {
-                if (!stopped) {
-                    LOGGER.warning("frugal: Thrift error occurred during processing of message. " + tx.getMessage());
-                }
-            } catch (Exception x) {
-                if (!stopped) {
-                    LOGGER.warning("frugal: Error occurred during processing of message. " + x.getMessage());
+                try {
+                    accept(client);
+                } catch (TException e) {
+                    LOGGER.warning("frugal: error accepting client connection: " + e.getMessage());
                 }
             }
         }

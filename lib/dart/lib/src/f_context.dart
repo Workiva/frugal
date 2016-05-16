@@ -114,7 +114,7 @@ class FContext {
 
   /// Get the named response header
   String responseHeader(String name) {
-    return _requestHeaders[name];
+    return _responseHeaders[name];
   }
 
   /// Get response headers map

@@ -45,20 +45,4 @@ public class FMuxTransportTest {
         assertFalse(muxTransport.isOpen());
     }
 
-    @Test
-    public void testOpenThrowsAlreadyOpenException() throws Exception {
-        when(mockTrans.isOpen()).thenReturn(true);
-
-        registry = new FClientRegistry();
-
-        muxTransport.setRegistry(registry);
-
-        try {
-            muxTransport.open();
-            fail();
-        } catch (TTransportException ex) {
-            assertEquals("transport already open", ex.getMessage());
-        }
-    }
-
 }

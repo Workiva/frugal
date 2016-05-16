@@ -21,6 +21,8 @@ abstract class FTransport extends TTransport {
   TTransport _transport;
   MonitorRunner _monitor;
   Duration _highWatermark = DEFAULT_WATERMARK;
+  StreamController _closeController = new StreamController.broadcast();
+  Stream<Object> get onClose => _closeController.stream;
 
   void set transport(TTransport transport) {
     _transport = transport;
@@ -66,6 +68,7 @@ abstract class FTransport extends TTransport {
   }
 
   Future _signalClose(cause) async {
+    _closeController.add(cause);
     await _monitor?.onClose(cause);
   }
 }

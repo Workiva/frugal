@@ -87,9 +87,6 @@ public class FMuxTransport extends FTransport {
     }
 
     public synchronized void open() throws TTransportException {
-        if (isOpen()) {
-            throw new TTransportException("transport already open");
-        }
         try {
             framedTransport.open();
         } catch (TTransportException e) {
