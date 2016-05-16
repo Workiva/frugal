@@ -20,7 +20,11 @@ logger = logging.getLogger(__name__)
 class FNatsScopeTransport(FScopeTransport):
 
     def __init__(self, nats_client=None, queue=b''):
-        """Create a new instance of an FNatsScopeTransport for pub/sub."""
+        """Create a new instance of an FNatsScopeTransport for pub/sub.
+
+            Args:
+                nats_client: A connected instance of the Python NATS client.
+        """
         self._nats_client = nats_client
         self._queue = queue
         self._subject = ""

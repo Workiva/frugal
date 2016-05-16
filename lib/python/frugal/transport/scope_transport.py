@@ -24,3 +24,6 @@ class FScopeTransport(TTransportBase):
         """
         pass
 
+    def unsubscribe(self):
+        pass
+

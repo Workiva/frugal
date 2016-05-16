@@ -3,16 +3,16 @@ import sys
 
 from thrift.protocol import TBinaryProtocol
 
-from tornado import ioloop
 from tornado import gen
 
 from nats.io.client import Client as NATS
 
+from frugal.processor.processor_factory import FProcessorFactory
 from frugal.protocol.protocol_factory import FProtocolFactory
-from frugal.provider import FScopeProvider
-from frugal.transport.nats_scope_transport import FNatsScopeTransportFactory
+from frugal.server.nats_server import FNatsServer
+from frugal.transport.nats_service_transport import FNatsServiceTransportFactory
 
-from gen_py.example.events_subscriber import EventsSubscriber
+from gen_py.example.f_foo import Processor as FFooProcessor
 
 
 root = logging.getLogger()
@@ -24,6 +24,18 @@ formatter = logging.Formatter(
     '%(asctime)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 root.addHandler(ch)
+
+
+class ExampleHandler(object):
+
+    def ping(self, context):
+        print "Received ping with cid : {}".format(context.get_corr_id())
+
+    def oneWay(self, context, req):
+        pass
+
+    def blah(self, context, num, Str, event):
+        pass
 
 
 @gen.coroutine
@@ -38,20 +50,28 @@ def main():
     yield nats_client.connect(**options)
 
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
-    scope_transport_factory = FNatsServiceTransportFactory(nats_client)
+    transport_factory = FNatsServiceTransportFactory(nats_client)
 
-    provider = FServiceProvider(scope_transport_factory, prot_factory)
+    handler = ExampleHandler()
+    processor = FFooProcessor(handler)
+    processor_factory = FProcessorFactory(processor)
 
-    subscriber = EventsSubscriber(provider)
+    subject = "foo"
+    heartbeat_interval = 20 * 1000
+    max_missed_heartbeats = 3
 
-    def event_handler(ctx, req):
-        print "Received an event"
+    server = FNatsServer(nats_client,
+                         subject,
+                         heartbeat_interval,
+                         max_missed_heartbeats,
+                         processor_factory,
+                         transport_factory,
+                         prot_factory)
 
-    yield subscriber.subscribe_event_created("barUser", event_handler)
+    logging.info("Starting server...")
 
-    logging.info("Subscriber starting...")
+    # This should start the ioloop
+    server.serve()
 
 if __name__ == '__main__':
-    io_loop = ioloop.IOLoop.instance()
-    io_loop.add_callback(main)
-    io_loop.start()
+    main()
