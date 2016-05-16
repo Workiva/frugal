@@ -3,19 +3,20 @@ import sys
 sys.path.append('gen-py.tornado')
 
 from thrift.protocol import TBinaryProtocol
-from thrift.transport import TTransport
+from thrift.transport.TTransport import TTransportException
 
-from tornado import ioloop
-from tornado import gen
+from tornado import ioloop, gen
 
 from nats.io.client import Client as NATS
 
 from frugal.context import FContext
-from frugal.protocol.protocol_factory import FProtocolFactory
+from frugal.protocol import FProtocolFactory
 from frugal.provider import FScopeProvider
-from frugal.transport.tornado_transport import FMuxTornadoTransportFactory
-from frugal.transport.nats_scope_transport import FNatsScopeTransportFactory
-from frugal.transport.nats_service_transport import TNatsServiceTransport
+from frugal.transport import (
+    FMuxTornadoTransportFactory,
+    FNatsScopeTransportFactory,
+    TNatsServiceTransport
+)
 
 from event.f_Events_publisher import EventsPublisher
 from event.f_Foo import Client as FFooClient
@@ -66,7 +67,7 @@ def run_client(nats_client, prot_factory):
 
     try:
         yield tornado_transport.open()
-    except TTransport.TTransportException as ex:
+    except TTransportException as ex:
         logging.error(ex)
         raise gen.Return()
 

@@ -6,8 +6,7 @@ import struct
 from thrift.transport.TTransport import TTransportException, TMemoryBuffer
 from tornado import gen
 
-from .scope_transport import FScopeTransport
-from .transport_factory import FScopeTransportFactory
+from frugal.transport import FScopeTransport, FScopeTransportFactory
 from frugal.exceptions import FException, FMessageSizeException
 
 _MAX_NATS_MESSAGE_SIZE = 1024 * 1024

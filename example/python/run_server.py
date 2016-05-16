@@ -1,5 +1,6 @@
 import logging
 import sys
+sys.path.append('gen-py.tornado')
 
 from thrift.protocol import TBinaryProtocol
 
@@ -8,7 +9,7 @@ from tornado import gen
 from nats.io.client import Client as NATS
 
 from frugal.processor.processor_factory import FProcessorFactory
-from frugal.protocol.protocol_factory import FProtocolFactory
+from frugal.protocol import FProtocolFactory
 from frugal.server.nats_server import FNatsServer
 from frugal.transport.nats_service_transport import FNatsServiceTransportFactory
 
@@ -26,16 +27,20 @@ ch.setFormatter(formatter)
 root.addHandler(ch)
 
 
-class ExampleHandler(object):
+# TODO: implement FFoo.Iface
+class FooHandler(object):
 
-    def ping(self, context):
-        print "Received ping with cid : {}".format(context.get_corr_id())
+    def ping(self, ctx):
+        print "Received ping with cid : {}".format(ctx.get_corr_id())
 
-    def oneWay(self, context, req):
-        pass
+    def oneWay(self, ctx, req):
+        print "Received oneWay: {} {}".format(ctx, req)
 
-    def blah(self, context, num, Str, event):
-        pass
+    def blah(self, ctx, num, Str, event):
+        print "Received blah {} {} {} {}".format(ctx, num, Str, event)
+
+    def basePing(self, ctx):
+        print "Received basePing: {}".format(ctx)
 
 
 @gen.coroutine
@@ -52,7 +57,7 @@ def main():
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
     transport_factory = FNatsServiceTransportFactory(nats_client)
 
-    handler = ExampleHandler()
+    handler = FooHandler()
     processor = FFooProcessor(handler)
     processor_factory = FProcessorFactory(processor)
 

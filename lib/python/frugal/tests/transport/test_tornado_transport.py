@@ -4,7 +4,7 @@ from tornado.concurrent import Future
 from tornado.testing import AsyncTestCase, gen_test
 
 from frugal.context import FContext
-from frugal.transport.tornado_transport import FMuxTornadoTransport
+from frugal.transport import FMuxTornadoTransport
 
 
 class TestFmuxTornadoTransport(AsyncTestCase):

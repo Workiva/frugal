@@ -7,9 +7,7 @@ from io import BytesIO
 
 from nats.io.utils import new_inbox
 from thrift.transport.TTransport import TTransportBase, TTransportException
-from tornado import gen
-from tornado import concurrent
-from tornado import ioloop
+from tornado import gen, concurrent, ioloop
 
 
 _NATS_PROTOCOL_VERSION = 0
