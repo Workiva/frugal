@@ -6,24 +6,36 @@
 
 
 
+from thrift.Thrift import TApplicationException
 from thrift.Thrift import TMessageType
+from thrift.Thrift import TType
+from tornado import gen
+from frugal.subscription import FSubscription
+
+from event.ttypes import *
 
 
 
 
-class blahPublisher(object):
+class EventsPublisher(object):
+    """
+    This docstring gets added to the generated code because it has
+    the @ sign. Prefix specifies topic prefix tokens, which can be static or
+    variable.
+    """
 
     _DELIMITER = '.'
 
     def __init__(self, provider):
         """
-        Create a new blahPublisher.
+        Create a new EventsPublisher.
 
         Args:
             provider: FScopeProvider
         """
 
-        self._transport, self._protocol = provider.new()
+        self._transport, protocol_factory = provider.new()
+        self._protocol = protocol_factory.get_protocol(self._transport)
 
     def open(self):
         self._transport.open()
@@ -31,16 +43,19 @@ class blahPublisher(object):
     def close(self):
         self._transport.close()
 
-    def publish_DoStuff(self, ctx, req):
+    def publish_EventCreated(self, ctx, user, req):
         """
+        This is a docstring.
+        
         Args:
             ctx: FContext
-            req: Thing
+            user: string
+            req: Event
         """
 
-        op = 'DoStuff'
-        prefix = ''
-        topic = '%sblah%s%s' % (prefix, self._DELIMITER, op)
+        op = 'EventCreated'
+        prefix = 'foo.%s.' % (user)
+        topic = '%sEvents%s%s' % (prefix, self._DELIMITER, op)
         oprot = self._protocol
         self._transport.lock_topic(topic)
         try:

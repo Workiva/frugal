@@ -6,7 +6,13 @@
 
 
 
+from thrift.Thrift import TApplicationException
 from thrift.Thrift import TMessageType
+from thrift.Thrift import TType
+from tornado import gen
+from frugal.subscription import FSubscription
+
+from valid.ttypes import *
 
 
 
@@ -26,7 +32,8 @@ class FooPublisher(object):
             provider: FScopeProvider
         """
 
-        self._transport, self._protocol = provider.new()
+        self._transport, protocol_factory = provider.new()
+        self._protocol = protocol_factory.get_protocol(self._transport)
 
     def open(self):
         self._transport.open()

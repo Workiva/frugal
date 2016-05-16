@@ -1,5 +1,6 @@
 import logging
 import sys
+sys.path.append('gen-py.tornado')
 
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TTransport
@@ -16,9 +17,9 @@ from frugal.transport.tornado_transport import FMuxTornadoTransportFactory
 from frugal.transport.nats_scope_transport import FNatsScopeTransportFactory
 from frugal.transport.nats_service_transport import TNatsServiceTransport
 
-from gen_py.example.events_publisher import EventsPublisher
-from gen_py.example.f_foo import Client as FFooClient
-from gen_py.example.ttypes import Event
+from event.f_Events_publisher import EventsPublisher
+from event.f_Foo import Client as FFooClient
+from event.ttypes import Event
 
 
 root = logging.getLogger()
@@ -71,16 +72,21 @@ def run_client(nats_client, prot_factory):
 
     foo_client = FFooClient(tornado_transport, prot_factory)
 
-    foo_client.one_way(FContext(), 99, {99: "request"})
+    print 'oneWay()'
+    foo_client.oneWay(FContext(), 99, {99: "request"})
 
+    print 'basePing()'
+    yield foo_client.basePing(FContext())
+
+    print 'ping()'
     yield foo_client.ping(FContext())
 
     ctx = FContext()
     event = Event(42, "hello world")
-    print "sending blah"
+    print 'blah()'
     b = yield foo_client.blah(ctx, 100, "awesomesauce", event)
-    print "Blah response {}".format(b)
-    print "Response header foo: {}".format(ctx.get_response_header("foo"))
+    print 'Blah response {}'.format(b)
+    print 'Response header foo: {}'.format(ctx.get_response_header("foo"))
 
     yield tornado_transport.close()
 

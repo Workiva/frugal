@@ -1,3 +1,4 @@
+import logging
 from threading import Lock
 
 from thrift.Thrift import TApplicationException
@@ -6,9 +7,8 @@ from thrift.Thrift import TType
 
 
 class FProcessor(object):
-    """
-    FProcessor is a generic object which operates upon an
-    input stream and writes to some output stream.
+    """FProcessor is a generic object which operates upon an input stream and
+    writes to some output stream.
     """
 
     def process(self, iprot, oprot):
@@ -17,18 +17,28 @@ class FProcessor(object):
 
 class FBaseProcessor(FProcessor):
 
-    def __init__(self, processor_function_map=None):
-        """ Create new instance of FBaseProcessor that will process requests
-
-        Args:
-            processor_function_map: dict keyed by rpc call name for
-                                    processor functions
-        """
-        self._processor_function_map = processor_function_map or {}
+    def __init__(self):
+        """Create new instance of FBaseProcessor that will process requests."""
+        self._processor_function_map = {}
         self._write_lock = Lock()
 
+    def add_to_processor_map(self, key, proc):
+        """Register the given FProcessorFunction.
+
+        Args:
+            key: processor function name
+            proc: FProcessorFunction
+        """
+
+        self._processor_function_map[key] = proc
+
+    def get_write_lock(self):
+        """Return the write lock."""
+
+        return self._write_lock
+
     def process(self, iprot, oprot):
-        """ Process an input protocol and output protocol
+        """Process an input protocol and output protocol
 
         Args:
             iprot: input FProtocol
@@ -36,17 +46,23 @@ class FBaseProcessor(FProcessor):
 
         Raises:
             TApplicationException: if the processor does not know how to handle
-                this type of function.
+                                   this type of function.
         """
 
-        context = iprot.read_request_header()
-        (name, type, seqid) = iprot.readMessageBegin()
+        context = iprot.read_request_headers()
+        name, _, _ = iprot.readMessageBegin()
 
         processor_function = self._processor_function_map.get(name)
 
-        # If the function was in our dict, call it
+        # If the function was in our dict, call it.
         if processor_function:
-            processor_function(context, iprot, oprot)
+            try:
+                processor_function(context, iprot, oprot)
+            except Exception, e:
+                logging.warn('frugal: error processing request with ' +
+                             'correlation id %s: %s' %
+                             (context.get_correlation_id(), e))
+                raise
             return
 
         iprot.skip(TType.STRUCT)
@@ -58,7 +74,6 @@ class FBaseProcessor(FProcessor):
         with self._write_lock:
             oprot.write_response_headers(context)
             oprot.writeMessageBegin(name, TMessageType.EXCEPTION, 0)
-
             ex.write(oprot)
             oprot.writeMessageEnd()
             oprot.trans.flush()

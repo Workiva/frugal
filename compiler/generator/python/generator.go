@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/Workiva/frugal/compiler/generator"
 	"github.com/Workiva/frugal/compiler/globals"
@@ -17,6 +16,7 @@ const (
 	tab              = "    "
 	tabtab           = tab + tab
 	tabtabtab        = tab + tab + tab
+	tabtabtabtab     = tab + tab + tab + tab
 )
 
 type Generator struct {
@@ -24,7 +24,11 @@ type Generator struct {
 }
 
 func NewGenerator(options map[string]string) generator.LanguageGenerator {
-	return &Generator{&generator.BaseGenerator{Options: options}}
+	gen := &Generator{&generator.BaseGenerator{Options: options}}
+	if _, ok := options["tornado"]; ok {
+		return &TornadoGenerator{gen}
+	}
+	return gen
 }
 
 // TODO Unimplemented methods
@@ -74,7 +78,11 @@ func (g *Generator) GetOutputDir(dir string) string {
 }
 
 func (g *Generator) DefaultOutputDir() string {
-	return defaultOutputDir
+	dir := defaultOutputDir
+	if _, ok := g.Options["tornado"]; ok {
+		dir += ".tornado"
+	}
+	return dir
 }
 
 func (g *Generator) PostProcess(f *os.File) error { return nil }
@@ -86,11 +94,11 @@ func (g *Generator) GenerateDependencies(dir string) error {
 func (g *Generator) GenerateFile(name, outputDir string, fileType generator.FileType) (*os.File, error) {
 	switch fileType {
 	case generator.PublishFile:
-		return g.CreateFile(strings.ToLower(name)+"_publisher", outputDir, lang, false)
+		return g.CreateFile(fmt.Sprintf("f_%s_publisher", name), outputDir, lang, false)
 	case generator.SubscribeFile:
-		return g.CreateFile(strings.ToLower(name)+"_subscriber", outputDir, lang, false)
+		return g.CreateFile(fmt.Sprintf("f_%s_subscriber", name), outputDir, lang, false)
 	case generator.CombinedServiceFile:
-		return g.CreateFile("f"+strings.ToLower(name), outputDir, lang, false)
+		return g.CreateFile(fmt.Sprintf("f_%s", name), outputDir, lang, false)
 	default:
 		return nil, fmt.Errorf("Bad file type for Python generator: %s", fileType)
 	}
@@ -150,7 +158,8 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	}, tabtab)
 	publisher += "\n"
 
-	publisher += tabtab + "self._transport, self._protocol = provider.new()\n\n"
+	publisher += tabtab + "self._transport, protocol_factory = provider.new()\n"
+	publisher += tabtab + "self._protocol = protocol_factory.get_protocol(self._transport)\n\n"
 
 	publisher += tab + "def open(self):\n"
 	publisher += tabtab + "self._transport.open()\n\n"
@@ -234,6 +243,91 @@ func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 	return nil
 }
 
+func (g *Generator) generateServiceInterface(service *parser.Service) string {
+	contents := ""
+	if service.Extends != "" {
+		contents += fmt.Sprintf("class Iface(%s.Iface):\n", g.getServiceExtendsName(service))
+	} else {
+		contents += "class Iface(object):\n"
+	}
+	if service.Comment != nil {
+		contents += g.generateDocString(service.Comment, tab)
+	}
+	contents += "\n"
+
+	for _, method := range service.Methods {
+		contents += g.generateMethodSignature(method)
+		contents += tabtab + "pass\n\n"
+	}
+
+	return contents
+}
+
+func (g *Generator) getServiceExtendsName(service *parser.Service) string {
+	serviceName := "f_" + service.ExtendsService()
+	include := service.ExtendsInclude()
+	if include != "" {
+		if inc, ok := g.Frugal.NamespaceForInclude(include, lang); ok {
+			include = inc
+		}
+		serviceName = include + "." + serviceName
+	}
+	return serviceName
+}
+
+func (g *Generator) generateProcessor(service *parser.Service) string {
+	contents := ""
+	if service.Extends != "" {
+		contents += fmt.Sprintf("class Processor(%s.Processor):\n\n", g.getServiceExtendsName(service))
+	} else {
+		contents += "class Processor(FBaseProcessor):\n\n"
+	}
+
+	contents += tab + "def __init__(self, handler):\n"
+	if service.Extends != "" {
+		contents += tabtab + "super(Processor, self).__init__(handler)\n"
+	} else {
+		contents += tabtab + "super(Processor, self).__init__()\n"
+	}
+	for _, method := range service.Methods {
+		contents += tabtab + fmt.Sprintf("self.add_to_processor_map('%s', _%s(handler, self.get_write_lock()))\n",
+			method.Name, method.Name)
+	}
+	contents += "\n\n"
+	return contents
+}
+
+func (g *Generator) generateMethodSignature(method *parser.Method) string {
+	contents := ""
+	docstr := []string{"Args:", tab + "ctx: FContext"}
+	for _, arg := range method.Arguments {
+		docstr = append(docstr, tab+fmt.Sprintf("%s: %s", arg.Name, g.getPythonTypeName(arg.Type)))
+	}
+	if method.Comment != nil {
+		docstr[0] = "\n" + tabtab + docstr[0]
+		docstr = append(method.Comment, docstr...)
+	}
+	contents += tab + fmt.Sprintf("def %s(self, ctx%s):\n", method.Name, g.generateClientArgs(method.Arguments))
+	contents += g.generateDocString(docstr, tabtab)
+	return contents
+}
+
+func (g *Generator) generateClientArgs(args []*parser.Field) string {
+	return g.generateArgs(args, "")
+}
+
+func (g *Generator) generateServerArgs(args []*parser.Field) string {
+	return g.generateArgs(args, "args.")
+}
+
+func (g *Generator) generateArgs(args []*parser.Field, prefix string) string {
+	argsStr := ""
+	for _, arg := range args {
+		argsStr += fmt.Sprintf(", %s%s", prefix, arg.Name)
+	}
+	return argsStr
+}
+
 func (g *Generator) generateDocString(lines []string, tab string) string {
 	docstr := tab + "\"\"\"\n"
 	for _, line := range lines {
@@ -241,4 +335,38 @@ func (g *Generator) generateDocString(lines []string, tab string) string {
 	}
 	docstr += tab + "\"\"\"\n"
 	return docstr
+}
+
+func (g *Generator) getPythonTypeName(t *parser.Type) string {
+	t = g.Frugal.UnderlyingType(t)
+	switch t.Name {
+	case "bool":
+		return "boolean"
+	case "byte", "i8":
+		return "int (signed 8 bits)"
+	case "i16":
+		return "int (signed 16 bits)"
+	case "i32":
+		return "int (signed 32 bits)"
+	case "i64":
+		return "int (signed 64 bits)"
+	case "double":
+		return "float"
+	case "string":
+		return "string"
+	case "binary":
+		return "binary string"
+	case "list":
+		typ := g.Frugal.UnderlyingType(t.ValueType)
+		return fmt.Sprintf("list of %s", g.getPythonTypeName(typ))
+	case "set":
+		typ := g.Frugal.UnderlyingType(t.ValueType)
+		return fmt.Sprintf("set of %s", g.getPythonTypeName(typ))
+	case "map":
+		return fmt.Sprintf("dict of <%s, %s>",
+			g.getPythonTypeName(t.KeyType), g.getPythonTypeName(t.ValueType))
+	default:
+		// Custom type, either typedef or struct.
+		return t.Name
+	}
 }
