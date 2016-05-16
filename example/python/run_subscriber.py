@@ -1,6 +1,6 @@
-
 import logging
 import sys
+sys.path.append('gen-py.tornado')
 
 from thrift.protocol import TBinaryProtocol
 
@@ -13,7 +13,7 @@ from frugal.protocol.protocol_factory import FProtocolFactory
 from frugal.provider import FScopeProvider
 from frugal.transport.nats_scope_transport import FNatsScopeTransportFactory
 
-from gen_py.example.events_subscriber import EventsSubscriber
+from event.f_Events_subscriber import EventsSubscriber
 
 
 root = logging.getLogger()
@@ -48,7 +48,7 @@ def main():
         print "Received an event with ID: {} and Message {}".format(req.ID,
                                                                     req.Message)
 
-    yield subscriber.subscribe_event_created("barUser", event_handler)
+    yield subscriber.subscribe_EventCreated("barUser", event_handler)
 
     logging.info("Subscriber starting...")
 

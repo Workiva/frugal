@@ -100,7 +100,7 @@ def run_publisher(nats_client, prot_factory):
     yield publisher.open()
 
     event = Event(42, "hello, world!!!")
-    yield publisher.publish_event_created(FContext(), "barUser", event)
+    publisher.publish_EventCreated(FContext(), "barUser", event)
     yield publisher.close()
 
 
