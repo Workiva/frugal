@@ -4,16 +4,16 @@ sys.path.append('gen-py.tornado')
 
 from thrift.protocol import TBinaryProtocol
 
-from tornado import gen
+from tornado import gen, ioloop
 
 from nats.io.client import Client as NATS
 
 from frugal.processor.processor_factory import FProcessorFactory
-from frugal.protocol import FProtocolFactory
-from frugal.server.nats_server import FNatsServer
-from frugal.transport.nats_service_transport import FNatsServiceTransportFactory
+from frugal.protocol.protocol_factory import FProtocolFactory
+from frugal.server import FNatsServer
+from frugal.transport import FMuxTornadoTransportFactory
 
-from gen_py.example.f_foo import Processor as FFooProcessor
+from event.f_Foo import Iface, Processor as FFooProcessor
 
 
 root = logging.getLogger()
@@ -27,20 +27,18 @@ ch.setFormatter(formatter)
 root.addHandler(ch)
 
 
-# TODO: implement FFoo.Iface
-class FooHandler(object):
+class ExampleHandler(Iface):
 
     def ping(self, ctx):
-        print "Received ping with cid : {}".format(ctx.get_corr_id())
+        print "ping: {}".format(ctx)
 
     def oneWay(self, ctx, req):
-        print "Received oneWay: {} {}".format(ctx, req)
+        print "oneWay: {} {}".format(ctx, req)
 
     def blah(self, ctx, num, Str, event):
-        print "Received blah {} {} {} {}".format(ctx, num, Str, event)
-
-    def basePing(self, ctx):
-        print "Received basePing: {}".format(ctx)
+        print "blah: {} {} {} {}".format(ctx, num, Str, event)
+        ctx.set_response_header("foo", "bar")
+        return 42
 
 
 @gen.coroutine
@@ -55,14 +53,14 @@ def main():
     yield nats_client.connect(**options)
 
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
-    transport_factory = FNatsServiceTransportFactory(nats_client)
+    transport_factory = FMuxTornadoTransportFactory()
 
-    handler = FooHandler()
+    handler = ExampleHandler()
     processor = FFooProcessor(handler)
     processor_factory = FProcessorFactory(processor)
 
     subject = "foo"
-    heartbeat_interval = 20 * 1000
+    heartbeat_interval = 10000
     max_missed_heartbeats = 3
 
     server = FNatsServer(nats_client,
@@ -75,8 +73,9 @@ def main():
 
     logging.info("Starting server...")
 
-    # This should start the ioloop
-    server.serve()
+    yield server.serve()
 
 if __name__ == '__main__':
-    main()
+    io_loop = ioloop.IOLoop.instance()
+    io_loop.add_callback(main)
+    io_loop.start()

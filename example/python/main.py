@@ -62,7 +62,7 @@ def main():
 @gen.coroutine
 def run_client(nats_client, prot_factory):
     transport_factory = FMuxTornadoTransportFactory()
-    nats_transport = TNatsServiceTransport(nats_client, "foo", 60000, 5)
+    nats_transport = TNatsServiceTransport.Client(nats_client, "foo", 60000, 5)
     tornado_transport = transport_factory.get_transport(nats_transport)
 
     try:

@@ -24,12 +24,28 @@ logger = logging.getLogger(__name__)
 
 class TNatsServiceTransport(TTransportBase):
 
-    def __init__(self,
-                 nats_client,
-                 connection_subject,
-                 connection_timeout=DEFAULT_CONNECTION_TIMEOUT,
-                 max_missed_heartbeats=DEFAULT_MAX_MISSED_HEARTBEATS,
-                 io_loop=None):
+    @staticmethod
+    def Client(nats_client,
+               connection_subject,
+               connection_timeout=DEFAULT_CONNECTION_TIMEOUT,
+               max_missed_heartbeats=DEFAULT_MAX_MISSED_HEARTBEATS,
+               io_loop=None):
+        return TNatsServiceTransport(
+            nats_client=nats_client,
+            connection_subject=connection_subject,
+            connection_timeout=connection_timeout,
+            max_missed_heartbeats=max_missed_heartbeats
+        )
+
+    @staticmethod
+    def Server(nats_client, listen_to, reply_to):
+        return TNatsServiceTransport(
+            nats_client=nats_client,
+            listen_to=listen_to,
+            reply_to=reply_to
+        )
+
+    def __init__(self, **kwargs):
         """Create a TNatsServerTransport to communicate with NATS
 
         Args:
@@ -37,12 +53,15 @@ class TNatsServiceTransport(TTransportBase):
             listen_to: subject to listen on
             write_to: subject to write to
         """
-        self._nats_client = nats_client
-        self._io_loop = io_loop or ioloop.IOLoop.current()
+        self._nats_client = kwargs['nats_client']
+        self._io_loop = kwargs.get('io_loop', ioloop.IOLoop.current())
 
-        self._connection_subject = connection_subject
-        self._connection_timeout = connection_timeout
-        self._max_missed_heartbeats = max_missed_heartbeats
+        self._connection_subject = kwargs.get('connection_subject', None)
+        self._connection_timeout = kwargs.get('connection_timeout', None)
+        self._max_missed_heartbeats = kwargs.get('max_missed_heartbeats', None)
+
+        self._listen_to = kwargs.get('litsten_to', None)
+        self._reply_to = kwargs.get('reply_to', None)
 
         self._is_open = False
 
@@ -87,7 +106,8 @@ class TNatsServiceTransport(TTransportBase):
                 self._on_message_callback
             )
 
-            yield self._setup_heartbeat()
+            if hasattr(self, '_heartbeat_interval'):
+                yield self._setup_heartbeat()
             self._is_open = True
             logger.info("frugal: transport open.")
 
