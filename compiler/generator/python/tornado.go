@@ -310,10 +310,10 @@ func (t *TornadoGenerator) generateSubscribeMethod(scope *parser.Scope, op *pars
 	method += tabtab + fmt.Sprintf("topic = '%%s%s%%s%%s' %% (prefix, self._DELIMITER, op)\n\n", scope.Name)
 
 	method += tabtab + fmt.Sprintf(
-		"yield self._transport.subscribe(topic, self._recv_%s(self._protocol_factory, op, %s_handler)\n\n",
+		"yield self._transport.subscribe(topic, self._recv_%s(self._protocol_factory, op, %s_handler))\n\n",
 		op.Name, op.Name)
 
-	method += tab + fmt.Sprintf("def recv_%s(self, protocol_factory, op, handler):\n", op.Name)
+	method += tab + fmt.Sprintf("def _recv_%s(self, protocol_factory, op, handler):\n", op.Name)
 	method += tabtab + "def callback(transport):\n"
 	method += tabtabtab + "iprot = protocol_factory.get_protocol(transport)\n"
 	method += tabtabtab + "ctx = iprot.read_request_headers()\n"

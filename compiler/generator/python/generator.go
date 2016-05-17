@@ -160,12 +160,25 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 
 	publisher += tabtab + "self._transport, protocol_factory = provider.new()\n"
 	publisher += tabtab + "self._protocol = protocol_factory.get_protocol(self._transport)\n\n"
-
+	if _, ok := g.Options["tornado"]; ok {
+		publisher += tab + "@gen.coroutine\n"
+	}
 	publisher += tab + "def open(self):\n"
-	publisher += tabtab + "self._transport.open()\n\n"
+	publisher += tabtab
+	if _, ok := g.Options["tornado"]; ok {
+		publisher += "yield "
+	}
+	publisher += "self._transport.open()\n\n"
 
+	if _, ok := g.Options["tornado"]; ok {
+		publisher += tab + "@gen.coroutine\n"
+	}
 	publisher += tab + "def close(self):\n"
-	publisher += tabtab + "self._transport.close()\n\n"
+	publisher += tabtab
+	if _, ok := g.Options["tornado"]; ok {
+		publisher += "yield "
+	}
+	publisher += "self._transport.close()\n\n"
 
 	prefix := ""
 	for _, op := range scope.Operations {
