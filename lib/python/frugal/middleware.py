@@ -30,7 +30,7 @@ def logging_middleware(next):
 
 
 class Method(object):
-    """Methos contains an InvocationHandler and a handle to the method it
+    """Method contains an InvocationHandler and a handle to the method it
     proxies. This should only be used by generated code.
     """
 

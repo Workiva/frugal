@@ -107,18 +107,13 @@ def run_publisher(nats_client, prot_factory):
 
 
 def logging_middleware(next):
-    @gen.coroutine
     def handler(method, args):
         service = '%s.%s' % (method.im_self.__module__,
                              method.im_class.__name__)
         print '==== CALLING %s.%s ====' % (service, method.im_func.func_name)
         ret = next(method, *args)
         print '==== CALLED  %s.%s ====' % (service, method.im_func.func_name)
-        if not ret:
-            return
-        x = yield ret
-        x = 'foo'
-        raise gen.Return(x)
+        return ret
     return handler
 
 
