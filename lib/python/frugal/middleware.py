@@ -20,7 +20,7 @@ def logging_middleware(next):
         service = '%s.%s' % (method.im_self.__module__,
                              method.im_class.__name__)
         print '==== CALLING %s.%s ====' % (service, method.im_func.func_name)
-        ret = next(method, *args)
+        ret = next(method, args)
         print '==== CALLED  %s.%s ====' % (service, method.im_func.func_name)
         return ret
 
@@ -66,7 +66,7 @@ def _compose_middleware(method, middleware):
         InvocationHandler
     """
 
-    def base_handler(method, *args):
+    def base_handler(method, args):
         return method(*args)
 
     handler = base_handler
