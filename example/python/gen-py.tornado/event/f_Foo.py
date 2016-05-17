@@ -24,14 +24,14 @@ from event.ttypes import *
 
 class Iface(base.f_BaseFoo.Iface):
     """
-    This is a thrift service. Frugal will generate bindings that include
+    This is a thrift service. Frugal will generate bindings that include 
     a frugal Context for each service call.
     """
 
     def ping(self, ctx):
         """
         Ping the server.
-
+        
         Args:
             ctx: FContext
         """
@@ -40,7 +40,7 @@ class Iface(base.f_BaseFoo.Iface):
     def blah(self, ctx, num, Str, event):
         """
         Blah the server.
-
+        
         Args:
             ctx: FContext
             num: int (signed 32 bits)
@@ -52,7 +52,7 @@ class Iface(base.f_BaseFoo.Iface):
     def oneWay(self, ctx, id, req):
         """
         oneway methods don't receive a response from the server.
-
+        
         Args:
             ctx: FContext
             id: int (signed 64 bits)
@@ -85,7 +85,7 @@ class Client(base.f_BaseFoo.Client, Iface):
     def ping(self, ctx):
         """
         Ping the server.
-
+        
         Args:
             ctx: FContext
         """
@@ -127,7 +127,7 @@ class Client(base.f_BaseFoo.Client, Iface):
     def blah(self, ctx, num, Str, event):
         """
         Blah the server.
-
+        
         Args:
             ctx: FContext
             num: int (signed 32 bits)
@@ -186,7 +186,7 @@ class Client(base.f_BaseFoo.Client, Iface):
     def oneWay(self, ctx, id, req):
         """
         oneway methods don't receive a response from the server.
-
+        
         Args:
             ctx: FContext
             id: int (signed 64 bits)
