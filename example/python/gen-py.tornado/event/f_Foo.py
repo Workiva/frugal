@@ -8,6 +8,7 @@
 
 from threading import Lock
 
+from frugal.middleware import Method
 from frugal.processor import FBaseProcessor
 from frugal.processor import FProcessorFunction
 from frugal.registry import FClientRegistry
@@ -23,14 +24,14 @@ from event.ttypes import *
 
 class Iface(base.f_BaseFoo.Iface):
     """
-    This is a thrift service. Frugal will generate bindings that include 
+    This is a thrift service. Frugal will generate bindings that include
     a frugal Context for each service call.
     """
 
     def ping(self, ctx):
         """
         Ping the server.
-        
+
         Args:
             ctx: FContext
         """
@@ -39,7 +40,7 @@ class Iface(base.f_BaseFoo.Iface):
     def blah(self, ctx, num, Str, event):
         """
         Blah the server.
-        
+
         Args:
             ctx: FContext
             num: int (signed 32 bits)
@@ -51,7 +52,7 @@ class Iface(base.f_BaseFoo.Iface):
     def oneWay(self, ctx, id, req):
         """
         oneway methods don't receive a response from the server.
-        
+
         Args:
             ctx: FContext
             id: int (signed 64 bits)
@@ -62,23 +63,35 @@ class Iface(base.f_BaseFoo.Iface):
 
 class Client(base.f_BaseFoo.Client, Iface):
 
-    def __init__(self, transport, protocol_factory):
+    def __init__(self, transport, protocol_factory, middleware=None):
         """
         Create a new Client with a transport and protocol factory.
 
         Args:
             transport: FTransport
             protocol_factory: FProtocolFactory
+            middleware: ServiceMiddleware or list of ServiceMiddleware
         """
-        super(Client, self).__init__(transport, protocol_factory)
+        if middleware and not isinstance(middleware, list):
+            middleware = [middleware]
+        super(Client, self).__init__(transport, protocol_factory,
+                                     middleware=middleware)
+        self._methods.update({
+            'ping': Method(self._ping, middleware),
+            'blah': Method(self._blah, middleware),
+            'oneWay': Method(self._oneWay, middleware),
+        })
 
     def ping(self, ctx):
         """
         Ping the server.
-        
+
         Args:
             ctx: FContext
         """
+        return self._methods['ping'].invoke([ctx])
+
+    def _ping(self, ctx):
         future = Future()
         self._send_ping(ctx, future)
         return future
@@ -114,13 +127,16 @@ class Client(base.f_BaseFoo.Client, Iface):
     def blah(self, ctx, num, Str, event):
         """
         Blah the server.
-        
+
         Args:
             ctx: FContext
             num: int (signed 32 bits)
             Str: string
             event: Event
         """
+        return self._methods['blah'].invoke([ctx, num, Str, event])
+
+    def _blah(self, ctx, num, Str, event):
         future = Future()
         self._send_blah(ctx, future, num, Str, event)
         return future
@@ -170,12 +186,15 @@ class Client(base.f_BaseFoo.Client, Iface):
     def oneWay(self, ctx, id, req):
         """
         oneway methods don't receive a response from the server.
-        
+
         Args:
             ctx: FContext
             id: int (signed 64 bits)
             req: dict of <int (signed 32 bits), string>
         """
+        return self._methods['oneWay'].invoke([ctx, id, req])
+
+    def _oneWay(self, ctx, id, req):
         self._send_oneWay(ctx, id, req)
 
     def _send_oneWay(self, ctx, id, req):

@@ -8,6 +8,7 @@
 
 from threading import Lock
 
+from frugal.middleware import Method
 from frugal.processor import FBaseProcessor
 from frugal.processor import FProcessorFunction
 from frugal.registry import FClientRegistry
@@ -32,25 +33,34 @@ class Iface(object):
 
 class Client(Iface):
 
-    def __init__(self, transport, protocol_factory):
+    def __init__(self, transport, protocol_factory, middleware=None):
         """
         Create a new Client with a transport and protocol factory.
 
         Args:
             transport: FTransport
             protocol_factory: FProtocolFactory
+            middleware: ServiceMiddleware or list of ServiceMiddleware
         """
+        if middleware and not isinstance(middleware, list):
+            middleware = [middleware]
         transport.set_registry(FClientRegistry())
         self._transport = transport
         self._protocol_factory = protocol_factory
         self._oprot = protocol_factory.get_protocol(transport)
         self._write_lock = Lock()
+        self._methods = {
+            'basePing': Method(self._basePing, middleware),
+        }
 
     def basePing(self, ctx):
         """
         Args:
             ctx: FContext
         """
+        return self._methods['basePing'].invoke([ctx])
+
+    def _basePing(self, ctx):
         future = Future()
         self._send_basePing(ctx, future)
         return future

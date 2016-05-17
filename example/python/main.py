@@ -71,7 +71,8 @@ def run_client(nats_client, prot_factory):
         logging.error(ex)
         raise gen.Return()
 
-    foo_client = FFooClient(tornado_transport, prot_factory)
+    foo_client = FFooClient(tornado_transport, prot_factory,
+                            middleware=logging_middleware)
 
     print 'oneWay()'
     foo_client.oneWay(FContext(), 99, {99: "request"})
@@ -103,6 +104,22 @@ def run_publisher(nats_client, prot_factory):
     event = Event(42, "hello, world!!!")
     publisher.publish_EventCreated(FContext(), "barUser", event)
     yield publisher.close()
+
+
+def logging_middleware(next):
+    @gen.coroutine
+    def handler(method, args):
+        service = '%s.%s' % (method.im_self.__module__,
+                             method.im_class.__name__)
+        print '==== CALLING %s.%s ====' % (service, method.im_func.func_name)
+        ret = next(method, *args)
+        print '==== CALLED  %s.%s ====' % (service, method.im_func.func_name)
+        if not ret:
+            return
+        x = yield ret
+        x = 'foo'
+        raise gen.Return(x)
+    return handler
 
 
 if __name__ == '__main__':
