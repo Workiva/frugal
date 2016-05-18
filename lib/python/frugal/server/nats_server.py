@@ -26,6 +26,17 @@ class FNatsServer(FServer):
                  processor_factory,
                  transport_factory,
                  protocol_factory):
+        """Create a new instance of FNatsServer
+
+        Args:
+            nats_client: connected instance of nats.io.Client
+            subject: subject to listen on
+            heartbeat_interval: how often to send heartbeats in millis
+            max_missed_heartbeats: number of heartbeats client can miss
+            processor_factory: FProcessFactory
+            tranpsort_factory: FTransportFactory
+            protocol_factory: FProtocolFactory
+        """
         self._nats_client = nats_client
         self._subject = subject
         self._heartbeat_subject = new_inbox()
@@ -38,6 +49,7 @@ class FNatsServer(FServer):
 
     @gen.coroutine
     def serve(self):
+        """Subscribe to provided subject and listen on "rpc" queue."""
         logger.debug("Starting Frugal NATS Server...")
 
         self._sid = yield self._nats_client.subscribe(
@@ -53,8 +65,15 @@ class FNatsServer(FServer):
             )
             self._heartbeater.start()
 
+    @gen.coroutine
     def stop(self):
-        pass
+        """Stop listening for RPC calls."""
+        logger.debug("Shutting down Frugal NATS Server.")
+        # stop the timers
+        for _, client in self._clients.iteritems():
+            client.kill()
+        self._clients.clear()
+        self._heartbeater.stop()
 
     def set_high_watermark(self, watermark):
         """Set the high watermark value for the server
@@ -62,7 +81,7 @@ class FNatsServer(FServer):
         Args:
             watermark: long representing high watermark value
         """
-        pass
+        self._watermark = watermark
 
     def get_high_watermark(self):
         return self._high_watermark
@@ -75,12 +94,10 @@ class FNatsServer(FServer):
         for token in tokens:
             inbox += pre + inbox
             pre = "."
-        logger.debug("INBOX : {}".format(inbox))
         return inbox
 
     @gen.coroutine
     def _accept(self, listen_to, reply_to, heartbeat_subject):
-        logger.debug("Called accept")
         client = TNatsServiceTransport.Server(
             self._nats_client,
             listen_to,
@@ -96,18 +113,18 @@ class FNatsServer(FServer):
         raise gen.Return(client)
 
     def _remove(self, heartbeat):
-        pass
+        client = self._clients.pop(heartbeat, None)
+        if client:
+            client.kill()
 
     @gen.coroutine
     def _send_heartbeat(self):
-        logger.debug("Calling _send_heartbeat")
         if len(self._clients) == 0:
             return
         yield self._nats_client.publish(self._heartbeat_subject, "")
 
     @gen.coroutine
     def _on_message_callback(self, msg=None):
-        logger.debug("Received message with subject: {} reply: {} data: {}".format(msg.subject, msg.reply, msg.data))
         reply_to = msg.reply
         if not reply_to:
             logger.warn("Received a bad connection handshake. Discarding.")
@@ -127,15 +144,12 @@ class FNatsServer(FServer):
 
         client = self._Client(transport, heartbeat)
 
-        print "heartbeat interval from inside callback {}".format(self._heartbeat_interval)
         if self._heartbeat_interval > 0:
             client.start()
             self._clients[heartbeat] = client
 
         # Publish back connect message [heartbeat_subject] [heartbeat_reply]
         # [heartbeat_interval]
-        print "heartbeat subject : {}".format(self._heartbeat_subject)
-
         connect_msg = "{0} {1} {2}".format(
             self._heartbeat_subject,
             heartbeat,
@@ -143,8 +157,11 @@ class FNatsServer(FServer):
         )
 
         # TODO: Handle Exceptions
-        print "connect msg: {}".format(connect_msg)
-        yield self._nats_client.publish_request(reply_to, listen_to, connect_msg)
+        yield self._nats_client.publish_request(
+            reply_to,
+            listen_to,
+            connect_msg
+        )
 
     class _Client(object):
 
@@ -153,10 +170,17 @@ class FNatsServer(FServer):
             self._heartbeat = heartbeat
             self._io_loop = io_loop or ioloop.IOLoop.current()
 
+        @gen.coroutine
         def start(self):
             # subscribe to the client's heartbeat
+            # TODO : subscribe to client heartbeat, count missed etc...
             print "CALLED START ON CLIENT"
+            # yield self._nats_client.subscribe(heartbea
 
-        def kill(self):
+        def _missed_heartbeat(self, msg=None):
             pass
+
+        @gen.coroutine
+        def kill(self):
+            yield self._transport.close()
 
