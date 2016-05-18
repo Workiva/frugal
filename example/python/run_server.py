@@ -40,6 +40,9 @@ class ExampleHandler(Iface):
         ctx.set_response_header("foo", "bar")
         return 42
 
+    def basePing(self, ctx):
+        print "basePing: {}".format(ctx)
+
 
 @gen.coroutine
 def main():

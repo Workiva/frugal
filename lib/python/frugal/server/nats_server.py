@@ -92,7 +92,7 @@ class FNatsServer(FServer):
         inbox = ""
         pre = ""
         for token in tokens:
-            inbox += pre + inbox
+            inbox += pre + token
             pre = "."
         return inbox
 

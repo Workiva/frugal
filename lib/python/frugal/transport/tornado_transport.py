@@ -1,5 +1,6 @@
 from threading import Lock
 
+from thrift.transport.TTransport import TTransportException
 from tornado import ioloop, gen
 
 from .transport import FTransport
@@ -21,7 +22,12 @@ class FMuxTornadoTransport(FTransport):
 
     @gen.coroutine
     def open(self):
-        yield self._transport.open()
+        try:
+            yield self._transport.open()
+        except TTransportException as ex:
+            if ex.type != TTransportException.ALREADY_OPEN:
+                # It's okay if transport is already open
+                raise ex
 
     @gen.coroutine
     def close(self):
