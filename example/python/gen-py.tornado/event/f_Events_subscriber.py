@@ -51,7 +51,7 @@ class EventsSubscriber(object):
         
         Args:
             user: string
-            EventCreated_handler: function which takes Event
+            EventCreated_handler: function which takes FContext and Event
         """
 
         op = 'EventCreated'
