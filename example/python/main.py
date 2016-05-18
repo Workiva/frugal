@@ -98,7 +98,7 @@ def run_publisher(nats_client, prot_factory):
     scope_transport_factory = FNatsScopeTransportFactory(nats_client)
     provider = FScopeProvider(scope_transport_factory, prot_factory)
 
-    publisher = EventsPublisher(provider)
+    publisher = EventsPublisher(provider, middleware=logging_middleware)
     yield publisher.open()
 
     event = Event(42, "hello, world!!!")

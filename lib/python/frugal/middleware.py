@@ -46,7 +46,7 @@ class Method(object):
         self._handler = _compose_middleware(method, middleware)
         self._proxied_method = method
 
-    def invoke(self, *args):
+    def __call__(self, *args):
         """Invoke the Method and return its results. The should only be called
         by generated code.
         """
