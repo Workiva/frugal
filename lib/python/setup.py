@@ -8,6 +8,6 @@ setup(
     description='Frugal Python Library',
     maintainer='Charlie Strawn',
     maintainer_email='charlie.strawn@workiva.com',
-    url='',
+    url='http://github.com/Workiva/frugal',
     packages=find_packages(),
 )

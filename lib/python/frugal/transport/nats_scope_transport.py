@@ -77,6 +77,8 @@ class FNatsScopeTransport(FScopeTransport):
         """ Asynchronously opens the transport. Throws exception if the provided
         NATS client is not connected or if the transport is already open.
 
+        Args:
+            callback: function to call when Subscriber receives a message
         Throws:
             TTransportException: if NOT_OPEN or ALREADY_OPEN
         """
@@ -97,7 +99,6 @@ class FNatsScopeTransport(FScopeTransport):
             raise TTransportException(message="Subject cannot be empty.")
 
         def on_message(msg=None):
-            print "MESSAGE DATA: {}".format(msg.data[4:])
             callback(TMemoryBuffer(msg.data[4:]))
 
         self._sub_id = yield self._nats_client.subscribe(

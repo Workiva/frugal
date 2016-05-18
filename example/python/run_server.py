@@ -10,7 +10,7 @@ from nats.io.client import Client as NATS
 
 from frugal.processor.processor_factory import FProcessorFactory
 from frugal.protocol.protocol_factory import FProtocolFactory
-from frugal.server import FNatsServer
+from frugal.server import FNatsTornadoServer
 from frugal.transport import FMuxTornadoTransportFactory
 
 from event.f_Foo import Iface, Processor as FFooProcessor
@@ -66,7 +66,7 @@ def main():
     heartbeat_interval = 10000
     max_missed_heartbeats = 3
 
-    server = FNatsServer(nats_client,
+    server = FNatsTornadoServer(nats_client,
                          subject,
                          heartbeat_interval,
                          max_missed_heartbeats,

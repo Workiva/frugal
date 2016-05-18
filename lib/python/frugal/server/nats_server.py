@@ -16,7 +16,7 @@ _DEFAULT_MAX_MISSED_HEARTBEATS = 2
 _QUEUE = "rpc"
 
 
-class FNatsServer(FServer):
+class FNatsTornadoServer(FServer):
 
     def __init__(self,
                  nats_client,
@@ -26,7 +26,7 @@ class FNatsServer(FServer):
                  processor_factory,
                  transport_factory,
                  protocol_factory):
-        """Create a new instance of FNatsServer
+        """Create a new instance of FNatsTornadoServer
 
         Args:
             nats_client: connected instance of nats.io.Client
@@ -132,7 +132,6 @@ class FNatsServer(FServer):
 
         conn_protocol = json.loads(msg.data)
         version = conn_protocol['version']
-        print "version %s", version
         if version != _NATS_PROTOCOL_VERSION:
             logger.error("Version {} is not a supported NATS connect version"
                          .format(version))
