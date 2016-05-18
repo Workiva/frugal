@@ -57,6 +57,11 @@ $ git clone https://github.com/Workiva/frugal.git
 $ godep go install
 ```
 
+You can also install into your GOPATH using `go get`:
+```
+$ go get github.com/Workiva/frugal
+```
+
 If you don't have a Go environment setup or don't want to install Thrift you
 can use Docker. [Check the bottom of the Readme](#docker) for more info.
 
