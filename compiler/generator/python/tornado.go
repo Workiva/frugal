@@ -17,6 +17,7 @@ type TornadoGenerator struct {
 func (t *TornadoGenerator) GenerateServiceImports(file *os.File, s *parser.Service) error {
 	imports := "from threading import Lock\n\n"
 
+	imports += "from frugal.middleware import Method\n"
 	imports += "from frugal.processor import FBaseProcessor\n"
 	imports += "from frugal.processor import FProcessorFunction\n"
 	imports += "from frugal.registry import FClientRegistry\n"
@@ -47,10 +48,14 @@ func (t *TornadoGenerator) GenerateServiceImports(file *os.File, s *parser.Servi
 }
 
 func (t *TornadoGenerator) GenerateScopeImports(file *os.File, s *parser.Scope) error {
-	imports := "from thrift.Thrift import TApplicationException\n"
+	imports := "import sys\n"
+	imports += "import traceback\n\n"
+
+	imports += "from thrift.Thrift import TApplicationException\n"
 	imports += "from thrift.Thrift import TMessageType\n"
 	imports += "from thrift.Thrift import TType\n"
 	imports += "from tornado import gen\n"
+	imports += "from frugal.middleware import Method\n"
 	imports += "from frugal.subscription import FSubscription\n\n"
 
 	namespace, ok := t.Frugal.Thrift.Namespace(lang)
@@ -98,22 +103,37 @@ func (t *TornadoGenerator) generateClient(service *parser.Service) string {
 		contents += "class Client(Iface):\n\n"
 	}
 
-	contents += tab + "def __init__(self, transport, protocol_factory):\n"
+	contents += tab + "def __init__(self, transport, protocol_factory, middleware=None):\n"
 	contents += t.generateDocString([]string{
 		"Create a new Client with a transport and protocol factory.\n",
 		"Args:",
 		tab + "transport: FTransport",
 		tab + "protocol_factory: FProtocolFactory",
+		tab + "middleware: ServiceMiddleware or list of ServiceMiddleware",
 	}, tabtab)
+	contents += tabtab + "if middleware and not isinstance(middleware, list):\n"
+	contents += tabtabtab + "middleware = [middleware]\n"
 	if service.Extends != "" {
-		contents += tabtab + "super(Client, self).__init__(transport, protocol_factory)\n\n"
+		contents += tabtab + "super(Client, self).__init__(transport, protocol_factory,\n"
+		contents += tabtab + "                             middleware=middleware)\n"
+		contents += tabtab + "self._methods.update("
 	} else {
 		contents += tabtab + "transport.set_registry(FClientRegistry())\n"
 		contents += tabtab + "self._transport = transport\n"
 		contents += tabtab + "self._protocol_factory = protocol_factory\n"
 		contents += tabtab + "self._oprot = protocol_factory.get_protocol(transport)\n"
-		contents += tabtab + "self._write_lock = Lock()\n\n"
+		contents += tabtab + "self._write_lock = Lock()\n"
+		contents += tabtab + "self._methods = "
 	}
+	contents += "{\n"
+	for _, method := range service.Methods {
+		contents += tabtabtab + fmt.Sprintf("'%s': Method(self._%s, middleware),\n", method.Name, method.Name)
+	}
+	contents += tabtab + "}"
+	if service.Extends != "" {
+		contents += ")"
+	}
+	contents += "\n\n"
 
 	for _, method := range service.Methods {
 		contents += t.generateClientMethod(method)
@@ -126,6 +146,10 @@ func (t *TornadoGenerator) generateClient(service *parser.Service) string {
 func (t *TornadoGenerator) generateClientMethod(method *parser.Method) string {
 	contents := ""
 	contents += t.generateMethodSignature(method)
+	contents += tabtab + fmt.Sprintf("return self._methods['%s']([ctx%s])\n\n",
+		method.Name, t.generateClientArgs(method.Arguments))
+
+	contents += tab + fmt.Sprintf("def _%s(self, ctx%s):\n", method.Name, t.generateClientArgs(method.Arguments))
 	if method.Oneway {
 		contents += tabtab + fmt.Sprintf("self._send_%s(ctx%s)\n\n", method.Name, t.generateClientArgs(method.Arguments))
 		contents += t.generateClientSendMethod(method)
@@ -264,13 +288,17 @@ func (t *TornadoGenerator) GenerateSubscriber(file *os.File, scope *parser.Scope
 
 	subscriber += tab + fmt.Sprintf("_DELIMITER = '%s'\n\n", globals.TopicDelimiter)
 
-	subscriber += tab + "def __init__(self, provider):\n"
+	subscriber += tab + "def __init__(self, provider, middleware=None):\n"
 	subscriber += t.generateDocString([]string{
 		fmt.Sprintf("Create a new %sSubscriber.\n", scope.Name),
 		"Args:",
 		tab + "provider: FScopeProvider",
+		tab + "middleware: ServiceMiddleware or list of ServiceMiddleware",
 	}, tabtab)
 	subscriber += "\n"
+	subscriber += tabtab + "if middleware and not isinstance(middleware, list):\n"
+	subscriber += tabtabtab + "middleware = [middleware]\n"
+	subscriber += tabtab + "self._middleware = middleware\n"
 	subscriber += tabtab + "self._transport, self._protocol_factory = provider.new()\n\n"
 
 	for _, op := range scope.Operations {
@@ -314,6 +342,8 @@ func (t *TornadoGenerator) generateSubscribeMethod(scope *parser.Scope, op *pars
 		op.Name, op.Name)
 
 	method += tab + fmt.Sprintf("def _recv_%s(self, protocol_factory, op, handler):\n", op.Name)
+	method += tabtab + "method = Method(handler, self._middleware)\n\n"
+
 	method += tabtab + "def callback(transport):\n"
 	method += tabtabtab + "iprot = protocol_factory.get_protocol(transport)\n"
 	method += tabtabtab + "ctx = iprot.read_request_headers()\n"
@@ -325,7 +355,12 @@ func (t *TornadoGenerator) generateSubscribeMethod(scope *parser.Scope, op *pars
 	method += tabtabtab + fmt.Sprintf("req = %s()\n", op.Type.Name)
 	method += tabtabtab + "req.read(iprot)\n"
 	method += tabtabtab + "iprot.readMessageEnd()\n"
-	method += tabtabtab + "handler(ctx, req)\n"
+	method += tabtabtab + "try:\n"
+	method += tabtabtabtab + "method([ctx, req])\n"
+	method += tabtabtab + "except:\n"
+	method += tabtabtabtab + "traceback.print_exc()\n"
+	method += tabtabtabtab + "sys.exit(1)\n\n"
+
 	method += tabtab + "return callback\n\n"
 
 	return method

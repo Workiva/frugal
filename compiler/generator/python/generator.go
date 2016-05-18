@@ -150,16 +150,25 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 
 	publisher += tab + fmt.Sprintf("_DELIMITER = '%s'\n\n", globals.TopicDelimiter)
 
-	publisher += tab + "def __init__(self, provider):\n"
+	publisher += tab + "def __init__(self, provider, middleware=None):\n"
 	publisher += g.generateDocString([]string{
 		fmt.Sprintf("Create a new %sPublisher.\n", scope.Name),
 		"Args:",
 		tab + "provider: FScopeProvider",
+		tab + "middleware: ServiceMiddleware or list of ServiceMiddleware",
 	}, tabtab)
 	publisher += "\n"
 
+	publisher += tabtab + "if middleware and not isinstance(middleware, list):\n"
+	publisher += tabtabtab + "middleware = [middleware]\n"
 	publisher += tabtab + "self._transport, protocol_factory = provider.new()\n"
-	publisher += tabtab + "self._protocol = protocol_factory.get_protocol(self._transport)\n\n"
+	publisher += tabtab + "self._protocol = protocol_factory.get_protocol(self._transport)\n"
+	publisher += tabtab + "self._methods = {\n"
+	for _, op := range scope.Operations {
+		publisher += tabtabtab + fmt.Sprintf("'publish_%s': Method(self._publish_%s, middleware),\n", op.Name, op.Name)
+	}
+	publisher += tabtab + "}\n\n"
+
 	if _, ok := g.Options["tornado"]; ok {
 		publisher += tab + "@gen.coroutine\n"
 	}
@@ -209,8 +218,9 @@ func (g *Generator) generatePublishMethod(scope *parser.Scope, op *parser.Operat
 	}
 	method := tab + fmt.Sprintf("def publish_%s(self, ctx, %sreq):\n", op.Name, args)
 	method += g.generateDocString(docstr, tabtab)
-	method += "\n"
+	method += tabtab + fmt.Sprintf("self._methods['publish_%s']([ctx, %sreq])\n\n", op.Name, args)
 
+	method += tab + fmt.Sprintf("def _publish_%s(self, ctx, %sreq):\n", op.Name, args)
 	method += tabtab + fmt.Sprintf("op = '%s'\n", op.Name)
 	method += tabtab + fmt.Sprintf("prefix = %s\n", generatePrefixStringTemplate(scope))
 	method += tabtab + fmt.Sprintf("topic = '%%s%s%%s%%s' %% (prefix, self._DELIMITER, op)\n", scope.Name)
