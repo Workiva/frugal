@@ -307,6 +307,11 @@ func (g *Generator) generateProcessor(service *parser.Service) string {
 	}
 
 	contents += tab + "def __init__(self, handler):\n"
+	contents += g.generateDocString([]string{
+		"Create a new Processor.\n",
+		"Args:",
+		tab + "handler: Iface",
+	}, tabtab)
 	if service.Extends != "" {
 		contents += tabtab + "super(Processor, self).__init__(handler)\n"
 	} else {
