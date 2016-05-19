@@ -32,8 +32,8 @@ class ExampleHandler(Iface):
     def ping(self, ctx):
         print "ping: {}".format(ctx)
 
-    def oneWay(self, ctx, req):
-        print "oneWay: {} {}".format(ctx, req)
+    def oneWay(self, ctx, id, req):
+        print "oneWay: {} {} {}".format(ctx, id, req)
 
     def blah(self, ctx, num, Str, event):
         print "blah: {} {} {} {}".format(ctx, num, Str, event)
@@ -66,13 +66,9 @@ def main():
     heartbeat_interval = 10000
     max_missed_heartbeats = 3
 
-    server = FNatsTornadoServer(nats_client,
-                         subject,
-                         heartbeat_interval,
-                         max_missed_heartbeats,
-                         processor_factory,
-                         transport_factory,
-                         prot_factory)
+    server = FNatsTornadoServer(nats_client, subject, heartbeat_interval,
+                                max_missed_heartbeats, processor_factory,
+                                transport_factory, prot_factory)
 
     logging.info("Starting server...")
 

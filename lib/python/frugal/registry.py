@@ -1,7 +1,6 @@
 from threading import Lock
 
 from thrift.transport.TTransport import TMemoryBuffer
-from tornado import gen
 
 from frugal.context import _OP_ID
 from frugal.exceptions import FException
@@ -67,16 +66,15 @@ class FServerRegistry(FRegistry):
         # No-op in server.
         pass
 
-    @gen.coroutine
     def execute(self, frame):
         """Dispatch a single Frugal message frame.
 
         Args:
             frame: an entire Frugal message frame.
         """
-        wrapped_transport = TMemoryBuffer(frame)
-        iprot = self._inputProtocolFactory.get_protocol(wrapped_transport)
-        yield self._processor.process(iprot, self._oprot)
+        wrapped_transport = TMemoryBuffer(frame[4:])
+        iprot = self._iprot_factory.get_protocol(wrapped_transport)
+        self._processor.process(iprot, self._oprot)
 
 
 class FClientRegistry(FRegistry):

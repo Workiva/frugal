@@ -5,7 +5,8 @@ from .nats_scope_transport import FNatsScopeTransportFactory
 from .nats_service_transport import TNatsServiceTransport
 from .tornado_transport import FMuxTornadoTransport, FMuxTornadoTransportFactory
 
-__all__ = ['FNatsScopeTransport',
+__all__ = ['FTransport',
+           'FNatsScopeTransport',
            'FNatsScopeTransportFactory',
            'TNatsServiceTransport',
            'FMuxTornadoTransport',
@@ -13,3 +14,4 @@ __all__ = ['FNatsScopeTransport',
            'FScopeTransport',
            'FScopeTransportFactory']
 
+_NATS_PROTOCOL_V0 = 0

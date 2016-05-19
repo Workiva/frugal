@@ -305,6 +305,7 @@ class _ping(FProcessorFunction):
         result = ping_result()
         yield gen.maybe_future(self._handler.ping(ctx))
         with self._lock:
+            oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('ping', TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()
@@ -328,6 +329,7 @@ class _bleh(FProcessorFunction):
         except InvalidOperation as oops:
             result.oops = oops
         with self._lock:
+            oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('bleh', TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()
@@ -348,6 +350,7 @@ class _getThing(FProcessorFunction):
         result = getThing_result()
         result.success = yield gen.maybe_future(self._handler.getThing(ctx))
         with self._lock:
+            oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('getThing', TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()
@@ -368,6 +371,7 @@ class _getMyInt(FProcessorFunction):
         result = getMyInt_result()
         result.success = yield gen.maybe_future(self._handler.getMyInt(ctx))
         with self._lock:
+            oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('getMyInt', TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()

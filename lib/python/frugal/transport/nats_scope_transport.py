@@ -9,7 +9,7 @@ from tornado import gen
 from frugal.transport import FScopeTransport, FScopeTransportFactory
 from frugal.exceptions import FException, FMessageSizeException
 
-_MAX_NATS_MESSAGE_SIZE = 1024 * 1024
+_NATS_MAX_MESSAGE_SIZE = 1024 * 1024
 _FRAME_BUFFER_SIZE = 5
 _FRUGAL_PREFIX = "frugal."
 
@@ -149,7 +149,7 @@ class FNatsScopeTransport(FScopeTransport):
 
         size = len(buff) + wbuf_length
 
-        if size > _MAX_NATS_MESSAGE_SIZE:
+        if size > _NATS_MAX_MESSAGE_SIZE:
             raise FMessageSizeException("Message exceeds NATS max message size")
 
         self._write_buffer.write(buff)

@@ -121,6 +121,7 @@ class _basePing(FProcessorFunction):
         result = basePing_result()
         yield gen.maybe_future(self._handler.basePing(ctx))
         with self._lock:
+            oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('basePing', TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()

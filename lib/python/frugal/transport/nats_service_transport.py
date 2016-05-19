@@ -11,7 +11,7 @@ from tornado import gen, concurrent, ioloop
 
 
 _NATS_PROTOCOL_VERSION = 0
-_NATS_MAX_MESSAGE_SIZE = 1048576
+_NATS_MAX_MESSAGE_SIZE = 1024 * 1024
 _FRUGAL_PREFIX = "frugal."
 _DISCONNECT = "DISCONNECT"
 _HEARTBEAT_GRACE_PERIOD = 50000
@@ -30,6 +30,14 @@ class TNatsServiceTransport(TTransportBase):
                connection_timeout=DEFAULT_CONNECTION_TIMEOUT,
                max_missed_heartbeats=DEFAULT_MAX_MISSED_HEARTBEATS,
                io_loop=None):
+        """ Return a client instance of TNatsServiceTransport
+
+        Args:
+            nats_client: connected nats.io.Client
+            connection_subject: string NATS subject to connect to
+            connection_timeout: timeout in milliseconds
+            max_missed_heartbeats: number of missed heartbeats before disconnect
+        """
         return TNatsServiceTransport(
             nats_client=nats_client,
             connection_subject=connection_subject,
@@ -38,11 +46,18 @@ class TNatsServiceTransport(TTransportBase):
         )
 
     @staticmethod
-    def Server(nats_client, listen_to, reply_to):
+    def Server(nats_client, listen_to, write_to):
+        """ Return a server instance of TNatsServiceTransport
+
+        Args:
+            nats_client: connected nats.io.Client instance
+            listen_to: NATS string subject to listen to
+            reply_to: NATS string reply to subject
+        """
         return TNatsServiceTransport(
             nats_client=nats_client,
             listen_to=listen_to,
-            reply_to=reply_to
+            write_to=write_to
         )
 
     def __init__(self, **kwargs):
@@ -60,8 +75,8 @@ class TNatsServiceTransport(TTransportBase):
         self._connection_timeout = kwargs.get('connection_timeout', None)
         self._max_missed_heartbeats = kwargs.get('max_missed_heartbeats', None)
 
-        self._listen_to = kwargs.get('litsten_to', None)
-        self._reply_to = kwargs.get('reply_to', None)
+        self._listen_to = kwargs.get('listen_to', None)
+        self._write_to = kwargs.get('write_to', None)
 
         self._is_open = False
 

@@ -6,12 +6,12 @@ from nats.io.utils import new_inbox
 from tornado import gen, ioloop
 
 from frugal.server import FServer
-from frugal.transport import TNatsServiceTransport
+from frugal.transport import FTransport, TNatsServiceTransport
 from frugal.registry import FServerRegistry
 
 logger = logging.getLogger(__name__)
 
-_NATS_PROTOCOL_VERSION = 0
+_NATS_PROTOCOL_V0 = 0
 _DEFAULT_MAX_MISSED_HEARTBEATS = 2
 _QUEUE = "rpc"
 
@@ -45,6 +45,7 @@ class FNatsTornadoServer(FServer):
         self._processor_factory = processor_factory
         self._transport_factory = transport_factory
         self._protocol_factory = protocol_factory
+        self._high_watermark = FTransport.DEFAULT_HIGH_WATERMARK
         self._clients = {}
 
     @gen.coroutine
@@ -75,13 +76,13 @@ class FNatsTornadoServer(FServer):
         self._clients.clear()
         self._heartbeater.stop()
 
-    def set_high_watermark(self, watermark):
+    def set_high_watermark(self, high_watermark):
         """Set the high watermark value for the server
 
         Args:
             watermark: long representing high watermark value
         """
-        self._watermark = watermark
+        self._high_watermark = high_watermark
 
     def get_high_watermark(self):
         return self._high_watermark
@@ -131,8 +132,8 @@ class FNatsTornadoServer(FServer):
             return
 
         conn_protocol = json.loads(msg.data)
-        version = conn_protocol['version']
-        if version != _NATS_PROTOCOL_VERSION:
+        version = conn_protocol.get('version')
+        if version != _NATS_PROTOCOL_V0:
             logger.error("Version {} is not a supported NATS connect version"
                          .format(version))
 
@@ -141,7 +142,7 @@ class FNatsTornadoServer(FServer):
 
         transport = yield self._accept(listen_to, reply_to, heartbeat)
 
-        client = self._Client(transport, heartbeat)
+        client = _Client(transport, heartbeat)
 
         if self._heartbeat_interval > 0:
             client.start()
@@ -162,24 +163,25 @@ class FNatsTornadoServer(FServer):
             connect_msg
         )
 
-    class _Client(object):
 
-        def __init__(self, transport, heartbeat, io_loop=None):
-            self._transport = transport
-            self._heartbeat = heartbeat
-            self._io_loop = io_loop or ioloop.IOLoop.current()
+class _Client(object):
 
-        @gen.coroutine
-        def start(self):
-            # subscribe to the client's heartbeat
-            # TODO : subscribe to client heartbeat, count missed etc...
-            print "CALLED START ON CLIENT"
-            # yield self._nats_client.subscribe(heartbea
+    def __init__(self, transport, heartbeat, io_loop=None):
+        self._transport = transport
+        self._heartbeat = heartbeat
+        self._io_loop = io_loop or ioloop.IOLoop.current()
 
-        def _missed_heartbeat(self, msg=None):
-            pass
+    @gen.coroutine
+    def start(self):
+        # subscribe to the client's heartbeat
+        # TODO : subscribe to client heartbeat, count missed etc...
+        print "CALLED START ON CLIENT"
+        # yield self._nats_client.subscribe(heartbea
 
-        @gen.coroutine
-        def kill(self):
-            yield self._transport.close()
+    def _missed_heartbeat(self, msg=None):
+        pass
+
+    @gen.coroutine
+    def kill(self):
+        yield self._transport.close()
 

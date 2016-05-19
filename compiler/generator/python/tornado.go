@@ -268,6 +268,7 @@ func (t *TornadoGenerator) generateProcessorFunction(method *parser.Method) stri
 	}
 	if !method.Oneway {
 		contents += tabtab + "with self._lock:\n"
+		contents += tabtabtab + "oprot.write_response_headers(ctx)\n"
 		contents += tabtabtab + fmt.Sprintf("oprot.writeMessageBegin('%s', TMessageType.REPLY, 0)\n", method.Name)
 		contents += tabtabtab + "result.write(oprot)\n"
 		contents += tabtabtab + "oprot.writeMessageEnd()\n"

@@ -1,5 +1,8 @@
+from tornado import gen
+
 
 class FProcessorFunction(object):
 
-    def process(self, context, iprot, oprot):
+    @gen.coroutine
+    def process(self, ctx, iprot, oprot):
         pass

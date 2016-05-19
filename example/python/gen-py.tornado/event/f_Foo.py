@@ -239,6 +239,7 @@ class _ping(FProcessorFunction):
         result = ping_result()
         yield gen.maybe_future(self._handler.ping(ctx))
         with self._lock:
+            oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('ping', TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()
@@ -264,6 +265,7 @@ class _blah(FProcessorFunction):
         except base.api_exception as api:
             result.api = api
         with self._lock:
+            oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('blah', TMessageType.REPLY, 0)
             result.write(oprot)
             oprot.writeMessageEnd()
