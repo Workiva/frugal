@@ -213,6 +213,12 @@ class Client(base.f_BaseFoo.Client, Iface):
 class Processor(base.f_BaseFoo.Processor):
 
     def __init__(self, handler):
+        """
+        Create a new Processor.
+
+        Args:
+            handler: Iface
+        """
         super(Processor, self).__init__(handler)
         self.add_to_processor_map('ping', _ping(handler, self.get_write_lock()))
         self.add_to_processor_map('blah', _blah(handler, self.get_write_lock()))

@@ -49,7 +49,7 @@ class FooSubscriber(object):
         
         Args:
             baz: string
-            Foo_handler: function which takes Thing
+            Foo_handler: function which takes FContext and Thing
         """
 
         op = 'Foo'
@@ -87,7 +87,7 @@ class FooSubscriber(object):
         """
         Args:
             baz: string
-            Bar_handler: function which takes Stuff
+            Bar_handler: function which takes FContext and Stuff
         """
 
         op = 'Bar'

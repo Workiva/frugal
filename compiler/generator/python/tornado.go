@@ -323,7 +323,7 @@ func (t *TornadoGenerator) generateSubscribeMethod(scope *parser.Scope, op *pars
 		}
 		args += ", "
 	}
-	docstr = append(docstr, tab+fmt.Sprintf("%s_handler: function which takes %s", op.Name, op.Type))
+	docstr = append(docstr, tab+fmt.Sprintf("%s_handler: function which takes FContext and %s", op.Name, op.Type))
 	if op.Comment != nil {
 		docstr[0] = "\n" + tabtab + docstr[0]
 		docstr = append(op.Comment, docstr...)

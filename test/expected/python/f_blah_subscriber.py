@@ -42,7 +42,7 @@ class blahSubscriber(object):
     @gen.coroutine
     def subscribe_DoStuff(self, DoStuff_handler):
         """
-            DoStuff_handler: function which takes Thing
+            DoStuff_handler: function which takes FContext and Thing
         """
 
         op = 'DoStuff'
