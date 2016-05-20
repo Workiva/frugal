@@ -328,7 +328,6 @@ func (n *natsServiceTTransport) Write(p []byte) (int, error) {
 		}
 		return n.Write(p[remaining:])
 	}
-
 	num, err := n.writeBuffer.Write(p)
 	return num, thrift.NewTTransportExceptionFromError(err)
 }

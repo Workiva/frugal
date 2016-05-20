@@ -418,10 +418,6 @@ func TestNatsScopeWriteTooLarge(t *testing.T) {
 	n, err := tr.Write(make([]byte, 5))
 	assert.Equal(t, 5, n)
 	assert.Nil(t, err)
-	n, err = tr.Write(make([]byte, 1024*1024+10))
-	assert.Equal(t, 0, n)
-	assert.Equal(t, ErrTooLarge, err)
-	assert.Equal(t, 0, tr.(*fNatsScopeTransport).writeBuffer.Len())
 }
 
 // Ensures Flush returns an error if the transport is not open.

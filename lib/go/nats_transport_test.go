@@ -186,8 +186,7 @@ func TestNatsTransportWriteNatsDisconnected(t *testing.T) {
 	assert.Equal(t, 0, n)
 }
 
-// Ensures Write buffers data. If the buffer exceeds 1MB, ErrTooLarge is
-// returned.
+// Ensures Write buffers data.
 func TestNatsTransportWrite(t *testing.T) {
 	s := runServer(nil)
 	defer s.Shutdown()
@@ -203,11 +202,6 @@ func TestNatsTransportWrite(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 5, n)
 	assert.Equal(t, 5, tr.writeBuffer.Len())
-	buff = make([]byte, 1024*1024)
-	n, err = tr.Write(buff)
-	assert.Equal(t, ErrTooLarge, err)
-	assert.Equal(t, 0, n)
-	assert.Equal(t, 0, tr.writeBuffer.Len())
 }
 
 // Ensures Flush returns a NOT_OPEN TTransportException if the transport is not
