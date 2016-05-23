@@ -43,29 +43,68 @@ public class FNatsServer implements FServer {
 
     private static Logger LOGGER = Logger.getLogger(FNatsServer.class.getName());
 
-    public FNatsServer(Connection conn, String subject, long heartbeatInterval,
-                       FProcessor processor, FTransportFactory transportFactory,
-                       FProtocolFactory protocolFactory) {
-        this(conn, new String[]{subject}, heartbeatInterval, processor, transportFactory, protocolFactory);
+    public FNatsServer(
+            Connection conn,
+            String subject,
+            long heartbeatInterval,
+            FProcessor processor,
+            FTransportFactory transportFactory,
+            FProtocolFactory protocolFactory) {
+        this(
+            conn,
+            new String[]{subject},
+            heartbeatInterval,
+            processor,
+            transportFactory,
+            protocolFactory
+        );
     }
 
-    public FNatsServer(Connection conn, String[] subjects, long heartbeatInterval,
-                       FProcessor processor, FTransportFactory transportFactory,
-                       FProtocolFactory protocolFactory) {
-        this(conn, subjects, heartbeatInterval, DEFAULT_MAX_MISSED_HEARTBEATS,
-                new FProcessorFactory(processor), transportFactory, protocolFactory);
+    public FNatsServer(
+            Connection conn,
+            String[] subjects,
+            long heartbeatInterval,
+            FProcessor processor,
+            FTransportFactory transportFactory,
+            FProtocolFactory protocolFactory) {
+        this(
+            conn,
+            subjects,
+            heartbeatInterval,
+            DEFAULT_MAX_MISSED_HEARTBEATS,
+            new FProcessorFactory(processor),
+            transportFactory,
+            protocolFactory
+        );
     }
 
-    public FNatsServer(Connection conn, String subject, long heartbeatInterval, int maxMissedHeartbeats,
-                       FProcessorFactory processorFactory, FTransportFactory transportFactory,
-                       FProtocolFactory protocolFactory) {
-        this(conn, new String[]{subject}, heartbeatInterval, maxMissedHeartbeats,
-                processorFactory, transportFactory, protocolFactory);
+    public FNatsServer(
+            Connection conn,
+            String subject,
+            long heartbeatInterval,
+            int maxMissedHeartbeats,
+            FProcessorFactory processorFactory,
+            FTransportFactory transportFactory,
+            FProtocolFactory protocolFactory) {
+        this(
+            conn,
+            new String[]{subject},
+            heartbeatInterval,
+            maxMissedHeartbeats,
+            processorFactory,
+            transportFactory,
+            protocolFactory
+        );
     }
 
-    public FNatsServer(Connection conn, String[] subjects, long heartbeatInterval, int maxMissedHeartbeats,
-                       FProcessorFactory processorFactory, FTransportFactory transportFactory,
-                       FProtocolFactory protocolFactory) {
+    public FNatsServer(
+            Connection conn,
+            String[] subjects,
+            long heartbeatInterval,
+            int maxMissedHeartbeats,
+            FProcessorFactory processorFactory,
+            FTransportFactory transportFactory,
+            FProtocolFactory protocolFactory) {
         this.conn = conn;
         this.subjects = subjects;
         this.heartbeatSubject = conn.newInbox();
@@ -108,8 +147,12 @@ public class FNatsServer implements FServer {
         }
 
         if (isHeartbeating()) {
-            heartbeatExecutor.scheduleAtFixedRate(new MakeHeartbeatRunnable(), heartbeatInterval,
-                    heartbeatInterval, TimeUnit.MILLISECONDS);
+            heartbeatExecutor.scheduleAtFixedRate(
+                    new MakeHeartbeatRunnable(),
+                    heartbeatInterval,
+                    heartbeatInterval,
+                    TimeUnit.MILLISECONDS
+            );
         }
 
         LOGGER.info("Frugal server running...");

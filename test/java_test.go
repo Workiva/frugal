@@ -38,3 +38,25 @@ func TestValidJava(t *testing.T) {
 	servicePath := filepath.Join(outputDir, "foo", "FBlah.java")
 	compareFiles(t, "expected/java/FBlah.java", servicePath)
 }
+
+func TestValidJavaWithAsync(t *testing.T) {
+	defer globals.Reset()
+	nowBefore := globals.Now
+	defer func() {
+		globals.Now = nowBefore
+	}()
+	globals.Now = time.Date(2015, 11, 24, 0, 0, 0, 0, time.UTC)
+
+	options := compiler.Options{
+		File:  validFile,
+		Gen:   "java:async",
+		Out:   outputDir,
+		Delim: delim,
+	}
+	if err := compiler.Compile(options); err != nil {
+		t.Fatal("Unexpected error", err)
+	}
+
+	servicePath := filepath.Join(outputDir, "foo", "FBlah.java")
+	compareFiles(t, "expected/java/FBlah_async.java", servicePath)
+}

@@ -23,6 +23,18 @@ pubspec.lock
 
 # Ignore generated code and cross results
 skynet.Dockerfile
+
+# python specific
+.python_version
+*.pyc
+.coverage
+.build/
+.ropeproject/
+unit_tests.xml
+lib/python/frugal.egg-info/
+lib/python/frugalc
+
+# Integration tests
 test/integration/log/*
 test/integration/results.json
 test/integration/*/gen*

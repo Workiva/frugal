@@ -42,10 +42,14 @@ var Languages = LanguageOptions{
 		"generated_annotations": "[undated|suppress] " +
 			"undated: suppress the date at @Generated annotations, " +
 			"suppress: suppress @Generated annotations entirely",
+		"async": "Generate async client code using futures",
 	},
 	"dart": Options{
 		"library_prefix": "Generate code that can be used within an existing library. " +
 			"Use a dot-separated string, e.g. \"my_parent_lib.src.gen\"",
+	},
+	"py": Options{
+		"tornado": "Generate code for use with Tornado",
 	},
 }
 
