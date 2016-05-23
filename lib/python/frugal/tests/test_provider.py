@@ -1,7 +1,7 @@
 import unittest
 from mock import patch
 
-from frugal.transport import FTransport
+from frugal.transport.transport import FTransport
 from frugal.protocol import FProtocolFactory
 from frugal.provider import FScopeProvider
 

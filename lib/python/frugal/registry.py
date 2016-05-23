@@ -45,18 +45,18 @@ class FServerRegistry(FRegistry):
     This is only to be used by generated code.
     """
 
-    def __init__(self, processor, input_protocol_factory, output_protocol):
+    def __init__(self, processor, iprot_factory, oprot):
         """Initialize FServerRegistry.
 
         Args:
             processor: FProcessor is the server request processor.
-            input_protocol_factory: FProtocolFactory used for creating input
+            iprot_factory: FProtocolFactory used for creating input
                                     protocols.
-            output_protocol: output FProtocol.
+            oprot: output FProtocol.
         """
         self._processor = processor
-        self._input_protocol_factory = input_protocol_factory
-        self._output_protocol = output_protocol
+        self._iprot_factory = iprot_factory
+        self._oprot = oprot
 
     def register(self, context, callback):
         # No-op in server.
@@ -72,9 +72,9 @@ class FServerRegistry(FRegistry):
         Args:
             frame: an entire Frugal message frame.
         """
-        wrapped_transport = TMemoryBuffer(frame)
-        iprot = self._inputProtocolFactory.get_protocol(wrapped_transport)
-        self._processor.process(iprot, self._outputProtocol)
+        wrapped_transport = TMemoryBuffer(frame[4:])
+        iprot = self._iprot_factory.get_protocol(wrapped_transport)
+        self._processor.process(iprot, self._oprot)
 
 
 class FClientRegistry(FRegistry):

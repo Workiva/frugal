@@ -11,7 +11,7 @@ from tornado import gen, concurrent, ioloop
 
 
 _NATS_PROTOCOL_VERSION = 0
-_NATS_MAX_MESSAGE_SIZE = 1048576
+_NATS_MAX_MESSAGE_SIZE = 1024 * 1024
 _FRUGAL_PREFIX = "frugal."
 _DISCONNECT = "DISCONNECT"
 _HEARTBEAT_GRACE_PERIOD = 50000
@@ -24,12 +24,43 @@ logger = logging.getLogger(__name__)
 
 class TNatsServiceTransport(TTransportBase):
 
-    def __init__(self,
-                 nats_client,
-                 connection_subject,
-                 connection_timeout=DEFAULT_CONNECTION_TIMEOUT,
-                 max_missed_heartbeats=DEFAULT_MAX_MISSED_HEARTBEATS,
-                 io_loop=None):
+    @staticmethod
+    def Client(nats_client,
+               connection_subject,
+               connection_timeout=DEFAULT_CONNECTION_TIMEOUT,
+               max_missed_heartbeats=DEFAULT_MAX_MISSED_HEARTBEATS,
+               io_loop=None):
+        """ Return a client instance of TNatsServiceTransport
+
+        Args:
+            nats_client: connected nats.io.Client
+            connection_subject: string NATS subject to connect to
+            connection_timeout: timeout in milliseconds
+            max_missed_heartbeats: number of missed heartbeats before disconnect
+        """
+        return TNatsServiceTransport(
+            nats_client=nats_client,
+            connection_subject=connection_subject,
+            connection_timeout=connection_timeout,
+            max_missed_heartbeats=max_missed_heartbeats
+        )
+
+    @staticmethod
+    def Server(nats_client, listen_to, write_to):
+        """ Return a server instance of TNatsServiceTransport
+
+        Args:
+            nats_client: connected nats.io.Client instance
+            listen_to: NATS string subject to listen to
+            reply_to: NATS string reply to subject
+        """
+        return TNatsServiceTransport(
+            nats_client=nats_client,
+            listen_to=listen_to,
+            write_to=write_to
+        )
+
+    def __init__(self, **kwargs):
         """Create a TNatsServerTransport to communicate with NATS
 
         Args:
@@ -37,12 +68,15 @@ class TNatsServiceTransport(TTransportBase):
             listen_to: subject to listen on
             write_to: subject to write to
         """
-        self._nats_client = nats_client
-        self._io_loop = io_loop or ioloop.IOLoop.current()
+        self._nats_client = kwargs['nats_client']
+        self._io_loop = kwargs.get('io_loop', ioloop.IOLoop.current())
 
-        self._connection_subject = connection_subject
-        self._connection_timeout = connection_timeout
-        self._max_missed_heartbeats = max_missed_heartbeats
+        self._connection_subject = kwargs.get('connection_subject', None)
+        self._connection_timeout = kwargs.get('connection_timeout', None)
+        self._max_missed_heartbeats = kwargs.get('max_missed_heartbeats', None)
+
+        self._listen_to = kwargs.get('listen_to', None)
+        self._write_to = kwargs.get('write_to', None)
 
         self._is_open = False
 
@@ -87,7 +121,8 @@ class TNatsServiceTransport(TTransportBase):
                 self._on_message_callback
             )
 
-            yield self._setup_heartbeat()
+            if hasattr(self, '_heartbeat_interval'):
+                yield self._setup_heartbeat()
             self._is_open = True
             logger.info("frugal: transport open.")
 
@@ -116,8 +151,8 @@ class TNatsServiceTransport(TTransportBase):
         subjects = msg.data.split()
         if len(subjects) != 3:
             logger.error("Bad Frugal handshake")
-            # TODO handle similar to other libraries
-            return
+            raise TTransportException("Invalid connect message.")
+
         self._heartbeat_listen = subjects[0]
         self._heartbeat_reply = subjects[1]
         self._heartbeat_interval = int(subjects[2])
@@ -136,7 +171,6 @@ class TNatsServiceTransport(TTransportBase):
     @gen.coroutine
     def _setup_heartbeat(self):
         if self._heartbeat_interval > 0:
-            logger.debug("Setting up heartbeat subscription.")
             self._heartbeat_sub_id = yield self._nats_client.subscribe(
                 self._heartbeat_listen,
                 "",
@@ -171,17 +205,17 @@ class TNatsServiceTransport(TTransportBase):
 
         yield self._nats_client.publish_request(self._write_to, _DISCONNECT, "")
 
-        if self._heartbeat_timer.is_running():
+        if (hasattr(self, '_heartbeat_timer') and
+                self._heartbeat_timer.is_running()):
             self._heartbeat_timer.stop()
 
         # Typically this is used to unsubscribe after X number of messages
         # per the nats protocol, giving it an empty string should just UNSUB
-        yield self._nats_client.auto_unsubscribe(self._heartbeat_sub_id, "")
-
-        if self._heartbeat_sub_id:
+        if hasattr(self, '_heartbeat_sub_id') and self._heartbeat_sub_id:
+            yield self._nats_client.unsubscribe(self._heartbeat_sub_id)
             self._heartbeat_sub_id = None
 
-        yield self._nats_client.auto_unsubscribe(self._listen_to, "")
+        yield self._nats_client.unsubscribe(self._listen_to)
 
         self._is_open = False
 

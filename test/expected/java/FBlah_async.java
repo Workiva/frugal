@@ -50,6 +50,7 @@ public class FBlah {
 	public static class Client implements Iface {
 
 		protected final Object writeLock = new Object();
+		protected ExecutorService asyncExecutor = Executors.newFixedThreadPool(2);
 		private Iface proxy;
 
 		public Client(FTransport transport, FProtocolFactory protocolFactory, ServiceMiddleware... middleware) {
@@ -65,18 +66,57 @@ public class FBlah {
 		}
 
 		/**
+		 * Use this to ping the server.
+		 */
+		public Future<Void> pingAsync(final FContext ctx) {
+			return asyncExecutor.submit(new Callable<Void>() {
+				public Void call() throws Exception {
+					ping(ctx);
+					return null;
+				}
+			});
+		}
+
+		/**
 		 * Use this to tell the sever how you feel.
 		 */
 		public long bleh(FContext ctx, Thing one, Stuff Two, java.util.List<Integer> custom_ints) throws TException, InvalidOperation {
 			return proxy.bleh(ctx, one, Two, custom_ints);
 		}
 
+		/**
+		 * Use this to tell the sever how you feel.
+		 */
+		public Future<Long> blehAsync(final FContext ctx, final Thing one, final Stuff Two, final java.util.List<Integer> custom_ints) {
+			return asyncExecutor.submit(new Callable<Long>() {
+				public Long call() throws Exception {
+					return bleh(ctx, one, Two, custom_ints);
+				}
+			});
+		}
+
 		public Thing getThing(FContext ctx) throws TException {
 			return proxy.getThing(ctx);
 		}
 
+		public Future<Thing> getThingAsync(final FContext ctx) {
+			return asyncExecutor.submit(new Callable<Thing>() {
+				public Thing call() throws Exception {
+					return getThing(ctx);
+				}
+			});
+		}
+
 		public int getMyInt(FContext ctx) throws TException {
 			return proxy.getMyInt(ctx);
+		}
+
+		public Future<Integer> getMyIntAsync(final FContext ctx) {
+			return asyncExecutor.submit(new Callable<Integer>() {
+				public Integer call() throws Exception {
+					return getMyInt(ctx);
+				}
+			});
 		}
 
 	}

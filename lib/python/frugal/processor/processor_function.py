@@ -1,5 +1,6 @@
 
+
 class FProcessorFunction(object):
 
-    def process(self, context, iprot, oprot):
+    def process(self, ctx, iprot, oprot):
         pass

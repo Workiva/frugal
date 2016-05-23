@@ -1,8 +1,6 @@
-from struct import pack_into, unpack_from, unpack
+from struct import pack_into, unpack_from
 
-from frugal.exceptions import FrugalVersionException, FProtocolException
-
-
+from frugal.exceptions import FProtocolException
 _V0 = 0
 # Code for big endian unsigned char
 _UCHAR = '!B'

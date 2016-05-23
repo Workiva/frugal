@@ -18,7 +18,7 @@ class TestTNatsServiceTransport(AsyncTestCase):
 
         self.mock_nats_client = mock.Mock()
 
-        self.transport = TNatsServiceTransport(
+        self.transport = TNatsServiceTransport.Client(
             self.mock_nats_client,
             self.subject,
             self.timeout,
