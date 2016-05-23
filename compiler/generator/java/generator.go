@@ -154,9 +154,7 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	imports += "import org.apache.thrift.transport.TTransport;\n\n"
 
 	imports += "import javax.annotation.Generated;\n"
-	imports += "import java.util.concurrent.BlockingQueue;\n"
-	imports += "import java.util.concurrent.ArrayBlockingQueue;\n"
-	imports += "import java.util.concurrent.TimeUnit;\n"
+	imports += "import java.util.concurrent.*;\n"
 
 	_, err := file.WriteString(imports)
 	return err
@@ -432,7 +430,7 @@ func (g *Generator) generateServiceInterface(service *parser.Service) string {
 			contents += g.GenerateBlockComment(method.Comment, tabtab)
 		}
 		contents += fmt.Sprintf(tabtab+"public %s %s(FContext ctx%s) %s;\n\n",
-			g.generateReturnValue(method), method.Name, g.generateArgs(method.Arguments), g.generateExceptions(method.Exceptions))
+			g.generateReturnValue(method), method.Name, g.generateArgs(method.Arguments, false), g.generateExceptions(method.Exceptions))
 	}
 	contents += tab + "}\n\n"
 	return contents
@@ -453,16 +451,36 @@ func (g *Generator) getServiceExtendsName(service *parser.Service) string {
 }
 
 func (g *Generator) generateReturnValue(method *parser.Method) string {
-	if method.ReturnType == nil {
-		return "void"
-	}
-	return g.getJavaTypeFromThriftType(method.ReturnType)
+	return g.generateContextualReturnValue(method, false)
 }
 
-func (g *Generator) generateArgs(args []*parser.Field) string {
+func (g *Generator) generateBoxedReturnValue(method *parser.Method) string {
+	return g.generateContextualReturnValue(method, true)
+}
+
+func (g *Generator) generateContextualReturnValue(method *parser.Method, boxed bool) string {
+	if method.ReturnType == nil {
+		ret := "void"
+		if boxed {
+			ret = "Void"
+		}
+		return ret
+	}
+	ret := g.getJavaTypeFromThriftType(method.ReturnType)
+	if boxed {
+		ret = containerType(ret)
+	}
+	return ret
+}
+
+func (g *Generator) generateArgs(args []*parser.Field, final bool) string {
 	argStr := ""
+	modifier := ""
+	if final {
+		modifier = "final "
+	}
 	for _, arg := range args {
-		argStr += ", " + g.getJavaTypeFromThriftType(arg.Type) + " " + arg.Name
+		argStr += ", " + modifier + g.getJavaTypeFromThriftType(arg.Type) + " " + arg.Name
 	}
 	return argStr
 }
@@ -477,6 +495,9 @@ func (g *Generator) generateClient(service *parser.Service) string {
 	}
 	if service.Extends == "" {
 		contents += tabtab + "protected final Object writeLock = new Object();\n"
+		if g.generateAsync() {
+			contents += tabtab + "protected ExecutorService asyncExecutor = Executors.newFixedThreadPool(2);\n"
+		}
 	}
 	contents += tabtab + "private Iface proxy;\n\n"
 
@@ -493,16 +514,41 @@ func (g *Generator) generateClient(service *parser.Service) string {
 			contents += g.GenerateBlockComment(method.Comment, tabtab)
 		}
 		contents += tabtab + fmt.Sprintf("public %s %s(FContext ctx%s) %s {\n",
-			g.generateReturnValue(method), method.Name, g.generateArgs(method.Arguments), g.generateExceptions(method.Exceptions))
+			g.generateReturnValue(method), method.Name, g.generateArgs(method.Arguments, false), g.generateExceptions(method.Exceptions))
 		if method.ReturnType != nil {
 			contents += tabtabtab + fmt.Sprintf("return proxy.%s(%s);\n", method.Name, g.generateClientCallArgs(method.Arguments))
 		} else {
 			contents += tabtabtab + fmt.Sprintf("proxy.%s(%s);\n", method.Name, g.generateClientCallArgs(method.Arguments))
 		}
 		contents += tabtab + "}\n\n"
+
+		if g.generateAsync() {
+			contents += g.generateAsyncClientMethod(service, method)
+		}
 	}
 	contents += tab + "}\n\n"
 	contents += g.generateInternalClient(service)
+	return contents
+}
+
+func (g *Generator) generateAsyncClientMethod(service *parser.Service, method *parser.Method) string {
+	contents := ""
+	if method.Comment != nil {
+		contents += g.GenerateBlockComment(method.Comment, tabtab)
+	}
+	contents += tabtab + fmt.Sprintf("public Future<%s> %sAsync(final FContext ctx%s) {\n",
+		g.generateBoxedReturnValue(method), method.Name, g.generateArgs(method.Arguments, true))
+	contents += tabtabtab + fmt.Sprintf("return asyncExecutor.submit(new Callable<%s>() {\n", g.generateBoxedReturnValue(method))
+	contents += tabtabtabtab + fmt.Sprintf("public %s call() throws Exception {\n", g.generateBoxedReturnValue(method))
+	if method.ReturnType != nil {
+		contents += tabtabtabtabtab + fmt.Sprintf("return %s(%s);\n", method.Name, g.generateClientCallArgs(method.Arguments))
+	} else {
+		contents += tabtabtabtabtab + fmt.Sprintf("%s(%s);\n", method.Name, g.generateClientCallArgs(method.Arguments))
+		contents += tabtabtabtabtab + "return null;\n"
+	}
+	contents += tabtabtabtab + "}\n"
+	contents += tabtabtab + "});\n"
+	contents += tabtab + "}\n\n"
 	return contents
 }
 
@@ -549,7 +595,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 		contents += g.GenerateBlockComment(method.Comment, tabtab)
 	}
 	contents += tabtab + fmt.Sprintf("public %s %s(FContext ctx%s) %s {\n",
-		g.generateReturnValue(method), method.Name, g.generateArgs(method.Arguments), g.generateExceptions(method.Exceptions))
+		g.generateReturnValue(method), method.Name, g.generateArgs(method.Arguments, false), g.generateExceptions(method.Exceptions))
 	contents += tabtabtab + "FProtocol oprot = this.outputProtocol;\n"
 	indent := tabtabtab
 	if !method.Oneway {
@@ -877,7 +923,7 @@ func containerType(typeName string) string {
 	switch typeName {
 	case "int":
 		return "Integer"
-	case "boolean", "byte", "short", "long", "double":
+	case "boolean", "byte", "short", "long", "double", "void":
 		return strings.Title(typeName)
 	default:
 		return typeName
@@ -907,4 +953,9 @@ func (g *Generator) generatedAnnotation() string {
 	}
 	anno += ")\n"
 	return anno
+}
+
+func (g *Generator) generateAsync() bool {
+	_, ok := g.Options["async"]
+	return ok
 }
