@@ -23,11 +23,12 @@ class FNatsTornadoServer(FServer):
     def __init__(self,
                  nats_client,
                  subject,
-                 heartbeat_interval,
                  max_missed_heartbeats,
                  processor_factory,
                  transport_factory,
-                 protocol_factory):
+                 protocol_factory,
+                 heartbeat_interval=_DEFAULT_HEARTBEAT_INTERVAL,
+                 high_watermark=FTransport.DEFAULT_HIGH_WATERMARK):
         """Create a new instance of FNatsTornadoServer
 
         Args:
@@ -42,13 +43,13 @@ class FNatsTornadoServer(FServer):
         self._nats_client = nats_client
         self._subject = subject
         self._heartbeat_subject = new_inbox()
-        self._heartbeat_interval = (heartbeat_interval or
-                                    _DEFAULT_HEARTBEAT_INTERVAL)
+        self._heartbeat_interval = heartbeat_interval
         self._max_missed_heartbeats = max_missed_heartbeats
         self._processor_factory = processor_factory
         self._transport_factory = transport_factory
         self._protocol_factory = protocol_factory
-        self._high_watermark = FTransport.DEFAULT_HIGH_WATERMARK
+        self._high_watermark = high_watermark
+        self._clients_lock = Lock()
         self._clients = {}
 
     @gen.coroutine
@@ -73,10 +74,10 @@ class FNatsTornadoServer(FServer):
     def stop(self):
         """Stop listening for RPC calls."""
         logger.debug("Shutting down Frugal NATS Server.")
-        # stop the timers
-        for _, client in self._clients.iteritems():
-            yield client.kill()
-        self._clients.clear()
+        with self._clients_lock:
+            for _, client in self._clients.iteritems():
+                yield client.kill()
+            self._clients.clear()
 
         if self._heartbeater.is_running():
             self._heartbeater.stop()
@@ -119,9 +120,10 @@ class FNatsTornadoServer(FServer):
         raise gen.Return(client)
 
     def _remove(self, heartbeat):
-        client = self._clients.pop(heartbeat, None)
-        if client:
-            client.kill()
+        with self._clients_lock:
+            client = self._clients.pop(heartbeat, None)
+            if client:
+                client.kill()
 
     @gen.coroutine
     def _send_heartbeat(self):
@@ -130,7 +132,7 @@ class FNatsTornadoServer(FServer):
         yield self._nats_client.publish(self._heartbeat_subject, "")
 
     @gen.coroutine
-    def _on_message_callback(self, msg=None):
+    def _on_message_callback(self, msg):
         reply_to = msg.reply
         if not reply_to:
             logger.warn("Received a bad connection handshake. Discarding.")
@@ -155,6 +157,7 @@ class FNatsTornadoServer(FServer):
 
         if self._heartbeat_interval > 0:
             client.start()
+            # TODO lock around this
             self._clients[heartbeat] = client
 
         # [heartbeat_subject] [heartbeat_reply] [heartbeat_interval]
@@ -200,20 +203,22 @@ class _Client(object):
             self._heartbeat_interval
         )
 
-    def _receive_heartbeat(self, msg=None):
-        self._missed_heartbeats = 0
+    def _receive_heartbeat(self, msg):
+        with self._heartbeat_lock:
+            self._missed_heartbeats = 0
 
     @gen.coroutine
-    def _missed_heartbeat(self, msg=None):
-        self._missed_heartbeats += 1
-        if self._missed_heartbeats > self._max_missed_heartbeats:
-            logger.warn("Client heartbeat expired.")
-            yield self.kill()
+    def _missed_heartbeat(self, msg):
+        with self._heartbeat_lock:
+            self._missed_heartbeats += 1
+            if self._missed_heartbeats > self._max_missed_heartbeats:
+                logger.warn("Client heartbeat expired.")
+                yield self.kill()
 
     @gen.coroutine
     def kill(self):
         logger.debug("Client disconnected.")
         self._heartbeat_timer.stop()
-        yield self._nats_client.auto_unsubscribe(self._hb_sub_id, "")
+        yield self._nats_client.unsubscribe(self._hb_sub_id)
         yield self._transport.close()
 

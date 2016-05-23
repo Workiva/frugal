@@ -49,6 +49,11 @@ pub run dart_dev coverage --no-html
 pub run dart_dev format --check
 pub run dart_dev analyze
 
+# Python
+cd $ROOT/lib/python
+make deps
+make unit
+
 # Run the generator tests
 cd $ROOT
 godep restore

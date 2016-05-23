@@ -151,8 +151,8 @@ class TNatsServiceTransport(TTransportBase):
         subjects = msg.data.split()
         if len(subjects) != 3:
             logger.error("Bad Frugal handshake")
-            # TODO handle similar to other libraries
-            return
+            raise TTransportException("Invalid connect message.")
+
         self._heartbeat_listen = subjects[0]
         self._heartbeat_reply = subjects[1]
         self._heartbeat_interval = int(subjects[2])
@@ -212,10 +212,10 @@ class TNatsServiceTransport(TTransportBase):
         # Typically this is used to unsubscribe after X number of messages
         # per the nats protocol, giving it an empty string should just UNSUB
         if hasattr(self, '_heartbeat_sub_id') and self._heartbeat_sub_id:
-            yield self._nats_client.auto_unsubscribe(self._heartbeat_sub_id, "")
+            yield self._nats_client.unsubscribe(self._heartbeat_sub_id)
             self._heartbeat_sub_id = None
 
-        yield self._nats_client.auto_unsubscribe(self._listen_to, "")
+        yield self._nats_client.unsubscribe(self._listen_to)
 
         self._is_open = False
 
