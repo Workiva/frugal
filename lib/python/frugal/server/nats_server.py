@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from threading import Lock
 
 from nats.io.utils import new_inbox
 from tornado import gen, ioloop
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 _NATS_PROTOCOL_V0 = 0
 _DEFAULT_MAX_MISSED_HEARTBEATS = 2
+_DEFAULT_HEARTBEAT_INTERVAL = 20000
 _QUEUE = "rpc"
 
 
@@ -40,7 +42,8 @@ class FNatsTornadoServer(FServer):
         self._nats_client = nats_client
         self._subject = subject
         self._heartbeat_subject = new_inbox()
-        self._heartbeat_interval = heartbeat_interval or 10000
+        self._heartbeat_interval = (heartbeat_interval or
+                                    _DEFAULT_HEARTBEAT_INTERVAL)
         self._max_missed_heartbeats = max_missed_heartbeats
         self._processor_factory = processor_factory
         self._transport_factory = transport_factory
@@ -72,9 +75,11 @@ class FNatsTornadoServer(FServer):
         logger.debug("Shutting down Frugal NATS Server.")
         # stop the timers
         for _, client in self._clients.iteritems():
-            client.kill()
+            yield client.kill()
         self._clients.clear()
-        self._heartbeater.stop()
+
+        if self._heartbeater.is_running():
+            self._heartbeater.stop()
 
     def set_high_watermark(self, high_watermark):
         """Set the high watermark value for the server
@@ -142,14 +147,17 @@ class FNatsTornadoServer(FServer):
 
         transport = yield self._accept(listen_to, reply_to, heartbeat)
 
-        client = _Client(transport, heartbeat)
+        client = _Client(self._nats_client,
+                         transport,
+                         heartbeat,
+                         self._max_missed_heartbeats,
+                         self._heartbeat_interval)
 
         if self._heartbeat_interval > 0:
             client.start()
             self._clients[heartbeat] = client
 
-        # Publish back connect message [heartbeat_subject] [heartbeat_reply]
-        # [heartbeat_interval]
+        # [heartbeat_subject] [heartbeat_reply] [heartbeat_interval]
         connect_msg = "{0} {1} {2}".format(
             self._heartbeat_subject,
             heartbeat,
@@ -166,22 +174,46 @@ class FNatsTornadoServer(FServer):
 
 class _Client(object):
 
-    def __init__(self, transport, heartbeat, io_loop=None):
+    def __init__(self,
+                 nats_client,
+                 transport,
+                 heartbeat,
+                 heartbeat_interval,
+                 max_missed_heartbeats):
+        self._nats_client = nats_client
         self._transport = transport
         self._heartbeat = heartbeat
-        self._io_loop = io_loop or ioloop.IOLoop.current()
+        self._heartbeat_interval = heartbeat_interval
+        self._max_missed_heartbeats = max_missed_heartbeats
+        self._missed_heartbeats = 0
+        self._heartbeat_lock = Lock()
 
     @gen.coroutine
     def start(self):
-        # subscribe to the client's heartbeat
-        # TODO : subscribe to client heartbeat, count missed etc...
-        print "CALLED START ON CLIENT"
-        # yield self._nats_client.subscribe(heartbea
+        self._hb_sub_id = yield self._nats_client.subscribe(
+            self._heartbeat,
+            "",
+            self._receive_heartbeat)
+        # start the timer
+        self._heartbeat_timer = ioloop.PeriodicCallback(
+            self._missed_heartbeat,
+            self._heartbeat_interval
+        )
 
+    def _receive_heartbeat(self, msg=None):
+        self._missed_heartbeats = 0
+
+    @gen.coroutine
     def _missed_heartbeat(self, msg=None):
-        pass
+        self._missed_heartbeats += 1
+        if self._missed_heartbeats > self._max_missed_heartbeats:
+            logger.warn("Client heartbeat expired.")
+            yield self.kill()
 
     @gen.coroutine
     def kill(self):
+        logger.debug("Client disconnected.")
+        self._heartbeat_timer.stop()
+        yield self._nats_client.auto_unsubscribe(self._hb_sub_id, "")
         yield self._transport.close()
 

@@ -171,7 +171,6 @@ class TNatsServiceTransport(TTransportBase):
     @gen.coroutine
     def _setup_heartbeat(self):
         if self._heartbeat_interval > 0:
-            logger.debug("Setting up heartbeat subscription.")
             self._heartbeat_sub_id = yield self._nats_client.subscribe(
                 self._heartbeat_listen,
                 "",
@@ -206,14 +205,14 @@ class TNatsServiceTransport(TTransportBase):
 
         yield self._nats_client.publish_request(self._write_to, _DISCONNECT, "")
 
-        if self._heartbeat_timer.is_running():
+        if (hasattr(self, '_heartbeat_timer') and
+                self._heartbeat_timer.is_running()):
             self._heartbeat_timer.stop()
 
         # Typically this is used to unsubscribe after X number of messages
         # per the nats protocol, giving it an empty string should just UNSUB
-        yield self._nats_client.auto_unsubscribe(self._heartbeat_sub_id, "")
-
-        if self._heartbeat_sub_id:
+        if hasattr(self, '_heartbeat_sub_id') and self._heartbeat_sub_id:
+            yield self._nats_client.auto_unsubscribe(self._heartbeat_sub_id, "")
             self._heartbeat_sub_id = None
 
         yield self._nats_client.auto_unsubscribe(self._listen_to, "")
