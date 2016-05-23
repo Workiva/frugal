@@ -119,11 +119,12 @@ class FNatsTornadoServer(FServer):
         yield transport.open()
         raise gen.Return(client)
 
+    @gen.coroutine
     def _remove(self, heartbeat):
         with self._clients_lock:
             client = self._clients.pop(heartbeat, None)
             if client:
-                client.kill()
+                yield client.kill()
 
     @gen.coroutine
     def _send_heartbeat(self):

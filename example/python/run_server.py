@@ -66,9 +66,13 @@ def main():
     heartbeat_interval = 10000
     max_missed_heartbeats = 3
 
-    server = FNatsTornadoServer(nats_client, subject, heartbeat_interval,
-                                max_missed_heartbeats, processor_factory,
-                                transport_factory, prot_factory)
+    server = FNatsTornadoServer(nats_client,
+                                subject,
+                                max_missed_heartbeats,
+                                processor_factory,
+                                transport_factory,
+                                prot_factory,
+                                heartbeat_interval)
 
     logging.info("Starting server...")
 
