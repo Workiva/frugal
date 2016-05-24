@@ -52,7 +52,7 @@ pub run dart_dev analyze
 # Python
 cd $ROOT/lib/python
 make deps
-make unit
+make xunit
 
 # Run the generator tests
 cd $ROOT
