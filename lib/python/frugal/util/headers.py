@@ -52,7 +52,6 @@ class _Headers(object):
     @staticmethod
     def _read(buff1):
         buff = buff1.read(1)
-        parsed_headers = {}
         version = unpack_from(_UCHAR, buff[:1])[0]
 
         if version is not _V0:
@@ -64,30 +63,9 @@ class _Headers(object):
         buff = buff1.read(4)
         size = unpack_from(_UINT, buff[0:4])[0]
 
-        offset = 0  # since size is 4 bytes
-
         buff = buff1.read(size)
-        while offset < size:
-            key_size = unpack_from(_UINT, buff[offset:offset + 4])[0]
-            offset += 4
 
-            # TODO: Check bounds.
-
-            key = unpack_from('>{0}s'.format(key_size),
-                              buff[offset:offset+key_size])[0]
-            offset += key_size
-
-            # TODO: Check bounds.
-
-            val_size = unpack_from(_UINT, buff, offset)[0]
-            offset += 4
-
-            # TODO: Check bounds.
-            val = unpack_from('>{0}s'.format(val_size), buff, offset)[0]
-            offset += val_size
-            parsed_headers[key] = val
-
-        return parsed_headers
+        return _Headers._read_pairs(buff, 0, size)
 
     @staticmethod
     def decode_from_frame(frame):
@@ -97,8 +75,7 @@ class _Headers(object):
                 "Invalid frame size: {}".format(len(frame))
             )
 
-        # TODO: What do we do with this?
-        unpack_from('!I', frame[:4])[0]
+        unpack_from(_UINT, frame[:4])[0]
 
         version = unpack_from(_UCHAR, frame[4:5])[0]
 
@@ -108,7 +85,7 @@ class _Headers(object):
                 "Wrong Frugal version. Found {0}, wanted {1}."
                 .format(version, _V0))
 
-        headers_size = unpack_from('!I', frame[5:9])[0]
+        headers_size = unpack_from(_UINT, frame[5:9])[0]
 
         return _Headers._read_pairs(frame, 9, headers_size + 9)
 

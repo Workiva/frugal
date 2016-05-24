@@ -158,8 +158,8 @@ class FNatsTornadoServer(FServer):
 
         if self._heartbeat_interval > 0:
             client.start()
-            # TODO lock around this
-            self._clients[heartbeat] = client
+            with self._clients_lock:
+                self._clients[heartbeat] = client
 
         # [heartbeat_subject] [heartbeat_reply] [heartbeat_interval]
         connect_msg = "{0} {1} {2}".format(

@@ -157,7 +157,6 @@ class TNatsServiceTransport(TTransportBase):
         self._heartbeat_reply = subjects[1]
         self._heartbeat_interval = int(subjects[2])
 
-        # TODO make sure listen to isn't null or empty
         self._listen_to = msg.subject
         self._write_to = msg.reply
 
