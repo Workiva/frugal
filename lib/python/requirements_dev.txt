@@ -3,7 +3,5 @@ rednose
 mock==1.0.1
 coverage
 nose-exclude
-requests
-sniffer
 
 -r requirements.txt
