@@ -1,6 +1,10 @@
+import logging
 from struct import pack_into, unpack_from
 
 from frugal.exceptions import FProtocolException
+
+logger = logging.getLogger(__name__)
+
 _V0 = 0
 # Code for big endian unsigned char
 _UCHAR = '!B'
@@ -55,10 +59,13 @@ class _Headers(object):
         version = unpack_from(_UCHAR, buff[:1])[0]
 
         if version is not _V0:
-            raise FProtocolException(
+            ex = FProtocolException(
                 FProtocolException.BAD_VERSION,
-                "Wrong Frugal version. Found {0}, wanted {1}."
-                .format(version, _V0))
+                "Wrong Frugal version. Found {0}, wanted {1}.".format(
+                    version, _V0)
+            )
+            logger.exception(ex)
+            raise ex
 
         buff = buff1.read(4)
         size = unpack_from(_UINT, buff[0:4])[0]
@@ -70,20 +77,23 @@ class _Headers(object):
     @staticmethod
     def decode_from_frame(frame):
         if len(frame) < 5:
-            raise FProtocolException(
-                FProtocolException.INVALID_DATA,
-                "Invalid frame size: {}".format(len(frame))
-            )
+            ex = FProtocolException(FProtocolException.INVALID_DATA,
+                                    "Invalid frame size: {}".format(len(frame)))
+            logger.exception(ex)
+            raise ex
 
         unpack_from(_UINT, frame[:4])[0]
 
         version = unpack_from(_UCHAR, frame[4:5])[0]
 
         if version is not _V0:
-            raise FProtocolException(
+            ex = FProtocolException(
                 FProtocolException.BAD_VERSION,
                 "Wrong Frugal version. Found {0}, wanted {1}."
-                .format(version, _V0))
+                .format(version, _V0)
+            )
+            logger.exception(ex)
+            raise ex
 
         headers_size = unpack_from(_UINT, frame[5:9])[0]
 
@@ -98,9 +108,11 @@ class _Headers(object):
             i += 4
 
             if i > end or i + name_size > end:
-                raise FProtocolException(FProtocolException.INVALID_DATA,
-                                         "invalid protocol header name size: {}"
-                                         .format(name_size))
+                ex = FProtocolException(FProtocolException.INVALID_DATA,
+                                        "invalid protocol header name size: {}"
+                                        .format(name_size))
+                logger.exception(ex)
+                raise ex
 
             name = unpack_from('>{0}s'.format(name_size),
                                buff[i:i + name_size])[0]
@@ -110,10 +122,11 @@ class _Headers(object):
             i += 4
 
             if i > end or i + val_size > end:
-                raise FProtocolException(
-                    FProtocolException.INVALID_DATA,
-                    "invalid protocol header value size: {}".format(val_size)
-                )
+                ex = FProtocolException(FProtocolException.INVALID_DATA,
+                                        "invalid protocol header value size: {}"
+                                        .format(val_size))
+                logger.exception(ex)
+                raise ex
 
             val = unpack_from('>{0}s'.format(val_size), buff[i:i + val_size])[0]
             i += val_size

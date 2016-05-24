@@ -1,3 +1,4 @@
+import logging
 from threading import Lock
 
 from thrift.transport.TTransport import TMemoryBuffer
@@ -5,6 +6,8 @@ from thrift.transport.TTransport import TMemoryBuffer
 from frugal.context import _OP_ID
 from frugal.exceptions import FException
 from frugal.util.headers import _Headers
+
+logger = logging.getLogger(__name__)
 
 
 class FRegistry(object):
@@ -98,7 +101,9 @@ class FClientRegistry(FRegistry):
         """
         with self._handlers_lock:
             if context._get_op_id() in self._handlers:
-                raise FException("context already registered")
+                ex = FException("context already registered")
+                logger.exception(ex)
+                raise ex
 
         op_id = self._increment_and_get_next_op_id()
         context._set_op_id(op_id)

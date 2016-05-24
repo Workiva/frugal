@@ -151,7 +151,9 @@ class TNatsServiceTransport(TTransportBase):
         subjects = msg.data.split()
         if len(subjects) != 3:
             logger.error("Bad Frugal handshake")
-            raise TTransportException("Invalid connect message.")
+            ex = TTransportException("Invalid connect message.")
+            logger.exception(ex)
+            raise ex
 
         self._heartbeat_listen = subjects[0]
         self._heartbeat_reply = subjects[1]
@@ -219,14 +221,18 @@ class TNatsServiceTransport(TTransportBase):
         self._is_open = False
 
     def read(self, buff, offset, length):
-        raise Exception("Don't call this.")
+        ex = Exception("Don't call this.")
+        logger.exception(ex)
+        raise ex
 
     def write(self, buff):
         """Write takes in a bytearray and appends it to the write buffer"""
         if not self.isOpen():
             logger.error("Tried to write to closed transport!")
-            raise TTransportException(TTransportException.NOT_OPEN,
-                                      "Transport not open!")
+            ex = TTransportException(TTransportException.NOT_OPEN,
+                                     "Transport not open!")
+            raise ex
+
         self._wbuf.write(buff)
 
     @gen.coroutine

@@ -1,10 +1,12 @@
+import logging
 from threading import Lock
 
 from thrift.transport.TTransport import TTransportException
 from tornado import ioloop, gen
 
-from .transport import FTransport
-from .transport_factory import FTransportFactory
+from frugal.transport import FTransport, FTransportFactory
+
+logger = logging.getLogger(__name__)
 
 
 class FMuxTornadoTransport(FTransport):
@@ -27,6 +29,7 @@ class FMuxTornadoTransport(FTransport):
         except TTransportException as ex:
             if ex.type != TTransportException.ALREADY_OPEN:
                 # It's okay if transport is already open
+                logger.exception(ex)
                 raise ex
 
     @gen.coroutine
@@ -40,7 +43,9 @@ class FMuxTornadoTransport(FTransport):
         """
         with self._lock:
             if not registry:
-                raise ValueError("registry cannot be null.")
+                ex = ValueError("registry cannot be null.")
+                logger.exception(ex)
+                raise ex
 
             if self._registry:
                 return
@@ -51,19 +56,25 @@ class FMuxTornadoTransport(FTransport):
     def register(self, context, callback):
         with self._lock:
             if not self._registry:
-                raise StandardError("registry cannot be null.")
+                ex = StandardError("registry cannot be null.")
+                logger.exception(ex)
+                raise ex
 
             self._registry.register(context, callback)
 
     def unregister(self, context):
         with self._lock:
             if not self._registry:
-                raise StandardError("registry cannot be null.")
+                ex = StandardError("registry cannot be null.")
+                logger.exception(ex)
+                raise ex
 
             self._registry.unregister(context)
 
     def read(self):
-        raise StandardError("you're doing it wrong")
+        ex = StandardError("you're doing it wrong")
+        logger.exception(ex)
+        raise ex
 
     def write(self, buff):
         self._transport.write(buff)
