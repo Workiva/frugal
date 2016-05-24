@@ -1,4 +1,0 @@
-# Frugal Python Todo List
-=====
-
-- [ ] 

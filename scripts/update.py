@@ -3,13 +3,14 @@ import os
 import re
 from subprocess import call
 
-from lang import Dart, Go, Java
+from lang import Dart, Go, Java, Python
 
 
 LANGUAGES = {
     "dart": Dart(),
     "go": Go(),
     "java": Java(),
+    "python": Python(),
 }
 
 _VERSION_MATCH = '.*?\..*?\..*?'

@@ -1,4 +1,4 @@
-from .protocol import FProtocol
+from frugal.protocol import FProtocol
 
 
 class FProtocolFactory(object):
