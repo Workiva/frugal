@@ -550,20 +550,20 @@ func (p *FooOneWayArgs) ReadField2(iprot thrift.TProtocol) error {
 	}
 	p.Req = make(Request, size)
 	for i := 0; i < size; i++ {
-		var elem16 Int
+		var elem15 Int
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := Int(v)
-			elem16 = temp
+			elem15 = temp
 		}
-		var elem15 string
+		var elem16 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem15 = v
+			elem16 = v
 		}
-		(p.Req)[elem16] = elem15
+		(p.Req)[elem15] = elem16
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)
@@ -1163,4 +1163,286 @@ func (p *FooParamModifiersResult) String() string {
 		return "<nil>"
 	}
 	return fmt.Sprintf("FooParamModifiersResult(%+v)", *p)
+}
+
+type FooUnderlyingTypesTestArgs struct {
+	ListType []int64        `thrift:"list_type,1" db:"list_type" json:"list_type"`
+	SetType  map[int64]bool `thrift:"set_type,2" db:"set_type" json:"set_type"`
+}
+
+func NewFooUnderlyingTypesTestArgs() *FooUnderlyingTypesTestArgs {
+	return &FooUnderlyingTypesTestArgs{}
+}
+
+func (p *FooUnderlyingTypesTestArgs) GetListType() []int64 {
+	return p.ListType
+}
+
+func (p *FooUnderlyingTypesTestArgs) GetSetType() map[int64]bool {
+	return p.SetType
+}
+
+func (p *FooUnderlyingTypesTestArgs) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 1:
+			if err := p.ReadField1(iprot); err != nil {
+				return err
+			}
+		case 2:
+			if err := p.ReadField2(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	return nil
+}
+
+func (p *FooUnderlyingTypesTestArgs) ReadField1(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin()
+	if err != nil {
+		return thrift.PrependError("error reading list begin: ", err)
+	}
+	p.ListType = make([]int64, 0, size)
+	for i := 0; i < size; i++ {
+		var elem17 int64
+		if v, err := iprot.ReadI64(); err != nil {
+			return thrift.PrependError("error reading field 0: ", err)
+		} else {
+			elem17 = v
+		}
+		p.ListType = append(p.ListType, elem17)
+	}
+	if err := iprot.ReadListEnd(); err != nil {
+		return thrift.PrependError("error reading list end: ", err)
+	}
+	return nil
+}
+
+func (p *FooUnderlyingTypesTestArgs) ReadField2(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadSetBegin()
+	if err != nil {
+		return thrift.PrependError("error reading set begin: ", err)
+	}
+	p.SetType = make(map[int64]bool, size)
+	for i := 0; i < size; i++ {
+		var elem18 int64
+		if v, err := iprot.ReadI64(); err != nil {
+			return thrift.PrependError("error reading field 0: ", err)
+		} else {
+			elem18 = v
+		}
+		(p.SetType)[elem18] = true
+	}
+	if err := iprot.ReadSetEnd(); err != nil {
+		return thrift.PrependError("error reading set end: ", err)
+	}
+	return nil
+}
+
+func (p *FooUnderlyingTypesTestArgs) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("underlying_types_test_args"); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField2(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return thrift.PrependError("write field stop error: ", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return thrift.PrependError("write struct stop error: ", err)
+	}
+	return nil
+}
+
+func (p *FooUnderlyingTypesTestArgs) writeField1(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("list_type", thrift.LIST, 1); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:list_type: ", p), err)
+	}
+	if err := oprot.WriteListBegin(thrift.I64, len(p.ListType)); err != nil {
+		return thrift.PrependError("error writing list begin: ", err)
+	}
+	for _, v := range p.ListType {
+		if err := oprot.WriteI64(int64(v)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+		}
+	}
+	if err := oprot.WriteListEnd(); err != nil {
+		return thrift.PrependError("error writing list end: ", err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 1:list_type: ", p), err)
+	}
+	return nil
+}
+
+func (p *FooUnderlyingTypesTestArgs) writeField2(oprot thrift.TProtocol) error {
+	if err := oprot.WriteFieldBegin("set_type", thrift.SET, 2); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:set_type: ", p), err)
+	}
+	if err := oprot.WriteSetBegin(thrift.I64, len(p.SetType)); err != nil {
+		return thrift.PrependError("error writing set begin: ", err)
+	}
+	for v, _ := range p.SetType {
+		if err := oprot.WriteI64(int64(v)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+		}
+	}
+	if err := oprot.WriteSetEnd(); err != nil {
+		return thrift.PrependError("error writing set end: ", err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 2:set_type: ", p), err)
+	}
+	return nil
+}
+
+func (p *FooUnderlyingTypesTestArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("FooUnderlyingTypesTestArgs(%+v)", *p)
+}
+
+type FooUnderlyingTypesTestResult struct {
+	Success []int64 `thrift:"success,0" db:"success" json:"success,omitempty"`
+}
+
+func NewFooUnderlyingTypesTestResult() *FooUnderlyingTypesTestResult {
+	return &FooUnderlyingTypesTestResult{}
+}
+
+var FooUnderlyingTypesTestResult_Success_DEFAULT []int64
+
+func (p *FooUnderlyingTypesTestResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *FooUnderlyingTypesTestResult) GetSuccess() []int64 {
+	return p.Success
+}
+
+func (p *FooUnderlyingTypesTestResult) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 0:
+			if err := p.ReadField0(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	return nil
+}
+
+func (p *FooUnderlyingTypesTestResult) ReadField0(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin()
+	if err != nil {
+		return thrift.PrependError("error reading list begin: ", err)
+	}
+	p.Success = make([]int64, 0, size)
+	for i := 0; i < size; i++ {
+		var elem19 int64
+		if v, err := iprot.ReadI64(); err != nil {
+			return thrift.PrependError("error reading field 0: ", err)
+		} else {
+			elem19 = v
+		}
+		p.Success = append(p.Success, elem19)
+	}
+	if err := iprot.ReadListEnd(); err != nil {
+		return thrift.PrependError("error reading list end: ", err)
+	}
+	return nil
+}
+
+func (p *FooUnderlyingTypesTestResult) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("underlying_types_test_result"); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+	}
+	if err := p.writeField0(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return thrift.PrependError("write field stop error: ", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return thrift.PrependError("write struct stop error: ", err)
+	}
+	return nil
+}
+
+func (p *FooUnderlyingTypesTestResult) writeField0(oprot thrift.TProtocol) error {
+	if p.IsSetSuccess() {
+		if err := oprot.WriteFieldBegin("success", thrift.LIST, 0); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 0:success: ", p), err)
+		}
+		if err := oprot.WriteListBegin(thrift.I64, len(p.Success)); err != nil {
+			return thrift.PrependError("error writing list begin: ", err)
+		}
+		for _, v := range p.Success {
+			if err := oprot.WriteI64(int64(v)); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+			}
+		}
+		if err := oprot.WriteListEnd(); err != nil {
+			return thrift.PrependError("error writing list end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 0:success: ", p), err)
+		}
+	}
+	return nil
+}
+
+func (p *FooUnderlyingTypesTestResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("FooUnderlyingTypesTestResult(%+v)", *p)
 }

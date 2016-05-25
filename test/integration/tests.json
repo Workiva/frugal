@@ -48,5 +48,33 @@
       "json"
     ],
     "workdir": "go/bin"
+  },
+  {
+    "name": "java",
+    "join_args": true,
+    "command": [
+      "mvn",
+      "exec:java"
+    ],
+    "client": {
+      "timeout": 13,
+      "command": [
+        "\"-Dexec.mainClass=com.workiva.TestClient\""
+      ],
+      "extra_args": [
+        "-f=\"java/frugal-integration-test\""
+      ]
+    },
+    "transports": [
+      "buffered",
+      "framed"
+    ],
+    "sockets": [
+      "ip"
+    ],
+    "protocols": [
+      "binary",
+      "compact"
+    ]
   }
 ]

@@ -117,6 +117,8 @@ service Foo extends base.BaseFoo {
     binary bin_method(1:binary bin, 2:string Str) throws (1:base.api_exception api),
 
     i64 param_modifiers(1:i32 opt_num, 2: optional i32 default_num, 3: required i32 req_num),
+
+    list<id> underlying_types_test(1:list<id> list_type, 2: set<id> set_type),
 }
 
 /**@

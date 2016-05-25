@@ -98,7 +98,7 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 					"problems.")
 			globals.GenWithFrugalWarn = true
 		}
-		g = generator.NewProgramGenerator(golang.NewGenerator(options, genWithFrugal), false)
+		g = generator.NewProgramGenerator(golang.NewGenerator(options), false)
 	case "java":
 		g = generator.NewProgramGenerator(java.NewGenerator(options), true)
 	case "py":

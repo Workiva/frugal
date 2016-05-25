@@ -24,14 +24,12 @@ const (
 
 type Generator struct {
 	*generator.BaseGenerator
-	// TODO remove this once you can only generate with frugal
-	withFrugal        bool
 	generateConstants bool
 	typesFile         *os.File
 }
 
-func NewGenerator(options map[string]string, withFrugal bool) generator.LanguageGenerator {
-	return &Generator{&generator.BaseGenerator{Options: options}, withFrugal, true, nil}
+func NewGenerator(options map[string]string) generator.LanguageGenerator {
+	return &Generator{&generator.BaseGenerator{Options: options}, true, nil}
 }
 
 // SetupGenerator initializes globals the generator needs, like the types file.
@@ -263,7 +261,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 		for _, pair := range value.([]parser.KeyValue) {
 			name := title(pair.Key.(string))
 			for _, field := range s.Fields {
-				if name == field.Name {
+				if name == title(field.Name) {
 					val := g.generateConstantValue(field.Type, pair.Value)
 					contents += fmt.Sprintf("\t%s: %s,\n", name, val)
 				}
@@ -298,7 +296,7 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 	}
 
 	eName := title(enum.Name)
-	contents += fmt.Sprintf("type %s int32\n\n", eName)
+	contents += fmt.Sprintf("type %s int64\n\n", eName)
 	contents += "const (\n"
 	for _, field := range enum.Values {
 		contents += fmt.Sprintf("\t%s_%s %s = %d\n", eName, title(field.Name), eName, field.Value)
@@ -748,9 +746,11 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 		if isPointerField {
 			maybePointer = "*"
 		}
-		valElem := getElem()
-		valField := parser.FieldFromType(underlyingType.ValueType, valElem)
-		valContents := g.generateReadFieldRec(valField, false)
+		// TODO 2.0 use this to get the value reading code, respecting the type,
+		// instead of the current code for list and set
+		//valElem := getElem()
+		//valField := parser.FieldFromType(underlyingType.ValueType, valElem)
+		//valContents := g.generateReadFieldRec(valField, false)
 		switch underlyingType.Name {
 		case "list":
 			contents += "\t_, size, err := iprot.ReadListBegin()\n"
@@ -764,6 +764,11 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 				contents += fmt.Sprintf("\t%s%s %s &temp\n", prefix, fName, eq)
 			}
 			contents += "\tfor i := 0; i < size; i++ {\n"
+			// TODO 2.0 don't use the underlying type for the value type of the list
+			underlyingValueType := g.Frugal.UnderlyingType(underlyingType.ValueType)
+			valElem := getElem()
+			valField := parser.FieldFromType(underlyingValueType, valElem)
+			valContents := g.generateReadFieldRec(valField, false)
 			contents += valContents
 			contents += fmt.Sprintf("\t\t%s%s%s = append(%s%s%s, %s)\n", maybePointer, prefix, fName, maybePointer, prefix, fName, valElem)
 			contents += "\t}\n"
@@ -782,6 +787,11 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 				contents += fmt.Sprintf("\t%s%s %s &temp\n", prefix, fName, eq)
 			}
 			contents += "\tfor i := 0; i < size; i++ {\n"
+			// TODO 2.0 don't use the underlying type for the value type of the set
+			underlyingValueType := g.Frugal.UnderlyingType(underlyingType.ValueType)
+			valElem := getElem()
+			valField := parser.FieldFromType(underlyingValueType, valElem)
+			valContents := g.generateReadFieldRec(valField, false)
 			contents += valContents
 			contents += fmt.Sprintf("\t\t(%s%s%s)[%s] = true\n", maybePointer, prefix, fName, valElem)
 			contents += "\t}\n"
@@ -803,6 +813,10 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			keyElem := getElem()
 			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
 			contents += g.generateReadFieldRec(keyField, false)
+			// TODO 2.0 use the valContents for all the collections
+			valElem := getElem()
+			valField := parser.FieldFromType(underlyingType.ValueType, valElem)
+			valContents := g.generateReadFieldRec(valField, false)
 			contents += valContents
 			contents += fmt.Sprintf("\t\t(%s%s%s)[%s] = %s\n", maybePointer, prefix, fName, keyElem, valElem)
 			contents += "\t}\n"
@@ -1408,6 +1422,13 @@ func (g *Generator) generateReturnArgs(method *parser.Method) string {
 	return fmt.Sprintf("(r %s, err error)", g.getGoTypeFromThriftType(method.ReturnType))
 }
 
+func (g *Generator) generateAsyncReturnArgs(method *parser.Method) string {
+	if method.ReturnType == nil {
+		return "(err <-chan error)"
+	}
+	return fmt.Sprintf("(r <-chan %s, err <-chan error)", g.getGoTypeFromThriftType(method.ReturnType))
+}
+
 func (g *Generator) generateClient(service *parser.Service) string {
 	servTitle := snakeToCamel(service.Name)
 
@@ -1455,7 +1476,47 @@ func (g *Generator) generateClient(service *parser.Service) string {
 
 	for _, method := range service.Methods {
 		contents += g.generateClientMethod(service, method)
+		if g.generateAsync() {
+			contents += g.generateAsyncClientMethod(service, method)
+		}
 	}
+	return contents
+}
+
+func (g *Generator) generateAsyncClientMethod(service *parser.Service, method *parser.Method) string {
+	var (
+		servTitle = snakeToCamel(service.Name)
+		nameTitle = snakeToCamel(method.Name)
+	)
+
+	contents := ""
+	if method.Comment != nil {
+		contents += g.GenerateInlineComment(method.Comment, "")
+	}
+	contents += fmt.Sprintf("func (f *F%sClient) %sAsync(ctx *frugal.FContext%s) %s {\n",
+		servTitle, nameTitle, g.generateInputArgs(method.Arguments), g.generateAsyncReturnArgs(method))
+	contents += "\terrC := make(chan error, 1)\n"
+	if method.ReturnType != nil {
+		contents += fmt.Sprintf("\tresultC := make(chan %s, 1)\n", g.getGoTypeFromThriftType(method.ReturnType))
+	}
+	contents += "\tgo func() {\n"
+	if method.ReturnType == nil {
+		contents += fmt.Sprintf("\t\terrC <- f.%s(%s)\n", nameTitle, g.generateCallArgs(method))
+	} else {
+		contents += fmt.Sprintf("\t\tresult, err := f.%s(%s)\n", nameTitle, g.generateCallArgs(method))
+		contents += "\t\tif err != nil {\n"
+		contents += "\t\t\terrC <- err\n"
+		contents += "\t\t} else {\n"
+		contents += "\t\t\tresultC <- result\n"
+		contents += "\t\t}\n"
+	}
+	contents += "\t}()\n"
+	if method.ReturnType == nil {
+		contents += "\treturn errC\n"
+	} else {
+		contents += "\treturn resultC, errC\n"
+	}
+	contents += "}\n\n"
 	return contents
 }
 
@@ -1826,6 +1887,13 @@ func (g *Generator) generateHandlerArgs(method *parser.Method) string {
 	args += "}"
 	return args
 }
+func (g *Generator) generateCallArgs(method *parser.Method) string {
+	args := "ctx"
+	for _, arg := range method.Arguments {
+		args += ", " + strings.ToLower(arg.Name)
+	}
+	return args
+}
 
 func (g *Generator) generateErrTooLarge(service *parser.Service, method *parser.Method) string {
 	servLower := strings.ToLower(service.Name)
@@ -1928,17 +1996,13 @@ func (g *Generator) getGoTypeFromThriftTypePtr(t *parser.Type, pointer bool) str
 	case "binary":
 		return maybePointer + "[]byte"
 	case "list":
-		typ := t.ValueType
-		if !g.withFrugal {
-			typ = g.Frugal.UnderlyingType(t.ValueType)
-		}
+		// TODO 2.0: don't use the underlying type
+		typ := g.Frugal.UnderlyingType(t.ValueType)
 		return fmt.Sprintf("%s[]%s", maybePointer,
 			g.getGoTypeFromThriftTypePtr(typ, false))
 	case "set":
-		typ := t.ValueType
-		if !g.withFrugal {
-			typ = g.Frugal.UnderlyingType(t.ValueType)
-		}
+		// TODO 2.0: dont' use the underlying type
+		typ := g.Frugal.UnderlyingType(t.ValueType)
 		return fmt.Sprintf("%smap[%s]bool", maybePointer,
 			g.getGoTypeFromThriftTypePtr(typ, false))
 	case "map":
@@ -2067,6 +2131,11 @@ func (g *Generator) qualifiedTypeName(t *parser.Type) string {
 		param += "_"
 	}
 	return param
+}
+
+func (g *Generator) generateAsync() bool {
+	_, ok := g.Options["async"]
+	return ok
 }
 
 // snakeToCamel returns a string converted from snake case to uppercase.

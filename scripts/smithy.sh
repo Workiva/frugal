@@ -32,7 +32,7 @@ mv target/frugal-*.jar $ROOT
 # GO
 # Compile library code
 cd $ROOT/lib/go
-go get -d -t ./go .
+godep restore
 go build
 # Run the tests
 go test -race

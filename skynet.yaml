@@ -39,8 +39,10 @@ scripts:
 
   # Start nats server
   - cd $testing
-  - go get github.com/nats-io/gnatsd
-  - gnatsd &
+  - wget -O gnatsd.tar.gz https://github.com/nats-io/gnatsd/releases/download/v0.7.2/gnatsd-v0.7.2-linux-amd64.tar.gz
+  - tar xzf gnatsd.tar.gz
+  - chmod 0755 gnatsd
+  - ./gnatsd &
 
   # recycle the Godeps (frugal-go) from lib/go
   - cd $frugal
@@ -59,7 +61,7 @@ name: cross
 requires:
   Workiva/frugal:
     - local_cache
-
+    - artifactory
 run:
   when-branch-name-is:
     - .+
@@ -93,7 +95,7 @@ scripts:
   # If applicable, fail here
   - if [ $code > 0 ]; then exit $code; fi
 
-timeout: moderate
+timeout: long
 
 artifacts:
   - /testing/artifacts

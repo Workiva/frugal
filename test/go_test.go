@@ -26,6 +26,21 @@ func TestValidGo(t *testing.T) {
 	compareFiles(t, "expected/go/f_blah_scope.txt", blahScopePath)
 }
 
+func TestValidGoWithAsync(t *testing.T) {
+	options := compiler.Options{
+		File:  validFile,
+		Gen:   "go:package_prefix=github.com/Workiva/frugal/test/out/,async",
+		Out:   outputDir,
+		Delim: delim,
+	}
+	if err := compiler.Compile(options); err != nil {
+		t.Fatal("Unexpected error", err)
+	}
+
+	blahServPath := filepath.Join(outputDir, "valid", "f_blah_service.go")
+	compareFiles(t, "expected/go/f_blah_service_async.txt", blahServPath)
+}
+
 func TestValidGoFrugalCompiler(t *testing.T) {
 	options := compiler.Options{
 		File:    frugalGenFile,

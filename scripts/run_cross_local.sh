@@ -2,6 +2,8 @@
 
 set -ex
 
+frugalDir=$PWD
+
 # Start with clean log folder
 rm -rf test/integration/log/*
 
@@ -19,18 +21,28 @@ rm -rf test/integration/dart/gen-dart/
 frugal --gen dart -r --out='test/integration/dart/gen-dart' test/integration/frugalTest.frugal
 
 cd test/integration/dart/test_client
-pub get
+pub upgrade
 cd ../gen-dart/frugal_test
-pub get
-cd ../../../../..
-echo $PWD
+pub upgrade
+cd ${frugalDir}
 
+# RM and Generate Java Code
+rm -rf test/integration/java/frugal-integration-test/gen-java/
+frugal --gen java -r --out='test/integration/java/frugal-integration-test/gen-java' test/integration/frugalTest.frugal
+
+cd lib/java
+mvn clean verify
+mv target/frugal-*.jar ${frugalDir}/test/integration/java/frugal-integration-test/frugal.jar
+cd ${frugalDir}/test/integration/java/frugal-integration-test
+mvn clean install:install-file -Dfile=frugal.jar -U
+mvn clean compile -U
+
+cd ${frugalDir}
 # Run tests
 # -v flag for verbose output
 # --server for specific server languages (only go supported currently)
 # --client for specific client languages (go and dart supported currently)
 # Example: python test/integration/test.py --server go --client go
-
 python test/integration/test.py --retry-count=0
 
 # After running this script once, you can just run:     python test/integration/test.py --retry-count=0

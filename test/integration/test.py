@@ -43,57 +43,59 @@ TEST_DIR_RELATIVE = 'integration'
 TEST_DIR = path_join(ROOT_DIR, TEST_DIR_RELATIVE)
 CONFIG_FILE = 'tests.json'
 
-def run_cross_tests(server_match, client_match, jobs,  retry_count, regex):
-  logger = multiprocessing.get_logger()
-  logger.debug('Collecting tests')
-  with open(path_join(TEST_DIR, CONFIG_FILE), 'r') as fp:
-    j = json.load(fp)
-  tests = crossrunner.collect_cross_tests(j, server_match, client_match, regex)
-  if not tests:
-    print('No test found that matches the criteria', file=sys.stderr)
-    print('  servers: %s' % server_match, file=sys.stderr)
-    print('  clients: %s' % client_match, file=sys.stderr)
-    return False
 
-  dispatcher = crossrunner.TestDispatcher(TEST_DIR, ROOT_DIR, TEST_DIR_RELATIVE, jobs)
-  logger.debug('Executing %d tests' % len(tests))
-  try:
-    for r in [dispatcher.dispatch(test, retry_count) for test in tests]:
-      r.wait()
-    logger.debug('Waiting for completion')
-    return dispatcher.wait()
-  except (KeyboardInterrupt, SystemExit):
-    logger.debug('Interrupted, shutting down')
-    dispatcher.terminate()
-    return False
+def run_cross_tests(server_match, client_match, jobs, retry_count, regex):
+    logger = multiprocessing.get_logger()
+    logger.debug('Collecting tests')
+    with open(path_join(TEST_DIR, CONFIG_FILE), 'r') as fp:
+        j = json.load(fp)
+    tests = crossrunner.collect_cross_tests(j, server_match, client_match, regex)
+    if not tests:
+        print('No test found that matches the criteria', file=sys.stderr)
+        print('  servers: %s' % server_match, file=sys.stderr)
+        print('  clients: %s' % client_match, file=sys.stderr)
+        return False
+
+    dispatcher = crossrunner.TestDispatcher(TEST_DIR, ROOT_DIR, TEST_DIR_RELATIVE, jobs)
+    logger.debug('Executing %d tests' % len(tests))
+    try:
+        for r in [dispatcher.dispatch(test, retry_count) for test in tests]:
+            r.wait()
+        logger.debug('Waiting for completion')
+        return dispatcher.wait()
+    except (KeyboardInterrupt, SystemExit):
+        logger.debug('Interrupted, shutting down')
+        dispatcher.terminate()
+        return False
 
 
 def main(argv):
-  parser = argparse.ArgumentParser()
-  parser.add_argument('--server', default='', nargs='*',
-                      help='list of servers to test')
-  parser.add_argument('--client', default='', nargs='*',
-                      help='list of clients to test')
-  parser.add_argument('-R', '--regex', help='test name pattern to run')
-  parser.add_argument('-r', '--retry-count', type=int,
-                      default=0, help='maximum retry on failure')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--server', default='', nargs='*',
+                        help='list of servers to test')
+    parser.add_argument('--client', default='', nargs='*',
+                        help='list of clients to test')
+    parser.add_argument('-R', '--regex', help='test name pattern to run')
+    parser.add_argument('-r', '--retry-count', type=int,
+                        default=0, help='maximum retry on failure')
 
-  g = parser.add_argument_group(title='Advanced')
-  g.add_argument('-v', '--verbose', action='store_const',
-                 dest='log_level', const=logging.DEBUG, default=logging.WARNING,
-                 help='show debug output for test runner')
-  options = parser.parse_args(argv)
+    g = parser.add_argument_group(title='Advanced')
+    g.add_argument('-v', '--verbose', action='store_const',
+                   dest='log_level', const=logging.DEBUG, default=logging.WARNING,
+                   help='show debug output for test runner')
+    options = parser.parse_args(argv)
 
-  logger = multiprocessing.log_to_stderr()
-  logger.setLevel(options.log_level)
+    logger = multiprocessing.log_to_stderr()
+    logger.setLevel(options.log_level)
 
-  server_match = list(chain(*[x.split(',') for x in options.server]))
-  client_match = list(chain(*[x.split(',') for x in options.client]))
+    server_match = list(chain(*[x.split(',') for x in options.server]))
+    client_match = list(chain(*[x.split(',') for x in options.client]))
 
-  options.jobs = int(multiprocessing.cpu_count() * 1.25) + 1
+    options.jobs = int(multiprocessing.cpu_count() * 1.25) + 1
 
-  res = run_cross_tests(server_match, client_match, options.jobs, options.retry_count, options.regex)
-  return 0 if res else 1
+    res = run_cross_tests(server_match, client_match, options.jobs, options.retry_count, options.regex)
+    return 0 if res else 1
+
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv[1:]))
+    sys.exit(main(sys.argv[1:]))

@@ -4,7 +4,7 @@
 # Non-zero exit code is caught in the skynet.yaml
 set -x
 
-frugal=$PWD
+frugalDir=$PWD
 
 # Clear old logs
 rm -rf test/integration/log/*
@@ -27,16 +27,23 @@ tar xzf $SKYNET_APPLICATION_FRUGAL_LOCAL_CACHE -C .
 rm -rf test/intgration/dart/gen-dart/frugal_test/pubspec.yaml
 cp -r local_cache/pubspec.yaml test/integration/dart/gen-dart/frugal_test/pubspec.yaml
 cd test/integration/dart/test_client
-PUB_CACHE=$frugal/local_cache/ pub upgrade --offline
-PUB_CACHE=$frugal/local_cache/ pub get --offline
+PUB_CACHE=${frugalDir}/local_cache/ pub upgrade --offline
+PUB_CACHE=${frugalDir}/local_cache/ pub get --offline
 cd ../gen-dart/frugal_test
-PUB_CACHE=$frugal/local_cache/ pub upgrade --offline
-PUB_CACHE=$frugal/local_cache/ pub get --offline
-cd $frugal
+PUB_CACHE=${frugalDir}/local_cache/ pub upgrade --offline
+PUB_CACHE=${frugalDir}/local_cache/ pub get --offline
+cd ${frugalDir}
 
-# RM and Generate Java Code  -  This will be added in a future PR
-#rm -rf lib/java/gen-java/frugal
-#frugal --gen java -r --out='lib/java/gen-java' test/integration/frugalTest.frugal
+# RM and Generate Java Code
+rm -rf test/integration/java/frugal-integration-test/gen-java/
+frugal --gen java -r --out='test/integration/java/frugal-integration-test/gen-java' test/integration/frugalTest.frugal
+
+# Java dependency magic
+cp $SKYNET_APPLICATION_FRUGAL_ARTIFACTORY ${frugalDir}/test/integration/java/frugal-integration-test/frugal.jar
+cd ${frugalDir}/test/integration/java/frugal-integration-test
+mvn clean install:install-file -Dfile=frugal.jar -U
+mvn clean compile -U
 
 # Run tests
+cd ${frugalDir}
 python test/integration/test.py --retry-count=0
