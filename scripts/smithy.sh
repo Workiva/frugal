@@ -51,7 +51,7 @@ pub run dart_dev analyze
 
 # Python
 virtualenv -p /usr/bin/python /tmp/frugal
-source /tmp/frugal/activate
+source /tmp/frugal/bin/activate
 cd $ROOT/lib/python
 make deps
 make xunit
