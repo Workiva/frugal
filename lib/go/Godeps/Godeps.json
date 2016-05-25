@@ -40,13 +40,13 @@
 		},
 		{
 			"ImportPath": "github.com/nats-io/nats",
-			"Comment": "v1.2.0",
-			"Rev": "f46ea4b68042c929eda9a7e3b961f453929d8d9d"
+			"Comment": "v1.1.6-150-gfc85f44",
+			"Rev": "fc85f44c1659ab6610d76fd6bd0e44ad2cadf697"
 		},
 		{
 			"ImportPath": "github.com/nats-io/nats/encoders/builtin",
-			"Comment": "v1.2.0",
-			"Rev": "f46ea4b68042c929eda9a7e3b961f453929d8d9d"
+			"Comment": "v1.1.6-150-gfc85f44",
+			"Rev": "fc85f44c1659ab6610d76fd6bd0e44ad2cadf697"
 		},
 		{
 			"ImportPath": "github.com/nats-io/nuid",

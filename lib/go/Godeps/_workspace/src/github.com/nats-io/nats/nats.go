@@ -68,6 +68,7 @@ var (
 	ErrReconnectBufExceeded = errors.New("nats: outbound buffer limit exceeded")
 	ErrInvalidConnection    = errors.New("nats: invalid connection")
 	ErrInvalidMsg           = errors.New("nats: invalid message or message nil")
+	ErrInvalidArg           = errors.New("nats: invalid argument")
 	ErrStaleConnection      = errors.New("nats: " + STALE_CONNECTION)
 )
 
@@ -134,7 +135,7 @@ type Options struct {
 
 	// The size of the buffered channel used between the socket
 	// Go routine and the message delivery for SyncSubscriptions.
-	// NOTE: This does not afffect AsyncSubscriptions which are
+	// NOTE: This does not affect AsyncSubscriptions which are
 	// dictated by PendingLimits()
 	SubChanLen int
 }
@@ -324,7 +325,7 @@ func Secure(tls ...*tls.Config) Option {
 	}
 }
 
-// RootCAs is a helper option to provide the RootCAs pool from a list of fileNames. If Secure is
+// RootCAs is a helper option to provide the RootCAs pool from a list of filenames. If Secure is
 // not already set this will set it as well.
 func RootCAs(file ...string) Option {
 	return func(o *Options) error {
@@ -1409,7 +1410,8 @@ func (nc *Conn) processMsg(data []byte) {
 	}
 
 	// Check for a Slow Consumer
-	if sub.pMsgs > sub.pMsgsLimit || sub.pBytes > sub.pBytesLimit {
+	if (sub.pMsgsLimit > 0 && sub.pMsgs > sub.pMsgsLimit) ||
+		(sub.pBytesLimit > 0 && sub.pBytes > sub.pBytesLimit) {
 		goto slowConsumer
 	}
 
@@ -1537,7 +1539,9 @@ func (nc *Conn) processInfo(info string) error {
 	return json.Unmarshal([]byte(info), &nc.info)
 }
 
-// LastError reports the last error encountered via the Connection.
+// LastError reports the last error encountered via the connection.
+// It can be used reliably within ClosedCB in order to find out reason
+// why connection was closed for example.
 func (nc *Conn) LastError() error {
 	if nc == nil {
 		return ErrInvalidConnection
@@ -1723,7 +1727,8 @@ func NewInbox() string {
 }
 
 // Subscribe will express interest in the given subject. The subject
-// can have wildcards (partial:*, full:>). Messages will be delivered// to the associated MsgHandler. If no MsgHandler is given, the
+// can have wildcards (partial:*, full:>). Messages will be delivered
+// to the associated MsgHandler. If no MsgHandler is given, the
 // subscription is a synchronous subscription and can be polled via
 // Subscription.NextMsg().
 func (nc *Conn) Subscribe(subj string, cb MsgHandler) (*Subscription, error) {
@@ -2081,6 +2086,8 @@ const (
 )
 
 // PendingLimits returns the current limits for this subscription.
+// If no error is returned, a negative value indicates that the
+// given metric is not limited.
 func (s *Subscription) PendingLimits() (int, int, error) {
 	if s == nil {
 		return -1, -1, ErrBadSubscription
@@ -2097,6 +2104,7 @@ func (s *Subscription) PendingLimits() (int, int, error) {
 }
 
 // SetPendingLimits sets the limits for pending msgs and bytes for this subscription.
+// Zero is not allowed. Any negative value means that the given metric is not limited.
 func (s *Subscription) SetPendingLimits(msgLimit, bytesLimit int) error {
 	if s == nil {
 		return ErrBadSubscription
@@ -2108,6 +2116,9 @@ func (s *Subscription) SetPendingLimits(msgLimit, bytesLimit int) error {
 	}
 	if s.typ == ChanSubscription {
 		return ErrTypeSubscription
+	}
+	if msgLimit == 0 || bytesLimit == 0 {
+		return ErrInvalidArg
 	}
 	s.pMsgsLimit, s.pBytesLimit = msgLimit, bytesLimit
 	return nil
@@ -2420,4 +2431,18 @@ func (nc *Conn) MaxPayload() int64 {
 	nc.mu.Lock()
 	defer nc.mu.Unlock()
 	return nc.info.MaxPayload
+}
+
+// AuthRequired will return if the connected server requires authorization.
+func (nc *Conn) AuthRequired() bool {
+	nc.mu.Lock()
+	defer nc.mu.Unlock()
+	return nc.info.AuthRequired
+}
+
+// TLSRequired will return if the connected server requires TLS connections.
+func (nc *Conn) TLSRequired() bool {
+	nc.mu.Lock()
+	defer nc.mu.Unlock()
+	return nc.info.TLSRequired
 }
