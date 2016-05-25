@@ -16,8 +16,8 @@ _FRUGAL_PREFIX = "frugal."
 _DISCONNECT = "DISCONNECT"
 _HEARTBEAT_GRACE_PERIOD = 50000
 _HEARTBEAT_LOCK = Lock()
-DEFAULT_CONNECTION_TIMEOUT = 20000
-DEFAULT_MAX_MISSED_HEARTBEATS = 3
+_DEFAULT_CONNECTION_TIMEOUT = 20000
+_DEFAULT_MAX_MISSED_HEARTBEATS = 3
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,8 @@ class TNatsServiceTransport(TTransportBase):
     @staticmethod
     def Client(nats_client,
                connection_subject,
-               connection_timeout=DEFAULT_CONNECTION_TIMEOUT,
-               max_missed_heartbeats=DEFAULT_MAX_MISSED_HEARTBEATS,
+               connection_timeout=_DEFAULT_CONNECTION_TIMEOUT,
+               max_missed_heartbeats=_DEFAULT_MAX_MISSED_HEARTBEATS,
                io_loop=None):
         """ Return a client instance of TNatsServiceTransport
 

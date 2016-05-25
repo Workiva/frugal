@@ -127,9 +127,14 @@ class FClientRegistry(FRegistry):
             frame: an entire Frugal message frame.
         """
         headers = _Headers.decode_from_frame(frame)
-        op_id = headers[_OP_ID]
+        op_id = headers.get(_OP_ID, None)
 
-        self._handlers[op_id](TMemoryBuffer(frame[4:]))
+        if not op_id:
+            logger.warning("Got a message for unregistered context. Dropping")
+            return
+
+        with self._handlers_lock:
+            self._handlers[op_id](TMemoryBuffer(frame[4:]))
 
     def _increment_and_get_next_op_id(self):
         with self._opid_lock:

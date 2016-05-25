@@ -4,6 +4,8 @@ from threading import Lock
 from thrift.Thrift import TApplicationException, TMessageType, TType
 from tornado import gen
 
+logger = logging.getLogger(__name__)
+
 
 class FProcessor(object):
     """FProcessor is a generic object which operates upon an input stream and
@@ -20,6 +22,7 @@ class FBaseProcessor(FProcessor):
         """Create new instance of FBaseProcessor that will process requests."""
         self._processor_function_map = {}
         self._write_lock = Lock()
+        self._function_map_lock = Lock()
 
     def add_to_processor_map(self, key, proc):
         """Register the given FProcessorFunction.
@@ -28,12 +31,11 @@ class FBaseProcessor(FProcessor):
             key: processor function name
             proc: FProcessorFunction
         """
-
-        self._processor_function_map[key] = proc
+        with self._function_map_lock:
+            self._processor_function_map[key] = proc
 
     def get_write_lock(self):
         """Return the write lock."""
-
         return self._write_lock
 
     @gen.coroutine
@@ -52,7 +54,8 @@ class FBaseProcessor(FProcessor):
         context = iprot.read_request_headers()
         name, _, _ = iprot.readMessageBegin()
 
-        processor_function = self._processor_function_map.get(name)
+        with self._function_map_lock:
+            processor_function = self._processor_function_map.get(name)
 
         # If the function was in our dict, call process on it.
         if processor_function:
@@ -78,4 +81,5 @@ class FBaseProcessor(FProcessor):
             oprot.writeMessageEnd()
             oprot.trans.flush()
 
+        logger.exception(ex)
         raise ex

@@ -123,13 +123,14 @@ class FNatsTornadoServer(FServer):
     def _remove(self, heartbeat):
         with self._clients_lock:
             client = self._clients.pop(heartbeat, None)
-            if client:
-                yield client.kill()
+        if client:
+            yield client.kill()
 
     @gen.coroutine
     def _send_heartbeat(self):
-        if len(self._clients) == 0:
-            return
+        with self._clients_lock:
+            if len(self._clients) == 0:
+                return
         yield self._nats_client.publish(self._heartbeat_subject, "")
 
     @gen.coroutine
@@ -219,7 +220,9 @@ class _Client(object):
     @gen.coroutine
     def kill(self):
         logger.debug("Client disconnected.")
-        self._heartbeat_timer.stop()
+        if (hasattr(self, '_heartbeat_timer') and
+                self._heartbeat_timer.is_running()):
+            self._heartbeat_timer.stop()
         yield self._nats_client.unsubscribe(self._hb_sub_id)
         yield self._transport.close()
 
