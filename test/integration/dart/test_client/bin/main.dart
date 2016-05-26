@@ -184,56 +184,74 @@ List<TTest> _createTests() {
     ..i64_thing = -5;
 
   tests.add(new TTest(TEST_BASETYPES, 'testVoid', () async {
+    stdout.write("testVoid()");
     await client.testVoid(ctx);
+    stdout.write(" = void \n");
   }));
 
   tests.add(new TTest(TEST_BASETYPES, 'testString', () async {
     var input = 'Test';
+    stdout.write("testString(${input})");
     var result = await client.testString(ctx, input);
     if (result != input) throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_BASETYPES, 'testBool', () async {
     var input = true;
+    stdout.write("testBool(${input})");
     var result = await client.testBool(ctx, input);
     if (result != input) throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_BASETYPES, 'testByte', () async {
     var input = 64;
+    stdout.write("testByte(${input})");
     var result = await client.testByte(ctx, input);
     if (result != input) throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_BASETYPES, 'testI32', () async {
     var input = 2147483647;
+    stdout.write("testI32(${input})");
     var result = await client.testI32(ctx, input);
     if (result != input) throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_BASETYPES, 'testI64', () async {
     var input = 9223372036854775807;
+    stdout.write("testI64(${input})");
     var result = await client.testI64(ctx, input);
     if (result != input) throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_BASETYPES, 'testDouble', () async {
     var input = 3.1415926;
+    stdout.write("testDouble(${input})");
     var result = await client.testDouble(ctx, input);
     if (result != input) throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_BASETYPES, 'testBinary', () async {
     var utf8Codec = const Utf8Codec();
     var input = utf8Codec.encode('foo');
+    stdout.write("testBinary(${input})");
     var result = await client.testBinary(ctx, input);
     var equality = const ListEquality();
     if (!equality.equals(result, input)) throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_CONTAINERS, 'testStruct', () async {
+    stdout.write("testStruct()");
     var result = await client.testStruct(ctx, xtruct);
     if ('$result' != '$xtruct') throw new TTestError(result, xtruct);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_CONTAINERS, 'testNest', () async {
@@ -242,30 +260,38 @@ List<TTest> _createTests() {
       ..struct_thing = xtruct
       ..i32_thing = -3;
 
+    stdout.write("testNest(${input})");
     var result = await client.testNest(ctx, input);
     if ('$result' != '$input') throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_CONTAINERS, 'testMap', () async {
     Map<int, int> input = {1: -10, 2: -9, 3: -8, 4: -7, 5: -6};
 
+    stdout.write("testMap(${input})");
     var result = await client.testMap(ctx, input);
     var equality = const MapEquality();
     if (!equality.equals(result, input)) throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_CONTAINERS, 'testSet', () async {
     var input = new Set.from([-2, -1, 0, 1, 2]);
+    stdout.write("testSet(${input})");
     var result = await client.testSet(ctx, input);
     var equality = const SetEquality();
     if (!equality.equals(result, input)) throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_CONTAINERS, 'testList', () async {
     var input = [-2, -1, 0, 1, 2];
+    stdout.write("testList(${input})");
     var result = await client.testList(ctx, input);
     var equality = const ListEquality();
     if (!equality.equals(result, input)) throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_CONTAINERS, 'testEnum', () async {
@@ -278,15 +304,19 @@ List<TTest> _createTests() {
 
   tests.add(new TTest(TEST_BASETYPES, 'testTypedef', () async {
     var input = 309858235082523;
+    stdout.write("testTypedef(${input})");
     var result = await client.testTypedef(ctx, input);
     if (result != input) throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_CONTAINERS, 'testMapMap', () async {
+    stdout.write("testMapMap(ctx, 1)");
     Map<int, Map<int, int>> result = await client.testMapMap(ctx, 1);
     if (result.isEmpty || result[result.keys.first].isEmpty) {
       throw new TTestError(result, 'Map<int, Map<int, int>>');
     }
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_CONTAINERS, 'testInsanity', () async {
@@ -294,10 +324,12 @@ List<TTest> _createTests() {
     input.userMap = {Numberz.FIVE: 5000};
     input.xtructs = [xtruct];
 
+    stdout.write("testInsanity(${input})");
     Map<int, Map<int, Insanity>> result = await client.testInsanity(ctx, input);
     if (result.isEmpty || result[result.keys.first].isEmpty) {
       throw new TTestError(result, 'Map<int, Map<int, Insanity>>');
     }
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_CONTAINERS, 'testMulti', () async {
@@ -307,15 +339,19 @@ List<TTest> _createTests() {
       ..i32_thing = 456
       ..i64_thing = 789;
 
+    stdout.write("testMulti(${input})");
     var result = await client.testMulti(ctx, input.byte_thing, input.i32_thing,
         input.i64_thing, {1: 'one'}, Numberz.EIGHT, 5678);
     if ('$result' != '$input') throw new TTestError(result, input);
+    stdout.write(" = ${result} \n");
   }));
 
   tests.add(new TTest(TEST_EXCEPTIONS, 'testException', () async {
+    stdout.write("testException(Xception)");
     try {
       await client.testException(ctx, 'Xception');
-    } on Xception catch (_) {
+    } on Xception catch (exception) {
+      stdout.write(" = ${exception} \n");
       return;
     }
 
@@ -323,9 +359,11 @@ List<TTest> _createTests() {
   }));
 
   tests.add(new TTest(TEST_EXCEPTIONS, 'testMultiException', () async {
+    stdout.write("testMultiException(Xception2, foo)");
     try {
       await client.testMultiException(ctx, 'Xception2', 'foo');
-    } on Xception2 catch (_) {
+    } on Xception2 catch (exception2) {
+      stdout.write(" = ${exception2} \n");
       return;
     }
 
@@ -336,6 +374,8 @@ List<TTest> _createTests() {
 }
 
 Future _testEnum(int input) async {
+  stdout.write("testEnum(${input})");
   var result = await client.testEnum(ctx, input);
   if (result != input) throw new TTestError(result, input);
+  stdout.write(" = ${result} \n");
 }

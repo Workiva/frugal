@@ -647,7 +647,7 @@ public class TestClient {
              * EXECPTION TEST
              */
             try {
-                System.out.print("testClient.testException(\"Xception\") =>");
+                System.out.print("testException(\"Xception\") =>");
                 testClient.testException(context, "Xception");
                 System.out.print("  void\n*** FAILURE ***\n");
                 returnCode |= ERR_EXCEPTIONS;
@@ -666,7 +666,7 @@ public class TestClient {
 //                }
 
             try {
-                System.out.print("testClient.testException(\"success\") =>");
+                System.out.print("testException(\"success\") =>");
                 testClient.testException(context, "success");
                 System.out.print("  void\n");
             } catch (Exception e) {
@@ -680,7 +680,7 @@ public class TestClient {
              */
 
             try {
-                System.out.printf("testClient.testMultiException(\"Xception\", \"test 1\") =>");
+                System.out.printf("testMultiException(\"Xception\", \"test 1\") =>");
                 testClient.testMultiException(context, "Xception", "test 1");
                 System.out.print("  result\n*** FAILURE ***\n");
                 returnCode |= ERR_EXCEPTIONS;
@@ -689,7 +689,7 @@ public class TestClient {
             }
 
             try {
-                System.out.printf("testClient.testMultiException(\"Xception2\", \"test 2\") =>");
+                System.out.printf("testMultiException(\"Xception2\", \"test 2\") =>");
                 testClient.testMultiException(context, "Xception2", "test 2");
                 System.out.print("  result\n*** FAILURE ***\n");
                 returnCode |= ERR_EXCEPTIONS;
@@ -698,7 +698,7 @@ public class TestClient {
             }
 
             try {
-                System.out.print("testClient.testMultiException(\"success\", \"test 3\") =>");
+                System.out.print("testMultiException(\"success\", \"test 3\") =>");
                 Xtruct result;
                 result = testClient.testMultiException(context, "success", "test 3");
                 System.out.printf("  {{\"%s\"}}\n", result.string_thing);

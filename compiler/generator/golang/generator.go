@@ -2035,10 +2035,8 @@ func (g *Generator) getEnumFromThriftType(t *parser.Type) string {
 		return "thrift.I64"
 	case "double":
 		return "thrift.DOUBLE"
-	case "string":
+	case "string", "binary":
 		return "thrift.STRING"
-	case "binary":
-		return "thrift.BINARY"
 	case "list":
 		return "thrift.LIST"
 	case "set":
