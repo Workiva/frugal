@@ -43,3 +43,6 @@ class Java(LanguageBase):
             if g.text == group and a.text == artifact:
                 dep.find('{0}:version'.format(_POM), _NS).text = version
         tree.write(_POM_XML, default_namespace=_NS[_POM])
+
+    def update_expected_tests(self, root):
+        pass

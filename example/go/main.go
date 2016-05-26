@@ -109,11 +109,12 @@ func runClient(conn *nats.Conn, transportFactory frugal.FTransportFactory, proto
 	if err := ftransport.Open(); err != nil {
 		return err
 	}
-	return handleClient(event.NewFFooClient(ftransport, protocolFactory, newRetryMiddleware()))
+	return handleClient(event.NewFFooClient(ftransport, protocolFactory))
 }
 
 // Sever handler
-type FooHandler struct{}
+type FooHandler struct {
+}
 
 func (f *FooHandler) Ping(ctx *frugal.FContext) error {
 	fmt.Printf("Ping(%s)\n", ctx)
@@ -140,8 +141,8 @@ func (f *FooHandler) OneWay(ctx *frugal.FContext, id event.ID, req event.Request
 func runServer(conn *nats.Conn, transportFactory frugal.FTransportFactory,
 	protocolFactory *frugal.FProtocolFactory) error {
 	handler := &FooHandler{}
-	processor := event.NewFFooProcessor(handler, newLoggingMiddleware())
-	server := frugal.NewFNatsServerFactory(conn, "foo", 20*time.Second, 2,
+	processor := event.NewFFooProcessor(handler)
+	server := frugal.NewFNatsServerFactory(conn, "foo", 5*time.Second, 2,
 		frugal.NewFProcessorFactory(processor), transportFactory, protocolFactory)
 	fmt.Println("Starting the simple nats server... on ", "foo")
 	return server.Serve()

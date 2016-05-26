@@ -20,8 +20,8 @@ type ScopePrefix struct {
 	Variables []string
 }
 
-func (n *ScopePrefix) Template() string {
-	return prefixVariable.ReplaceAllString(n.String, "%s")
+func (n *ScopePrefix) Template(s string) string {
+	return prefixVariable.ReplaceAllString(n.String, s)
 }
 
 type Scope struct {

@@ -49,6 +49,9 @@ var Languages = LanguageOptions{
 		"library_prefix": "Generate code that can be used within an existing library. " +
 			"Use a dot-separated string, e.g. \"my_parent_lib.src.gen\"",
 	},
+	"py": Options{
+		"tornado": "Generate code for use with Tornado",
+	},
 }
 
 // ProgramGenerator generates source code in a specified language for a Frugal

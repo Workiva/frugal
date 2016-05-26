@@ -49,6 +49,13 @@ pub run dart_dev coverage --no-html
 pub run dart_dev format --check
 pub run dart_dev analyze
 
+# Python
+virtualenv -p /usr/bin/python /tmp/frugal
+source /tmp/frugal/bin/activate
+cd $ROOT/lib/python
+make deps
+make xunit
+
 # Run the generator tests
 cd $ROOT
 godep restore

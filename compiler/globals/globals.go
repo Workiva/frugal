@@ -1,6 +1,9 @@
 package globals
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 const Version = "1.4.1"
 
@@ -30,4 +33,9 @@ func Reset() {
 	Now = time.Now()
 	IntermediateIDL = []string{}
 	GenWithFrugalWarn = false
+}
+
+// PrintWarning prints the given message to stdout in yellow font.
+func PrintWarning(msg string) {
+	fmt.Println("\x1b[33m" + msg + "\x1b[0m")
 }

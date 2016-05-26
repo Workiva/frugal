@@ -416,7 +416,7 @@ func generatePrefixStringTemplate(scope *parser.Scope) string {
 		return ""
 	}
 	template := ""
-	template += scope.Prefix.Template()
+	template += scope.Prefix.Template("%s")
 	template += globals.TopicDelimiter
 	if len(scope.Prefix.Variables) == 0 {
 		return template

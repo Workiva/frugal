@@ -10,6 +10,7 @@ import (
 	"github.com/Workiva/frugal/compiler/generator/dartlang"
 	"github.com/Workiva/frugal/compiler/generator/golang"
 	"github.com/Workiva/frugal/compiler/generator/java"
+	"github.com/Workiva/frugal/compiler/generator/python"
 	"github.com/Workiva/frugal/compiler/globals"
 	"github.com/Workiva/frugal/compiler/parser"
 )
@@ -90,17 +91,18 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		// TODO: Remove this once gen_with frugal is no longer experimental
 		// and is the default.
 		if !genWithFrugal && !globals.GenWithFrugalWarn {
-			fmt.Println("\x1b[33m" +
+			globals.PrintWarning(
 				"Consider using the \"gen_with_frugal\" language option " +
-				"to have Frugal generate code in place of Thrift.\nThis is an " +
-				"experimental feature. Please file a GitHub issue if you encounter " +
-				"problems." +
-				"\x1b[0m")
+					"to have Frugal generate code in place of Thrift.\nThis is an " +
+					"experimental feature. Please file a GitHub issue if you encounter " +
+					"problems.")
 			globals.GenWithFrugalWarn = true
 		}
 		g = generator.NewProgramGenerator(golang.NewGenerator(options), false)
 	case "java":
 		g = generator.NewProgramGenerator(java.NewGenerator(options), true)
+	case "py":
+		g = generator.NewProgramGenerator(python.NewGenerator(options), true)
 	default:
 		return nil, fmt.Errorf("Invalid gen value %s", gen)
 	}

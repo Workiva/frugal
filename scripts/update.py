@@ -3,13 +3,14 @@ import os
 import re
 from subprocess import call
 
-from lang import Dart, Go, Java
+from lang import Dart, Go, Java, Python
 
 
 LANGUAGES = {
     "dart": Dart(),
     "go": Go(),
     "java": Java(),
+    "python": Python(),
 }
 
 _VERSION_MATCH = '.*?\..*?\..*?'
@@ -19,11 +20,14 @@ def main(args):
     root = os.getcwd().rstrip('/')
     if args.version:
         update_frugal_version(args.version, root)
+        update_expected_tests(root)
 
 
 def update_frugal_version(version, root):
     """Update the frugal version."""
     # TODO: Implement dry run
+    print "Updating frugal to version {} for {}".format(
+        version, ', '.join(LANGUAGES.iterkeys()))
     update_compiler(version, root)
     for lang in LANGUAGES.itervalues():
         lang.update_frugal(version, root)
@@ -46,7 +50,7 @@ def update_compiler(version, root):
         f.write(s)
     # Install the binary with the updated version
     os.chdir(root)
-    if call(['go', 'install']) != 0:
+    if call(['godep', 'go', 'install']) != 0:
         raise Exception('installing frugal binary failed')
 
 
@@ -81,6 +85,11 @@ def update_examples(version, root):
     if call(['./generate_code.sh']) != 0:
         raise Exception('Failed to generate example code')
 
+
+def update_expected_tests(root):
+    for key, value in LANGUAGES.iteritems():
+        print "Updating expected tests for {}".format(key)
+        value.update_expected_tests(root)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
