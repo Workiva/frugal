@@ -25,6 +25,8 @@ def main(args):
 def update_frugal_version(version, root):
     """Update the frugal version."""
     # TODO: Implement dry run
+    print "Updating frugal to version {} for {}".format(
+        version, ', '.join(LANGUAGES.iterkeys()))
     update_compiler(version, root)
     for lang in LANGUAGES.itervalues():
         lang.update_frugal(version, root)
@@ -47,7 +49,7 @@ def update_compiler(version, root):
         f.write(s)
     # Install the binary with the updated version
     os.chdir(root)
-    if call(['go', 'install']) != 0:
+    if call(['godep', 'go', 'install']) != 0:
         raise Exception('installing frugal binary failed')
 
 
