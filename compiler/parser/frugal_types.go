@@ -1,8 +1,8 @@
 package parser
 
 import (
+	"fmt"
 	"sort"
-	"strings"
 )
 
 //go:generate pigeon -o grammar.peg.go ./grammar.peg
@@ -11,25 +11,8 @@ import (
 type Operation struct {
 	Comment []string
 	Name    string
-	Param   string
+	Type    *Type
 	Scope   *Scope // Pointer back to containing Scope
-}
-
-// IncludeName returns the base include name of the parameter, if any.
-func (o *Operation) IncludeName() string {
-	if strings.Contains(o.Param, ".") {
-		return o.Param[0:strings.Index(o.Param, ".")]
-	}
-	return ""
-}
-
-// ParamName returns the base parameter name with any include prefix removed.
-func (o *Operation) ParamName() string {
-	name := o.Param
-	if strings.Contains(name, ".") {
-		name = name[strings.Index(name, ".")+1:]
-	}
-	return name
 }
 
 type ScopePrefix struct {
@@ -37,8 +20,8 @@ type ScopePrefix struct {
 	Variables []string
 }
 
-func (n *ScopePrefix) Template() string {
-	return prefixVariable.ReplaceAllString(n.String, "%s")
+func (n *ScopePrefix) Template(s string) string {
+	return prefixVariable.ReplaceAllString(n.String, s)
 }
 
 type Scope struct {
@@ -55,13 +38,7 @@ func (s *Scope) ReferencedIncludes() []string {
 	includes := []string{}
 	includesSet := make(map[string]bool)
 	for _, op := range s.Operations {
-		if strings.Contains(op.Param, ".") {
-			reducedStr := op.Param[0:strings.Index(op.Param, ".")]
-			if _, ok := includesSet[reducedStr]; !ok {
-				includesSet[reducedStr] = true
-				includes = append(includes, reducedStr)
-			}
-		}
+		includesSet, includes = addInclude(includesSet, includes, op.Type)
 	}
 	return includes
 }
@@ -72,23 +49,23 @@ func (s *Scope) assignScope() {
 	}
 }
 
-type Async struct {
-	Comment []string
-	Name    string
-	Extends string
-	Methods []*Method
-	Frugal  *Frugal // Pointer back to containing Frugal
-}
-
 type Frugal struct {
 	Name           string
 	File           string
 	Dir            string
 	Path           string
 	Scopes         []*Scope
-	Asyncs         []*Async
 	Thrift         *Thrift
 	ParsedIncludes map[string]*Frugal
+
+	// This retains a list of all definitions in the order they are defined in
+	// the IDL. The Thrift compiler has several bugs which make the generated
+	// code sensitive to the ordering of IDL definitions, e.g.
+	// https://issues.apache.org/jira/browse/THRIFT-3465
+	// This is used to retain ordering in the generated intermediate Thrift.
+	// TODO: Remove this once the dependency on Thrift is removed or the bugs
+	// in Thrift are fixed.
+	OrderedDefinitions []interface{}
 }
 
 func (f *Frugal) NamespaceForInclude(include, lang string) (string, bool) {
@@ -158,10 +135,18 @@ func (f *Frugal) UnderlyingType(t *Type) *Type {
 	return t
 }
 
+func (f *Frugal) ConstantFromField(field *Field, value interface{}) *Constant {
+	return &Constant{
+		Name:  field.Name,
+		Type:  field.Type,
+		Value: value,
+	}
+}
+
 // IsStruct indicates if the underlying Type is a struct.
 func (f *Frugal) IsStruct(t *Type) bool {
 	t = f.UnderlyingType(t)
-	if _, ok := thriftTypes[t.Name]; ok {
+	if _, ok := thriftBaseTypes[t.Name]; ok {
 		return false
 	}
 	return t.KeyType == nil && t.ValueType == nil && !f.IsEnum(t)
@@ -191,7 +176,21 @@ func (f *Frugal) assignFrugal() {
 }
 
 func (f *Frugal) validate() error {
-	return f.Thrift.validate()
+	// Ensure there are no duplicate names between services and scopes.
+	names := make(map[string]struct{})
+	for _, service := range f.Thrift.Services {
+		if _, ok := names[service.Name]; ok {
+			return fmt.Errorf("Duplicate service name %s", service.Name)
+		}
+		names[service.Name] = struct{}{}
+	}
+	for _, scope := range f.Scopes {
+		if _, ok := names[scope.Name]; ok {
+			return fmt.Errorf("Duplicate scope name %s", scope.Name)
+		}
+		names[scope.Name] = struct{}{}
+	}
+	return f.Thrift.validate(f.ParsedIncludes)
 }
 
 func (f *Frugal) sort() {

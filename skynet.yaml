@@ -1,26 +1,34 @@
+name: standard
+
 run:
   when-branch-name-is:
     - .+
 
-image: "docker.webfilings.org/wlayout/smithy-runner-thrift:1.5"
+image: "drydock.workiva.org/workiva/skynet-images:33350"
+
+also-run:
+  Workiva/messaging-sdk:go-tests:
+    on-pull-request: true
+  Workiva/messaging-sdk:java-tests:
+    on-pull-request: true
 
 env:
   - GORACE="halt_on_errors=1"
 
 scripts:
+  # Grab thrift binary
+  - mkdir -p $PWD/bin
+  - wget -O $PWD/bin/thrift https://github.com/stevenosborne-wf/thrift/releases/download/0.9.3-wk-2/thrift-0.9.3-wk-2-linux-amd64 
+  - chmod 0755 $PWD/bin/thrift
+  - export PATH=$PATH:$PWD/bin
+
   - testing=$PWD
-  - cd ..
-  - mkdir go
-  - cd go
-  - export GOPATH=$PWD
-  - export PATH=$PATH:$GOPATH/bin
   - mkdir -p $GOPATH/src/github.com/Workiva
   - cp -r $testing $GOPATH/src/github.com/Workiva/frugal
 
   - cd $GOPATH/src/github.com/Workiva/frugal
   - export GOPATH=$GOPATH:$PWD
-  - go get -d ./compiler .
-  - go install
+  - godep go install
 
   - frugal=$PWD
   - go get -d -t ./lib/go .
@@ -31,14 +39,63 @@ scripts:
 
   # Start nats server
   - cd $testing
-  - go get github.com/nats-io/gnatsd
-  - gnatsd &
+  - wget -O gnatsd.tar.gz https://github.com/nats-io/gnatsd/releases/download/v0.7.2/gnatsd-v0.7.2-linux-amd64.tar.gz
+  - tar xzf gnatsd.tar.gz
+  - chmod 0755 gnatsd
+  - ./gnatsd &
 
   # recycle the Godeps (frugal-go) from lib/go
   - cd $frugal
   - ./scripts/run_tests_skynet.sh
 
-timeout: long
+timeout: moderate
 
 test-reports:
   - /testing/reports
+
+
+---
+
+name: cross
+
+requires:
+  Workiva/frugal:
+    - local_cache
+    - artifactory
+run:
+  when-branch-name-is:
+    - .+
+
+image: "docker.webfilings.org/messaging/smithy-runner:2"  #TODO: Update this to the fourHorsemen once it is built
+
+scripts:
+  # Grab thrift binary
+  - mkdir -p $PWD/bin
+  - wget -O $PWD/bin/thrift https://github.com/stevenosborne-wf/thrift/releases/download/0.9.3-wk-2/thrift-0.9.3-wk-2-linux-amd64
+  - chmod 0755 $PWD/bin/thrift
+  - export PATH=$PATH:$PWD/bin
+  - testing=$PWD
+
+  - mkdir -p $GOPATH/src/github.com/Workiva
+  - cp -r $testing $GOPATH/src/github.com/Workiva/frugal
+
+  - cd $GOPATH/src/github.com/Workiva/frugal
+  - frugal=$PWD
+  - export GOPATH=$GOPATH:$PWD
+  - go get -d ./compiler .
+  - go install
+  - go get -d -t ./lib/go .
+  - go build ./lib/go
+
+  # Catch non-zero exit code and fail after results are uploaded
+  - ./scripts/run_cross.sh || code=$?
+  - if [ -f $frugal/test/integration/log/unexpected_failures.log ]; then cp -r $frugal/test/integration/log/unexpected_failures.log /testing/artifacts/unexpected_failures.log; fi
+  - tar -czf successful_tests.tar.gz test/integration/log
+  - mv successful_tests.tar.gz /testing/artifacts/
+  # If applicable, fail here
+  - if [ $code > 0 ]; then exit $code; fi
+
+timeout: long
+
+artifacts:
+  - /testing/artifacts

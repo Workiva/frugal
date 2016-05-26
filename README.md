@@ -5,12 +5,59 @@ provides additional functionality. Specifically, it includes support for
 request headers, request multiplexing, thread safety, and code-generated
 pub/sub APIs. Frugal is intended to act as a superset of Thrift, meaning it
 implements the same functionality as Thrift with some additional
-features.
+features. For a more detailed explanation, see the
+[documentation](documentation).
 
 Currently supported languages are Go, Java, and Dart.
 
 ## Installation
 
+Install Thrift. Dart support has not yet been released for Thrift, so we use a fork for the time-being.
+
+### From Source
+
+Clone the fork
+```bash
+git clone git@github.com:stevenosborne-wf/thrift.git
+cd thrift
+git checkout 0.9.3-wk-2
+```
+
+Configure the install (Note: you make need to install build dependencies)
+```bash
+./bootstrap.sh
+./configure --without-perl --without-php --without-cpp --without-nodejs --enable-libs=no --enable-tests=no --enable-tutorial=no PY_PREFIX="$VIRTUAL_ENV"
+```
+
+Install Thrift
+```
+make
+make install
+```
+
+### From Homebrew
+
+Add the Workiva tap:
+
+```
+brew tap Workiva/workiva git@github.com:Workiva/homebrew-workiva.git
+```
+
+then install Thrift:
+
+```
+brew install Workiva/workiva/thrift
+```
+
+Expect the build to take about 3 minutes.
+
+Install Frugal using [godep](https://github.com/tools/godep)
+```
+$ git clone https://github.com/Workiva/frugal.git
+$ godep go install
+```
+
+You can also install into your GOPATH using `go get`:
 ```
 $ go get github.com/Workiva/frugal
 ```
@@ -196,3 +243,14 @@ $ cd example
 $ docker run -v "$(pwd):/data" drydock.workiva.org/workiva/frugal:17352 frugal -gen=go event.frugal
 ```
 
+## Release
+
+To update the frugal version for release, use the python script provided in the `scripts` directory. Note: You must be in the root directory of frugal.
+
+```bash
+# Get PyYAML
+pip install pyyaml
+
+# Update frugal
+python scripts/update.py --version 1.2.0
+```

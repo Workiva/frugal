@@ -5,25 +5,60 @@ set -o pipefail
 # Set -e so that we fail if an error is hit.
 set -e
 
-# Get maven
-wget http://apache.claz.org/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
-tar xzvf apache-maven-3.3.9-bin.tar.gz
-export PATH=$PWD/apache-maven-3.3.9/bin:$PATH
+# Get godep
+which godep > /dev/null || {
+    go get github.com/tools/godep
+}
 
 ROOT=$PWD
+CODECOV_TOKEN='bQ4MgjJ0G2Y73v8JNX6L7yMK9679nbYB'
+THRIFT_TAG=0.9.3-wk-2
+THRIFT=thrift-$THRIFT_TAG-linux-amd64
+GORACE="halt_on_error=1"
 
-# Compile the java library code
-cd $ROOT/lib/java && mvn verify
+
+# Retrieve the thrift binary
+mkdir -p $ROOT/bin
+curl -L -O https://github.com/stevenosborne-wf/thrift/releases/download/$THRIFT_TAG/$THRIFT
+mv $THRIFT $ROOT/bin/thrift
+chmod 0755 $ROOT/bin/thrift
+export PATH=$PATH:$ROOT/bin
+
+# JAVA
+# Compile library code
+cd $ROOT/lib/java && mvn clean verify
 mv target/frugal-*.jar $ROOT
 
-# Compile the go library code
+# GO
+# Compile library code
 cd $ROOT/lib/go
-go get -d ./go .
+godep restore
 go build
+# Run the tests
+go test -race
+
+# DART
+# Compile library code
+cd $ROOT/lib/dart
+pub get
+cp ./pubspec.lock $ROOT
+# Run the tests
+pub run dart_dev test
+pub run dart_dev coverage --no-html
+./tool/codecov.sh
+pub run dart_dev format --check
+pub run dart_dev analyze
+
+# Python
+virtualenv -p /usr/bin/python /tmp/frugal
+source /tmp/frugal/bin/activate
+cd $ROOT/lib/python
+make deps
+make xunit
 
 # Run the generator tests
 cd $ROOT
-go get -d ./compiler .
+godep restore
 go build -o frugal
-go test ./test
+go test -race ./test
 rm -rf ./test/out

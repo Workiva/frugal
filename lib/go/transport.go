@@ -3,10 +3,18 @@ package frugal
 import (
 	"errors"
 	"io"
-	"log"
 	"sync"
+	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	log "github.com/Sirupsen/logrus"
+)
+
+const (
+	REQUEST_TOO_LARGE  = 100
+	RESPONSE_TOO_LARGE = 101
+
+	defaultWatermark = 5 * time.Second
 )
 
 // ErrTransportClosed is returned by service calls when the transport is
@@ -14,13 +22,20 @@ import (
 // invalid state. If this is returned, the transport should be reinitialized.
 var ErrTransportClosed = errors.New("frugal: transport was unexpectedly closed")
 
-// FScopeTransportFactory produces FScopeTransports which are used by pub/sub
-// scopes.
+// ErrTooLarge is returned when attempting to write a message which exceeds the
+// transport's message size limit.
+var ErrTooLarge = thrift.NewTTransportException(REQUEST_TOO_LARGE,
+	"request was too large for the transport")
+
+// FScopeTransportFactory produces FScopeTransports and is typically used by an
+// FScopeProvider.
 type FScopeTransportFactory interface {
 	GetTransport() FScopeTransport
 }
 
-// FScopeTransport is a TTransport extension for pub/sub scopes.
+// FScopeTransport extends Thrift's TTransport and is used exclusively for
+// pub/sub scopes. Subscribers use an FScopeTransport to subscribe to a pub/sub
+// topic. Publishers use it to publish to a topic.
 type FScopeTransport interface {
 	thrift.TTransport
 
@@ -33,9 +48,27 @@ type FScopeTransport interface {
 
 	// Subscribe sets the subscribe topic and opens the transport.
 	Subscribe(string) error
+
+	// DiscardFrame discards the current message frame the transport is
+	// reading, if any. After calling this, a subsequent call to Read will read
+	// from the next frame. This must be called from the same goroutine as the
+	// goroutine calling Read.
+	DiscardFrame()
 }
 
-// FTransport is a TTransport for services.
+// FTransport is Frugal's equivalent of Thrift's TTransport. FTransport extends
+// TTransport and exposes some additional methods. An FTransport typically has
+// an FRegistry, so it provides methods for setting the FRegistry and
+// registering and unregistering an FAsyncCallback to an FContext. It also
+// allows a way for setting an FTransportMonitor and a high-water mark provided
+// by an FServer.
+//
+// FTransport wraps a TTransport, meaning all existing TTransport
+// implementations will work in Frugal. However, all FTransports must used a
+// framed protocol, typically implemented by wrapping a TFramedTransport.
+//
+// Most Frugal language libraries include an FMuxTransport implementation,
+// which uses a worker pool to handle messages in parallel.
 type FTransport interface {
 	thrift.TTransport
 
@@ -48,14 +81,20 @@ type FTransport interface {
 	// Unregister a callback for the given Context.
 	Unregister(*FContext)
 
-	// SetMonitor starts a monitor that can watch the health of, and reopen, the transport.
+	// SetMonitor starts a monitor that can watch the health of, and reopen,
+	// the transport.
 	SetMonitor(FTransportMonitor)
 
-	// Closed channel receives the cause of an FTransport close (nil if clean close).
+	// Closed channel receives the cause of an FTransport close (nil if clean
+	// close).
 	Closed() <-chan error
+
+	// SetHighWatermark sets the maximum amount of time a frame is allowed to
+	// await processing before triggering transport overload logic.
+	SetHighWatermark(watermark time.Duration)
 }
 
-// FTransportFactory produces FTransports which are used by services.
+// FTransportFactory produces FTransports by wrapping a provided TTransport.
 type FTransportFactory interface {
 	GetTransport(tr thrift.TTransport) FTransport
 }
@@ -75,16 +114,22 @@ func (f *fMuxTransportFactory) GetTransport(tr thrift.TTransport) FTransport {
 	return NewFMuxTransport(tr, f.numWorkers)
 }
 
+type frameWrapper struct {
+	frameBytes []byte
+	timestamp  time.Time
+}
+
 type fMuxTransport struct {
-	*thrift.TFramedTransport
+	*TFramedTransport
 	registry            FRegistry
 	numWorkers          uint
-	workC               chan []byte
+	workC               chan *frameWrapper
 	open                bool
-	registryC           chan struct{}
 	mu                  sync.Mutex
 	closed              chan error
 	monitorClosedSignal chan<- error
+	highWatermark       time.Duration
+	waterMu             sync.RWMutex
 }
 
 // NewFMuxTransport wraps the given TTransport in a multiplexed FTransport. The
@@ -95,11 +140,20 @@ func NewFMuxTransport(tr thrift.TTransport, numWorkers uint) FTransport {
 		numWorkers = 1
 	}
 	return &fMuxTransport{
-		TFramedTransport: thrift.NewTFramedTransport(tr),
+		TFramedTransport: NewTFramedTransport(tr),
 		numWorkers:       numWorkers,
-		workC:            make(chan []byte, numWorkers),
-		registryC:        make(chan struct{}),
+		workC:            make(chan *frameWrapper, numWorkers),
+		highWatermark:    defaultWatermark,
 	}
+}
+
+// SetHighWatermark sets the maximum amount of time a frame is allowed to await
+// processing before triggering transport overload logic. For now, this just
+// consists of logging a warning. If not set, default is 5 seconds.
+func (f *fMuxTransport) SetHighWatermark(watermark time.Duration) {
+	f.waterMu.Lock()
+	f.highWatermark = watermark
+	f.waterMu.Unlock()
 }
 
 func (f *fMuxTransport) SetMonitor(monitor FTransportMonitor) {
@@ -132,7 +186,6 @@ func (f *fMuxTransport) SetRegistry(registry FRegistry) {
 	}
 	f.registry = registry
 	f.mu.Unlock()
-	close(f.registryC)
 }
 
 // Register a callback for the given Context. Only called by generated code.
@@ -158,33 +211,43 @@ func (f *fMuxTransport) Open() error {
 	f.closed = make(chan error, 1)
 
 	if err := f.TFramedTransport.Open(); err != nil {
-		return err
+		// It's OK if the underlying transport is already open.
+		if e, ok := err.(thrift.TTransportException); !(ok && e.TypeId() == thrift.ALREADY_OPEN) {
+			return err
+		}
 	}
 
-	go func() {
-		for {
-			frame, err := f.readFrame()
-			if err != nil {
-				defer f.close(err)
-				if err, ok := err.(thrift.TTransportException); ok && err.TypeId() == thrift.END_OF_FILE {
-					return
-				}
-				log.Println("frugal: error reading protocol frame, closing transport:", err)
-				return
-			}
-
-			select {
-			case f.workC <- frame:
-			case <-f.closed:
-				return
-			}
-		}
-	}()
-
+	go f.readLoop()
 	f.startWorkers()
 
 	f.open = true
+	log.Debug("frugal: transport opened")
 	return nil
+}
+
+func (f *fMuxTransport) readLoop() {
+	for {
+		frame, err := f.readFrame()
+		if err != nil {
+			defer f.close(err)
+			if err, ok := err.(thrift.TTransportException); ok && err.TypeId() == thrift.END_OF_FILE {
+				// EOF indicates remote peer disconnected.
+				return
+			}
+			if !f.IsOpen() {
+				// Indicates the transport was closed.
+				return
+			}
+			log.Error("frugal: error reading protocol frame, closing transport:", err)
+			return
+		}
+
+		select {
+		case f.workC <- &frameWrapper{frameBytes: frame, timestamp: time.Now()}:
+		case <-f.closedChan():
+			return
+		}
+	}
 }
 
 // Close will close the underlying TTransport and stops all goroutines.
@@ -196,30 +259,43 @@ func (f *fMuxTransport) close(cause error) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	select {
-	case f.monitorClosedSignal <- cause:
-	default:
-	}
-
 	if !f.open {
 		return errors.New("frugal: transport not open")
 	}
 
-	err := f.TFramedTransport.Close()
-	if err == nil {
-		f.open = false
-		select {
-		case f.closed <- cause:
-		default:
-		}
-		close(f.closed)
+	if err := f.TFramedTransport.Close(); err != nil {
+		return err
 	}
-	return err
+
+	f.open = false
+	select {
+	case f.closed <- cause:
+	default:
+		log.Printf("frugal: unable to put close error '%s' on fMuxTransport closed channel", cause)
+	}
+	close(f.closed)
+
+	if cause == nil {
+		log.Debug("frugal: transport closed")
+	} else {
+		log.Debugf("frugal: transport closed with cause: %s", cause)
+	}
+
+	// Signal transport monitor of close.
+	select {
+	case f.monitorClosedSignal <- cause:
+	default:
+		if f.monitorClosedSignal != nil {
+			log.Printf("frugal: unable to put close error '%s' on fMuxTransport monitor channel", cause)
+		}
+	}
+
+	return nil
 }
 
 // Closed channel is closed when the FTransport is closed.
 func (f *fMuxTransport) Closed() <-chan error {
-	return f.closed
+	return f.closedChan()
 }
 
 func (f *fMuxTransport) readFrame() ([]byte, error) {
@@ -238,21 +314,20 @@ func (f *fMuxTransport) readFrame() ([]byte, error) {
 func (f *fMuxTransport) startWorkers() {
 	for i := uint(0); i < f.numWorkers; i++ {
 		go func() {
-			// Start processing once registry is set.
-			select {
-			case <-f.registryC:
-			case <-f.closed:
-				return
-			}
-
 			for {
 				select {
-				case <-f.closed:
+				case <-f.closedChan():
 					return
 				case frame := <-f.workC:
-					if err := f.registry.Execute(frame); err != nil {
+					dur := time.Since(frame.timestamp)
+					f.waterMu.RLock()
+					if dur > f.highWatermark {
+						log.Warnf("frugal: frame spent %+v in the transport buffer, your consumer might be backed up", dur)
+					}
+					f.waterMu.RUnlock()
+					if err := f.registry.Execute(frame.frameBytes); err != nil {
 						// An error here indicates an unrecoverable error, teardown transport.
-						log.Println("frugal: transport error, closing transport", err)
+						log.Error("frugal: closing transport due to unrecoverable error processing frame:", err)
 						f.close(err)
 						return
 					}
@@ -260,4 +335,10 @@ func (f *fMuxTransport) startWorkers() {
 			}
 		}()
 	}
+}
+
+func (f *fMuxTransport) closedChan() <-chan error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.closed
 }

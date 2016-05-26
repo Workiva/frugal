@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	outputDir   = "out"
-	delim       = "."
-	validFile   = "idl/valid.frugal"
-	invalidFile = "idl/invalid.frugal"
+	outputDir     = "out"
+	delim         = "."
+	validFile     = "idl/valid.frugal"
+	invalidFile   = "idl/invalid.frugal"
+	frugalGenFile = "idl/variety.frugal"
 )
 
 var (

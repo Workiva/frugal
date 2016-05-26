@@ -1,8 +1,25 @@
-
+typedef string System
 
 const System SYSTEM_FOO = "foo"
+
 const System SYSTEM_BAR = "bar"
+
 const System SYSTEM_BAZ = "baz"
+
+const bool t = true
+
+const bool f = false
+
+struct SchemaProperty {
+	1: string id,
+	2: string title,
+	3: bool inScope,
+}
+
+struct Schema {
+	1: required string name,
+	2: optional list<SchemaProperty> properties,
+}
 
 const list<map<i64,string>> COMPLEX_LIST = [
 	{
@@ -100,16 +117,19 @@ const set<string> SIMPLE_SET_STRING = [
 	"baz",
 ]
 
-typedef string System
-
-struct SchemaProperty {
-	1: required string id,
-	2: required string title,
-	3: required bool inScope,
+enum Status {
+	STARTING = 1,
+	STOPPING = 2,
+	HEALTHY = 3,
+	DEPENDENCY_DOWN = 4,
+	ERROR = 5,
 }
 
-struct Schema {
-	1: required string foo,
-	2: required list<SchemaProperty> properties,
+enum Status2 {
+	STARTING = 0,
+	STOPPING = 1,
+	HEALTHY = 2,
+	DEPENDENCY_DOWN = 3,
+	ERROR = 4,
 }
 

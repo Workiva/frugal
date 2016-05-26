@@ -1,8 +1,11 @@
 package globals
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
-const Version = "1.0.0-RC2"
+const Version = "1.4.1"
 
 var (
 	TopicDelimiter  string = "."
@@ -14,6 +17,9 @@ var (
 	Verbose         bool
 	Now             = time.Now()
 	IntermediateIDL = []string{}
+
+	// TODO: Remove once gen_with_frugal is the default.
+	GenWithFrugalWarn bool
 )
 
 func Reset() {
@@ -26,4 +32,10 @@ func Reset() {
 	Verbose = false
 	Now = time.Now()
 	IntermediateIDL = []string{}
+	GenWithFrugalWarn = false
+}
+
+// PrintWarning prints the given message to stdout in yellow font.
+func PrintWarning(msg string) {
+	fmt.Println("\x1b[33m" + msg + "\x1b[0m")
 }

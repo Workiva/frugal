@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 PYTHON := python
 PIP := pip
-
+HOME := $(PWD)
 BUILD_DIR := .build
 
 all: deps
@@ -28,6 +28,9 @@ $(BUILD_DIR)/pip-dev.out: requirements_dev.txt
 	@mkdir -p $(BUILD_DIR)
 	$(PIP) install -Ur $< && touch $@
 
+sniffer:
+	sniffer -x--with-doctest -x--logging-level=ERROR -x--with-coverage -x--cover-package=frugal
+
 unit:
 	nosetests --logging-level=ERROR --with-coverage --cover-package=frugal
 
@@ -37,5 +40,8 @@ xunit:
 test_local:
 	./run_tests_local.sh
 
-remove_server:
-	rm -rf go
+setup_example:
+	echo $(HOME)
+	deactivate
+	cd ../../example/python && rmvirtualenv frugal-example && mkvirtualenv frugal-example -a $PWD && pip install -Ur requirements_dev.txt
+	cd $(HOME) && pip install -e .

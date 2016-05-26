@@ -1,6 +1,6 @@
 package com.workiva.frugal.transport;
 
-import com.workiva.frugal.registry.FRegistry;
+import com.workiva.frugal.protocol.FRegistry;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 
 public class FMuxTransport extends FTransport {
     protected TFramedTransport framedTransport;
-    protected BlockingQueue<byte[]> workQueue;
+    protected BlockingQueue<FrameWrapper> workQueue;
     private ProcessorThread processorThread;
     private WorkerThread[] workerThreads;
 
@@ -54,6 +54,24 @@ public class FMuxTransport extends FTransport {
         }
     }
 
+    private static class FrameWrapper {
+        byte[] frameBytes;
+        long timestamp;
+
+        protected FrameWrapper(byte[] frameByes, long timestamp) {
+            this.frameBytes = frameByes;
+            this.timestamp = timestamp;
+        }
+
+        protected byte[] getFrameBytes() {
+            return frameBytes;
+        }
+
+        protected long getTimestamp() {
+            return this.timestamp;
+        }
+    }
+
     public synchronized void setRegistry(FRegistry registry) {
         if (registry == null) {
             throw new RuntimeException("registry cannot by null");
@@ -62,27 +80,32 @@ public class FMuxTransport extends FTransport {
             return;
         }
         this.registry = registry;
-        for (int i = 0; i < workerThreads.length; i++) {
-            WorkerThread workerThread = new WorkerThread();
-            workerThread.start();
-            workerThreads[i] = workerThread;
-        }
     }
 
     public synchronized boolean isOpen() {
-        return framedTransport.isOpen() && registry != null;
+        return framedTransport.isOpen();
     }
 
     public synchronized void open() throws TTransportException {
-        if (isOpen()) {
-            throw new TTransportException("transport already open");
+        try {
+            framedTransport.open();
+        } catch (TTransportException e) {
+            // It's OK if the underlying transport is already open.
+            if (e.getType() != TTransportException.ALREADY_OPEN) {
+                throw e;
+            }
         }
-        framedTransport.open();
         processorThread = new ProcessorThread();
         processorThread.start();
+        LOGGER.info("transport opened");
+        startWorkers();
     }
 
     public synchronized void close() {
+        close(null);
+    }
+
+    private synchronized void close(Exception cause) {
         if (registry == null) {
             return;
         }
@@ -91,9 +114,12 @@ public class FMuxTransport extends FTransport {
         for (WorkerThread workerThread : workerThreads) {
             workerThread.kill();
         }
-        if (closedCallback != null) {
-            closedCallback.onClose();
+        if (cause == null) {
+            LOGGER.info("transport closed");
+        } else {
+            LOGGER.info("transport closed with cause: " + cause.getMessage());
         }
+        signalClose(cause);
         registry.close();
     }
 
@@ -109,9 +135,21 @@ public class FMuxTransport extends FTransport {
         framedTransport.flush();
     }
 
+    private void startWorkers() {
+        for (int i = 0; i < workerThreads.length; i++) {
+            WorkerThread workerThread = new WorkerThread();
+            workerThread.start();
+            workerThreads[i] = workerThread;
+        }
+    }
+
     private class ProcessorThread extends Thread {
 
         private volatile boolean running;
+
+        public ProcessorThread() {
+            setName("processor");
+        }
 
         public void kill() {
             if (this != Thread.currentThread()) {
@@ -123,18 +161,19 @@ public class FMuxTransport extends FTransport {
         public void run() {
             running = true;
             while (running) {
-                byte[] frame;
+                byte[] frameBytes;
                 try {
-                    frame = framedTransport.readFrame();
+                    frameBytes = framedTransport.readFrame();
                 } catch (TTransportException e) {
                     if (e.getType() != TTransportException.END_OF_FILE) {
                         LOGGER.warning("error reading frame, closing transport " + e.getMessage());
                     }
-                    close();
+                    close(e);
                     return;
                 }
 
                 try {
+                    FrameWrapper frame = new FrameWrapper(frameBytes, System.currentTimeMillis());
                     workQueue.put(frame);
                 } catch (InterruptedException e) {
                     LOGGER.warning("could not put frame in work queue. Dropping frame.");
@@ -147,6 +186,10 @@ public class FMuxTransport extends FTransport {
 
         private volatile boolean running;
 
+        public WorkerThread() {
+            setName("worker");
+        }
+
         public void kill() {
             if (this != Thread.currentThread()) {
                 interrupt();
@@ -157,20 +200,24 @@ public class FMuxTransport extends FTransport {
         public void run() {
             running = true;
             while (running) {
-                byte[] frame;
+                FrameWrapper frame;
                 try {
                     frame = workQueue.take();
                 } catch (InterruptedException e) {
                     // Just keep trying!
                     continue;
                 }
+                long duration = System.currentTimeMillis() - frame.getTimestamp();
+                if (duration > getHighWatermark()) {
+                    LOGGER.warning("frame spent " + duration + "ms in the transport buffer, your consumer might be backed up");
+                }
                 try {
-                    registry.execute(frame);
+                    registry.execute(frame.getFrameBytes());
                 } catch (TException e) {
                     // An exception here indicates an unrecoverable exception,
                     // tear down transport.
-                    LOGGER.severe("registry error during execution " + e.getMessage() + " Closing transport.");
-                    close();
+                    LOGGER.severe("closing transport due to unrecoverable error processing frame: " + e.getMessage());
+                    close(e);
                     return;
                 }
             }

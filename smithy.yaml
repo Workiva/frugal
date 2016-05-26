@@ -1,0 +1,22 @@
+project: frugal
+language: golang
+
+runner_image: docker.webfilings.org/messaging/smithy-runner:2
+
+script:
+    - ./scripts/smithy.sh
+    - tar -czf goLib.tar.gz ./lib/go
+    - export PATH=$PATH:./bin && ./frugal --gen dart -r --out='test/integration/dart/gen-dart' test/integration/frugalTest.frugal
+    - ./scripts/create_local_cache.sh
+
+artifacts:
+    artifactory:
+        - frugal-*.jar
+    release:
+        - /frugal
+    go_library:
+        - goLib.tar.gz
+    local_cache:
+        - local_cache.tar.gz
+    dart_library_pubspec:
+        - pubspec.lock

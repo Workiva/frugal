@@ -23,8 +23,6 @@
 
     type union *Struct
 
-    type include string
-
     func newScopePrefix(prefix string) (*ScopePrefix, error) {
         variables := []string{}
         for _, variable := range prefixVariable.FindAllString(prefix, -1) {
@@ -66,7 +64,7 @@
     func unionToStruct(u union) *Struct {
         st := (*Struct)(u)
         for _, f := range st.Fields {
-            f.Optional = true
+            f.Modifier = Optional
         }
         return st
     }
@@ -90,16 +88,17 @@ Grammar ← __ statements:( Statement __ )* (EOF / SyntaxError) {
         typedefIndex:   make(map[string]*TypeDef),
         namespaceIndex: make(map[string]*Namespace),
     }
+    stmts := toIfaceSlice(statements)
     frugal := &Frugal{
-        Thrift:         thrift,
-        Scopes:         []*Scope{},
-        Asyncs:         []*Async{},
-        ParsedIncludes: make(map[string]*Frugal),
+        Thrift:             thrift,
+        Scopes:             []*Scope{},
+        ParsedIncludes:     make(map[string]*Frugal),
+        OrderedDefinitions: make([]interface{}, len(stmts)),
     }
 
-    stmts := toIfaceSlice(statements)
-    for _, st := range stmts {
+    for i, st := range stmts {
         wrapper := st.([]interface{})[0].(*statementWrapper)
+        frugal.OrderedDefinitions[i] = wrapper.statement
         switch v := wrapper.statement.(type) {
         case *Namespace:
             thrift.Namespaces = append(thrift.Namespaces, v)
@@ -115,33 +114,30 @@ Grammar ← __ statements:( Statement __ )* (EOF / SyntaxError) {
             thrift.Typedefs = append(thrift.Typedefs, v)
             thrift.typedefIndex[v.Name] = v
         case *Struct:
+            v.Type = StructTypeStruct
             v.Comment = wrapper.comment
             thrift.Structs = append(thrift.Structs, v)
         case exception:
             strct := (*Struct)(v)
+            strct.Type = StructTypeException
             strct.Comment = wrapper.comment
             thrift.Exceptions = append(thrift.Exceptions, strct)
+            frugal.OrderedDefinitions[i] = strct
         case union:
             strct := unionToStruct(v)
+            strct.Type = StructTypeUnion
             strct.Comment = wrapper.comment
             thrift.Unions = append(thrift.Unions, strct)
+            frugal.OrderedDefinitions[i] = strct
         case *Service:
             v.Comment = wrapper.comment
             thrift.Services = append(thrift.Services, v)
-        case include:
-            name := string(v)
-            if ix := strings.LastIndex(name, "."); ix > 0 {
-                name = name[:ix]
-            }
-            thrift.Includes = append(thrift.Includes, &Include{Name: name, Value: string(v)})
+        case *Include:
+            thrift.Includes = append(thrift.Includes, v)
         case *Scope:
             v.Comment = wrapper.comment
             v.Frugal = frugal
             frugal.Scopes = append(frugal.Scopes, v)
-        case *Async:
-            v.Comment = wrapper.comment
-            v.Frugal = frugal
-            frugal.Asyncs = append(frugal.Asyncs, v)
         default:
             return nil, fmt.Errorf("parser: unknown value %#v", v)
         }
@@ -169,7 +165,11 @@ Statement ← docstr:(DocString __)? statement:(ThriftStatement / FrugalStatemen
 ThriftStatement ← Include / Namespace / Const / Enum / TypeDef / Struct / Exception / Union / Service
 
 Include ← "include" _ file:Literal EOS {
-    return include(file.(string)), nil
+    name := file.(string)
+    if ix := strings.LastIndex(name, "."); ix > 0 {
+        name = name[:ix]
+    }
+    return &Include{Name: name, Value: file.(string)}, nil
 }
 
 Namespace ← "namespace" _ scope:[*a-z.-]+ _ ns:Identifier EOS {
@@ -191,13 +191,13 @@ Enum ← "enum" _ name:Identifier __ '{' __ values:(EnumValue __)* '}' EOS {
     vs := toIfaceSlice(values)
     en := &Enum{
         Name: string(name.(Identifier)),
-        Values: make(map[string]*EnumValue, len(vs)),
+        Values: make([]*EnumValue, len(vs)),
     }
     // Assigns numbers in order. This will behave badly if some values are
     // defined and other are not, but I think that's ok since that's a silly
     // thing to do.
     next := 0
-    for _, v := range vs {
+    for idx, v := range vs {
         ev := v.([]interface{})[0].(*EnumValue)
         if ev.Value < 0 {
             ev.Value = next
@@ -205,7 +205,7 @@ Enum ← "enum" _ name:Identifier __ '{' __ values:(EnumValue __)* '}' EOS {
         if ev.Value >= next {
             next = ev.Value + 1
         }
-        en.Values[ev.Name] = ev
+        en.Values[idx] = ev
     }
     return en, nil
 }
@@ -254,7 +254,7 @@ FieldList ← fields:(Field __)* {
     return flds, nil
 }
 
-Field ← docstr:(DocString __)? id:IntConstant _ ':' _ req:FieldReq? _ typ:FieldType _ name:Identifier __ def:('=' _ ConstValue)? ListSeparator? {
+Field ← docstr:(DocString __)? id:IntConstant _ ':' _ mod:FieldModifier? _ typ:FieldType _ name:Identifier __ def:('=' _ ConstValue)? ListSeparator? {
     f := &Field{
         ID:   int(id.(int64)),
         Name: string(name.(Identifier)),
@@ -264,17 +264,24 @@ Field ← docstr:(DocString __)? id:IntConstant _ ':' _ req:FieldReq? _ typ:Fiel
         raw := docstr.([]interface{})[0].(string)
         f.Comment = rawCommentToDocStr(raw)
     }
-    if req != nil && !req.(bool) {
-        f.Optional = true
+    if mod != nil {
+        f.Modifier = mod.(FieldModifier)
+    } else {
+        f.Modifier = Default
     }
+
     if def != nil {
         f.Default = def.([]interface{})[2]
     }
     return f, nil
 }
 
-FieldReq ← ("required" / "optional") {
-    return !bytes.Equal(c.text, []byte("optional")), nil
+FieldModifier ← ("required" / "optional") {
+    if bytes.Equal(c.text, []byte("required")) {
+        return Required, nil
+    } else {
+        return Optional, nil
+    }
 }
 
 Service ← "service" _ name:Identifier _ extends:("extends" __ Identifier __)? __ '{' __ methods:(Function __)* ('}' / EndOfServiceError) EOS {
@@ -318,7 +325,7 @@ Function ← docstr:(DocString __)? oneway:("oneway" __)? typ:FunctionType __ na
     if exceptions != nil {
         m.Exceptions = exceptions.([]*Field)
         for _, e := range m.Exceptions {
-            e.Optional = true
+            e.Modifier = Optional
         }
     }
     return m, nil
@@ -376,7 +383,11 @@ CppType ← "cpp_type" cppType:Literal {
     return cppType, nil
 }
 
-ConstValue ← Literal / DoubleConstant / IntConstant / ConstMap / ConstList / Identifier
+ConstValue ← Literal / BoolConstant / DoubleConstant / IntConstant / ConstMap / ConstList / Identifier
+
+BoolConstant ← ("true" / "false") {
+    return string(c.text) == "true", nil
+}
 
 IntConstant ← [-+]? Digit+ {
     return strconv.ParseInt(string(c.text), 10, 64)
@@ -415,7 +426,7 @@ ConstMap ← '{' __ values:(ConstValue __ ':' __ ConstValue __ (',' / &'}') __)*
 //                                   FRUGAL                                  //
 ///////////////////////////////////////////////////////////////////////////////
 
-FrugalStatement ← Scope / Async
+FrugalStatement ← Scope
 
 Scope ← docstr:(DocString __)? "scope" __ name:Identifier __ prefix:Prefix? __ '{' __ operations:(Operation __)* ('}' / EndOfScopeError) EOS {
     ops := operations.([]interface{})
@@ -451,32 +462,16 @@ PrefixToken ← ('{' PrefixWord '}') / PrefixWord
 
 PrefixWord ← [^\r\n\t\f .{}]+
 
-Operation ← docstr:(DocString __)? name:Identifier _ ':' __ param:Identifier __ {
+Operation ← docstr:(DocString __)? name:Identifier _ ':' __ typ:Identifier __ {
     o := &Operation{
-        Name:  string(name.(Identifier)),
-        Param: string(param.(Identifier)),
+        Name: string(name.(Identifier)),
+        Type: &Type{Name: string(typ.(Identifier))},
     }
     if docstr != nil {
         raw := docstr.([]interface{})[0].(string)
         o.Comment = rawCommentToDocStr(raw)
     }
     return o, nil
-}
-
-Async ← "async" _ name:Identifier _ extends:("extends" __ Identifier __)? __ '{' __ methods:(Function __)* ('}' / EndOfServiceError) EOS {
-    ms := methods.([]interface{})
-    async := &Async{
-        Name:    string(name.(Identifier)),
-        Methods: make([]*Method, len(ms)),
-    }
-    if extends != nil {
-        async.Extends = string(extends.([]interface{})[2].(Identifier))
-    }
-    for i, m := range ms {
-        mt :=  m.([]interface{})[0].(*Method)
-        async.Methods[i] = mt
-    }
-    return async, nil
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -3,20 +3,38 @@ package frugal
 import (
 	"bytes"
 	"errors"
-	"log"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	log "github.com/Sirupsen/logrus"
 )
 
-// AsyncCallback is invoked when a message frame is received. It returns an
-// error if an unrecoverable error occurred and the transport needs to be
-// shutdown.
+var nextOpID uint64 = 0
+
+// FAsyncCallback is an internal callback which is constructed by generated
+// code and invoked by an FRegistry when a RPC response is received. In other
+// words, it's used to complete RPCs. The operation ID on FContext is used to
+// look up the appropriate callback. FAsyncCallback is passed an in-memory
+// TTransport which wraps the complete message. The callback returns an error
+// or throws an exception if an unrecoverable error occurs and the transport
+// needs to be shutdown.
 type FAsyncCallback func(thrift.TTransport) error
 
-// Registry is responsible for multiplexing received messages to the
-// appropriate callback.
+// FRegistry is responsible for multiplexing and handling received messages.
+// Typically there is a client implementation and a server implementation. An
+// FRegistry is used by an FTransport.
+//
+// The client implementation is used on the client side, which is making RPCs.
+// When a request is made, an FAsyncCallback is registered to an FContext. When
+// a response for the FContext is received, the FAsyncCallback is looked up,
+// executed, and unregistered.
+//
+// The server implementation is used on the server side, which is handling
+// RPCs. It does not actually register FAsyncCallbacks but rather has an
+// FProcessor registered with it. When a message is received, it's buffered and
+// passed to the FProcessor to be handled.
 type FRegistry interface {
 	// Register a callback for the given Context.
 	Register(ctx *FContext, callback FAsyncCallback) error
@@ -39,20 +57,22 @@ func NewFClientRegistry() FRegistry {
 
 // Register a callback for the given Context.
 func (c *clientRegistry) Register(ctx *FContext, callback FAsyncCallback) error {
-	opID := ctx.OpID()
+	opID := ctx.opID()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	_, ok := c.handlers[opID]
 	if ok {
 		return errors.New("frugal: context already registered")
 	}
+	opID = atomic.AddUint64(&nextOpID, 1)
+	ctx.setOpID(opID)
 	c.handlers[opID] = callback
 	return nil
 }
 
 // Unregister a callback for the given Context.
 func (c *clientRegistry) Unregister(ctx *FContext) {
-	opID := ctx.OpID()
+	opID := ctx.opID()
 	c.mu.Lock()
 	delete(c.handlers, opID)
 	c.mu.Unlock()
@@ -62,13 +82,13 @@ func (c *clientRegistry) Unregister(ctx *FContext) {
 func (c *clientRegistry) Execute(frame []byte) error {
 	headers, err := getHeadersFromFrame(frame)
 	if err != nil {
-		log.Println("frugal: invalid protocol frame headers:", err)
+		log.Warn("frugal: invalid protocol frame headers:", err)
 		return err
 	}
 
 	opid, err := strconv.ParseUint(headers[opID], 10, 64)
 	if err != nil {
-		log.Println("frugal: invalid protocol frame:", err)
+		log.Warn("frugal: invalid protocol frame:", err)
 		return err
 	}
 

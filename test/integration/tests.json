@@ -1,0 +1,80 @@
+[
+  {
+    "name": "dart",
+    "client": {
+      "transports": [
+        "buffered",
+        "framed",
+        "http"
+      ],
+      "sockets": [
+        "ip"
+      ],
+      "protocols": [
+        "binary",
+        "compact",
+        "json"
+      ],
+      "command": [
+        "dart",
+        "test_client/bin/main.dart"
+      ]
+    },
+    "workdir": "dart"
+  },
+  {
+    "name": "go",
+    "server": {
+      "delay": 1,
+      "command": [
+        "testserver"
+      ]
+    },
+    "client": {
+      "timeout": 6,
+      "command": [
+        "testclient"
+      ]
+    },
+    "transports": [
+      "buffered"
+    ],
+    "sockets": [
+      "ip"
+    ],
+    "protocols": [
+      "binary",
+      "compact",
+      "json"
+    ],
+    "workdir": "go/bin"
+  },
+  {
+    "name": "java",
+    "join_args": true,
+    "command": [
+      "mvn",
+      "exec:java"
+    ],
+    "client": {
+      "timeout": 13,
+      "command": [
+        "\"-Dexec.mainClass=com.workiva.TestClient\""
+      ],
+      "extra_args": [
+        "-f=\"java/frugal-integration-test\""
+      ]
+    },
+    "transports": [
+      "buffered",
+      "framed"
+    ],
+    "sockets": [
+      "ip"
+    ],
+    "protocols": [
+      "binary",
+      "compact"
+    ]
+  }
+]

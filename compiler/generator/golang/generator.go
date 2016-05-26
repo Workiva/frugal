@@ -2,10 +2,13 @@ package golang
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
+
+	"golang.org/x/tools/imports"
 
 	"github.com/Workiva/frugal/compiler/generator"
 	"github.com/Workiva/frugal/compiler/globals"
@@ -17,16 +20,51 @@ const (
 	defaultOutputDir = "gen-go"
 	serviceSuffix    = "_service"
 	scopeSuffix      = "_scope"
-	asyncSuffix      = "_async"
 )
 
 type Generator struct {
 	*generator.BaseGenerator
 	generateConstants bool
+	typesFile         *os.File
 }
 
 func NewGenerator(options map[string]string) generator.LanguageGenerator {
-	return &Generator{&generator.BaseGenerator{Options: options}, true}
+	return &Generator{&generator.BaseGenerator{Options: options}, true, nil}
+}
+
+// SetupGenerator initializes globals the generator needs, like the types file.
+func (g *Generator) SetupGenerator(outputDir string) error {
+	t, err := g.GenerateFile("", outputDir, generator.TypeFile)
+	if err != nil {
+		return err
+	}
+	g.typesFile = t
+	if err = g.GenerateDocStringComment(g.typesFile); err != nil {
+		return err
+	}
+	if err = g.GenerateNewline(g.typesFile, 2); err != nil {
+		return err
+	}
+	if err = g.generatePackage(g.typesFile); err != nil {
+		return err
+	}
+	if err = g.GenerateNewline(g.typesFile, 2); err != nil {
+		return err
+	}
+	if err = g.GenerateTypesImports(g.typesFile); err != nil {
+		return err
+	}
+	if err = g.GenerateNewline(g.typesFile, 2); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// TeardownGenerator cleanups globals the generator needs, like the types file
+func (g *Generator) TeardownGenerator() error {
+	defer g.typesFile.Close()
+	return g.PostProcess(g.typesFile)
 }
 
 func (g *Generator) GetOutputDir(dir string) string {
@@ -43,6 +81,19 @@ func (g *Generator) DefaultOutputDir() string {
 	return defaultOutputDir
 }
 
+// PostProcess file runs gofmt and goimports on the given file.
+func (g *Generator) PostProcess(f *os.File) error {
+	contents, err := ioutil.ReadFile(f.Name())
+	if err != nil {
+		return err
+	}
+	contents, err = imports.Process(f.Name(), contents, nil)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(f.Name(), contents, 0)
+}
+
 func (g *Generator) GenerateDependencies(dir string) error {
 	return nil
 }
@@ -53,6 +104,10 @@ func (g *Generator) GenerateFile(name, outputDir string, fileType generator.File
 		return g.CreateFile(strings.ToLower(name)+serviceSuffix, outputDir, lang, true)
 	case generator.CombinedScopeFile:
 		return g.CreateFile(strings.ToLower(name)+scopeSuffix, outputDir, lang, true)
+	case generator.TypeFile:
+		return g.CreateFile("types", outputDir, lang, true)
+	case generator.ServiceArgsResultsFile:
+		return g.CreateFile(strings.ToLower(name), outputDir, lang, true)
 	default:
 		return nil, fmt.Errorf("Bad file type for golang generator: %s", fileType)
 	}
@@ -88,6 +143,885 @@ func (g *Generator) generatePackage(file *os.File) error {
 	return err
 }
 
+func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) error {
+	// Use a const expression for basic types and an init function for complex
+	// or typedef'd types
+	contents := ""
+	initfunc := "func init() {\n"
+
+	for _, constant := range constants {
+		if constant.Comment != nil {
+			contents += g.GenerateInlineComment(constant.Comment, "")
+		}
+
+		cName := title(constant.Name)
+		value := g.generateConstantValue(constant.Type, constant.Value)
+		// Don't use underlying type so typedefs aren't consts
+		if (parser.IsThriftPrimitive(constant.Type) || g.Frugal.IsEnum(constant.Type)) && constant.Type.Name != "binary" {
+			contents += fmt.Sprintf("const %s = %s\n\n", cName, value)
+		} else {
+			contents += fmt.Sprintf("var %s %s\n\n", cName, g.getGoTypeFromThriftType(constant.Type))
+			initfunc += fmt.Sprintf("\t%s = %s\n", cName, value)
+		}
+	}
+
+	initfunc += "}\n\n"
+	contents += initfunc
+
+	g.typesFile.WriteString(contents)
+	return nil
+}
+
+// generateConstantValue recursively generates the string representation of
+// a, possibly complex, constant value.
+func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) string {
+	underlyingType := g.Frugal.UnderlyingType(t)
+
+	// If the value being referenced is of type Identifier, it's referencing
+	// another constant. Need to recurse to get that value.
+	identifier, ok := value.(parser.Identifier)
+	if ok {
+		name := string(identifier)
+
+		// split based on '.', if present, it should be from an include
+		pieces := strings.Split(name, ".")
+		if len(pieces) == 1 {
+			// From this file
+			for _, constant := range g.Frugal.Thrift.Constants {
+				if name == constant.Name {
+					return g.generateConstantValue(t, constant.Value)
+				}
+			}
+		} else if len(pieces) == 2 {
+			// From an include
+			include, ok := g.Frugal.ParsedIncludes[pieces[0]]
+			if !ok {
+				panic(fmt.Sprintf("referenced include '%s' in constant '%s' not present", pieces[0], name))
+			}
+			for _, constant := range include.Thrift.Constants {
+				if pieces[1] == constant.Name {
+					return g.generateConstantValue(t, constant.Value)
+				}
+			}
+		}
+
+		panic("referenced constant doesn't exist: " + name)
+	}
+
+	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {
+		switch underlyingType.Name {
+		case "bool", "i8", "byte", "i16", "i32", "i64", "double":
+			return fmt.Sprintf("%v", value)
+		case "string":
+			return fmt.Sprintf("\"%s\"", value)
+		case "binary":
+			return fmt.Sprintf("[]byte(\"%s\")", value)
+		case "list":
+			contents := ""
+			contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
+			for _, v := range value.([]interface{}) {
+				val := g.generateConstantValue(underlyingType.ValueType, v)
+				contents += fmt.Sprintf("%s,\n", val)
+			}
+			contents += "}"
+			return contents
+		case "set":
+			contents := ""
+			contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
+			for _, v := range value.([]interface{}) {
+				val := g.generateConstantValue(underlyingType.ValueType, v)
+				contents += fmt.Sprintf("%s: true,\n", val)
+			}
+			contents += "}"
+			return contents
+		case "map":
+			contents := ""
+			contents += fmt.Sprintf("%s{\n", g.getGoTypeFromThriftType(underlyingType))
+			for _, pair := range value.([]parser.KeyValue) {
+				key := g.generateConstantValue(underlyingType.KeyType, pair.Key)
+				val := g.generateConstantValue(underlyingType.ValueType, pair.Value)
+				contents += fmt.Sprintf("%s: %s,\n", key, val)
+			}
+			contents += "}"
+			return contents
+		}
+	} else if g.Frugal.IsEnum(underlyingType) {
+		return fmt.Sprintf("%d", value)
+	} else if g.Frugal.IsStruct(underlyingType) {
+		var s *parser.Struct
+		for _, potential := range g.Frugal.Thrift.Structs {
+			if underlyingType.Name == potential.Name {
+				s = potential
+				break
+			}
+		}
+		contents := ""
+		contents += fmt.Sprintf("&%s{\n", title(s.Name))
+
+		for _, pair := range value.([]parser.KeyValue) {
+			name := title(pair.Key.(string))
+			for _, field := range s.Fields {
+				if name == title(field.Name) {
+					val := g.generateConstantValue(field.Type, pair.Value)
+					contents += fmt.Sprintf("\t%s: %s,\n", name, val)
+				}
+			}
+		}
+
+		contents += "}"
+		return contents
+	}
+
+	panic("no entry for type " + underlyingType.Name)
+}
+
+func (g *Generator) GenerateTypeDef(typedef *parser.TypeDef) error {
+	contents := ""
+
+	if typedef.Comment != nil {
+		contents += g.GenerateInlineComment(typedef.Comment, "")
+	}
+
+	contents += fmt.Sprintf("type %s %s\n", title(typedef.Name), g.getGoTypeFromThriftType(typedef.Type))
+	_, err := g.typesFile.WriteString(contents)
+	return err
+}
+
+func (g *Generator) GenerateEnum(enum *parser.Enum) error {
+	// An enum is basically a typedef for int with a couple constants and functions
+	contents := ""
+
+	if enum.Comment != nil {
+		contents += g.GenerateInlineComment(enum.Comment, "")
+	}
+
+	eName := title(enum.Name)
+	contents += fmt.Sprintf("type %s int64\n\n", eName)
+	contents += "const (\n"
+	for _, field := range enum.Values {
+		contents += fmt.Sprintf("\t%s_%s %s = %d\n", eName, title(field.Name), eName, field.Value)
+	}
+	contents += ")\n\n"
+
+	contents += fmt.Sprintf("func (p %s) String() string {\n", eName)
+	contents += "\tswitch p {\n"
+	for _, field := range enum.Values {
+		fName := title(field.Name)
+		contents += fmt.Sprintf("\tcase %s_%s:\n", eName, fName)
+		contents += fmt.Sprintf("\t\treturn \"%s\"\n", fName)
+	}
+	contents += "\t}\n"
+	contents += "\treturn \"<UNSET>\"\n"
+	contents += "}\n\n"
+
+	contents += fmt.Sprintf("func %sFromString(s string) (%s, error) {\n", eName, eName)
+	contents += "\tswitch s {\n"
+	for _, field := range enum.Values {
+		fName := title(field.Name)
+		contents += fmt.Sprintf("\tcase \"%s\":\n", fName)
+		contents += fmt.Sprintf("\t\treturn %s_%s, nil\n", eName, fName)
+	}
+	contents += "\t}\n"
+	contents += fmt.Sprintf("\treturn %s(0), fmt.Errorf(\"not a valid %s string\")\n", eName, eName)
+	contents += "}\n\n"
+
+	contents += fmt.Sprintf("func (p %s) MarshalText() ([]byte, error) {\n", eName)
+	contents += "\treturn []byte(p.String()), nil\n"
+	contents += "}\n\n"
+
+	contents += fmt.Sprintf("func (p *%s) UnmarshalText(text []byte) error {\n", eName)
+	contents += fmt.Sprintf("\tq, err := %sFromString(string(text))\n", eName)
+	contents += "\tif err != nil {\n"
+	contents += "\t\treturn err\n"
+	contents += "\t}\n"
+	contents += "\t*p = q\n"
+	contents += "\treturn nil\n"
+	contents += "}\n\n"
+
+	contents += fmt.Sprintf("func (p *%s) Scan(value interface{}) error {\n", eName)
+	contents += "\tv, ok := value.(int64)\n"
+	contents += "\tif !ok {\n"
+	contents += "\t\treturn errors.New(\"Scan value is not int64\")\n"
+	contents += "\t}\n"
+	contents += fmt.Sprintf("\t*p = %s(v)\n", eName)
+	contents += fmt.Sprintf("\treturn nil\n")
+	contents += "}\n\n"
+
+	contents += fmt.Sprintf("func (p *%s) Value() (driver.Value, error) {\n", eName)
+	contents += "\tif p == nil {\n"
+	contents += "\t\treturn nil, nil\n"
+	contents += "\t}\n"
+	contents += "\treturn int64(*p), nil\n"
+	contents += "}\n\n"
+
+	_, err := g.typesFile.WriteString(contents)
+	return err
+}
+
+func (g *Generator) GenerateStruct(s *parser.Struct) error {
+	contents := g.generateStruct(s, "")
+	_, err := g.typesFile.WriteString(contents)
+	return err
+}
+
+func (g *Generator) GenerateUnion(union *parser.Struct) error {
+	contents := g.generateStruct(union, "")
+	_, err := g.typesFile.WriteString(contents)
+	return err
+}
+
+func (g *Generator) GenerateException(exception *parser.Struct) error {
+	contents := g.generateStruct(exception, "")
+	contents += fmt.Sprintf("func (p *%s) Error() string {\n", title(exception.Name))
+	contents += "\treturn p.String()\n"
+	contents += "}\n"
+
+	_, err := g.typesFile.WriteString(contents)
+	return err
+}
+
+func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir string, structs []*parser.Struct) error {
+	file, err := g.GenerateFile(serviceName, outputDir, generator.ServiceArgsResultsFile)
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+	if err = g.GenerateDocStringComment(file); err != nil {
+		return err
+	}
+	if err = g.GenerateNewline(file, 2); err != nil {
+		return err
+	}
+	if err = g.generatePackage(file); err != nil {
+		return err
+	}
+	if err = g.GenerateNewline(file, 2); err != nil {
+		return err
+	}
+	if err = g.GenerateServiceResultArgsImports(file); err != nil {
+		return err
+	}
+	if err = g.GenerateNewline(file, 2); err != nil {
+		return err
+	}
+
+	contents := ""
+	for _, s := range structs {
+		structContents := g.generateStruct(s, serviceName)
+		contents += structContents
+	}
+
+	_, err = file.WriteString(contents)
+	if err != nil {
+		return err
+	}
+	return g.PostProcess(file)
+}
+
+func (g *Generator) generateStruct(s *parser.Struct, serviceName string) string {
+	contents := ""
+
+	// Struct declaration
+	if s.Comment != nil {
+		contents += g.GenerateInlineComment(s.Comment, "")
+	}
+
+	sName := titleServiceName(s.Name, serviceName)
+	contents += fmt.Sprintf("type %s struct {\n", sName)
+
+	// Declare fields
+	for _, field := range s.Fields {
+		fName := title(field.Name)
+		// All fields in a union are marked optional by default
+
+		if field.Comment != nil {
+			contents += g.GenerateInlineComment(field.Comment, "\t")
+		}
+
+		// Use the actual field name for annotations because the serialized
+		// name needs to be the same for all languages
+		thriftAnnotation := fmt.Sprintf("%s,%d", field.Name, field.ID)
+		if field.Modifier == parser.Required {
+			thriftAnnotation += ",required"
+		}
+		jsonAnnotation := field.Name
+		if field.Modifier == parser.Optional {
+			jsonAnnotation += ",omitempty"
+		}
+		annotation := fmt.Sprintf("`thrift:\"%s\" db:\"%s\" json:\"%s\"`", thriftAnnotation, field.Name, jsonAnnotation)
+
+		goType := g.getGoTypeFromThriftTypePtr(field.Type, g.isPointerField(field))
+		contents += fmt.Sprintf("\t%s %s %s\n", fName, goType, annotation)
+	}
+
+	contents += "}\n\n"
+
+	// Creator function
+	contents += fmt.Sprintf("func New%s() *%s {\n", sName, sName)
+	contents += fmt.Sprintf("\treturn &%s{\n", sName)
+
+	for _, field := range s.Fields {
+		// Use the default if it exists and it's not a pointer field, otherwise the zero value is implicitly used
+		if field.Default != nil && !g.isPointerField(field) {
+			val := g.generateConstantValue(field.Type, field.Default)
+			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name), val)
+		}
+	}
+
+	contents += "\t}\n"
+	contents += "}\n\n"
+
+	// Getters
+	for _, field := range s.Fields {
+		fName := title(field.Name)
+		isPointer := g.isPointerField(field)
+		goType := g.getGoTypeFromThriftTypePtr(field.Type, false)
+		goPtrType := g.getGoTypeFromThriftTypePtr(field.Type, true)
+		underlyingType := g.Frugal.UnderlyingType(field.Type)
+
+		if field.Modifier == parser.Optional || isPointer {
+			// Generate a default for getters
+			contents += fmt.Sprintf("var %s_%s_DEFAULT %s", sName, fName, goType)
+			if field.Default != nil {
+				val := g.generateConstantValue(field.Type, field.Default)
+				contents += fmt.Sprintf(" = %s", val)
+			}
+			contents += "\n\n"
+
+			// Determines if the field is set
+			contents += fmt.Sprintf("func (p *%s) IsSet%s() bool {\n", sName, fName)
+			if isPointer || parser.IsThriftContainer(underlyingType) || (underlyingType.Name == "binary" && field.Default == nil) {
+				// Compare these to nil
+				contents += fmt.Sprintf("\treturn p.%s != nil\n", fName)
+			} else if underlyingType.Name == "binary" {
+				// Binary fields are byte slices, can't compare slices with ==
+				contents += fmt.Sprintf("\treturn !bytes.Equal(p.%s, %s_%s_DEFAULT)\n", fName, sName, fName)
+			} else {
+				// Otherwise compare to default
+				contents += fmt.Sprintf("\treturn p.%s != %s_%s_DEFAULT\n", fName, sName, fName)
+			}
+			contents += "}\n\n"
+		}
+		if isPointer {
+			// Need to dereference the field before returning if it's a pointer
+			maybePointer := ""
+			if goType != goPtrType {
+				maybePointer = "*"
+			}
+			contents += fmt.Sprintf("func (p *%s) Get%s() %s {\n", sName, fName, goType)
+			contents += fmt.Sprintf("\tif !p.IsSet%s() {\n", fName)
+			contents += fmt.Sprintf("\t\treturn %s_%s_DEFAULT\n", sName, fName)
+			contents += "\t}\n"
+			contents += fmt.Sprintf("\treturn %sp.%s\n", maybePointer, fName)
+			contents += "}\n\n"
+
+		} else {
+			contents += fmt.Sprintf("func (p *%s) Get%s() %s {\n", sName, fName, g.getGoTypeFromThriftType(field.Type))
+			contents += fmt.Sprintf("\treturn p.%s\n", fName)
+			contents += "}\n\n"
+		}
+	}
+
+	// Helper function to determine how many optional fields are set in a union
+	if s.Type == parser.StructTypeUnion {
+		contents += fmt.Sprintf("func (p *%s) CountSetFields%s() int {\n", sName, sName)
+		contents += "\tcount := 0\n"
+		for _, field := range s.Fields {
+			if g.isPointerField(field) {
+				contents += fmt.Sprintf("\tif p.IsSet%s() {\n", title(field.Name))
+				contents += "\t\tcount++\n"
+				contents += "\t}\n"
+			}
+		}
+		contents += "\treturn count\n"
+		contents += "}\n\n"
+	}
+
+	// Read methods
+	contents += fmt.Sprintf("func (p *%s) Read(iprot thrift.TProtocol) error {\n", sName)
+	contents += "\tif _, err := iprot.ReadStructBegin(); err != nil {\n"
+	contents += "\t\treturn thrift.PrependError(fmt.Sprintf(\"%T read error: \", p), err)\n"
+	contents += "\t}\n\n"
+	for _, field := range s.Fields {
+		// Generate variables to make sure required fields are present
+		if field.Modifier == parser.Required {
+			contents += fmt.Sprintf("\tisset%s := false\n", title(field.Name))
+		}
+	}
+	contents += "\n"
+	contents += "\tfor {\n"
+	contents += "\t\t_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()\n"
+	contents += "\t\tif err != nil {\n"
+	contents += "\t\t\treturn thrift.PrependError(fmt.Sprintf(\"%T field %d read error: \", p, fieldId), err)\n"
+	contents += "\t\t}\n"
+	contents += "\t\tif fieldTypeId == thrift.STOP {\n"
+	contents += "\t\t\tbreak\n"
+	contents += "\t\t}\n"
+	if len(s.Fields) > 0 {
+		contents += "\t\tswitch fieldId {\n"
+		for _, field := range s.Fields {
+			contents += fmt.Sprintf("\t\tcase %d:\n", field.ID)
+			contents += fmt.Sprintf("\t\t\tif err := p.ReadField%d(iprot); err != nil {\n", field.ID)
+			contents += "\t\t\t\treturn err\n"
+			contents += "\t\t\t}\n"
+			if field.Modifier == parser.Required {
+				contents += fmt.Sprintf("\t\t\tisset%s = true\n", title(field.Name))
+			}
+		}
+		contents += "\t\tdefault:\n"
+	}
+	contents += "\t\t\tif err := iprot.Skip(fieldTypeId); err != nil {\n"
+	contents += "\t\t\t\treturn err\n"
+	contents += "\t\t\t}\n"
+	if len(s.Fields) > 0 {
+		contents += "\t\t}\n"
+	}
+	contents += "\t\tif err := iprot.ReadFieldEnd(); err != nil {\n"
+	contents += "\t\t\treturn err\n"
+	contents += "\t\t}\n"
+	contents += "\t}\n"
+	contents += "\tif err := iprot.ReadStructEnd(); err != nil {\n"
+	contents += "\t\treturn thrift.PrependError(fmt.Sprintf(\"%T read struct end error: \", p), err)\n"
+	contents += "\t}\n"
+	for _, field := range s.Fields {
+		if field.Modifier == parser.Required {
+			fName := title(field.Name)
+			contents += fmt.Sprintf("\tif !isset%s {\n", fName)
+			errorMessage := fmt.Sprintf("Required field %s is not set", fName)
+			contents += fmt.Sprintf("\t\treturn thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA, fmt.Errorf(\"%s\"))\n", errorMessage)
+			contents += "\t}\n"
+		}
+	}
+	contents += "\treturn nil\n"
+	contents += "}\n\n"
+
+	for _, field := range s.Fields {
+		contents += g.generateReadField(sName, field)
+	}
+
+	// Write methods
+	contents += fmt.Sprintf("func (p *%s) Write(oprot thrift.TProtocol) error {\n", sName)
+
+	// Only one field can be set for a union, make sure that's the case
+	if s.Type == parser.StructTypeUnion {
+		contents += fmt.Sprintf("\tif c := p.CountSetFields%s(); c != 1 {\n", sName)
+		contents += "\t\treturn fmt.Errorf(\"%T write union: exactly one field must be set (%d set).\", p, c)\n"
+		contents += "\t}\n"
+	}
+
+	// Use actual struct name so it's consistent between languages
+	contents += fmt.Sprintf("\tif err := oprot.WriteStructBegin(\"%s\"); err != nil {\n", s.Name)
+	contents += "\t\treturn thrift.PrependError(fmt.Sprintf(\"%T write struct begin error: \", p), err)\n"
+	contents += "\t}\n"
+
+	for _, field := range s.Fields {
+		contents += fmt.Sprintf("\tif err := p.writeField%d(oprot); err != nil {\n", field.ID)
+		contents += "\t\treturn err\n"
+		contents += "\t}\n"
+	}
+
+	contents += "\tif err := oprot.WriteFieldStop(); err != nil{\n"
+	contents += "\t\treturn thrift.PrependError(\"write field stop error: \", err)\n"
+	contents += "\t}\n"
+	contents += "\tif err := oprot.WriteStructEnd(); err != nil {\n"
+	contents += "\t\treturn thrift.PrependError(\"write struct stop error: \", err)\n"
+	contents += "\t}\n"
+	contents += "\treturn nil\n"
+	contents += "}\n\n"
+
+	for _, field := range s.Fields {
+		contents += g.generateWriteField(sName, field)
+	}
+
+	// String
+	contents += fmt.Sprintf("func (p *%s) String() string {\n", sName)
+	contents += "\tif p == nil {\n"
+	contents += "\t\treturn \"<nil>\"\n"
+	contents += "\t}\n"
+	contents += fmt.Sprintf("\treturn fmt.Sprintf(\"%s(%%+v)\", *p)\n", sName)
+	contents += "}\n\n"
+
+	return contents
+}
+
+func (g *Generator) generateReadField(structName string, field *parser.Field) string {
+	contents := fmt.Sprintf("func (p *%s) ReadField%d(iprot thrift.TProtocol) error {\n", structName, field.ID)
+
+	contents += g.generateReadFieldRec(field, true)
+
+	contents += "\treturn nil\n"
+	contents += "}\n\n"
+	return contents
+}
+
+func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string {
+	// first indicates if this is the first recursive call
+	// first time calls assign to struct members instead of generating variables
+	eq := ":="
+	prefix := ""
+	fName := field.Name
+	if first {
+		eq = "="
+		prefix = "p."
+		fName = title(field.Name)
+	}
+	contents := ""
+
+	isPointerField := g.isPointerField(field)
+	underlyingType := g.Frugal.UnderlyingType(field.Type)
+	goOrigType := g.getGoTypeFromThriftTypePtr(field.Type, false)
+	goUnderlyingType := g.getGoTypeFromThriftTypePtr(underlyingType, false)
+
+	isEnum := g.Frugal.IsEnum(underlyingType)
+	if parser.IsThriftPrimitive(underlyingType) || isEnum {
+		if !first {
+			contents += fmt.Sprintf("\tvar %s%s %s\n", prefix, field.Name, goOrigType)
+		}
+
+		thriftType := ""
+		switch underlyingType.Name {
+		case "bool":
+			thriftType = "Bool"
+		case "byte", "i8":
+			thriftType = "Byte"
+		case "i16":
+			thriftType = "I16"
+		case "i32":
+			thriftType = "I32"
+		case "i64":
+			thriftType = "I64"
+		case "double":
+			thriftType = "Double"
+		case "string":
+			thriftType = "String"
+		case "binary":
+			thriftType = "Binary"
+		default:
+			if isEnum {
+				thriftType = "I32"
+			} else {
+				panic("unknown thrift type: " + underlyingType.Name)
+			}
+		}
+
+		cast := ""
+		// enums and typedefs need to be cast
+		if isEnum || goOrigType != goUnderlyingType {
+			cast = goOrigType
+		}
+
+		maybeAddress := ""
+		// need to assign an address if the field is a pointer
+		if isPointerField {
+			maybeAddress = "&"
+		}
+
+		contents += fmt.Sprintf("\tif v, err := iprot.Read%s(); err != nil {\n", thriftType)
+		contents += fmt.Sprintf("\t\treturn thrift.PrependError(\"error reading field %d: \", err)\n", field.ID)
+		contents += "\t} else {\n"
+		if cast == "" {
+			contents += fmt.Sprintf("\t\t%s%s = %sv\n", prefix, fName, maybeAddress)
+		} else {
+			contents += fmt.Sprintf("\t\ttemp := %s(v)\n", cast)
+			contents += fmt.Sprintf("\t\t%s%s = %stemp\n", prefix, fName, maybeAddress)
+		}
+
+		contents += "\t}\n"
+	} else if g.Frugal.IsStruct(underlyingType) {
+		// All structs types should start with a pointer
+		// Need to extract the struct name from the package prefix
+		// ie *base.APIException -> base.NewAPIException()
+		lastInd := strings.LastIndex(goUnderlyingType, ".")
+		if lastInd == -1 {
+			lastInd = 0
+		}
+		initializer := fmt.Sprintf("%sNew%s()", goUnderlyingType[1:lastInd+1], goUnderlyingType[lastInd+1:])
+
+		contents += fmt.Sprintf("\t%s%s %s %s\n", prefix, fName, eq, initializer)
+		contents += fmt.Sprintf("\tif err := %s%s.Read(iprot); err != nil {\n", prefix, fName)
+		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T error reading struct: \", %s%s), err)\n", prefix, fName)
+		contents += "\t}\n"
+	} else if parser.IsThriftContainer(underlyingType) {
+		maybePointer := ""
+		if isPointerField {
+			maybePointer = "*"
+		}
+		// TODO 2.0 use this to get the value reading code, respecting the type,
+		// instead of the current code for list and set
+		//valElem := getElem()
+		//valField := parser.FieldFromType(underlyingType.ValueType, valElem)
+		//valContents := g.generateReadFieldRec(valField, false)
+		switch underlyingType.Name {
+		case "list":
+			contents += "\t_, size, err := iprot.ReadListBegin()\n"
+			contents += "\tif err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading list begin: \", err)\n"
+			contents += "\t}\n"
+			if !isPointerField {
+				contents += fmt.Sprintf("\t%s%s %s make(%s, 0, size)\n", prefix, fName, eq, goOrigType)
+			} else {
+				contents += fmt.Sprintf("\ttemp := make(%s, 0, size)\n", goOrigType)
+				contents += fmt.Sprintf("\t%s%s %s &temp\n", prefix, fName, eq)
+			}
+			contents += "\tfor i := 0; i < size; i++ {\n"
+			// TODO 2.0 don't use the underlying type for the value type of the list
+			underlyingValueType := g.Frugal.UnderlyingType(underlyingType.ValueType)
+			valElem := getElem()
+			valField := parser.FieldFromType(underlyingValueType, valElem)
+			valContents := g.generateReadFieldRec(valField, false)
+			contents += valContents
+			contents += fmt.Sprintf("\t\t%s%s%s = append(%s%s%s, %s)\n", maybePointer, prefix, fName, maybePointer, prefix, fName, valElem)
+			contents += "\t}\n"
+			contents += "\tif err := iprot.ReadListEnd(); err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading list end: \", err)\n"
+			contents += "\t}\n"
+		case "set":
+			contents += "\t_, size, err := iprot.ReadSetBegin()\n"
+			contents += "\tif err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading set begin: \", err)\n"
+			contents += "\t}\n"
+			if !isPointerField {
+				contents += fmt.Sprintf("\t%s%s %s make(%s, size)\n", prefix, fName, eq, goOrigType)
+			} else {
+				contents += fmt.Sprintf("\ttemp := make(%s, size)\n", goOrigType)
+				contents += fmt.Sprintf("\t%s%s %s &temp\n", prefix, fName, eq)
+			}
+			contents += "\tfor i := 0; i < size; i++ {\n"
+			// TODO 2.0 don't use the underlying type for the value type of the set
+			underlyingValueType := g.Frugal.UnderlyingType(underlyingType.ValueType)
+			valElem := getElem()
+			valField := parser.FieldFromType(underlyingValueType, valElem)
+			valContents := g.generateReadFieldRec(valField, false)
+			contents += valContents
+			contents += fmt.Sprintf("\t\t(%s%s%s)[%s] = true\n", maybePointer, prefix, fName, valElem)
+			contents += "\t}\n"
+			contents += "\tif err := iprot.ReadSetEnd(); err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading set end: \", err)\n"
+			contents += "\t}\n"
+		case "map":
+			contents += "\t_, _, size, err := iprot.ReadMapBegin()\n"
+			contents += "\tif err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading map begin: \", err)\n"
+			contents += "\t}\n"
+			if !isPointerField {
+				contents += fmt.Sprintf("\t%s%s %s make(%s, size)\n", prefix, fName, eq, goOrigType)
+			} else {
+				contents += fmt.Sprintf("\ttemp := make(%s, size)\n", goOrigType)
+				contents += fmt.Sprintf("\t%s%s %s &temp\n", prefix, fName, eq)
+			}
+			contents += "\tfor i := 0; i < size; i++ {\n"
+			keyElem := getElem()
+			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
+			contents += g.generateReadFieldRec(keyField, false)
+			// TODO 2.0 use the valContents for all the collections
+			valElem := getElem()
+			valField := parser.FieldFromType(underlyingType.ValueType, valElem)
+			valContents := g.generateReadFieldRec(valField, false)
+			contents += valContents
+			contents += fmt.Sprintf("\t\t(%s%s%s)[%s] = %s\n", maybePointer, prefix, fName, keyElem, valElem)
+			contents += "\t}\n"
+			contents += "\tif err := iprot.ReadMapEnd(); err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error reading map end: \", err)\n"
+			contents += "\t}\n"
+		default:
+			panic("unrecognized thrift type: " + underlyingType.Name)
+		}
+
+	}
+
+	return contents
+}
+
+func (g *Generator) generateWriteField(structName string, field *parser.Field) string {
+	contents := ""
+	fName := title(field.Name)
+
+	contents += fmt.Sprintf("func (p *%s) writeField%d(oprot thrift.TProtocol) error {\n", structName, field.ID)
+	// If an optional field isn't set, it isn't written
+	if field.Modifier == parser.Optional {
+		contents += fmt.Sprintf("\tif p.IsSet%s() {\n", fName)
+	}
+	// Use actual field so it's consistent between languages
+	contents += fmt.Sprintf("\tif err := oprot.WriteFieldBegin(\"%s\", %s, %d); err != nil {\n", field.Name, g.getEnumFromThriftType(field.Type), field.ID)
+	contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T write field begin error %d:%s: \", p), err)\n", field.ID, field.Name)
+	contents += "\t}\n"
+	contents += g.generateWriteFieldRec(field, "p.")
+	contents += "\tif err := oprot.WriteFieldEnd(); err != nil {\n"
+	contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T write field end error %d:%s: \", p), err)\n", field.ID, field.Name)
+	contents += "\t}\n"
+	if field.Modifier == parser.Optional {
+		contents += "\t}\n"
+	}
+	contents += "\treturn nil\n"
+	contents += "}\n\n"
+	return contents
+}
+
+func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) string {
+	underlyingType := g.Frugal.UnderlyingType(field.Type)
+	isPointerField := g.isPointerField(field)
+	fName := title(field.Name)
+	contents := ""
+
+	isEnum := g.Frugal.IsEnum(underlyingType)
+	if parser.IsThriftPrimitive(underlyingType) || isEnum {
+		if isPointerField {
+			prefix = "*" + prefix
+		}
+
+		write := "Write"
+		switch underlyingType.Name {
+		// Just typecast everything to get around typedefs
+		case "bool":
+			write += "Bool(bool(%s))"
+		case "byte", "i8":
+			write += "Byte(int8(%s))"
+		case "i16":
+			write += "I16(int16(%s))"
+		case "i32":
+			write += "I32(int32(%s))"
+		case "i64":
+			write += "I64(int64(%s))"
+		case "double":
+			write += "Double(float64(%s))"
+		case "string":
+			write += "String(string(%s))"
+		case "binary":
+			write += "Binary([]byte(%s))"
+		default:
+			if isEnum {
+				write += "I32(int32(%s))"
+			} else {
+				panic("unknown thrift type: " + underlyingType.Name)
+			}
+		}
+		write = fmt.Sprintf(write, prefix+fName)
+		contents += fmt.Sprintf("\tif err := oprot.%s; err != nil {\n", write)
+		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T.%s (%d) field write error: \", p), err)\n", field.Name, field.ID)
+		contents += "\t}\n"
+	} else if g.Frugal.IsStruct(underlyingType) {
+		contents += fmt.Sprintf("\tif err := %s.Write(oprot); err != nil {\n", prefix+fName)
+		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T error writing struct: \", %s), err)\n", prefix+fName)
+		contents += "\t}\n"
+	} else if parser.IsThriftContainer(underlyingType) {
+		if isPointerField {
+			prefix = "*" + prefix
+		}
+		valEnumType := g.getEnumFromThriftType(underlyingType.ValueType)
+		valField := parser.FieldFromType(underlyingType.ValueType, "")
+
+		switch underlyingType.Name {
+		case "list":
+			contents += fmt.Sprintf("\tif err := oprot.WriteListBegin(%s, len(%s)); err != nil {\n", valEnumType, prefix+fName)
+			contents += "\t\treturn thrift.PrependError(\"error writing list begin: \", err)\n"
+			contents += "\t}\n"
+			contents += fmt.Sprintf("\tfor _, v := range %s {\n", prefix+fName)
+			contents += g.generateWriteFieldRec(valField, "v")
+			contents += "\t}\n"
+			contents += "\tif err := oprot.WriteListEnd(); err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error writing list end: \", err)\n"
+			contents += "\t}\n"
+		case "set":
+			contents += fmt.Sprintf("\tif err := oprot.WriteSetBegin(%s, len(%s)); err != nil {\n", valEnumType, prefix+fName)
+			contents += "\t\treturn thrift.PrependError(\"error writing set begin: \", err)\n"
+			contents += "\t}\n"
+			contents += fmt.Sprintf("\tfor v, _ := range %s {\n", prefix+fName)
+			contents += g.generateWriteFieldRec(valField, "v")
+			contents += "\t}\n"
+			contents += "\tif err := oprot.WriteSetEnd(); err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error writing set end: \", err)\n"
+			contents += "\t}\n"
+		case "map":
+			keyEnumType := g.getEnumFromThriftType(underlyingType.KeyType)
+			contents += fmt.Sprintf("\tif err := oprot.WriteMapBegin(%s, %s, len(%s)); err != nil {\n", keyEnumType, valEnumType, prefix+fName)
+			contents += "\t\treturn thrift.PrependError(\"error writing map begin: \", err)\n"
+			contents += "\t}\n"
+			contents += fmt.Sprintf("\tfor k, v := range %s {\n", prefix+fName)
+			keyField := parser.FieldFromType(underlyingType.KeyType, "")
+			contents += g.generateWriteFieldRec(keyField, "k")
+			contents += g.generateWriteFieldRec(valField, "v")
+			contents += "\t}\n"
+			contents += "\tif err := oprot.WriteMapEnd(); err != nil {\n"
+			contents += "\t\treturn thrift.PrependError(\"error writing map end: \", err)\n"
+			contents += "\t}\n"
+		default:
+			panic("unknow type: " + underlyingType.Name)
+		}
+	}
+
+	return contents
+}
+
+func (g *Generator) GenerateTypesImports(file *os.File) error {
+	contents := "import (\n"
+	contents += "\t\"bytes\"\n"
+	contents += "\t\"fmt\"\n"
+	// Enums need these for some reason
+	if len(g.Frugal.Thrift.Enums) > 0 {
+		contents += "\t\"database/sql/driver\"\n"
+		contents += "\t\"errors\"\n"
+	}
+	if g.Options["thrift_import"] != "" {
+		contents += "\t\"" + g.Options["thrift_import"] + "\"\n"
+	} else {
+		contents += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
+	}
+
+	protections := ""
+	pkgPrefix := g.Options["package_prefix"]
+	for _, include := range g.Frugal.Thrift.Includes {
+		includeName, ok := g.Frugal.NamespaceForInclude(filepath.Base(include.Name), lang)
+		if !ok {
+			includeName = include.Name
+		}
+		contents += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, includeName)
+		protections += fmt.Sprintf("var _ = %s.GoUnusedProtection__\n", includeName)
+	}
+
+	contents += ")\n\n"
+	contents += "// (needed to ensure safety because of naive import list construction.)\n"
+	contents += "var _ = thrift.ZERO\n"
+	contents += "var _ = fmt.Printf\n"
+	contents += "var _ = bytes.Equal\n\n"
+	contents += protections
+	contents += "var GoUnusedProtection__ int\n"
+	_, err := file.WriteString(contents)
+	return err
+}
+
+func (g *Generator) GenerateServiceResultArgsImports(file *os.File) error {
+	contents := ""
+	contents += "import (\n"
+	contents += "\t\"bytes\"\n"
+	contents += "\t\"fmt\"\n"
+	if g.Options["thrift_import"] != "" {
+		contents += "\t\"" + g.Options["thrift_import"] + "\"\n"
+	} else {
+		contents += "\t\"git.apache.org/thrift.git/lib/go/thrift\"\n"
+	}
+
+	protections := ""
+	pkgPrefix := g.Options["package_prefix"]
+	for _, include := range g.Frugal.Thrift.Includes {
+		includeName, ok := g.Frugal.NamespaceForInclude(filepath.Base(include.Name), lang)
+		if !ok {
+			includeName = include.Name
+		}
+		contents += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, includeName)
+		protections += fmt.Sprintf("var _ = %s.GoUnusedProtection__\n", includeName)
+	}
+
+	contents += ")\n\n"
+	contents += "// (needed to ensure safety because of naive import list construction.)\n"
+	contents += "var _ = thrift.ZERO\n"
+	contents += "var _ = fmt.Printf\n"
+	contents += "var _ = bytes.Equal\n\n"
+	contents += protections
+
+	_, err := file.WriteString(contents)
+	return err
+}
+
 func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) error {
 	imports := "import (\n"
 	imports += "\t\"bytes\"\n"
@@ -109,7 +1043,7 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	}
 
 	pkgPrefix := g.Options["package_prefix"]
-	for _, include := range g.Frugal.ReferencedServiceIncludes() {
+	for _, include := range s.ReferencedIncludes() {
 		namespace, ok := g.Frugal.NamespaceForInclude(include, lang)
 		if !ok {
 			namespace = include
@@ -174,7 +1108,6 @@ func (g *Generator) GenerateConstants(file *os.File, name string) error {
 func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error {
 	var (
 		scopeLower = generator.LowercaseFirstLetter(scope.Name)
-		scopeTitle = strings.Title(scope.Name)
 		scopeCamel = snakeToCamel(scope.Name)
 		publisher  = ""
 	)
@@ -196,22 +1129,30 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	publisher += "\tOpen() error\n"
 	publisher += "\tClose() error\n"
 	for _, op := range scope.Operations {
-		publisher += fmt.Sprintf("\tPublish%s(ctx *frugal.FContext, %sreq *%s) error\n", op.Name, args, g.qualifiedParamName(op))
+		publisher += fmt.Sprintf("\tPublish%s(ctx *frugal.FContext, %sreq *%s) error\n", op.Name, args, g.qualifiedTypeName(op.Type))
 	}
 	publisher += "}\n\n"
 
 	publisher += fmt.Sprintf("type %sPublisher struct {\n", scopeLower)
 	publisher += "\ttransport frugal.FScopeTransport\n"
 	publisher += "\tprotocol  *frugal.FProtocol\n"
+	publisher += "\tmethods   map[string]*frugal.Method\n"
 	publisher += "}\n\n"
 
-	publisher += fmt.Sprintf("func New%sPublisher(provider *frugal.FScopeProvider) %sPublisher {\n",
+	publisher += fmt.Sprintf("func New%sPublisher(provider *frugal.FScopeProvider, middleware ...frugal.ServiceMiddleware) %sPublisher {\n",
 		scopeCamel, scopeCamel)
 	publisher += "\ttransport, protocol := provider.New()\n"
-	publisher += fmt.Sprintf("\treturn &%sPublisher{\n", scopeLower)
+	publisher += "\tmethods := make(map[string]*frugal.Method)\n"
+	publisher += fmt.Sprintf("\tpublisher := &%sPublisher{\n", scopeLower)
 	publisher += "\t\ttransport: transport,\n"
 	publisher += "\t\tprotocol:  protocol,\n"
+	publisher += "\t\tmethods:   methods,\n"
 	publisher += "\t}\n"
+	for _, op := range scope.Operations {
+		publisher += fmt.Sprintf("\tmethods[\"publish%s\"] = frugal.NewMethod(publisher, publisher.publish%s, \"publish%s\", middleware)\n",
+			op.Name, op.Name, op.Name)
+	}
+	publisher += "\treturn publisher\n"
 	publisher += "}\n\n"
 
 	publisher += fmt.Sprintf("func (l *%sPublisher) Open() error {\n", scopeLower)
@@ -226,37 +1167,68 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	for _, op := range scope.Operations {
 		publisher += prefix
 		prefix = "\n\n"
-		if op.Comment != nil {
-			publisher += g.GenerateInlineComment(op.Comment, "")
-		}
-		publisher += fmt.Sprintf("func (l *%sPublisher) Publish%s(ctx *frugal.FContext, %sreq *%s) error {\n",
-			scopeLower, op.Name, args, g.qualifiedParamName(op))
-		publisher += fmt.Sprintf("\top := \"%s\"\n", op.Name)
-		publisher += fmt.Sprintf("\tprefix := %s\n", generatePrefixStringTemplate(scope))
-		publisher += "\ttopic := fmt.Sprintf(\"%s" + scopeTitle + "%s%s\", prefix, delimiter, op)\n"
-		publisher += "\tif err := l.transport.LockTopic(topic); err != nil {\n"
-		publisher += "\t\treturn err\n"
-		publisher += "\t}\n"
-		publisher += "\tdefer l.transport.UnlockTopic()\n"
-		publisher += "\toprot := l.protocol\n"
-		publisher += "\tif err := oprot.WriteRequestHeader(ctx); err != nil {\n"
-		publisher += "\t\treturn err\n"
-		publisher += "\t}\n"
-		publisher += "\tif err := oprot.WriteMessageBegin(op, thrift.CALL, 0); err != nil {\n"
-		publisher += "\t\treturn err\n"
-		publisher += "\t}\n"
-		publisher += "\tif err := req.Write(oprot); err != nil {\n"
-		publisher += "\t\treturn err\n"
-		publisher += "\t}\n"
-		publisher += "\tif err := oprot.WriteMessageEnd(); err != nil {\n"
-		publisher += "\t\treturn err\n"
-		publisher += "\t}\n"
-		publisher += "\treturn oprot.Flush()\n"
-		publisher += "}"
+		publisher += g.generatePublishMethod(scope, op, args)
 	}
 
 	_, err := file.WriteString(publisher)
 	return err
+}
+
+func (g *Generator) generatePublishMethod(scope *parser.Scope, op *parser.Operation, args string) string {
+	var (
+		scopeLower = generator.LowercaseFirstLetter(scope.Name)
+		publisher  = ""
+	)
+
+	if op.Comment != nil {
+		publisher += g.GenerateInlineComment(op.Comment, "")
+	}
+	publisher += fmt.Sprintf("func (l *%sPublisher) Publish%s(ctx *frugal.FContext, %sreq *%s) error {\n",
+		scopeLower, op.Name, args, g.qualifiedTypeName(op.Type))
+	publisher += fmt.Sprintf("\tret := l.methods[\"publish%s\"].Invoke(%s)\n", op.Name, g.generateScopeArgs(scope))
+	publisher += "\tif ret[0] != nil {\n"
+	publisher += "\t\treturn ret[0].(error)\n"
+	publisher += "\t}\n"
+	publisher += "\treturn nil\n"
+	publisher += "}\n\n"
+
+	publisher += g.generateInternalPublishMethod(scope, op, args)
+
+	return publisher
+}
+
+func (g *Generator) generateInternalPublishMethod(scope *parser.Scope, op *parser.Operation, args string) string {
+	var (
+		scopeLower = generator.LowercaseFirstLetter(scope.Name)
+		scopeTitle = strings.Title(scope.Name)
+		publisher  = ""
+	)
+
+	publisher += fmt.Sprintf("func (l *%sPublisher) publish%s(ctx *frugal.FContext, %sreq *%s) error {\n",
+		scopeLower, op.Name, args, g.qualifiedTypeName(op.Type))
+	publisher += fmt.Sprintf("\top := \"%s\"\n", op.Name)
+	publisher += fmt.Sprintf("\tprefix := %s\n", generatePrefixStringTemplate(scope))
+	publisher += "\ttopic := fmt.Sprintf(\"%s" + scopeTitle + "%s%s\", prefix, delimiter, op)\n"
+	publisher += "\tif err := l.transport.LockTopic(topic); err != nil {\n"
+	publisher += "\t\treturn err\n"
+	publisher += "\t}\n"
+	publisher += "\tdefer l.transport.UnlockTopic()\n"
+	publisher += "\toprot := l.protocol\n"
+	publisher += "\tif err := oprot.WriteRequestHeader(ctx); err != nil {\n"
+	publisher += "\t\treturn err\n"
+	publisher += "\t}\n"
+	publisher += "\tif err := oprot.WriteMessageBegin(op, thrift.CALL, 0); err != nil {\n"
+	publisher += "\t\treturn err\n"
+	publisher += "\t}\n"
+	publisher += "\tif err := req.Write(oprot); err != nil {\n"
+	publisher += "\t\treturn err\n"
+	publisher += "\t}\n"
+	publisher += "\tif err := oprot.WriteMessageEnd(); err != nil {\n"
+	publisher += "\t\treturn err\n"
+	publisher += "\t}\n"
+	publisher += "\treturn oprot.Flush()\n"
+	publisher += "}"
+	return publisher
 }
 
 func generatePrefixStringTemplate(scope *parser.Scope) string {
@@ -267,7 +1239,7 @@ func generatePrefixStringTemplate(scope *parser.Scope) string {
 		return fmt.Sprintf(`"%s%s"`, scope.Prefix.String, globals.TopicDelimiter)
 	}
 	template := "fmt.Sprintf(\""
-	template += scope.Prefix.Template()
+	template += scope.Prefix.Template("%s")
 	template += globals.TopicDelimiter + "\", "
 	prefix := ""
 	for _, variable := range scope.Prefix.Variables {
@@ -281,7 +1253,6 @@ func generatePrefixStringTemplate(scope *parser.Scope) string {
 func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error {
 	var (
 		scopeLower = generator.LowercaseFirstLetter(scope.Name)
-		scopeTitle = strings.Title(scope.Name)
 		scopeCamel = snakeToCamel(scope.Name)
 		subscriber = ""
 	)
@@ -303,81 +1274,93 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 	subscriber += fmt.Sprintf("type %sSubscriber interface {\n", scopeCamel)
 	for _, op := range scope.Operations {
 		subscriber += fmt.Sprintf("\tSubscribe%s(%shandler func(*frugal.FContext, *%s)) (*frugal.FSubscription, error)\n",
-			op.Name, args, g.qualifiedParamName(op))
+			op.Name, args, g.qualifiedTypeName(op.Type))
 	}
 	subscriber += "}\n\n"
 
 	subscriber += fmt.Sprintf("type %sSubscriber struct {\n", scopeLower)
-	subscriber += "\tprovider *frugal.FScopeProvider\n"
+	subscriber += "\tprovider   *frugal.FScopeProvider\n"
+	subscriber += "\tmiddleware []frugal.ServiceMiddleware\n"
 	subscriber += "}\n\n"
 
-	subscriber += fmt.Sprintf("func New%sSubscriber(provider *frugal.FScopeProvider) %sSubscriber {\n",
+	subscriber += fmt.Sprintf("func New%sSubscriber(provider *frugal.FScopeProvider, middleware ...frugal.ServiceMiddleware) %sSubscriber {\n",
 		scopeCamel, scopeCamel)
-	subscriber += fmt.Sprintf("\treturn &%sSubscriber{provider: provider}\n", scopeLower)
+	subscriber += fmt.Sprintf("\treturn &%sSubscriber{provider: provider, middleware: middleware}\n", scopeLower)
 	subscriber += "}\n\n"
 
 	prefix = ""
 	for _, op := range scope.Operations {
 		subscriber += prefix
 		prefix = "\n\n"
-		if op.Comment != nil {
-			subscriber += g.GenerateInlineComment(op.Comment, "")
-		}
-		subscriber += fmt.Sprintf("func (l *%sSubscriber) Subscribe%s(%shandler func(*frugal.FContext, *%s)) (*frugal.FSubscription, error) {\n",
-			scopeLower, op.Name, args, g.qualifiedParamName(op))
-		subscriber += fmt.Sprintf("\top := \"%s\"\n", op.Name)
-		subscriber += fmt.Sprintf("\tprefix := %s\n", generatePrefixStringTemplate(scope))
-		subscriber += "\ttopic := fmt.Sprintf(\"%s" + scopeTitle + "%s%s\", prefix, delimiter, op)\n"
-		subscriber += "\ttransport, protocol := l.provider.New()\n"
-		subscriber += "\tif err := transport.Subscribe(topic); err != nil {\n"
-		subscriber += "\t\treturn nil, err\n"
-		subscriber += "\t}\n\n"
-		subscriber += "\tsub := frugal.NewFSubscription(topic, transport)\n"
-		subscriber += "\tgo func() {\n"
-		subscriber += "\t\tfor {\n"
-		subscriber += fmt.Sprintf("\t\t\tctx, received, err := l.recv%s(op, protocol)\n", op.Name)
-		subscriber += "\t\t\tif err != nil {\n"
-		subscriber += "\t\t\t\tif e, ok := err.(thrift.TTransportException); ok && e.TypeId() == thrift.END_OF_FILE {\n"
-		subscriber += "\t\t\t\t\treturn\n"
-		subscriber += "\t\t\t\t}\n"
-		subscriber += "\t\t\t\tlog.Printf(\"frugal: error receiving %s: %s\\n\", topic, err.Error())\n"
-		subscriber += "\t\t\t\tsub.Signal(err)\n"
-		subscriber += "\t\t\t\tsub.Unsubscribe()\n"
-		subscriber += "\t\t\t\treturn\n"
-		subscriber += "\t\t\t}\n"
-		subscriber += "\t\t\thandler(ctx, received)\n"
-		subscriber += "\t\t}\n"
-		subscriber += "\t}()\n\n"
-		subscriber += "\treturn sub, nil\n"
-		subscriber += "}\n\n"
-
-		subscriber += fmt.Sprintf("func (l *%sSubscriber) recv%s(op string, iprot *frugal.FProtocol) (*frugal.FContext, *%s, error) {\n",
-			scopeLower, op.Name, g.qualifiedParamName(op))
-		subscriber += "\tctx, err := iprot.ReadRequestHeader()\n"
-		subscriber += "\tif err != nil {\n"
-		subscriber += "\t\treturn nil, nil, err\n"
-		subscriber += "\t}\n"
-		subscriber += "\tname, _, _, err := iprot.ReadMessageBegin()\n"
-		subscriber += "\tif err != nil {\n"
-		subscriber += "\t\treturn nil, nil, err\n"
-		subscriber += "\t}\n"
-		subscriber += "\tif name != op {\n"
-		subscriber += "\t\tiprot.Skip(thrift.STRUCT)\n"
-		subscriber += "\t\tiprot.ReadMessageEnd()\n"
-		subscriber += "\t\tx9 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, \"Unknown function \"+name)\n"
-		subscriber += "\t\treturn nil, nil, x9\n"
-		subscriber += "\t}\n"
-		subscriber += fmt.Sprintf("\treq := &%s{}\n", g.qualifiedParamName(op))
-		subscriber += "\tif err := req.Read(iprot); err != nil {\n"
-		subscriber += "\t\treturn nil, nil, err\n"
-		subscriber += "\t}\n\n"
-		subscriber += "\tiprot.ReadMessageEnd()\n"
-		subscriber += "\treturn ctx, req, nil\n"
-		subscriber += "}"
+		subscriber += g.generateSubscribeMethod(scope, op, args)
 	}
 
 	_, err := file.WriteString(subscriber)
 	return err
+}
+
+func (g *Generator) generateSubscribeMethod(scope *parser.Scope, op *parser.Operation, args string) string {
+	var (
+		scopeLower = generator.LowercaseFirstLetter(scope.Name)
+		scopeTitle = strings.Title(scope.Name)
+		subscriber = ""
+	)
+	if op.Comment != nil {
+		subscriber += g.GenerateInlineComment(op.Comment, "")
+	}
+	subscriber += fmt.Sprintf("func (l *%sSubscriber) Subscribe%s(%shandler func(*frugal.FContext, *%s)) (*frugal.FSubscription, error) {\n",
+		scopeLower, op.Name, args, g.qualifiedTypeName(op.Type))
+	subscriber += fmt.Sprintf("\top := \"%s\"\n", op.Name)
+	subscriber += fmt.Sprintf("\tprefix := %s\n", generatePrefixStringTemplate(scope))
+	subscriber += "\ttopic := fmt.Sprintf(\"%s" + scopeTitle + "%s%s\", prefix, delimiter, op)\n"
+	subscriber += "\ttransport, protocol := l.provider.New()\n"
+	subscriber += "\tif err := transport.Subscribe(topic); err != nil {\n"
+	subscriber += "\t\treturn nil, err\n"
+	subscriber += "\t}\n\n"
+
+	subscriber += fmt.Sprintf("\tmethod := frugal.NewMethod(l, handler, \"Subscribe%s\", l.middleware)\n", op.Name)
+	subscriber += "\tsub := frugal.NewFSubscription(topic, transport)\n"
+	subscriber += "\tgo func() {\n"
+	subscriber += "\t\tfor {\n"
+	subscriber += fmt.Sprintf("\t\t\tctx, received, err := l.recv%s(op, protocol)\n", op.Name)
+	subscriber += "\t\t\tif err != nil {\n"
+	subscriber += "\t\t\t\tif e, ok := err.(thrift.TTransportException); ok && e.TypeId() == thrift.END_OF_FILE {\n"
+	subscriber += "\t\t\t\t\treturn\n"
+	subscriber += "\t\t\t\t}\n"
+	subscriber += "\t\t\t\tlog.Printf(\"frugal: error receiving %s, discarding frame: %s\\n\", topic, err.Error())\n"
+	subscriber += "\t\t\t\ttransport.DiscardFrame()\n"
+	subscriber += "\t\t\t\tcontinue\n"
+	subscriber += "\t\t\t}\n"
+	subscriber += "\t\t\tmethod.Invoke([]interface{}{ctx, received})\n"
+	subscriber += "\t\t}\n"
+	subscriber += "\t}()\n\n"
+	subscriber += "\treturn sub, nil\n"
+	subscriber += "}\n\n"
+
+	subscriber += fmt.Sprintf("func (l *%sSubscriber) recv%s(op string, iprot *frugal.FProtocol) (*frugal.FContext, *%s, error) {\n",
+		scopeLower, op.Name, g.qualifiedTypeName(op.Type))
+	subscriber += "\tctx, err := iprot.ReadRequestHeader()\n"
+	subscriber += "\tif err != nil {\n"
+	subscriber += "\t\treturn nil, nil, err\n"
+	subscriber += "\t}\n"
+	subscriber += "\tname, _, _, err := iprot.ReadMessageBegin()\n"
+	subscriber += "\tif err != nil {\n"
+	subscriber += "\t\treturn nil, nil, err\n"
+	subscriber += "\t}\n"
+	subscriber += "\tif name != op {\n"
+	subscriber += "\t\tiprot.Skip(thrift.STRUCT)\n"
+	subscriber += "\t\tiprot.ReadMessageEnd()\n"
+	subscriber += "\t\tx9 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, \"Unknown function \"+name)\n"
+	subscriber += "\t\treturn nil, nil, x9\n"
+	subscriber += "\t}\n"
+	subscriber += fmt.Sprintf("\treq := &%s{}\n", g.qualifiedTypeName(op.Type))
+	subscriber += "\tif err := req.Read(iprot); err != nil {\n"
+	subscriber += "\t\treturn nil, nil, err\n"
+	subscriber += "\t}\n\n"
+	subscriber += "\tiprot.ReadMessageEnd()\n"
+	subscriber += "\treturn ctx, req, nil\n"
+	subscriber += "}"
+	return subscriber
 }
 
 func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
@@ -439,6 +1422,13 @@ func (g *Generator) generateReturnArgs(method *parser.Method) string {
 	return fmt.Sprintf("(r %s, err error)", g.getGoTypeFromThriftType(method.ReturnType))
 }
 
+func (g *Generator) generateAsyncReturnArgs(method *parser.Method) string {
+	if method.ReturnType == nil {
+		return "(err <-chan error)"
+	}
+	return fmt.Sprintf("(r <-chan %s, err <-chan error)", g.getGoTypeFromThriftType(method.ReturnType))
+}
+
 func (g *Generator) generateClient(service *parser.Service) string {
 	servTitle := snakeToCamel(service.Name)
 
@@ -449,27 +1439,84 @@ func (g *Generator) generateClient(service *parser.Service) string {
 	contents += "\ttransport       frugal.FTransport\n"
 	contents += "\tprotocolFactory *frugal.FProtocolFactory\n"
 	contents += "\toprot           *frugal.FProtocol\n"
-	contents += "\tmu              sync.Mutex\n"
+	if service.Extends == "" {
+		contents += "\tmu              sync.Mutex\n"
+	}
+	contents += "\tmethods         map[string]*frugal.Method\n"
 	contents += "}\n\n"
 
 	contents += fmt.Sprintf(
-		"func NewF%sClient(t frugal.FTransport, p *frugal.FProtocolFactory) *F%sClient {\n",
+		"func NewF%sClient(t frugal.FTransport, p *frugal.FProtocolFactory, middleware ...frugal.ServiceMiddleware) *F%sClient {\n",
 		servTitle, servTitle)
 	contents += "\tt.SetRegistry(frugal.NewFClientRegistry())\n"
-	contents += fmt.Sprintf("\treturn &F%sClient{\n", servTitle)
+	contents += "\tmethods := make(map[string]*frugal.Method)\n"
+	contents += fmt.Sprintf("\tclient := &F%sClient{\n", servTitle)
 	if service.Extends != "" {
-		contents += fmt.Sprintf("\t\tF%sClient: %sNewF%sClient(t, p),\n",
+		contents += fmt.Sprintf("\t\tF%sClient: %sNewF%sClient(t, p, middleware...),\n",
 			service.ExtendsService(), g.getServiceExtendsNamespace(service), service.ExtendsService())
 	}
 	contents += "\t\ttransport:       t,\n"
 	contents += "\t\tprotocolFactory: p,\n"
 	contents += "\t\toprot:           p.GetProtocol(t),\n"
+	contents += "\t\tmethods:         methods,\n"
 	contents += "\t}\n"
+	for _, method := range service.Methods {
+		name := generator.LowercaseFirstLetter(method.Name)
+		contents += fmt.Sprintf("\tmethods[\"%s\"] = frugal.NewMethod(client, client.%s, \"%s\", middleware)\n", name, name, name)
+	}
+	contents += "\treturn client\n"
 	contents += "}\n\n"
+
+	if service.Extends == "" {
+		contents += fmt.Sprintf("// Do Not Use. To be called only by generated code.\n")
+		contents += fmt.Sprintf("func (f *F%sClient) GetWriteMutex() *sync.Mutex {\n", servTitle)
+		contents += "\treturn &f.mu\n"
+		contents += "}\n\n"
+	}
 
 	for _, method := range service.Methods {
 		contents += g.generateClientMethod(service, method)
+		if g.generateAsync() {
+			contents += g.generateAsyncClientMethod(service, method)
+		}
 	}
+	return contents
+}
+
+func (g *Generator) generateAsyncClientMethod(service *parser.Service, method *parser.Method) string {
+	var (
+		servTitle = snakeToCamel(service.Name)
+		nameTitle = snakeToCamel(method.Name)
+	)
+
+	contents := ""
+	if method.Comment != nil {
+		contents += g.GenerateInlineComment(method.Comment, "")
+	}
+	contents += fmt.Sprintf("func (f *F%sClient) %sAsync(ctx *frugal.FContext%s) %s {\n",
+		servTitle, nameTitle, g.generateInputArgs(method.Arguments), g.generateAsyncReturnArgs(method))
+	contents += "\terrC := make(chan error, 1)\n"
+	if method.ReturnType != nil {
+		contents += fmt.Sprintf("\tresultC := make(chan %s, 1)\n", g.getGoTypeFromThriftType(method.ReturnType))
+	}
+	contents += "\tgo func() {\n"
+	if method.ReturnType == nil {
+		contents += fmt.Sprintf("\t\terrC <- f.%s(%s)\n", nameTitle, g.generateCallArgs(method))
+	} else {
+		contents += fmt.Sprintf("\t\tresult, err := f.%s(%s)\n", nameTitle, g.generateCallArgs(method))
+		contents += "\t\tif err != nil {\n"
+		contents += "\t\t\terrC <- err\n"
+		contents += "\t\t} else {\n"
+		contents += "\t\t\tresultC <- result\n"
+		contents += "\t\t}\n"
+	}
+	contents += "\t}()\n"
+	if method.ReturnType == nil {
+		contents += "\treturn errC\n"
+	} else {
+		contents += "\treturn resultC, errC\n"
+	}
+	contents += "}\n\n"
 	return contents
 }
 
@@ -485,8 +1532,42 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 		contents += g.GenerateInlineComment(method.Comment, "")
 	}
 	contents += fmt.Sprintf("func (f *F%sClient) %s(ctx *frugal.FContext%s) %s {\n",
-		servTitle, nameTitle, g.generateInputArgs(method.Arguments),
-		g.generateReturnArgs(method))
+		servTitle, nameTitle, g.generateInputArgs(method.Arguments), g.generateReturnArgs(method))
+	contents += fmt.Sprintf("\tret := f.methods[\"%s\"].Invoke(%s)\n", nameLower, g.generateClientArgs(method))
+	numReturn := "2"
+	if method.ReturnType == nil {
+		numReturn = "1"
+	}
+	contents += fmt.Sprintf("\tif len(ret) != %s {\n", numReturn)
+	contents += fmt.Sprintf("\t\tpanic(fmt.Sprintf(\"Middleware returned %%d arguments, expected %s\", len(ret)))\n", numReturn)
+	contents += "\t}\n"
+	if method.ReturnType != nil {
+		contents += fmt.Sprintf("\tr = ret[0].(%s)\n", g.getGoTypeFromThriftType(method.ReturnType))
+		contents += "\tif ret[1] != nil {\n"
+		contents += "\t\terr = ret[1].(error)\n"
+		contents += "\t}\n"
+		contents += "\treturn r, err\n"
+	} else {
+		contents += "\tif ret[0] != nil {\n"
+		contents += "\t\terr = ret[0].(error)\n"
+		contents += "\t}\n"
+		contents += "\treturn err\n"
+	}
+	contents += "}\n\n"
+	contents += g.generateInternalClientMethod(service, method)
+	return contents
+}
+
+func (g *Generator) generateInternalClientMethod(service *parser.Service, method *parser.Method) string {
+	var (
+		servTitle = snakeToCamel(service.Name)
+		nameTitle = snakeToCamel(method.Name)
+		nameLower = generator.LowercaseFirstLetter(method.Name)
+	)
+
+	contents := ""
+	contents += fmt.Sprintf("func (f *F%sClient) %s(ctx *frugal.FContext%s) %s {\n",
+		servTitle, nameLower, g.generateInputArgs(method.Arguments), g.generateReturnArgs(method))
 	var returnType string
 	if !method.Oneway {
 		contents += "\terrorC := make(chan error, 1)\n"
@@ -501,9 +1582,9 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 		contents += "\t}\n"
 		contents += "\tdefer f.transport.Unregister(ctx)\n"
 	}
-	contents += "\tf.mu.Lock()\n"
+	contents += "\tf.GetWriteMutex().Lock()\n"
 	contents += fmt.Sprintf("\tif err = f.oprot.WriteRequestHeader(ctx); err != nil {\n")
-	contents += "\t\tf.mu.Unlock()\n"
+	contents += "\t\tf.GetWriteMutex().Unlock()\n"
 	contents += "\t\treturn\n"
 	contents += "\t}\n"
 	msgType := "CALL"
@@ -512,25 +1593,25 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	}
 	contents += fmt.Sprintf(
 		"\tif err = f.oprot.WriteMessageBegin(\"%s\", thrift.%s, 0); err != nil {\n", nameLower, msgType)
-	contents += "\t\tf.mu.Unlock()\n"
+	contents += "\t\tf.GetWriteMutex().Unlock()\n"
 	contents += "\t\treturn\n"
 	contents += "\t}\n"
 	contents += fmt.Sprintf("\targs := %s%sArgs{\n", servTitle, nameTitle)
 	contents += g.generateStructArgs(method.Arguments)
 	contents += "\t}\n"
 	contents += "\tif err = args.Write(f.oprot); err != nil {\n"
-	contents += "\t\tf.mu.Unlock()\n"
+	contents += "\t\tf.GetWriteMutex().Unlock()\n"
 	contents += "\t\treturn\n"
 	contents += "\t}\n"
 	contents += "\tif err = f.oprot.WriteMessageEnd(); err != nil {\n"
-	contents += "\t\tf.mu.Unlock()\n"
+	contents += "\t\tf.GetWriteMutex().Unlock()\n"
 	contents += "\t\treturn\n"
 	contents += "\t}\n"
 	contents += "\tif err = f.oprot.Flush(); err != nil {\n"
-	contents += "\t\tf.mu.Unlock()\n"
+	contents += "\t\tf.GetWriteMutex().Unlock()\n"
 	contents += "\t\treturn\n"
 	contents += "\t}\n"
-	contents += "\tf.mu.Unlock()\n\n"
+	contents += "\tf.GetWriteMutex().Unlock()\n\n"
 
 	if method.Oneway {
 		contents += "\treturn\n"
@@ -575,7 +1656,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	contents += "\t\t}\n"
 	contents += "\t\tif mTypeId == thrift.EXCEPTION {\n"
 	contents += "\t\t\terror0 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, \"Unknown Exception\")\n"
-	contents += "\t\t\tvar error1 error\n"
+	contents += "\t\t\tvar error1 thrift.TApplicationException\n"
 	contents += "\t\t\terror1, err = error0.Read(iprot)\n"
 	contents += "\t\t\tif err != nil {\n"
 	contents += "\t\t\t\terrorC <- err\n"
@@ -584,6 +1665,11 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	contents += "\t\t\tif err = iprot.ReadMessageEnd(); err != nil {\n"
 	contents += "\t\t\t\terrorC <- err\n"
 	contents += "\t\t\t\treturn err\n"
+	contents += "\t\t\t}\n"
+	contents += "\t\t\tif error1.TypeId() == frugal.RESPONSE_TOO_LARGE {\n"
+	contents += "\t\t\t\terr = thrift.NewTTransportException(frugal.RESPONSE_TOO_LARGE, \"response too large for transport\")\n"
+	contents += "\t\t\t\terrorC <- err\n"
+	contents += "\t\t\t\treturn nil\n"
 	contents += "\t\t\t}\n"
 	contents += "\t\t\terr = error1\n"
 	contents += "\t\t\terrorC <- err\n"
@@ -629,6 +1715,7 @@ func (g *Generator) generateServer(service *parser.Service) string {
 	for _, method := range service.Methods {
 		contents += g.generateMethodProcessor(service, method)
 	}
+	contents += g.generateWriteApplicationError(service)
 	return contents
 }
 
@@ -641,84 +1728,29 @@ func (g *Generator) generateProcessor(service *parser.Service) string {
 
 	contents += fmt.Sprintf("type F%sProcessor struct {\n", servTitle)
 	if service.Extends == "" {
-		contents += "\tprocessorMap map[string]frugal.FProcessorFunction\n"
-		contents += "\twriteMu      *sync.Mutex\n"
-		contents += fmt.Sprintf("\thandler      F%s\n", servTitle)
+		contents += "\t*frugal.FBaseProcessor\n"
 	} else {
 		contents += fmt.Sprintf("\t*%sF%sProcessor\n",
 			g.getServiceExtendsNamespace(service), service.ExtendsService())
 	}
 	contents += "}\n\n"
 
-	contents += fmt.Sprintf("func NewF%sProcessor(handler F%s) *F%sProcessor {\n",
+	contents += fmt.Sprintf("func NewF%sProcessor(handler F%s, middleware ...frugal.ServiceMiddleware) *F%sProcessor {\n",
 		servTitle, servTitle, servTitle)
-	if service.Extends == "" {
-		contents += "\twriteMu := &sync.Mutex{}\n"
-	}
-	contents += fmt.Sprintf("\tp := &F%sProcessor{\n", servTitle)
 	if service.Extends != "" {
-		contents += fmt.Sprintf("\t\t%sNewF%sProcessor(handler),\n",
-			g.getServiceExtendsNamespace(service), service.ExtendsService())
+		contents += fmt.Sprintf("\tp := &F%sProcessor{%sNewF%sProcessor(handler, middleware...)}\n",
+			servTitle, g.getServiceExtendsNamespace(service), service.ExtendsService())
 	} else {
-		contents += "\t\tprocessorMap: make(map[string]frugal.FProcessorFunction),\n"
-		contents += "\t\twriteMu:      writeMu,\n"
-		contents += "\t\thandler:      handler,\n"
+		contents += fmt.Sprintf("\tp := &F%sProcessor{frugal.NewFBaseProcessor()}\n", servTitle)
 	}
-	contents += "\t}\n"
 	for _, method := range service.Methods {
 		contents += fmt.Sprintf(
-			"\tp.AddToProcessorMap(\"%s\", &%sF%s{handler: handler, writeMu: p.GetWriteMutex()})\n",
-			generator.LowercaseFirstLetter(method.Name), servLower, snakeToCamel(method.Name))
+			"\tp.AddToProcessorMap(\"%s\", &%sF%s{handler: frugal.NewMethod(handler, handler.%s, \"%s\", middleware), writeMu: p.GetWriteMutex()})\n",
+			generator.LowercaseFirstLetter(method.Name), servLower, snakeToCamel(method.Name), snakeToCamel(method.Name), snakeToCamel(method.Name))
 	}
 
 	contents += "\treturn p\n"
 	contents += "}\n\n"
-
-	if service.Extends == "" {
-		contents += fmt.Sprintf(
-			"func (p *F%sProcessor) AddToProcessorMap(key string, proc frugal.FProcessorFunction) {\n",
-			servTitle)
-		contents += "\tp.processorMap[key] = proc\n"
-		contents += "}\n\n"
-
-		contents += fmt.Sprintf("func (p *F%sProcessor) GetProcessorFunction(key string) "+
-			"(processor frugal.FProcessorFunction, ok bool) {\n", servTitle)
-		contents += "\tprocessor, ok = p.processorMap[key]\n"
-		contents += "\treturn\n"
-		contents += "}\n\n"
-
-		contents += fmt.Sprintf("func (p *F%sProcessor) GetWriteMutex() *sync.Mutex {\n", servTitle)
-		contents += "\treturn p.writeMu\n"
-		contents += "}\n\n"
-	}
-
-	if service.Extends == "" {
-		contents += fmt.Sprintf(
-			"func (p *F%sProcessor) Process(iprot, oprot *frugal.FProtocol) error {\n", servTitle)
-		contents += "\tctx, err := iprot.ReadRequestHeader()\n"
-		contents += "\tif err != nil {\n"
-		contents += "\t\treturn err\n"
-		contents += "\t}\n"
-		contents += "\tname, _, _, err := iprot.ReadMessageBegin()\n"
-		contents += "\tif err != nil {\n"
-		contents += "\t\treturn err\n"
-		contents += "\t}\n"
-		contents += "\tif processor, ok := p.GetProcessorFunction(name); ok {\n"
-		contents += "\t\treturn processor.Process(ctx, iprot, oprot)\n"
-		contents += "\t}\n"
-		contents += "\tiprot.Skip(thrift.STRUCT)\n"
-		contents += "\tiprot.ReadMessageEnd()\n"
-		contents += "\tx3 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, \"Unknown function \"+name)\n"
-		contents += "\tp.writeMu.Lock()\n"
-		contents += "\toprot.WriteResponseHeader(ctx)\n"
-		contents += "\toprot.WriteMessageBegin(name, thrift.EXCEPTION, 0)\n"
-		contents += "\tx3.Write(oprot)\n"
-		contents += "\toprot.WriteMessageEnd()\n"
-		contents += "\toprot.Flush()\n"
-		contents += "\tp.writeMu.Unlock()\n"
-		contents += "\treturn x3\n"
-		contents += "}\n\n"
-	}
 
 	return contents
 }
@@ -732,7 +1764,7 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 	)
 
 	contents := fmt.Sprintf("type %sF%s struct {\n", servLower, nameTitle)
-	contents += fmt.Sprintf("\thandler F%s\n", servTitle)
+	contents += "\thandler *frugal.Method\n"
 	contents += "\twriteMu *sync.Mutex\n"
 	contents += "}\n\n"
 
@@ -742,13 +1774,8 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 	contents += "\tif err = args.Read(iprot); err != nil {\n"
 	contents += "\t\tiprot.ReadMessageEnd()\n"
 	if !method.Oneway {
-		contents += "\t\tx := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())\n"
 		contents += "\t\tp.writeMu.Lock()\n"
-		contents += "\t\toprot.WriteResponseHeader(ctx)\n"
-		contents += fmt.Sprintf("\t\toprot.WriteMessageBegin(\"%s\", thrift.EXCEPTION, 0)\n", nameLower)
-		contents += "\t\tx.Write(oprot)\n"
-		contents += "\t\toprot.WriteMessageEnd()\n"
-		contents += "\t\toprot.Flush()\n"
+		contents += fmt.Sprintf("\t\t%sWriteApplicationError(ctx, oprot, thrift.PROTOCOL_ERROR, \"%s\", err.Error())\n", servLower, nameLower)
 		contents += "\t\tp.writeMu.Unlock()\n"
 	}
 	contents += "\t\treturn err\n"
@@ -761,12 +1788,26 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 	contents += "\tvar err2 error\n"
 	if method.ReturnType != nil {
 		contents += fmt.Sprintf("\tvar retval %s\n", g.getGoTypeFromThriftType(method.ReturnType))
-		contents += fmt.Sprintf("\tif retval, err2 = p.handler.%s(%s); err2 != nil {\n",
-			nameTitle, g.generateServerOutputArgs(method.Arguments))
-	} else {
-		contents += fmt.Sprintf("\tif err2 = p.handler.%s(%s); err2 != nil {\n",
-			nameTitle, g.generateServerOutputArgs(method.Arguments))
 	}
+	contents += fmt.Sprintf("\tret := p.handler.Invoke(%s)\n", g.generateHandlerArgs(method))
+	numReturn := "2"
+	if method.ReturnType == nil {
+		numReturn = "1"
+	}
+	contents += fmt.Sprintf("\tif len(ret) != %s {\n", numReturn)
+	contents += fmt.Sprintf("\t\tpanic(fmt.Sprintf(\"Middleware returned %%d arguments, expected %s\", len(ret)))\n", numReturn)
+	contents += "\t}\n"
+	if method.ReturnType != nil {
+		contents += fmt.Sprintf("\tretval = ret[0].(%s)\n", g.getGoTypeFromThriftType(method.ReturnType))
+		contents += "\tif ret[1] != nil {\n"
+		contents += "\t\terr2 = ret[1].(error)\n"
+		contents += "\t}\n"
+	} else {
+		contents += "\tif ret[0] != nil {\n"
+		contents += "\t\terr2 = ret[0].(error)\n"
+		contents += "\t}\n"
+	}
+	contents += "\tif err2 != nil {\n"
 	if len(method.Exceptions) > 0 {
 		contents += "\t\tswitch v := err2.(type) {\n"
 		for _, err := range method.Exceptions {
@@ -774,14 +1815,14 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 			contents += fmt.Sprintf("\t\t\tresult.%s = v\n", snakeToCamel(err.Name))
 		}
 		contents += "\t\tdefault:\n"
-		contents += g.generateMethodException("\t\t\t", method)
+		contents += g.generateMethodException("\t\t\t", service, method)
 		contents += "\t\t}\n"
 	} else {
-		contents += g.generateMethodException("\t\t", method)
+		contents += g.generateMethodException("\t\t", service, method)
 	}
 	if method.ReturnType != nil {
 		contents += "\t} else {\n"
-		if g.isPrimitive(method.ReturnType) {
+		if g.isPrimitive(method.ReturnType) || g.Frugal.IsEnum(method.ReturnType) {
 			contents += "\t\tresult.Success = &retval\n"
 		} else {
 			contents += "\t\tresult.Success = retval\n"
@@ -796,44 +1837,103 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 	}
 
 	contents += "\tp.writeMu.Lock()\n"
+	contents += "\tdefer p.writeMu.Unlock()\n"
 	contents += "\tif err2 = oprot.WriteResponseHeader(ctx); err2 != nil {\n"
-	contents += "\t\terr = err2\n"
+	contents += g.generateErrTooLarge(service, method)
 	contents += "\t}\n"
 	contents += fmt.Sprintf("\tif err2 = oprot.WriteMessageBegin(\"%s\", "+
 		"thrift.REPLY, 0); err2 != nil {\n", nameLower)
-	contents += "\t\terr = err2\n"
+	contents += g.generateErrTooLarge(service, method)
 	contents += "\t}\n"
 	contents += "\tif err2 = result.Write(oprot); err == nil && err2 != nil {\n"
-	contents += "\t\terr = err2\n"
+	contents += g.generateErrTooLarge(service, method)
 	contents += "\t}\n"
 	contents += "\tif err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {\n"
-	contents += "\t\terr = err2\n"
+	contents += g.generateErrTooLarge(service, method)
 	contents += "\t}\n"
 	contents += "\tif err2 = oprot.Flush(); err == nil && err2 != nil {\n"
-	contents += "\t\terr = err2\n"
+	contents += g.generateErrTooLarge(service, method)
 	contents += "\t}\n"
-	contents += "\tp.writeMu.Unlock()\n"
 	contents += "\treturn err\n"
 	contents += "}\n\n"
 
 	return contents
 }
 
-func (g *Generator) generateMethodException(prefix string, method *parser.Method) string {
+func (g *Generator) generateClientArgs(method *parser.Method) string {
+	args := "[]interface{}{ctx"
+	for _, arg := range method.Arguments {
+		args += ", " + strings.ToLower(arg.Name)
+	}
+	args += "}"
+	return args
+}
+
+func (g *Generator) generateScopeArgs(scope *parser.Scope) string {
+	args := "[]interface{}{ctx"
+	for _, v := range scope.Prefix.Variables {
+		args += ", " + v
+	}
+	args += ", req"
+	args += "}"
+	return args
+}
+
+func (g *Generator) generateHandlerArgs(method *parser.Method) string {
+	args := "[]interface{}{ctx"
+	for _, arg := range method.Arguments {
+		args += ", args." + snakeToCamel(arg.Name)
+	}
+	args += "}"
+	return args
+}
+func (g *Generator) generateCallArgs(method *parser.Method) string {
+	args := "ctx"
+	for _, arg := range method.Arguments {
+		args += ", " + strings.ToLower(arg.Name)
+	}
+	return args
+}
+
+func (g *Generator) generateErrTooLarge(service *parser.Service, method *parser.Method) string {
+	servLower := strings.ToLower(service.Name)
+	nameLower := generator.LowercaseFirstLetter(method.Name)
+	contents := "\t\tif err2 == frugal.ErrTooLarge {\n"
+	contents += fmt.Sprintf(
+		"\t\t\t%sWriteApplicationError(ctx, oprot, frugal.RESPONSE_TOO_LARGE, \"%s\", \"response too large: \"+err2.Error())\n",
+		servLower, nameLower)
+	contents += "\t\t\treturn nil\n"
+	contents += "\t\t}\n"
+	contents += "\t\terr = err2"
+	return contents
+}
+
+func (g *Generator) generateMethodException(prefix string, service *parser.Service, method *parser.Method) string {
 	contents := ""
+	servLower := strings.ToLower(service.Name)
+	nameLower := generator.LowercaseFirstLetter(method.Name)
 	if !method.Oneway {
-		contents += fmt.Sprintf(prefix+"x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "+
-			"\"Internal error processing %s: \"+err2.Error())\n", method.Name)
 		contents += prefix + "p.writeMu.Lock()\n"
-		contents += prefix + "oprot.WriteResponseHeader(ctx)\n"
-		contents += fmt.Sprintf(prefix+"oprot.WriteMessageBegin(\"%s\", thrift.EXCEPTION, 0)\n",
-			method.Name)
-		contents += prefix + "x.Write(oprot)\n"
-		contents += prefix + "oprot.WriteMessageEnd()\n"
-		contents += prefix + "oprot.Flush()\n"
+		msg := fmt.Sprintf("\"Internal error processing %s: \"+err2.Error()", nameLower)
+		contents += fmt.Sprintf(
+			prefix+"%sWriteApplicationError(ctx, oprot, thrift.INTERNAL_ERROR, \"%s\", %s)\n", servLower, nameLower, msg)
 		contents += prefix + "p.writeMu.Unlock()\n"
 	}
 	contents += prefix + "return err2\n"
+	return contents
+}
+
+func (g *Generator) generateWriteApplicationError(service *parser.Service) string {
+	servLower := strings.ToLower(service.Name)
+	contents := fmt.Sprintf("func %sWriteApplicationError(ctx *frugal.FContext, oprot *frugal.FProtocol, "+
+		"type_ int32, method, message string) {\n", servLower)
+	contents += "\tx := thrift.NewTApplicationException(type_, message)\n"
+	contents += "\toprot.WriteResponseHeader(ctx)\n"
+	contents += "\toprot.WriteMessageBegin(method, thrift.EXCEPTION, 0)\n"
+	contents += "\tx.Write(oprot)\n"
+	contents += "\toprot.WriteMessageEnd()\n"
+	contents += "\toprot.Flush()\n"
+	contents += "}\n\n"
 	return contents
 }
 
@@ -869,53 +1969,87 @@ func (g *Generator) generateStructArgs(args []*parser.Field) string {
 	return argStr
 }
 
-func (g *Generator) generateServerOutputArgs(args []*parser.Field) string {
-	argStr := "ctx"
-	for _, arg := range args {
-		argStr += fmt.Sprintf(", args.%s", snakeToCamel(arg.Name))
-	}
-	return argStr
+func (g *Generator) getGoTypeFromThriftType(t *parser.Type) string {
+	return g.getGoTypeFromThriftTypePtr(t, false)
 }
 
-func (g *Generator) getGoTypeFromThriftType(t *parser.Type) string {
+func (g *Generator) getGoTypeFromThriftTypePtr(t *parser.Type, pointer bool) string {
+	maybePointer := ""
+	if pointer {
+		maybePointer = "*"
+	}
 	switch t.Name {
 	case "bool":
-		return "bool"
+		return maybePointer + "bool"
 	case "byte", "i8":
-		return "int8"
+		return maybePointer + "int8"
 	case "i16":
-		return "int16"
+		return maybePointer + "int16"
 	case "i32":
-		return "int32"
+		return maybePointer + "int32"
 	case "i64":
-		return "int64"
+		return maybePointer + "int64"
 	case "double":
-		return "float64"
+		return maybePointer + "float64"
 	case "string":
-		return "string"
+		return maybePointer + "string"
 	case "binary":
-		return "[]byte"
+		return maybePointer + "[]byte"
 	case "list":
-		// TODO: For some reason, Thrift uses underlying types for set and list
-		// generics rather than using the typedef, but it uses the typedef in
-		// maps. Use typedefs once we no longer depend on the Thrift generator.
-		return fmt.Sprintf("[]%s",
-			g.getGoTypeFromThriftType(g.Frugal.UnderlyingType(t.ValueType)))
+		// TODO 2.0: don't use the underlying type
+		typ := g.Frugal.UnderlyingType(t.ValueType)
+		return fmt.Sprintf("%s[]%s", maybePointer,
+			g.getGoTypeFromThriftTypePtr(typ, false))
 	case "set":
-		return fmt.Sprintf("map[%s]bool",
-			g.getGoTypeFromThriftType(g.Frugal.UnderlyingType(t.ValueType)))
+		// TODO 2.0: dont' use the underlying type
+		typ := g.Frugal.UnderlyingType(t.ValueType)
+		return fmt.Sprintf("%smap[%s]bool", maybePointer,
+			g.getGoTypeFromThriftTypePtr(typ, false))
 	case "map":
-		return fmt.Sprintf("map[%s]%s",
-			g.getGoTypeFromThriftType(t.KeyType),
-			g.getGoTypeFromThriftType(t.ValueType))
+		return fmt.Sprintf("%smap[%s]%s", maybePointer,
+			g.getGoTypeFromThriftTypePtr(t.KeyType, false),
+			g.getGoTypeFromThriftTypePtr(t.ValueType, false))
 	default:
 		// Custom type, either typedef or struct.
 		name := g.qualifiedTypeName(t)
 		if g.Frugal.IsStruct(t) {
 			// This is a struct, return a pointer to it.
-			name = "*" + name
+			return "*" + name
 		}
-		return name
+		return maybePointer + name
+	}
+}
+
+func (g *Generator) getEnumFromThriftType(t *parser.Type) string {
+	underlyingType := g.Frugal.UnderlyingType(t)
+	switch underlyingType.Name {
+	case "bool":
+		return "thrift.BOOL"
+	case "byte", "i8":
+		return "thift.BYTE"
+	case "i16":
+		return "thrift.I16"
+	case "i32":
+		return "thrift.I32"
+	case "i64":
+		return "thrift.I64"
+	case "double":
+		return "thrift.DOUBLE"
+	case "string", "binary":
+		return "thrift.STRING"
+	case "list":
+		return "thrift.LIST"
+	case "set":
+		return "thrift.SET"
+	case "map":
+		return "thrift.MAP"
+	default:
+		if g.Frugal.IsEnum(underlyingType) {
+			return "thrift.I32"
+		} else if g.Frugal.IsStruct(underlyingType) {
+			return "thrift.STRUCT"
+		}
+		panic("not a valid thrift type: " + underlyingType.Name)
 	}
 }
 
@@ -943,6 +2077,40 @@ func (g *Generator) isPrimitive(t *parser.Type) bool {
 	}
 }
 
+func (g *Generator) isPointerField(field *parser.Field) bool {
+	underlyingType := g.Frugal.UnderlyingType(field.Type)
+	// Structs as fields are always pointers
+	if g.Frugal.IsStruct(underlyingType) {
+		return true
+	}
+	// If it's not optional, it's not a pointer
+	if field.Modifier != parser.Optional {
+		return false
+	}
+
+	hasDefault := field.Default != nil
+	switch underlyingType.Name {
+	case "binary":
+		// According to thrift, these are always like this, not sure why
+		return false
+	case "bool", "byte", "i8", "i16", "i32", "i64", "double", "string":
+		// If there's no default, needs to be a pointer to be nillable
+		return !hasDefault
+	case "list", "set", "map":
+		// slices and maps are nillable by default, use a pointer
+		// if there's a default to differentiate between the default and
+		// not set
+		return hasDefault
+	default:
+		// Custom type, either typedef or struct-like.
+		if g.Frugal.IsEnum(underlyingType) {
+			// Same case as nums
+			return !hasDefault
+		}
+		return hasDefault
+	}
+}
+
 func (g *Generator) qualifiedTypeName(t *parser.Type) string {
 	param := snakeToCamel(t.ParamName())
 	include := t.IncludeName()
@@ -953,20 +2121,19 @@ func (g *Generator) qualifiedTypeName(t *parser.Type) string {
 		}
 		param = fmt.Sprintf("%s.%s", namespace, param)
 	}
+
+	// The Thrift generator uses a convention of appending a suffix of '_'
+	// if the argument starts with 'New', ends with 'Result' or ends with 'Args'.
+	// This effort must be duplicated to correctly reference Thrift generated code.
+	if strings.HasPrefix(param, "New") || strings.HasSuffix(param, "Result") || strings.HasSuffix(param, "Args") {
+		param += "_"
+	}
 	return param
 }
 
-func (g *Generator) qualifiedParamName(op *parser.Operation) string {
-	param := op.ParamName()
-	include := op.IncludeName()
-	if include != "" {
-		namespace, ok := g.Frugal.NamespaceForInclude(include, lang)
-		if !ok {
-			namespace = include
-		}
-		param = fmt.Sprintf("%s.%s", namespace, param)
-	}
-	return param
+func (g *Generator) generateAsync() bool {
+	_, ok := g.Options["async"]
+	return ok
 }
 
 // snakeToCamel returns a string converted from snake case to uppercase.
@@ -989,6 +2156,44 @@ func snakeToCamel(s string) string {
 	return result
 }
 
+func title(name string) string {
+	return titleServiceName(name, "")
+}
+
+func titleServiceName(name string, serviceName string) string {
+	if len(name) == 0 {
+		return name
+	}
+
+	// Keep screaming caps
+	if name == strings.ToUpper(name) {
+		return name
+	}
+
+	if serviceName != "" {
+		name = fmt.Sprintf("%s_%s", serviceName, name)
+	}
+	var result string
+	words := strings.Split(name, "_")
+
+	for _, word := range words {
+		if upper := strings.ToUpper(word); commonInitialisms[upper] {
+			result += upper
+			continue
+		}
+
+		w := []rune(word)
+		w[0] = unicode.ToUpper(w[0])
+		result += string(w)
+	}
+
+	if (serviceName == "") && (strings.HasPrefix(result, "New") || strings.HasSuffix(result, "Args") || strings.HasSuffix(result, "Result")) {
+		result += "_"
+	}
+
+	return result
+}
+
 // startsWithInitialism returns the initialism if the given string begins with
 // it.
 func startsWithInitialism(s string) string {
@@ -1000,6 +2205,15 @@ func startsWithInitialism(s string) string {
 		}
 	}
 	return initialism
+}
+
+var elemNum int
+
+// getElem returns a unique identifier name
+func getElem() string {
+	s := fmt.Sprintf("elem%d", elemNum)
+	elemNum++
+	return s
 }
 
 // commonInitialisms, taken from

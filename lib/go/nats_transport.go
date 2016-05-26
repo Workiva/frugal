@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	log "github.com/Sirupsen/logrus"
 	"github.com/nats-io/nats"
 )
 
@@ -20,15 +20,13 @@ const (
 	// NATS limits messages to 1MB.
 	natsMaxMessageSize = 1024 * 1024
 	disconnect         = "DISCONNECT"
+	frugalPrefix       = "frugal."
 	natsV0             = 0
 )
 
-// ErrTooLarge is returned when attempting to write a message which exceeds the
-// message size limit of 1MB.
-var ErrTooLarge = thrift.NewTTransportException(
-	thrift.UNKNOWN_TRANSPORT_EXCEPTION,
-	fmt.Sprintf("Message exceeds %d bytes", natsMaxMessageSize),
-)
+func newFrugalInbox() string {
+	return fmt.Sprintf("%s%s", frugalPrefix, nats.NewInbox())
+}
 
 // natsServiceTTransport implements thrift.TTransport.
 type natsServiceTTransport struct {
@@ -46,7 +44,8 @@ type natsServiceTTransport struct {
 	recvHeartbeat       chan struct{}
 	closed              chan struct{}
 	isOpen              bool
-	mutex               sync.RWMutex
+	openMu              sync.RWMutex
+	fieldsMu            sync.RWMutex
 	connectSubject      string
 	connectTimeout      time.Duration
 	maxMissedHeartbeats uint
@@ -79,12 +78,16 @@ func newNatsServiceTTransportServer(conn *nats.Conn, listenTo, writeTo string) t
 	}
 }
 
+func (n *natsServiceTTransport) isClient() bool {
+	return n.connectSubject != ""
+}
+
 // Open handshakes with the server (if this is a client transport) initializes
 // the write buffer and reader/writer pipe, subscribes to the specified
 // subject, and starts heartbeating.
 func (n *natsServiceTTransport) Open() error {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
+	n.openMu.Lock()
+	defer n.openMu.Unlock()
 	if n.conn.Status() != nats.CONNECTED {
 		return thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION,
 			fmt.Sprintf("frugal: NATS not connected, has status %d", n.conn.Status()))
@@ -95,7 +98,7 @@ func (n *natsServiceTTransport) Open() error {
 	}
 
 	// Handshake if this is a client.
-	if n.connectSubject != "" {
+	if n.isClient() {
 		if err := n.handshake(); err != nil {
 			return thrift.NewTTransportExceptionFromError(err)
 		}
@@ -106,59 +109,83 @@ func (n *natsServiceTTransport) Open() error {
 			"frugal: listenTo and writeTo cannot be empty")
 	}
 
-	n.closed = make(chan struct{})
-	n.writeBuffer = bytes.NewBuffer(make([]byte, 0, natsMaxMessageSize))
-
-	n.reader, n.writer = io.Pipe()
-
-	sub, err := n.conn.Subscribe(n.listenTo, func(msg *nats.Msg) {
-		if msg.Reply == disconnect {
-			// Remote client is disconnecting.
-			n.Close()
-			return
-		}
-		n.writer.Write(msg.Data)
-	})
+	sub, err := n.conn.Subscribe(n.listenTo, n.handleMessage)
 	if err != nil {
 		return thrift.NewTTransportExceptionFromError(err)
 	}
-	n.sub = sub
 
 	// Handle heartbeats.
 	if n.heartbeatInterval > 0 {
-		hbSub, err := n.conn.Subscribe(n.heartbeatListen, func(msg *nats.Msg) {
-			select {
-			case n.recvHeartbeat <- struct{}{}:
-			default:
-			}
-			n.conn.Publish(n.heartbeatReply, nil)
-		})
+		hbSub, err := n.conn.Subscribe(n.heartbeatListen, n.handleHeartbeat)
 		if err != nil {
 			n.Close()
 			return thrift.NewTTransportExceptionFromError(err)
 		}
 		n.heartbeatSub = hbSub
-		go func() {
-			missed := uint(0)
-			for {
-				select {
-				case <-time.After(n.heartbeatInterval):
-					missed++
-					if missed >= n.maxMissedHeartbeats {
-						log.Println("frugal: server heartbeat expired")
-						n.Close()
-						return
-					}
-				case <-n.recvHeartbeat:
-					missed = 0
-				case <-n.closed:
-					return
-				}
-			}
-		}()
+		go n.heartbeatLoop()
 	}
+
+	n.fieldsMu.Lock()
+	n.sub = sub
+	n.closed = make(chan struct{})
+	n.writeBuffer = bytes.NewBuffer(make([]byte, 0, natsMaxMessageSize))
+	n.reader, n.writer = io.Pipe()
 	n.isOpen = true
+	n.fieldsMu.Unlock()
+
 	return nil
+}
+
+// handleMessage receives a NATS message and buffers its contents for reading.
+// If the message has a reply subject of "DISCONNECT", then the message is
+// signaling that the remote peer has disconnected.
+func (n *natsServiceTTransport) handleMessage(msg *nats.Msg) {
+	if msg.Reply == disconnect {
+		// Remote client is disconnecting.
+		if n.isClient() {
+			log.Error("frugal: transport received unexpected disconnect from the server")
+		} else {
+			log.Debug("frugal: client transport closed cleanly")
+		}
+		n.Close()
+		return
+	}
+	n.writer.Write(msg.Data)
+}
+
+// handleHeartbeat receives a NATS message representing a heartbeat from the
+// remote peer. A channel is signaled to allow the heartbeat loop to reset the
+// heartbeat count.
+func (n *natsServiceTTransport) handleHeartbeat(msg *nats.Msg) {
+	select {
+	case n.recvHeartbeatChan() <- struct{}{}:
+	default:
+		log.Println("frugal: natsServiceTTransport received heartbeat dropped")
+	}
+	n.conn.Publish(n.heartbeatReply, nil)
+}
+
+// heartbeatLoop waits for heartbeats to be received on the channel or if the
+// allowable interval passes, a counter is incremented. The counter is reset
+// when a heartbeat is received. If the counter exceeds the max missed
+// heartbeats value, the transport is closed.
+func (n *natsServiceTTransport) heartbeatLoop() {
+	missed := uint(0)
+	for {
+		select {
+		case <-time.After(n.heartbeatTimeoutPeriod()):
+			missed++
+			if missed >= n.maxMissedHeartbeats {
+				log.Warn("frugal: server heartbeat expired")
+				n.Close()
+				return
+			}
+		case <-n.recvHeartbeatChan():
+			missed = 0
+		case <-n.closedChan():
+			return
+		}
+	}
 }
 
 type natsConnectionHandshake struct {
@@ -171,7 +198,7 @@ func (n *natsServiceTTransport) handshake() error {
 	if err != nil {
 		return err
 	}
-	msg, err := n.conn.Request(n.connectSubject, hsBytes, n.connectTimeout)
+	msg, err := n.handshakeRequest(hsBytes)
 	if err != nil {
 		return err
 	}
@@ -198,25 +225,55 @@ func (n *natsServiceTTransport) handshake() error {
 		interval = time.Millisecond * time.Duration(deadline)
 	}
 
+	n.fieldsMu.Lock()
 	n.heartbeatListen = heartbeatListen
 	n.heartbeatReply = heartbeatReply
 	n.heartbeatInterval = interval
 	n.recvHeartbeat = make(chan struct{}, 1)
 	n.listenTo = msg.Subject
 	n.writeTo = msg.Reply
+	n.fieldsMu.Unlock()
 	return nil
 }
 
+func (n *natsServiceTTransport) handshakeRequest(hsBytes []byte) (m *nats.Msg, err error) {
+	inbox := newFrugalInbox()
+	var s *nats.Subscription
+	s, err = n.conn.SubscribeSync(inbox)
+	if err != nil {
+		return
+	}
+	s.AutoUnsubscribe(1)
+	err = n.conn.PublishRequest(n.connectSubject, inbox, hsBytes)
+	if err == nil {
+		m, err = s.NextMsg(n.connectTimeout)
+		if err == nats.ErrTimeout {
+			err = thrift.NewTTransportException(thrift.TIMED_OUT, err.Error())
+		}
+	}
+	s.Unsubscribe()
+	return
+}
+
 func (n *natsServiceTTransport) IsOpen() bool {
-	n.mutex.RLock()
-	defer n.mutex.RUnlock()
+	n.openMu.RLock()
+	defer n.openMu.RUnlock()
 	return n.conn.Status() == nats.CONNECTED && n.isOpen
+}
+
+func (n *natsServiceTTransport) getClosedConditionError(prefix string) error {
+	if n.conn.Status() != nats.CONNECTED {
+		return thrift.NewTTransportException(thrift.NOT_OPEN,
+			fmt.Sprintf("%s NATS client not connected (has status code %d)", prefix, n.conn.Status()))
+	}
+	return thrift.NewTTransportException(thrift.NOT_OPEN,
+		fmt.Sprintf("%s NATS service TTransport not open", prefix))
 }
 
 // Close unsubscribes, signals the remote peer, and stops heartbeating.
 func (n *natsServiceTTransport) Close() error {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
+	n.openMu.Lock()
+	defer n.openMu.Unlock()
 	if !n.isOpen {
 		return nil
 	}
@@ -231,16 +288,26 @@ func (n *natsServiceTTransport) Close() error {
 			return thrift.NewTTransportExceptionFromError(err)
 		}
 	}
+
+	// Flush the NATS connection to avoid an edge case where the program exits
+	// after closing the transport. This is because NATS asynchronously flushes
+	// in the background, so explicitly flushing prevents us from losing
+	// anything buffered when we exit.
+	n.conn.FlushTimeout(time.Second)
+
+	n.fieldsMu.Lock()
 	n.sub = nil
 	n.heartbeatSub = nil
 	close(n.closed)
 	n.isOpen = false
-	return thrift.NewTTransportExceptionFromError(n.writer.Close())
+	n.writer.Close()
+	n.fieldsMu.Unlock()
+	return nil
 }
 
 func (n *natsServiceTTransport) Read(p []byte) (int, error) {
 	if !n.IsOpen() {
-		return 0, thrift.NewTTransportException(thrift.NOT_OPEN, "NATS transport not open")
+		return 0, n.getClosedConditionError("read:")
 	}
 	num, err := n.reader.Read(p)
 	return num, thrift.NewTTransportExceptionFromError(err)
@@ -249,7 +316,7 @@ func (n *natsServiceTTransport) Read(p []byte) (int, error) {
 // Write the bytes to a buffer. Returns ErrTooLarge if the buffer exceeds 1MB.
 func (n *natsServiceTTransport) Write(p []byte) (int, error) {
 	if !n.IsOpen() {
-		return 0, thrift.NewTTransportException(thrift.NOT_OPEN, "NATS transport not open")
+		return 0, n.getClosedConditionError("write:")
 	}
 	if len(p)+n.writeBuffer.Len() > natsMaxMessageSize {
 		n.writeBuffer.Reset() // Clear any existing bytes.
@@ -263,7 +330,7 @@ func (n *natsServiceTTransport) Write(p []byte) (int, error) {
 // of bytes exceed 1MB.
 func (n *natsServiceTTransport) Flush() error {
 	if !n.IsOpen() {
-		return thrift.NewTTransportException(thrift.NOT_OPEN, "NATS transport not open")
+		return n.getClosedConditionError("flush:")
 	}
 	defer n.writeBuffer.Reset()
 	data := n.writeBuffer.Bytes()
@@ -279,4 +346,28 @@ func (n *natsServiceTTransport) Flush() error {
 
 func (n *natsServiceTTransport) RemainingBytes() uint64 {
 	return ^uint64(0) // We don't know unless framed is used.
+}
+
+func (n *natsServiceTTransport) heartbeatTimeoutPeriod() time.Duration {
+	// The server is expected to heartbeat at every heartbeatInterval. Add an
+	// additional grace period if maxMissedHeartbeats == 1 to avoid potential
+	// races.
+	n.fieldsMu.RLock()
+	defer n.fieldsMu.RUnlock()
+	if n.maxMissedHeartbeats > 1 {
+		return n.heartbeatInterval
+	}
+	return n.heartbeatInterval + n.heartbeatInterval/4
+}
+
+func (n *natsServiceTTransport) recvHeartbeatChan() chan struct{} {
+	n.fieldsMu.RLock()
+	defer n.fieldsMu.RUnlock()
+	return n.recvHeartbeat
+}
+
+func (n *natsServiceTTransport) closedChan() chan struct{} {
+	n.fieldsMu.RLock()
+	defer n.fieldsMu.RUnlock()
+	return n.closed
 }

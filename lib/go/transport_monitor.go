@@ -1,35 +1,59 @@
 package frugal
 
 import (
-	"fmt"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
-// FTransportMonitor watches and heals an FTransport.
+// FTransportMonitor watches and heals an FTransport. It exposes a number of
+// hooks which can be used to add logic around FTransport events, such as
+// unexpected disconnects, expected disconnects, failed reconnects, and
+// successful reconnects.
+//
+// Most Frugal implementations include a base FTransportMonitor which
+// implements basic reconnect logic with backoffs and max attempts. This can be
+// extended or reimplemented to provide custom logic.
 type FTransportMonitor interface {
-	// OnClosedCleanly is called when the transport is closed cleanly by a call to Close()
+	// OnClosedCleanly is called when the transport is closed cleanly by a call
+	// to Close()
 	OnClosedCleanly()
 
-	// OnClosedUncleanly is called when the transport is closed for a reason *other* than a call to Close().
-	// Returns whether to try reopening the transport and, if so, how long to wait before making the attempt.
+	// OnClosedUncleanly is called when the transport is closed for a reason
+	// *other* than a call to Close(). Returns whether to try reopening the
+	// transport and, if so, how long to wait before making the attempt.
 	OnClosedUncleanly(cause error) (reopen bool, wait time.Duration)
 
 	// OnReopenFailed is called when an attempt to reopen the transport fails.
-	// Given the number of previous attempts to re-open the transport and the length of the previous wait,
-	// Returns whether to attempt to re-open the transport, and how long to wait before making the attempt.
+	// Given the number of previous attempts to re-open the transport and the
+	// length of the previous wait. Returns whether to attempt to re-open the
+	// transport, and how long to wait before making the attempt.
 	OnReopenFailed(prevAttempts uint, prevWait time.Duration) (reopen bool, wait time.Duration)
 
-	// OnReopenSucceeded is called after the transport has been successfully re-opened.
+	// OnReopenSucceeded is called after the transport has been successfully
+	// re-opened.
 	OnReopenSucceeded()
 }
 
-// BaseFTransportMonitor is a default monitor implementation that attempts to re-open a closed transport
-// with exponential backoff behavior and a capped number of retries. Its behavior can be customized
-// by embedding this struct type in a new struct which "overrides" desired callbacks.
+// BaseFTransportMonitor is a default monitor implementation that attempts to
+// re-open a closed transport with exponential backoff behavior and a capped
+// number of retries. Its behavior can be customized by embedding this struct
+// type in a new struct which "overrides" desired callbacks.
 type BaseFTransportMonitor struct {
 	MaxReopenAttempts uint
 	InitialWait       time.Duration
 	MaxWait           time.Duration
+}
+
+// NewDefaultFTransportMonitor creates a new FTransportMonitor with default
+// reconnect options (attempts to reconnect 60 times with 2 seconds between
+// each attempt).
+func NewDefaultFTransportMonitor() FTransportMonitor {
+	return &BaseFTransportMonitor{
+		MaxReopenAttempts: 60,
+		InitialWait:       2 * time.Second,
+		MaxWait:           2 * time.Second,
+	}
 }
 
 func (m *BaseFTransportMonitor) OnClosedUncleanly(cause error) (bool, time.Duration) {
@@ -60,7 +84,7 @@ type monitorRunner struct {
 
 // Starts a runner to monitor the transport.
 func (r *monitorRunner) run() {
-	fmt.Println("FTransport Monitor: Beginning to monitor transport...")
+	log.Info("frugal: FTransportMonitor beginning to monitor transport...")
 	for {
 		if cause := <-r.closedChannel; cause != nil {
 			if shouldContinue := r.handleUncleanClose(cause); !shouldContinue {
@@ -75,17 +99,17 @@ func (r *monitorRunner) run() {
 
 // Handle a clean close of the transport.
 func (r *monitorRunner) handleCleanClose() {
-	fmt.Println("FTransport Monitor: FTransport was closed cleanly. Terminating...")
+	log.Info("frugal: FTransportMonitor signaled FTransport was closed cleanly. Terminating...")
 	r.monitor.OnClosedCleanly()
 }
 
 // Handle an unclean close of the transport.
 func (r *monitorRunner) handleUncleanClose(cause error) bool {
-	fmt.Printf("FTransport Monitor: FTransport was closed uncleanly because: %v\n", cause)
+	log.Warnf("frugal: FTransportMonitor signaled FTransport was closed uncleanly because: %v", cause)
 
 	reopen, InitialWait := r.monitor.OnClosedUncleanly(cause)
 	if !reopen {
-		fmt.Println("FTransport Monitor: Instructed not to reopen. Terminating...")
+		log.Warn("frugal: FTransportMonitor instructed not to reopen. Terminating...")
 		return false
 	}
 
@@ -99,21 +123,26 @@ func (r *monitorRunner) attemptReopen(InitialWait time.Duration) bool {
 	prevAttempts := uint(0)
 
 	for reopen {
-		fmt.Printf("FTransport Monitor: Attempting to reopen after %v\n", wait)
+		log.Infof("frugal: FTransportMonitor attempting to reopen after %v", wait)
 		time.Sleep(wait)
 
 		if err := r.transport.Open(); err != nil {
-			fmt.Printf("FTransport Monitor: Failed to re-open transport due to: %v\n", err)
+			log.Errorf("frugal: FTransportMonitor failed to re-open transport due to: %v", err)
 			prevAttempts++
 
 			reopen, wait = r.monitor.OnReopenFailed(prevAttempts, wait)
 			continue
 		}
-		fmt.Printf("FTransport Monitor: Successfully re-opened!")
+		log.Info("frugal: FTransportMonitor successfully re-opened!")
+		// Do a sanity check. TODO: Remove this once the "transport not open"
+		// bug is fixed.
+		if !r.transport.IsOpen() {
+			log.Error("frugal: FTransportMonitor sanity check failed - transport is not open!")
+		}
 		r.monitor.OnReopenSucceeded()
 		return true
 	}
 
-	fmt.Println("FTransport Monitor: ReopenFailed callback instructed not to reopen. Terminating...")
+	log.Warn("frugal: FTransportMonitor ReopenFailed callback instructed not to reopen. Terminating...")
 	return false
 }

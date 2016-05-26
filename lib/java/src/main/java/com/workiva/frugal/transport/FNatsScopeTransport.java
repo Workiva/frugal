@@ -1,6 +1,7 @@
 package com.workiva.frugal.transport;
 
-import com.workiva.frugal.FException;
+import com.workiva.frugal.exception.FException;
+import com.workiva.frugal.exception.FMessageSizeException;
 import com.workiva.frugal.util.ProtocolUtils;
 import io.nats.client.*;
 import org.apache.thrift.TException;
@@ -11,6 +12,8 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
@@ -20,29 +23,67 @@ import java.util.logging.Logger;
  */
 public class FNatsScopeTransport extends FScopeTransport {
 
+    // The number of message frames to buffer on the subscriber.
+    private static final int FRAME_BUFFER_SIZE = 5;
+    private static final byte[] FRAME_BUFFER_CLOSED = new byte[0];
+
     private final Connection conn;
-    private String subject;
-    private PipedOutputStream writer;
-    private PipedInputStream reader;
+    protected String subject;
+    protected final String queue;
+    protected BlockingQueue<byte[]> frameBuffer;
+    private byte[] currentFrame;
+    private int currentFramePos;
     private ByteBuffer writeBuffer;
-    private Subscription sub;
-    private boolean pull;
-    private boolean isOpen;
+    protected Subscription sub;
+    protected boolean pull;
+    protected boolean isOpen;
     private final ReentrantLock lock;
 
     private static Logger LOGGER = Logger.getLogger(FNatsScopeTransport.class.getName());
 
-    protected FNatsScopeTransport(Connection conn) {
+    /**
+     * Creates a new FNatsScopeTransport which is used for pub/sub. Subscribers using this transport will subscribe to
+     * the provided queue, forming a queue group. When a queue group is formed, only one member receives the message. If
+     * the queue is null, then the subscriber does not join a queue group.
+     *
+     * @param conn  NATS connection
+     * @param queue subscription queue
+     */
+    protected FNatsScopeTransport(Connection conn, String queue) {
         this.conn = conn;
         this.lock = new ReentrantLock();
+        this.queue = queue;
     }
 
+    /**
+     * An FScopeTransportFactory implementation which creates FScopeTransports backed by NATS.
+     */
     public static class Factory implements FScopeTransportFactory {
 
-        private Connection conn;
+        private final Connection conn;
+        private final String queue;
 
+        /**
+         * Creates a NATS FScopeTransportFactory using the provided NATS connection. Subscribers using this transport
+         * will not use a queue.
+         *
+         * @param conn NATS connection
+         */
         public Factory(Connection conn) {
+            this(conn, null);
+        }
+
+        /**
+         * Creates a NATS FScopeTransportFactory using the provided NATS connection. Subscribers using this transport
+         * will subscribe to the provided queue, forming a queue group. When a queue group is formed, only one member
+         * receives the message.
+         *
+         * @param conn  NATS connection
+         * @param queue subscription queue
+         */
+        public Factory(Connection conn, String queue) {
             this.conn = conn;
+            this.queue = queue;
         }
 
         /**
@@ -51,7 +92,7 @@ public class FNatsScopeTransport extends FScopeTransport {
          * @return A new FScopeTransport instance.
          */
         public FNatsScopeTransport getTransport() {
-            return new FNatsScopeTransport(this.conn);
+            return new FNatsScopeTransport(this.conn, this.queue);
         }
     }
 
@@ -105,14 +146,9 @@ public class FNatsScopeTransport extends FScopeTransport {
             throw new TTransportException("Subject cannot be empty.");
         }
 
-        try {
-            writer = new PipedOutputStream();
-            reader = new PipedInputStream(writer);
-        } catch (IOException e) {
-            throw new TTransportException(e);
-        }
+        frameBuffer = new ArrayBlockingQueue<>(FRAME_BUFFER_SIZE);
 
-        sub = conn.subscribe(subject, new MessageHandler() {
+        sub = conn.subscribe(getFormattedSubject(), queue, new MessageHandler() {
             @Override
             public void onMessage(Message msg) {
                 if (msg.getData().length < 4) {
@@ -121,10 +157,8 @@ public class FNatsScopeTransport extends FScopeTransport {
                 }
                 try {
                     // Discard frame size.
-                    writer.write(Arrays.copyOfRange(msg.getData(), 4, msg.getData().length));
-                    writer.flush();
-                } catch (IOException e) {
-                    // pipe is closed, nothing to do.
+                    frameBuffer.put(Arrays.copyOfRange(msg.getData(), 4, msg.getData().length));
+                } catch (InterruptedException ignored) {
                 }
             }
         });
@@ -148,12 +182,10 @@ public class FNatsScopeTransport extends FScopeTransport {
         }
         sub = null;
         try {
-            writer.close();
-        } catch (IOException e) {
-            LOGGER.warning("could not close write buffer. " + e.getMessage());
+            frameBuffer.put(FRAME_BUFFER_CLOSED);
+        } catch (InterruptedException e) {
+            LOGGER.warning("could not close write frame buffer. " + e.getMessage());
         }
-        writer = null;
-        reader = null;
         isOpen = false;
     }
 
@@ -162,29 +194,44 @@ public class FNatsScopeTransport extends FScopeTransport {
         if (!isOpen()) {
             throw new TTransportException(TTransportException.END_OF_FILE);
         }
-        try {
-            int bytesRead = reader.read(bytes, off, len);
-            if (bytesRead < 0) {
-                throw new TTransportException(TTransportException.END_OF_FILE);
+        if (currentFrame == null) {
+            try {
+                currentFrame = frameBuffer.take();
+            } catch (InterruptedException e) {
+                throw new TTransportException(TTransportException.END_OF_FILE, e.getMessage());
             }
-            return bytesRead;
-        } catch (IOException e) {
-            throw new TTransportException(TTransportException.END_OF_FILE, e);
         }
+        if (currentFrame == FRAME_BUFFER_CLOSED) {
+            throw new TTransportException(TTransportException.END_OF_FILE);
+        }
+        int size = Math.min(len, currentFrame.length);
+        System.arraycopy(currentFrame, currentFramePos, bytes, off, size);
+        currentFramePos += size;
+        if (currentFramePos == currentFrame.length) {
+            // The entire frame was copied, clear it.
+            discardFrame();
+        }
+        return size;
+    }
+
+    @Override
+    public void discardFrame() {
+        currentFrame = null;
+        currentFramePos = 0;
     }
 
     @Override
     public void write(byte[] bytes, int off, int len) throws TTransportException {
         if (!isOpen()) {
-            throw new TTransportException(TTransportException.NOT_OPEN, "NATS transport not open");
+            throw TNatsServiceTransport.getClosedConditionException(conn, "write:");
         }
         // Include 4 bytes for frame size.
         if (writeBuffer.remaining() < len + 4) {
+            int size = 4 + len + TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE - writeBuffer.remaining();
             writeBuffer.clear();
             throw new FMessageSizeException(
                     String.format("Message exceeds %d bytes, was %d bytes",
-                            TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE,
-                            len + TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE - writeBuffer.remaining()));
+                            TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE, size));
         }
         writeBuffer.put(bytes, off, len);
     }
@@ -192,7 +239,7 @@ public class FNatsScopeTransport extends FScopeTransport {
     @Override
     public void flush() throws TTransportException {
         if (!isOpen()) {
-            throw new TTransportException(TTransportException.NOT_OPEN, "NATS transport not open");
+            throw TNatsServiceTransport.getClosedConditionException(conn, "flush:");
         }
         byte[] data = new byte[writeBuffer.position()];
         writeBuffer.flip();
@@ -204,12 +251,21 @@ public class FNatsScopeTransport extends FScopeTransport {
         if (data.length + 4 > TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE) {
             throw new FMessageSizeException(String.format(
                     "Message exceeds %d bytes, was %d bytes",
-                    TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE, data.length));
+                    TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE, 4 + data.length));
         }
         byte[] frame = new byte[data.length + 4];
         ProtocolUtils.writeInt(data.length, frame, 0);
         System.arraycopy(data, 0, frame, 4, data.length);
-        conn.publish(subject, frame);
+        try {
+            conn.publish(getFormattedSubject(), frame);
+        } catch (IOException e) {
+            throw new TTransportException("flush: unable to publish data: " + e.getMessage());
+        }
         writeBuffer.clear();
     }
+
+    private String getFormattedSubject() {
+        return TNatsServiceTransport.FRUGAL_PREFIX + this.subject;
+    }
+
 }
