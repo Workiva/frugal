@@ -39,3 +39,5 @@ class Dart(LanguageBase):
         with open(pubspec, 'w') as f:
             dump(data, f, default_flow_style=False)
 
+    def update_expected_tests(self, root):
+        pass

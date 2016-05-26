@@ -47,7 +47,7 @@ class blahSubscriber(object):
 
         op = 'DoStuff'
         prefix = ''
-        topic = '%sblah%s%s' % (prefix, self._DELIMITER, op)
+        topic = '{}blah{}{}'.format(prefix, self._DELIMITER, op)
 
         yield self._transport.subscribe(topic, self._recv_DoStuff(self._protocol_factory, op, DoStuff_handler))
 

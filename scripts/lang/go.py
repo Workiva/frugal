@@ -13,3 +13,5 @@ class Go(LanguageBase):
         """
         pass
 
+    def update_expected_tests(self, root):
+        pass

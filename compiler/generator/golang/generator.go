@@ -1239,7 +1239,7 @@ func generatePrefixStringTemplate(scope *parser.Scope) string {
 		return fmt.Sprintf(`"%s%s"`, scope.Prefix.String, globals.TopicDelimiter)
 	}
 	template := "fmt.Sprintf(\""
-	template += scope.Prefix.Template()
+	template += scope.Prefix.Template("%s")
 	template += globals.TopicDelimiter + "\", "
 	prefix := ""
 	for _, variable := range scope.Prefix.Variables {

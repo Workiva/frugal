@@ -20,6 +20,7 @@ def main(args):
     root = os.getcwd().rstrip('/')
     if args.version:
         update_frugal_version(args.version, root)
+        update_expected_tests(root)
 
 
 def update_frugal_version(version, root):
@@ -84,6 +85,11 @@ def update_examples(version, root):
     if call(['./generate_code.sh']) != 0:
         raise Exception('Failed to generate example code')
 
+
+def update_expected_tests(root):
+    for key, value in LANGUAGES.iteritems():
+        print "Updating expected tests for {}".format(key)
+        value.update_expected_tests(root)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

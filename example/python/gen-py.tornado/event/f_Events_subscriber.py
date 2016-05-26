@@ -55,8 +55,8 @@ class EventsSubscriber(object):
         """
 
         op = 'EventCreated'
-        prefix = 'foo.%s.' % (user)
-        topic = '%sEvents%s%s' % (prefix, self._DELIMITER, op)
+        prefix = 'foo.{}.'.format(user)
+        topic = '{}Events{}{}'.format(prefix, self._DELIMITER, op)
 
         yield self._transport.subscribe(topic, self._recv_EventCreated(self._protocol_factory, op, EventCreated_handler))
 

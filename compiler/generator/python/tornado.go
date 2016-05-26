@@ -336,7 +336,7 @@ func (t *TornadoGenerator) generateSubscribeMethod(scope *parser.Scope, op *pars
 
 	method += tabtab + fmt.Sprintf("op = '%s'\n", op.Name)
 	method += tabtab + fmt.Sprintf("prefix = %s\n", generatePrefixStringTemplate(scope))
-	method += tabtab + fmt.Sprintf("topic = '%%s%s%%s%%s' %% (prefix, self._DELIMITER, op)\n\n", scope.Name)
+	method += tabtab + fmt.Sprintf("topic = '{}%s{}{}'.format(prefix, self._DELIMITER, op)\n\n", scope.Name)
 
 	method += tabtab + fmt.Sprintf(
 		"yield self._transport.subscribe(topic, self._recv_%s(self._protocol_factory, op, %s_handler))\n\n",

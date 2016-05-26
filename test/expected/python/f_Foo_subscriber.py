@@ -53,8 +53,8 @@ class FooSubscriber(object):
         """
 
         op = 'Foo'
-        prefix = 'foo.bar.%s.qux.' % (baz)
-        topic = '%sFoo%s%s' % (prefix, self._DELIMITER, op)
+        prefix = 'foo.bar.{}.qux.'.format(baz)
+        topic = '{}Foo{}{}'.format(prefix, self._DELIMITER, op)
 
         yield self._transport.subscribe(topic, self._recv_Foo(self._protocol_factory, op, Foo_handler))
 
@@ -91,8 +91,8 @@ class FooSubscriber(object):
         """
 
         op = 'Bar'
-        prefix = 'foo.bar.%s.qux.' % (baz)
-        topic = '%sFoo%s%s' % (prefix, self._DELIMITER, op)
+        prefix = 'foo.bar.{}.qux.'.format(baz)
+        topic = '{}Foo{}{}'.format(prefix, self._DELIMITER, op)
 
         yield self._transport.subscribe(topic, self._recv_Bar(self._protocol_factory, op, Bar_handler))
 

@@ -223,7 +223,7 @@ func (g *Generator) generatePublishMethod(scope *parser.Scope, op *parser.Operat
 	method += tab + fmt.Sprintf("def _publish_%s(self, ctx, %sreq):\n", op.Name, args)
 	method += tabtab + fmt.Sprintf("op = '%s'\n", op.Name)
 	method += tabtab + fmt.Sprintf("prefix = %s\n", generatePrefixStringTemplate(scope))
-	method += tabtab + fmt.Sprintf("topic = '%%s%s%%s%%s' %% (prefix, self._DELIMITER, op)\n", scope.Name)
+	method += tabtab + fmt.Sprintf("topic = '{}%s{}{}'.format(prefix, self._DELIMITER, op)\n", scope.Name)
 	method += tabtab + "oprot = self._protocol\n"
 	method += tabtab + "self._transport.lock_topic(topic)\n"
 	method += tabtab + "try:\n"
@@ -244,7 +244,7 @@ func generatePrefixStringTemplate(scope *parser.Scope) string {
 		}
 		return fmt.Sprintf("'%s%s'", scope.Prefix.String, globals.TopicDelimiter)
 	}
-	template := fmt.Sprintf("'%s%s' %% (", scope.Prefix.Template(), globals.TopicDelimiter)
+	template := fmt.Sprintf("'%s%s'.format(", scope.Prefix.Template("{}"), globals.TopicDelimiter)
 	prefix := ""
 	for _, variable := range scope.Prefix.Variables {
 		template += prefix + variable

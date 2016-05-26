@@ -61,7 +61,7 @@ class blahPublisher(object):
     def _publish_DoStuff(self, ctx, req):
         op = 'DoStuff'
         prefix = ''
-        topic = '%sblah%s%s' % (prefix, self._DELIMITER, op)
+        topic = '{}blah{}{}'.format(prefix, self._DELIMITER, op)
         oprot = self._protocol
         self._transport.lock_topic(topic)
         try:

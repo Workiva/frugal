@@ -68,8 +68,8 @@ class EventsPublisher(object):
 
     def _publish_EventCreated(self, ctx, user, req):
         op = 'EventCreated'
-        prefix = 'foo.%s.' % (user)
-        topic = '%sEvents%s%s' % (prefix, self._DELIMITER, op)
+        prefix = 'foo.{}.'.format(user)
+        topic = '{}Events{}{}'.format(prefix, self._DELIMITER, op)
         oprot = self._protocol
         self._transport.lock_topic(topic)
         try:

@@ -67,8 +67,8 @@ class FooPublisher(object):
 
     def _publish_Foo(self, ctx, baz, req):
         op = 'Foo'
-        prefix = 'foo.bar.%s.qux.' % (baz)
-        topic = '%sFoo%s%s' % (prefix, self._DELIMITER, op)
+        prefix = 'foo.bar.{}.qux.'.format(baz)
+        topic = '{}Foo{}{}'.format(prefix, self._DELIMITER, op)
         oprot = self._protocol
         self._transport.lock_topic(topic)
         try:
@@ -92,8 +92,8 @@ class FooPublisher(object):
 
     def _publish_Bar(self, ctx, baz, req):
         op = 'Bar'
-        prefix = 'foo.bar.%s.qux.' % (baz)
-        topic = '%sFoo%s%s' % (prefix, self._DELIMITER, op)
+        prefix = 'foo.bar.{}.qux.'.format(baz)
+        topic = '{}Foo{}{}'.format(prefix, self._DELIMITER, op)
         oprot = self._protocol
         self._transport.lock_topic(topic)
         try:
