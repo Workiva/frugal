@@ -19,6 +19,12 @@ _VERSION_MATCH = '.*?\..*?\..*?'
 def main(args):
     root = os.getcwd().rstrip('/')
     if args.version:
+        # Hacky way to isolate languages to update.
+        if args.languages:
+            langs = args.languages.split(',')
+            for key in LANGUAGES.keys():
+                if key not in langs:
+                    LANGUAGES.pop(key)
         update_frugal_version(args.version, root)
         update_expected_tests(root)
 
@@ -95,6 +101,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Update version'
     )
-    parser.add_argument('--version', dest='version', type=str)
+    parser.add_argument('--version',
+                        dest='version',
+                        type=str,
+                        help="Version to update frugal to.")
+    parser.add_argument('--lang',
+                        dest='languages',
+                        type=str,
+                        help="comma delimted list of languages.")
     args = parser.parse_args()
     main(args)
