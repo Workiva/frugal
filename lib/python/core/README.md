@@ -1,13 +1,15 @@
-# Frugal Python
+# Frugal
 
-### Using
+Python 2.7 implemenation of Frugal.
+
+## Using
 
 ```bash
 pip install frugal
 ```
 or add frugal to requirements.txt
 
-### Contributing
+## Contributing
 1. Make a virutalenv `mkvirtualenv frugal -a /path/to/frugal/lib/python`
 2. Install dependecies `make deps`
 3. Write code, tests & create a pull requests
