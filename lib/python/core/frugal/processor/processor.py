@@ -2,7 +2,6 @@ import logging
 from threading import Lock
 
 from thrift.Thrift import TApplicationException, TMessageType, TType
-from tornado import gen
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,6 @@ class FBaseProcessor(FProcessor):
         """Return the write lock."""
         return self._write_lock
 
-    @gen.coroutine
     def process(self, iprot, oprot):
         """Process an input protocol and output protocol
 
@@ -60,7 +58,7 @@ class FBaseProcessor(FProcessor):
         # If the function was in our dict, call process on it.
         if processor_function:
             try:
-                yield processor_function.process(context, iprot, oprot)
+                processor_function.process(context, iprot, oprot)
             except Exception, e:
                 logging.warn('frugal: error processing request with ' +
                              'correlation id %s: %s' %

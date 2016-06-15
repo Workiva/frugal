@@ -11,17 +11,17 @@ class FSimpleServer(FServer):
     """Simple single-threaded server that just pumps around one transport."""
 
     def __init__(self,
-                 processor_factory,
-                 transport,
-                 transport_factory,
-                 protocol_factory):
+                 f_processor_factory,
+                 thrift_server_transport,
+                 f_transport_factory,
+                 f_protocol_factory):
         """Initalize an FSimpleServer
 
         Args:
             processor_factory: FProcessorFactory
-            transport: FServerTranpsort
-            transport_factory: FTransportFactory
-            protocol_factory: FProtocolFactory
+            thrift_server_transport: TServerTranpsort
+            f_transport_factory: FTransportFactory
+            f_protocol_factory: FProtocolFactory
         """
 
         self._processor_factory = processor_factory
@@ -29,6 +29,12 @@ class FSimpleServer(FServer):
         self._transport_factory = transport_factory
         self._protocol_factory = protocol_factory
         self._stopped = False
+
+    def _accept_loop(self):
+        while not self._stopped:
+            try:
+                client = self._transport.accept()
+
 
     def serve(self):
         while not self._stopped:
