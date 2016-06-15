@@ -4,6 +4,8 @@ run:
   when-branch-name-is:
     - .+
 
+contact: Jacob Moss
+
 image: "drydock.workiva.org/workiva/skynet-images:48052"
 
 also-run:
@@ -46,6 +48,10 @@ test-reports:
 
 name: cross
 
+contact: Jacob Moss
+
+description: Run cross language tests
+
 requires:
   Workiva/frugal:
     - local_cache
@@ -76,6 +82,10 @@ artifacts:
 ---
 
 name: cross-gen_with_frugal
+
+contact: Jacob Moss
+
+description: Run cross language tests with go and dart code generated entirely by frugal
 
 requires:
   Workiva/frugal:
