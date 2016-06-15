@@ -1,6 +1,6 @@
-from .transport import FTransport
-from .scope_transport import FScopeTransport
-from .transport_factory import FTransportFactory, FScopeTransportFactory
+from frugal.transport.transport import FTransport
+from frugal.transport.scope_transport import FScopeTransport
+from frugal.transport.transport_factory import FTransportFactory, FScopeTransportFactory
 
 __all__ = ['FTransport',
            'FTransportFactory',

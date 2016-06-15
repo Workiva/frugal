@@ -55,7 +55,6 @@ class _Headers(object):
 
     @staticmethod
     def _read(buff1):
-        print "buffer {}".format(buff1.getvalue())
         buff = buff1.read(1)
         version = unpack_from(_UCHAR, buff[:1])[0]
 

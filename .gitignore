@@ -31,7 +31,8 @@ skynet.Dockerfile
 .build/
 .ropeproject/
 unit_tests.xml
-lib/python/frugal.egg-info/
+frugal.egg-info/
+frugal_tornado.egg-info/
 lib/python/frugalc
 lib/python/dist
 
