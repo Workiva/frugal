@@ -61,8 +61,8 @@ class FBaseProcessor(FProcessor):
                 processor_function.process(context, iprot, oprot)
             except Exception, e:
                 logging.warn('frugal: error processing request with ' +
-                             'correlation id %s: %s' %
-                             (context.get_correlation_id(), e))
+                             'correlation id {0}:{1}'.format(
+                             context.get_correlation_id(), e))
                 raise
             return
 

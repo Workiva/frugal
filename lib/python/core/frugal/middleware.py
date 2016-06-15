@@ -17,11 +17,11 @@ Middleware example:
 def logging_middleware(next):
 
     def invocation_handler(method, args):
-        service = '%s.%s' % (method.im_self.__module__,
-                             method.im_class.__name__)
-        print '==== CALLING %s.%s ====' % (service, method.im_func.func_name)
+        service = '{0}.{1}'.format(method.im_self.__module__,
+                                   method.im_class.__name__)
+        print '==== CALLING {0}.{1} ===='.format(service, method.im_func.func_name)
         ret = next(method, args)
-        print '==== CALLED  %s.%s ====' % (service, method.im_func.func_name)
+        print '==== CALLED  {0}.{1} ===='.format(service, method.im_func.func_name)
         return ret
 
     return invocation_handler
