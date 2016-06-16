@@ -1,2 +1,2 @@
-thrift==0.9.3
+frugal==1.6.0
 nats-client==0.2.4

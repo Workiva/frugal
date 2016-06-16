@@ -52,11 +52,21 @@ pub run dart_dev analyze
 # Python
 virtualenv -p /usr/bin/python /tmp/frugal
 source /tmp/frugal/bin/activate
-cd $ROOT/lib/python
+cd $ROOT/lib/python/core
 make deps
 make xunit
 make install
 mv dist/frugal-*.tar.gz $ROOT
+
+cd $ROOT
+
+virtualenv -p /usr/bin/python /tmp/frugal-tornado
+source /tmp/frugal-tornado/bin/activate
+cd $ROOT/lib/python/tornado
+make deps
+make xunit
+make install
+mv dist/frugal-tornado*.tar.gz $ROOT
 
 # Run the generator tests
 cd $ROOT

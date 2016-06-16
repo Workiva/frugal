@@ -8,10 +8,10 @@ from tornado import gen, ioloop
 
 from nats.io.client import Client as NATS
 
-from frugal.processor.processor_factory import FProcessorFactory
-from frugal.protocol.protocol_factory import FProtocolFactory
-from frugal.server import FNatsTornadoServer
-from frugal.transport.tornado import FMuxTornadoTransportFactory
+from frugal.processor import FProcessorFactory
+from frugal.protocol import FProtocolFactory
+from frugal_tornado.server import FNatsTornadoServer
+from frugal_tornado.transport import FMuxTornadoTransportFactory
 
 from event.f_Foo import Iface, Processor as FFooProcessor
 

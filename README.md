@@ -8,7 +8,7 @@ implements the same functionality as Thrift with some additional
 features. For a more detailed explanation, see the
 [documentation](documentation).
 
-Currently supported languages are Go, Java, and Dart.
+Currently supported languages are Go, Java, Dart, and Python 2.7.
 
 ## Installation
 

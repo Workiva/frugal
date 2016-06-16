@@ -4,14 +4,13 @@ sys.path.append('gen-py.tornado')
 
 from thrift.protocol import TBinaryProtocol
 
-from tornado import ioloop
-from tornado import gen
+from tornado import gen, ioloop
 
 from nats.io.client import Client as NATS
 
 from frugal.protocol.protocol_factory import FProtocolFactory
 from frugal.provider import FScopeProvider
-from frugal.transport.tornado import FNatsScopeTransportFactory
+from frugal_tornado.transport import FNatsScopeTransportFactory
 
 from event.f_Events_subscriber import EventsSubscriber
 

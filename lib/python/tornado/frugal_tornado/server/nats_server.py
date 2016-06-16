@@ -8,8 +8,9 @@ from tornado import gen, ioloop
 
 from frugal.server import FServer
 from frugal.transport import FTransport
-from frugal.transport.tornado import TNatsServiceTransport
 from frugal.registry import FServerRegistry
+
+from frugal_tornado.transport import TNatsServiceTransport
 
 logger = logging.getLogger(__name__)
 

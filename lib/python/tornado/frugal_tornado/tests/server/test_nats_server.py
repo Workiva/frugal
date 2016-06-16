@@ -4,8 +4,8 @@ import mock
 from tornado import concurrent, ioloop
 from tornado.testing import gen_test, AsyncTestCase
 
-from frugal.server import FNatsTornadoServer
-from frugal.server.nats_server import _Client
+from frugal_tornado.server import FNatsTornadoServer
+from frugal_tornado.server.nats_server import _Client
 
 _NATS_PROTOCOL_V0 = 0
 
@@ -13,7 +13,7 @@ _NATS_PROTOCOL_V0 = 0
 class TestFNatsTornadoServer(AsyncTestCase):
 
     def setUp(self):
-        patcher = mock.patch('frugal.server.nats_server.new_inbox')
+        patcher = mock.patch('frugal_tornado.server.nats_server.new_inbox')
         self.mock_new_inbox = patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -73,7 +73,7 @@ class TestFNatsTornadoServer(AsyncTestCase):
 
         self.assertEquals(1234, self.server.get_high_watermark())
 
-    @mock.patch('frugal.server.nats_server.TNatsServiceTransport')
+    @mock.patch('frugal_tornado.server.nats_server.TNatsServiceTransport')
     @gen_test
     def test_accept(self, mock_server_constructor):
         mock_server_transport = mock.Mock()
@@ -131,7 +131,7 @@ class TestFNatsTornadoServer(AsyncTestCase):
             ""
         )
 
-    @mock.patch('frugal.server.nats_server.TNatsServiceTransport')
+    @mock.patch('frugal_tornado.server.nats_server.TNatsServiceTransport')
     @gen_test
     def test_on_message_callback(self, mock_server_constructor):
         mock_server_transport = mock.Mock()
@@ -166,7 +166,7 @@ class TestFNatsTornadoServer(AsyncTestCase):
             expected_connect
         )
 
-    @mock.patch('frugal.server.nats_server.new_inbox')
+    @mock.patch('frugal_tornado.server.nats_server.new_inbox')
     def test_new_frugal_inbox(self, mock_new_inbox):
         mock_new_inbox.return_value = "new_inbox"
         prefix = "frugal._INBOX.d138b9369fa35386624d6ad97"
