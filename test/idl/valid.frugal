@@ -5,7 +5,7 @@ namespace java foo
 include "validStructs.frugal"
 include "ValidTypes.frugal"
 
-/**@
+/**
  * This is a docstring.
  */
 struct Thing {}
@@ -23,9 +23,9 @@ exception InvalidOperation {
 
 // This is a service. It has the same name as a scope. And that's ok.
 service Blah {
-    /**@ Use this to ping the server. */
+    /** Use this to ping the server. */
     void ping(),
-    /**@ Use this to tell the server how you feel. */
+    /** Use this to tell the server how you feel. */
     i64 bleh(1:Thing one, 2:Stuff Two, 3:list<Int> custom_ints) throws (1: InvalidOperation oops),
 
     validStructs.Thing getThing(),
@@ -33,10 +33,10 @@ service Blah {
 }
 
 // This is a scope
-/**@ And this is a scope docstring. */
+/** And this is a scope docstring. */
 scope Foo prefix foo.bar.{baz}.qux {
 
-    /**@ This is an operation docstring. */
+    /** This is an operation docstring. */
     Foo: Thing // This is an operation.
     Bar: Stuff
 }
