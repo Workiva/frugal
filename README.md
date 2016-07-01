@@ -205,7 +205,7 @@ struct Foo {}
 
 /** This comment is included too. */
 service FooService {
-    // This comment isn't included in the generated code
+    // This comment isn't included in the generated code.
     Foo getFoo()
 }
 ```
