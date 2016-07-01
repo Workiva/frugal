@@ -8,6 +8,7 @@ typedef i64 id
 typedef i32 int
 typedef map<int, string> request
 
+// This comment is not added to the generated code
 const i32 redef_const = base.const_i32_from_base;
 const id DEFAULT_ID = -1
 const id other_default = DEFAULT_ID
@@ -49,8 +50,7 @@ union TestingUnions {
 }
 
 /**
- * This docstring gets added to the generated code because it has
- * the @ sign.
+ * This docstring gets added to the generated code.
  */
 struct Event {
     /** ID is a unique identifier for an event. */
@@ -127,9 +127,8 @@ service Foo extends base.BaseFoo {
 }
 
 /**
- * This docstring gets added to the generated code because it has
- * the @ sign. Prefix specifies topic prefix tokens, which can be static or
- * variable.
+ * This docstring gets added to the generated code. Prefix specifies topic
+ * prefix tokens, which can be static or variable.
  */
 scope Events prefix foo.{user} {
     /** This is a docstring. */
