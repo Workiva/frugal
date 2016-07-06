@@ -311,8 +311,7 @@ func (p *TestBase) String() string {
 	return fmt.Sprintf("TestBase(%+v)", *p)
 }
 
-// This docstring gets added to the generated code because it has
-// the @ sign.
+// This docstring gets added to the generated code.
 type Event struct {
 	// ID is a unique identifier for an event.
 	ID ID `thrift:"ID,1" db:"ID" json:"ID"`

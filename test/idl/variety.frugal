@@ -8,10 +8,7 @@ typedef i64 id
 typedef i32 int
 typedef map<int, string> request
 
-/**
- * This docstring doesn't get added to the generated code because
- * it doesn't have the @ sign.
- */
+// This comment is not added to the generated code
 const i32 redef_const = base.const_i32_from_base;
 const id DEFAULT_ID = -1
 const id other_default = DEFAULT_ID
@@ -52,15 +49,14 @@ union TestingUnions {
 	5: request Requests
 }
 
-/**@
- * This docstring gets added to the generated code because it has
- * the @ sign.
+/**
+ * This docstring gets added to the generated code.
  */
 struct Event {
-    /**@ ID is a unique identifier for an event. */
+    /** ID is a unique identifier for an event. */
     1: id ID = DEFAULT_ID,
 
-    /**@ Message contains the event payload. */
+    /** Message contains the event payload. */
     2: string Message
 }
 
@@ -102,25 +98,25 @@ struct EventWrapper {
 }
 
 exception AwesomeException {
-    /**@ ID is a unique identifier for an awesome exception. */
+    /** ID is a unique identifier for an awesome exception. */
     1: id ID,
 
-    /**@ Reason contains the error message. */
+    /** Reason contains the error message. */
     2: string Reason
 }
 
-/**@
+/**
  * This is a thrift service. Frugal will generate bindings that include
  * a frugal Context for each service call.
  */
 service Foo extends base.BaseFoo {
-    /**@ Ping the server. */
+    /** Ping the server. */
     void ping(),
 
-    /**@ Blah the server. */
+    /** Blah the server. */
     i64 blah(1:i32 num, 2:string Str, 3:Event event) throws (1:AwesomeException awe, 2:base.api_exception api),
 
-    /**@ oneway methods don't receive a response from the server. */
+    /** oneway methods don't receive a response from the server. */
     oneway void oneWay(1:id id, 2:request req),
 
     binary bin_method(1:binary bin, 2:string Str) throws (1:base.api_exception api),
@@ -130,12 +126,11 @@ service Foo extends base.BaseFoo {
     list<id> underlying_types_test(1:list<id> list_type, 2: set<id> set_type),
 }
 
-/**@
- * This docstring gets added to the generated code because it has
- * the @ sign. Prefix specifies topic prefix tokens, which can be static or
- * variable.
+/**
+ * This docstring gets added to the generated code. Prefix specifies topic
+ * prefix tokens, which can be static or variable.
  */
 scope Events prefix foo.{user} {
-    /**@ This is a docstring. */
+    /** This is a docstring. */
     EventCreated: Event // Inline comments are also supported
 }

@@ -22,7 +22,7 @@ struct Schema {
 const list<map<i64,string>> COMPLEX_LIST = [{1: "foo"}]
 const list<list<i64>> LIST_OF_LISTS = [[1, 2, 3], [4, 5, 6]]
 
-/**@ this is a docstring */
+/** this is a docstring */
 const map<string,list<i32>> MAP_OF_LISTS = {
     "foo": [1, 2, 3],
     "bar": [5, 6, 7],

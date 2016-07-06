@@ -8,8 +8,7 @@ import 'package:thrift/thrift.dart';
 import 'package:variety/variety.dart' as t_variety;
 import 'package:actual_base/actual_base.dart' as t_actual_base;
 
-/// This docstring gets added to the generated code because it has
-/// the @ sign.
+/// This docstring gets added to the generated code.
 class Event implements TBase {
   static final TStruct _STRUCT_DESC = new TStruct("Event");
   static final TField _ID_FIELD_DESC = new TField("ID", TType.I64, 1);

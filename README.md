@@ -194,20 +194,18 @@ subscriber.SubscribeEventCreated(user, func(ctx *frugal.FContext, e *event.Event
 
 ### Generated Comments
 
-In Thrift, comments of the form `/** ... */` are included in generated code. In
-Frugal, to include comments in generated code, they should be of the form `/**@
-... */`.
+In Frugal, comments of the form `/** ... */` are included in generated code.
+Comments of the form `// ...` are not included in generated code.
 
 ```thrift
-/**@
- * This comment is included in the generated code because
- * it has the @ sign.
+/**
+ * This comment is included in the generated code.
  */
 struct Foo {}
 
-/**@ This comment is included too. */
+/** This comment is included too. */
 service FooService {
-    /** This comment isn't included because it doesn't have the @ sign. */
+    // This comment isn't included in the generated code.
     Foo getFoo()
 }
 ```
