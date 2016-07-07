@@ -108,14 +108,15 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 
 		// split based on '.', if present, it should be from an include
 		pieces := strings.Split(name, ".")
-		if len(pieces) == 1 {
+		switch len(pieces) {
+		case 1:
 			// From this file
 			for _, constant := range g.Frugal.Thrift.Constants {
 				if name == constant.Name {
 					return g.generateConstantValue(t, constant.Value, ind)
 				}
 			}
-		} else if len(pieces) == 2 {
+		case 2:
 			// Either from an include, or part of an enum
 			for _, enum := range g.Frugal.Thrift.Enums {
 				if pieces[0] == enum.Name {
@@ -138,7 +139,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 					return g.generateConstantValue(t, constant.Value, ind)
 				}
 			}
-		} else if len(pieces) == 3 {
+		case 3:
 			// enum from an include
 			include, ok := g.Frugal.ParsedIncludes[pieces[0]]
 			if !ok {
@@ -154,9 +155,9 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 					panic(fmt.Sprintf("referenced value '%s' of enum '%s' doesn't exist", pieces[1], pieces[0]))
 				}
 			}
+		default:
+			panic("reference constant doesn't exist: " + name)
 		}
-
-		panic("referenced constant doesn't exist: " + name)
 	}
 
 	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {
@@ -233,7 +234,7 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 	contents := ""
 	contents += fmt.Sprintf("class %s:\n", enum.Name)
 	if enum.Comment != nil {
-		contents += g.GenerateBlockComment(enum.Comment, tab)
+		contents += g.generateDocString(enum.Comment, tab)
 	}
 	for _, value := range enum.Values {
 		contents += fmt.Sprintf(tab+"%s = %d\n", value.Name, value.Value)
@@ -665,15 +666,6 @@ func (g *Generator) GenerateDocStringComment(file *os.File) error {
 
 	_, err := file.WriteString(comment)
 	return err
-}
-
-func (g *Generator) GenerateBlockComment(comment []string, indent string) string {
-	contents := indent + "\"\"\"\n"
-	for _, line := range comment {
-		contents += indent + line + "\n"
-	}
-	contents += indent + "\"\"\"\n"
-	return contents
 }
 
 // GenerateServicePackage is a no-op.
