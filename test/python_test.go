@@ -46,4 +46,6 @@ func TestValidPythonFrugalCompiler(t *testing.T) {
 
 	varietyConstantsPath := filepath.Join(outputDir, "variety", "f_constants.py")
 	compareFiles(t, "expected/python/variety/f_constants.py", varietyConstantsPath)
+	varietyFtypesPath := filepath.Join(outputDir, "variety", "f_types.py")
+	compareFiles(t, "expected/python/variety/f_types.py", varietyFtypesPath)
 }

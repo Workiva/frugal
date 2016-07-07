@@ -24,11 +24,12 @@ const (
 type Generator struct {
 	*generator.BaseGenerator
 	outputDir string
+	typesFile *os.File
 }
 
 // NewGenerator creates a new Python LanguageGenerator.
 func NewGenerator(options map[string]string) generator.LanguageGenerator {
-	gen := &Generator{&generator.BaseGenerator{Options: options}, ""}
+	gen := &Generator{&generator.BaseGenerator{Options: options}, "", nil}
 	if _, ok := options["tornado"]; ok {
 		return &TornadoGenerator{gen}
 	}
@@ -40,12 +41,31 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 // SetupGenerator performs any setup logic before generation.
 func (g *Generator) SetupGenerator(outputDir string) error {
 	g.outputDir = outputDir
+
+	typesFile, err := g.GenerateFile("types", outputDir, generator.ObjectFile)
+	if err != nil {
+		return err
+	}
+	if err = g.GenerateDocStringComment(typesFile); err != nil {
+		return err
+	}
+	if _, err = typesFile.WriteString("\n\n"); err != nil {
+		return err
+	}
+	if err = g.GenerateTypesImports(typesFile); err != nil {
+		return err
+	}
+	if _, err = typesFile.WriteString("\n\n"); err != nil {
+		return err
+	}
+	g.typesFile = typesFile
+
 	return nil
 }
 
 // TeardownGenerator is run after generation.
 func (g *Generator) TeardownGenerator() error {
-	return nil
+	return g.typesFile.Close()
 }
 
 // GenerateConstantsContents generates constants.
@@ -153,7 +173,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 				val := g.generateConstantValue(underlyingType.ValueType, v, ind+tab)
 				contents += fmt.Sprintf(ind+tab+"%s,\n", val)
 			}
-			contents += ind+"]"
+			contents += ind + "]"
 			if underlyingType.Name == "set" {
 				contents += ")"
 			}
@@ -165,7 +185,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 				val := g.generateConstantValue(underlyingType.ValueType, pair.Value, ind+tab)
 				contents += fmt.Sprintf(ind+tab+"%s: %s,\n", key, val)
 			}
-			contents += ind+"}"
+			contents += ind + "}"
 			return contents
 		}
 	} else if g.Frugal.IsEnum(underlyingType) {
@@ -191,7 +211,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 				}
 			}
 		}
-		contents += ind+"})"
+		contents += ind + "})"
 		return contents
 	}
 
@@ -200,12 +220,36 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 
 // GenerateTypeDef generates the given typedef.
 func (g *Generator) GenerateTypeDef(*parser.TypeDef) error {
+	// No typedefs in python
 	return nil
 }
 
 // GenerateEnum generates the given enum.
-func (g *Generator) GenerateEnum(*parser.Enum) error {
-	return nil
+func (g *Generator) GenerateEnum(enum *parser.Enum) error {
+	contents := ""
+	contents += fmt.Sprintf("class %s:\n", enum.Name)
+	if enum.Comment != nil {
+		contents += g.generateDocString(enum.Comment, tab)
+	}
+	for _, value := range enum.Values {
+		contents += fmt.Sprintf(tab+"%s = %d\n", value.Name, value.Value)
+	}
+	contents += "\n"
+
+	contents += tab + "_VALUES_TO_NAMES = {\n"
+	for _, value := range enum.Values {
+		contents += fmt.Sprintf(tabtab+"%d: \"%s\",\n", value.Value, value.Name)
+	}
+	contents += tab + "}\n\n"
+
+	contents += tab + "_NAMES_TO_VALUES = {\n"
+	for _, value := range enum.Values {
+		contents += fmt.Sprintf(tabtab+"\"%s\": %d,\n", value.Name, value.Value)
+	}
+	contents += tab + "}\n\n"
+
+	_, err := g.typesFile.WriteString(contents)
+	return err
 }
 
 // GenerateStruct generates the given struct.
@@ -295,6 +339,28 @@ func (g *Generator) GenerateServicePackage(file *os.File, s *parser.Service) err
 // GenerateScopePackage is a no-op.
 func (g *Generator) GenerateScopePackage(file *os.File, s *parser.Scope) error {
 	return nil
+}
+
+func (g *Generator) GenerateTypesImports(file *os.File) error {
+	contents := ""
+	contents += "from thrift.Thrift import TType, TMessageType, TException, TApplicationException\n"
+	for _, include := range g.Frugal.Thrift.Includes {
+		includeName, ok := g.Frugal.NamespaceForInclude(filepath.Base(include.Name), lang)
+		if !ok {
+			includeName = include.Name
+		}
+		contents += fmt.Sprintf("import %s.f_types\n", includeName)
+	}
+	contents += "\n\n"
+	contents += "from thrift.transport import TTransport\n"
+	contents += "from thrift.protocol import TBinaryProtocol, TProtocol\n"
+	contents += "try:\n"
+	contents += tab + "from thrift.protocol import fastbinary\n"
+	contents += "except:\n"
+	contents += tab + "fastbinary = None\n"
+
+	_, err := file.WriteString(contents)
+	return err
 }
 
 // GenerateServiceImports generates necessary imports for the given service.
