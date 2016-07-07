@@ -359,7 +359,7 @@ func (g *Generator) generateInit(s *parser.Struct) string {
 	for _, field := range s.Fields {
 		// TODO 2.0 this is the behaviour thrift has, but not using
 		// the underlying type gives different behaviour for aliased
-		// types, consider chaning
+		// types, consider changing
 		if !parser.IsThriftPrimitive(field.Type) && !g.Frugal.IsEnum(field.Type) && field.Default != nil {
 			contents += fmt.Sprintf(tabtab+"if %s is self.thrift_spec[%d][4]:\n", field.Name, field.ID)
 			val := g.generateConstantValue(field.Type, field.Default, tabtabtab)
