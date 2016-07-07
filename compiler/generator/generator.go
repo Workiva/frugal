@@ -56,6 +56,7 @@ var Languages = LanguageOptions{
 	},
 	"py": Options{
 		"tornado": "Generate code for use with Tornado",
+		"gen_with_frugal": "Whether to generate thrift files with frugal (experimental)",
 	},
 }
 

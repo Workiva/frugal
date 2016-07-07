@@ -31,3 +31,19 @@ func TestValidPythonTornado(t *testing.T) {
 	initPath := filepath.Join(outputDir, "valid", "__init__.py")
 	compareFiles(t, "expected/python/__init__.py", initPath)
 }
+
+func TestValidPythonFrugalCompiler(t *testing.T) {
+	options := compiler.Options{
+		File:    frugalGenFile,
+		Gen:     "py:gen_with_frugal",
+		Out:     outputDir,
+		Delim:   delim,
+		Recurse: true,
+	}
+	if err := compiler.Compile(options); err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
+	varietyConstantsPath := filepath.Join(outputDir, "variety", "f_constants.py")
+	compareFiles(t, "expected/python/variety/f_constants.py", varietyConstantsPath)
+}

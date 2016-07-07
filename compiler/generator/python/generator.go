@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Workiva/frugal/compiler/generator"
 	"github.com/Workiva/frugal/compiler/globals"
@@ -22,11 +23,12 @@ const (
 // Generator implements the LanguageGenerator interface for Python.
 type Generator struct {
 	*generator.BaseGenerator
+	outputDir string
 }
 
 // NewGenerator creates a new Python LanguageGenerator.
 func NewGenerator(options map[string]string) generator.LanguageGenerator {
-	gen := &Generator{&generator.BaseGenerator{Options: options}}
+	gen := &Generator{&generator.BaseGenerator{Options: options}, ""}
 	if _, ok := options["tornado"]; ok {
 		return &TornadoGenerator{gen}
 	}
@@ -37,6 +39,7 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 
 // SetupGenerator performs any setup logic before generation.
 func (g *Generator) SetupGenerator(outputDir string) error {
+	g.outputDir = outputDir
 	return nil
 }
 
@@ -46,8 +49,153 @@ func (g *Generator) TeardownGenerator() error {
 }
 
 // GenerateConstantsContents generates constants.
-func (g *Generator) GenerateConstantsContents([]*parser.Constant) error {
-	return nil
+func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) error {
+	contents := "\n\n"
+	contents += "from thrift.Thrift import TType, TMessageType, TException, TApplicationException\n"
+	contents += "from f_types import *\n\n"
+
+	for _, constant := range constants {
+		value := g.generateConstantValue(constant.Type, constant.Value, "")
+		contents += fmt.Sprintf("%s = %s\n", constant.Name, value)
+	}
+
+	file, err := g.GenerateFile("constants", g.outputDir, generator.ObjectFile)
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+
+	if err = g.GenerateDocStringComment(file); err != nil {
+		return err
+	}
+	_, err = file.WriteString(contents)
+	return err
+}
+
+func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind string) string {
+	underlyingType := g.Frugal.UnderlyingType(t)
+	// If the value being referenced is of type Identifier, it's referencing
+	// another constant. Need to recurse to get that value.
+	identifier, ok := value.(parser.Identifier)
+	// TODO consolidate this between generators
+	if ok {
+		name := string(identifier)
+
+		// split based on '.', if present, it should be from an include
+		pieces := strings.Split(name, ".")
+		switch len(pieces) {
+		case 1:
+			// From this file
+			for _, constant := range g.Frugal.Thrift.Constants {
+				if name == constant.Name {
+					return g.generateConstantValue(t, constant.Value, ind)
+				}
+			}
+		case 2:
+			// Either from an include, or part of an enum
+			for _, enum := range g.Frugal.Thrift.Enums {
+				if pieces[0] == enum.Name {
+					for _, value := range enum.Values {
+						if pieces[1] == value.Name {
+							return fmt.Sprintf("%v", value.Value)
+						}
+					}
+					panic(fmt.Sprintf("referenced value '%s' of enum '%s' doesn't exist", pieces[1], pieces[0]))
+				}
+			}
+
+			// If not part of an enum , it's from an include
+			include, ok := g.Frugal.ParsedIncludes[pieces[0]]
+			if !ok {
+				panic(fmt.Sprintf("referenced include '%s' in constant '%s' not present", pieces[0], name))
+			}
+			for _, constant := range include.Thrift.Constants {
+				if pieces[1] == constant.Name {
+					return g.generateConstantValue(t, constant.Value, ind)
+				}
+			}
+		case 3:
+			// enum from an include
+			include, ok := g.Frugal.ParsedIncludes[pieces[0]]
+			if !ok {
+				panic(fmt.Sprintf("referenced include '%s' in constant '%s' not present", pieces[0], name))
+			}
+			for _, enum := range include.Thrift.Enums {
+				if pieces[1] == enum.Name {
+					for _, value := range enum.Values {
+						if pieces[2] == value.Name {
+							return fmt.Sprintf("%v", value.Value)
+						}
+					}
+					panic(fmt.Sprintf("referenced value '%s' of enum '%s' doesn't exist", pieces[1], pieces[0]))
+				}
+			}
+		default:
+			panic("reference constant doesn't exist: " + name)
+		}
+	}
+
+	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {
+		switch underlyingType.Name {
+		case "bool":
+			return strings.Title(fmt.Sprintf("%v", value))
+		case "i8", "byte", "i16", "i32", "i64", "double":
+			return fmt.Sprintf("%v", value)
+		case "string", "binary":
+			return fmt.Sprintf("\"%s\"", value)
+		case "list", "set":
+			contents := ""
+			if underlyingType.Name == "set" {
+				contents += "set("
+			}
+			contents += "[\n"
+			for _, v := range value.([]interface{}) {
+				val := g.generateConstantValue(underlyingType.ValueType, v, ind+tab)
+				contents += fmt.Sprintf(ind+tab+"%s,\n", val)
+			}
+			contents += ind+"]"
+			if underlyingType.Name == "set" {
+				contents += ")"
+			}
+			return contents
+		case "map":
+			contents := "{\n"
+			for _, pair := range value.([]parser.KeyValue) {
+				key := g.generateConstantValue(underlyingType.KeyType, pair.Key, ind+tab)
+				val := g.generateConstantValue(underlyingType.ValueType, pair.Value, ind+tab)
+				contents += fmt.Sprintf(ind+tab+"%s: %s,\n", key, val)
+			}
+			contents += ind+"}"
+			return contents
+		}
+	} else if g.Frugal.IsEnum(underlyingType) {
+		return fmt.Sprintf("%d", value)
+	} else if g.Frugal.IsStruct(underlyingType) {
+		var s *parser.Struct
+		for _, potential := range g.Frugal.Thrift.Structs {
+			if underlyingType.Name == potential.Name {
+				s = potential
+				break
+			}
+		}
+
+		contents := ""
+
+		contents += fmt.Sprintf("%s(**{\n", underlyingType.Name)
+		for _, pair := range value.([]parser.KeyValue) {
+			name := pair.Key.(string)
+			for _, field := range s.Fields {
+				if name == field.Name {
+					val := g.generateConstantValue(field.Type, pair.Value, ind+tab)
+					contents += fmt.Sprintf(tab+ind+"\"%s\": %s,\n", name, val)
+				}
+			}
+		}
+		contents += ind+"})"
+		return contents
+	}
+
+	panic("no entry for type " + underlyingType.Name)
 }
 
 // GenerateTypeDef generates the given typedef.
@@ -117,6 +265,8 @@ func (g *Generator) GenerateFile(name, outputDir string, fileType generator.File
 	case generator.SubscribeFile:
 		return g.CreateFile(fmt.Sprintf("f_%s_subscriber", name), outputDir, lang, false)
 	case generator.CombinedServiceFile:
+		return g.CreateFile(fmt.Sprintf("f_%s", name), outputDir, lang, false)
+	case generator.ObjectFile:
 		return g.CreateFile(fmt.Sprintf("f_%s", name), outputDir, lang, false)
 	default:
 		return nil, fmt.Errorf("Bad file type for Python generator: %s", fileType)
