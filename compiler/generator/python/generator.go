@@ -305,6 +305,21 @@ func (g *Generator) generateStruct(s *parser.Struct) string {
 func (g *Generator) generateThriftSpec(s *parser.Struct) string {
 	contents := ""
 	// TODO change this for 2.0? Have to figure out fastbinary
+	// From thrift:
+	// thrift_spec -> tuple of item_spec
+	// item_spec -> None | (tag, type_enum, name, spec_args, default)
+	// tag -> integer
+	// type_enum -> TType.I32 | TType.STRING | TType.STRUCT | ...
+	// name -> string_literal
+	// default -> None  # Handled by __init__
+	// spec_args -> None  # For simple types
+	//            | (type_enum, spec_args)  # Value type for list/set
+	//            | (type_enum, spec_args, type_enum, spec_args)
+	//              # Key and value for map
+	//            | (class_name, spec_args_ptr) # For struct/exception
+	// class_name -> identifier  # Basically a pointer to the class
+	// spec_args_ptr -> expression  # just class_name.spec_args
+
 	max := -1
 	for _, field := range s.Fields {
 		if field.ID > max {
@@ -342,6 +357,9 @@ func (g *Generator) generateInit(s *parser.Struct) string {
 	}
 	contents += fmt.Sprintf(tab+"def __init__(self%s):\n", argList)
 	for _, field := range s.Fields {
+		// TODO 2.0 this is the behaviour thrift has, but not using
+		// the underlying type gives different behaviour for aliased
+		// types, consider chaning
 		if !parser.IsThriftPrimitive(field.Type) && !g.Frugal.IsEnum(field.Type) && field.Default != nil {
 			contents += fmt.Sprintf(tabtab+"if %s is self.thrift_spec[%d][4]:\n", field.Name, field.ID)
 			val := g.generateConstantValue(field.Type, field.Default, tabtabtab)
@@ -513,7 +531,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 		contents += fmt.Sprintf(ind+"%s%s = iprot.read%s()\n", prefix, field.Name, thriftType)
 	} else if g.Frugal.IsStruct(underlyingType) {
 		g.qualifiedTypeName(underlyingType)
-		contents += fmt.Sprintf(ind+"%s%s = %s()\n", prefix, field.Name, g.qualifiedTypeName(underlyingType)) // TODO right?
+		contents += fmt.Sprintf(ind+"%s%s = %s()\n", prefix, field.Name, g.qualifiedTypeName(underlyingType))
 		contents += fmt.Sprintf(ind+"%s%s.read(iprot)\n", prefix, field.Name)
 	} else if parser.IsThriftContainer(underlyingType) {
 		sizeElem := getElem()
