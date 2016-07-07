@@ -229,7 +229,7 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 	contents := ""
 	contents += fmt.Sprintf("class %s:\n", enum.Name)
 	if enum.Comment != nil {
-		contents += g.GenerateBlockComment(enum.Comment, tab)
+		contents += g.generateDocString(enum.Comment, tab)
 	}
 	for _, value := range enum.Values {
 		contents += fmt.Sprintf(tab+"%s = %d\n", value.Name, value.Value)
@@ -329,15 +329,6 @@ func (g *Generator) GenerateDocStringComment(file *os.File) error {
 
 	_, err := file.WriteString(comment)
 	return err
-}
-
-func (g *Generator) GenerateBlockComment(comment []string, indent string) string {
-	contents := indent + "\"\"\"\n"
-	for _, line := range comment {
-		contents += indent + line + "\n"
-	}
-	contents += indent + "\"\"\"\n"
-	return contents
 }
 
 // GenerateServicePackage is a no-op.
