@@ -103,14 +103,15 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 
 		// split based on '.', if present, it should be from an include
 		pieces := strings.Split(name, ".")
-		if len(pieces) == 1 {
+		switch len(pieces) {
+		case 1:
 			// From this file
 			for _, constant := range g.Frugal.Thrift.Constants {
 				if name == constant.Name {
 					return g.generateConstantValue(t, constant.Value, ind)
 				}
 			}
-		} else if len(pieces) == 2 {
+		case 2:
 			// Either from an include, or part of an enum
 			for _, enum := range g.Frugal.Thrift.Enums {
 				if pieces[0] == enum.Name {
@@ -133,7 +134,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 					return g.generateConstantValue(t, constant.Value, ind)
 				}
 			}
-		} else if len(pieces) == 3 {
+		case 3:
 			// enum from an include
 			include, ok := g.Frugal.ParsedIncludes[pieces[0]]
 			if !ok {
@@ -149,9 +150,9 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 					panic(fmt.Sprintf("referenced value '%s' of enum '%s' doesn't exist", pieces[1], pieces[0]))
 				}
 			}
+		default:
+			panic("reference constant doesn't exist: " + name)
 		}
-
-		panic("referenced constant doesn't exist: " + name)
 	}
 
 	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {
