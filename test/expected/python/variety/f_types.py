@@ -53,3 +53,826 @@ class ItsAnEnum:
         "THIRD": 4,
     }
 
+class TestBase:
+    """
+    Attributes:
+     - base_struct
+    """
+    thrift_spec = (
+        None,  # 0
+        (1, TType.STRUCT, 'base_struct', (base.f_types.thing, base.f_types.thing.thrift_spec), None),  # 1
+    )
+
+    def __init__(self, base_struct=None):
+        self.base_struct = base_struct
+
+    def read(self, iprot):
+        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
+            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.STRUCT:
+                    self.base_struct = base.f_types.thing()
+                    self.base_struct.read(iprot)
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
+            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
+            return
+        oprot.writeStructBegin('TestBase')
+        if self.base_struct is not None:
+            oprot.writeFieldBegin('base_struct', TType.STRUCT, 1)
+            self.base_struct.write(oprot)
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __hash__(self):
+        value = 17
+        value = (value * 31) ^ hash(self.base_struct)
+        return value
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+            for key, value in self.__dict__.iteritems()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+
+class Event:
+    """
+    This docstring gets added to the generated code because it has
+    the @ sign.
+    
+    Attributes:
+     - ID: ID is a unique identifier for an event.
+     - Message: Message contains the event payload.
+    """
+    thrift_spec = (
+        None,  # 0
+        (1, TType.I64, 'ID', None, -1),  # 1
+        (2, TType.STRING, 'Message', None, None),  # 2
+    )
+
+    def __init__(self, ID=thrift_spec[1][4], Message=None):
+        if ID is self.thrift_spec[1][4]:
+            ID = -1
+        self.ID = ID
+        self.Message = Message
+
+    def read(self, iprot):
+        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
+            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.I64:
+                    self.ID = iprot.readI64()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 2:
+                if ftype == TType.STRING:
+                    self.Message = iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
+            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
+            return
+        oprot.writeStructBegin('Event')
+        if self.ID is not None:
+            oprot.writeFieldBegin('ID', TType.I64, 1)
+            oprot.writeI64(self.ID)
+            oprot.writeFieldEnd()
+        if self.Message is not None:
+            oprot.writeFieldBegin('Message', TType.STRING, 2)
+            oprot.writeString(self.Message)
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __hash__(self):
+        value = 17
+        value = (value * 31) ^ hash(self.ID)
+        value = (value * 31) ^ hash(self.Message)
+        return value
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+            for key, value in self.__dict__.iteritems()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+
+class TestingDefaults:
+    """
+    Attributes:
+     - ID2
+     - ev1
+     - ev2
+     - ID
+     - thing
+     - thing2
+     - listfield
+     - ID3
+     - bin_field
+     - bin_field2
+     - bin_field3
+     - bin_field4
+     - list2
+     - list3
+     - list4
+     - a_map
+     - status
+     - base_status
+    """
+    thrift_spec = (
+        None,  # 0
+        (1, TType.I64, 'ID2', None, -1),  # 1
+        (2, TType.STRUCT, 'ev1', (Event, Event.thrift_spec), Event(**{
+            "ID": -1,
+            "Message": "a message",
+        })),  # 2
+        (3, TType.STRUCT, 'ev2', (Event, Event.thrift_spec), Event(**{
+            "ID": 5,
+            "Message": "a message2",
+        })),  # 3
+        (4, TType.I64, 'ID', None, -2),  # 4
+        (5, TType.STRING, 'thing', None, "a constant"),  # 5
+        (6, TType.STRING, 'thing2', None, "another constant"),  # 6
+        (7, TType.LIST, 'listfield', (TType.I32, None), [
+            1,
+            2,
+            3,
+            4,
+            5,
+        ]),  # 7
+        (8, TType.I64, 'ID3', None, -1),  # 8
+        (9, TType.STRING, 'bin_field', None, None),  # 9
+        (10, TType.STRING, 'bin_field2', None, None),  # 10
+        (11, TType.STRING, 'bin_field3', None, None),  # 11
+        (12, TType.STRING, 'bin_field4', None, "hello"),  # 12
+        (13, TType.LIST, 'list2', (TType.I32, None), [
+            1,
+            3,
+            4,
+            5,
+            8,
+        ]),  # 13
+        (14, TType.LIST, 'list3', (TType.I32, None), None),  # 14
+        (15, TType.LIST, 'list4', (TType.I32, None), [
+            1,
+            2,
+            3,
+            6,
+        ]),  # 15
+        (16, TType.MAP, 'a_map', (TType.STRING, None, TType.STRING, None), {
+            "k1": "v1",
+            "k2": "v2",
+        }),  # 16
+        (17, TType.I32, 'status', None, 1),  # 17
+        (18, TType.I32, 'base_status', None, 3),  # 18
+    )
+
+    def __init__(self, ID2=thrift_spec[1][4], ev1=thrift_spec[2][4], ev2=thrift_spec[3][4], ID=thrift_spec[4][4], thing=thrift_spec[5][4], thing2=thrift_spec[6][4], listfield=thrift_spec[7][4], ID3=thrift_spec[8][4], bin_field=None, bin_field2=None, bin_field3=None, bin_field4=thrift_spec[12][4], list2=thrift_spec[13][4], list3=None, list4=thrift_spec[15][4], a_map=thrift_spec[16][4], status=thrift_spec[17][4], base_status=thrift_spec[18][4]):
+        if ID2 is self.thrift_spec[1][4]:
+            ID2 = -1
+        self.ID2 = ID2
+        if ev1 is self.thrift_spec[2][4]:
+            ev1 = Event(**{
+                "ID": -1,
+                "Message": "a message",
+            })
+        self.ev1 = ev1
+        if ev2 is self.thrift_spec[3][4]:
+            ev2 = Event(**{
+                "ID": 5,
+                "Message": "a message2",
+            })
+        self.ev2 = ev2
+        if ID is self.thrift_spec[4][4]:
+            ID = -2
+        self.ID = ID
+        self.thing = thing
+        self.thing2 = thing2
+        if listfield is self.thrift_spec[7][4]:
+            listfield = [
+                1,
+                2,
+                3,
+                4,
+                5,
+            ]
+        self.listfield = listfield
+        if ID3 is self.thrift_spec[8][4]:
+            ID3 = -1
+        self.ID3 = ID3
+        self.bin_field = bin_field
+        self.bin_field2 = bin_field2
+        self.bin_field3 = bin_field3
+        self.bin_field4 = bin_field4
+        if list2 is self.thrift_spec[13][4]:
+            list2 = [
+                1,
+                3,
+                4,
+                5,
+                8,
+            ]
+        self.list2 = list2
+        self.list3 = list3
+        if list4 is self.thrift_spec[15][4]:
+            list4 = [
+                1,
+                2,
+                3,
+                6,
+            ]
+        self.list4 = list4
+        if a_map is self.thrift_spec[16][4]:
+            a_map = {
+                "k1": "v1",
+                "k2": "v2",
+            }
+        self.a_map = a_map
+        self.status = status
+        self.base_status = base_status
+
+    def read(self, iprot):
+        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
+            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.I64:
+                    self.ID2 = iprot.readI64()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 2:
+                if ftype == TType.STRUCT:
+                    self.ev1 = Event()
+                    self.ev1.read(iprot)
+                else:
+                    iprot.skip(ftype)
+            elif fid == 3:
+                if ftype == TType.STRUCT:
+                    self.ev2 = Event()
+                    self.ev2.read(iprot)
+                else:
+                    iprot.skip(ftype)
+            elif fid == 4:
+                if ftype == TType.I64:
+                    self.ID = iprot.readI64()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 5:
+                if ftype == TType.STRING:
+                    self.thing = iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 6:
+                if ftype == TType.STRING:
+                    self.thing2 = iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 7:
+                if ftype == TType.LIST:
+                    self.listfield = []
+                    (_, _elem0) = iprot.readListBegin()
+                    for _ in xrange(_elem0):
+                        _elem1 = iprot.readI32()
+                        self.listfield.append(_elem1)
+                    iprot.readListEnd()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 8:
+                if ftype == TType.I64:
+                    self.ID3 = iprot.readI64()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 9:
+                if ftype == TType.STRING:
+                    self.bin_field = iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 10:
+                if ftype == TType.STRING:
+                    self.bin_field2 = iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 11:
+                if ftype == TType.STRING:
+                    self.bin_field3 = iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 12:
+                if ftype == TType.STRING:
+                    self.bin_field4 = iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 13:
+                if ftype == TType.LIST:
+                    self.list2 = []
+                    (_, _elem2) = iprot.readListBegin()
+                    for _ in xrange(_elem2):
+                        _elem3 = iprot.readI32()
+                        self.list2.append(_elem3)
+                    iprot.readListEnd()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 14:
+                if ftype == TType.LIST:
+                    self.list3 = []
+                    (_, _elem4) = iprot.readListBegin()
+                    for _ in xrange(_elem4):
+                        _elem5 = iprot.readI32()
+                        self.list3.append(_elem5)
+                    iprot.readListEnd()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 15:
+                if ftype == TType.LIST:
+                    self.list4 = []
+                    (_, _elem6) = iprot.readListBegin()
+                    for _ in xrange(_elem6):
+                        _elem7 = iprot.readI32()
+                        self.list4.append(_elem7)
+                    iprot.readListEnd()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 16:
+                if ftype == TType.MAP:
+                    self.a_map = {}
+                    (_, _, _elem8) = iprot.readMapBegin()
+                    for _ in xrange(_elem8):
+                        _elem10 = iprot.readString()
+                        _elem9 = iprot.readString()
+                        self.a_map[_elem10] = _elem9
+                    iprot.readMapEnd()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 17:
+                if ftype == TType.I32:
+                    self.status = iprot.readI32()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 18:
+                if ftype == TType.I32:
+                    self.base_status = iprot.readI32()
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
+            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
+            return
+        oprot.writeStructBegin('TestingDefaults')
+        if self.ID2 is not None:
+            oprot.writeFieldBegin('ID2', TType.I64, 1)
+            oprot.writeI64(self.ID2)
+            oprot.writeFieldEnd()
+        if self.ev1 is not None:
+            oprot.writeFieldBegin('ev1', TType.STRUCT, 2)
+            self.ev1.write(oprot)
+            oprot.writeFieldEnd()
+        if self.ev2 is not None:
+            oprot.writeFieldBegin('ev2', TType.STRUCT, 3)
+            self.ev2.write(oprot)
+            oprot.writeFieldEnd()
+        if self.ID is not None:
+            oprot.writeFieldBegin('ID', TType.I64, 4)
+            oprot.writeI64(self.ID)
+            oprot.writeFieldEnd()
+        if self.thing is not None:
+            oprot.writeFieldBegin('thing', TType.STRING, 5)
+            oprot.writeString(self.thing)
+            oprot.writeFieldEnd()
+        if self.thing2 is not None:
+            oprot.writeFieldBegin('thing2', TType.STRING, 6)
+            oprot.writeString(self.thing2)
+            oprot.writeFieldEnd()
+        if self.listfield is not None:
+            oprot.writeFieldBegin('listfield', TType.LIST, 7)
+            oprot.writeListBegin(TType.I32, len(self.listfield))
+            for _elem11 in self.listfield:
+                oprot.writeI32(_elem11)
+            oprot.writeListEnd()
+            oprot.writeFieldEnd()
+        if self.ID3 is not None:
+            oprot.writeFieldBegin('ID3', TType.I64, 8)
+            oprot.writeI64(self.ID3)
+            oprot.writeFieldEnd()
+        if self.bin_field is not None:
+            oprot.writeFieldBegin('bin_field', TType.STRING, 9)
+            oprot.writeString(self.bin_field)
+            oprot.writeFieldEnd()
+        if self.bin_field2 is not None:
+            oprot.writeFieldBegin('bin_field2', TType.STRING, 10)
+            oprot.writeString(self.bin_field2)
+            oprot.writeFieldEnd()
+        if self.bin_field3 is not None:
+            oprot.writeFieldBegin('bin_field3', TType.STRING, 11)
+            oprot.writeString(self.bin_field3)
+            oprot.writeFieldEnd()
+        if self.bin_field4 is not None:
+            oprot.writeFieldBegin('bin_field4', TType.STRING, 12)
+            oprot.writeString(self.bin_field4)
+            oprot.writeFieldEnd()
+        if self.list2 is not None:
+            oprot.writeFieldBegin('list2', TType.LIST, 13)
+            oprot.writeListBegin(TType.I32, len(self.list2))
+            for _elem12 in self.list2:
+                oprot.writeI32(_elem12)
+            oprot.writeListEnd()
+            oprot.writeFieldEnd()
+        if self.list3 is not None:
+            oprot.writeFieldBegin('list3', TType.LIST, 14)
+            oprot.writeListBegin(TType.I32, len(self.list3))
+            for _elem13 in self.list3:
+                oprot.writeI32(_elem13)
+            oprot.writeListEnd()
+            oprot.writeFieldEnd()
+        if self.list4 is not None:
+            oprot.writeFieldBegin('list4', TType.LIST, 15)
+            oprot.writeListBegin(TType.I32, len(self.list4))
+            for _elem14 in self.list4:
+                oprot.writeI32(_elem14)
+            oprot.writeListEnd()
+            oprot.writeFieldEnd()
+        if self.a_map is not None:
+            oprot.writeFieldBegin('a_map', TType.MAP, 16)
+            oprot.writeMapBegin(TType.STRINGTType.STRING, len(self.a_map))
+            for _elem16, _elem15 in self.a_map.items():
+                oprot.writeString(_elem16)
+                oprot.writeString(_elem15)
+            oprot.writeMapEnd()
+            oprot.writeFieldEnd()
+        if self.status is not None:
+            oprot.writeFieldBegin('status', TType.I32, 17)
+            oprot.writeI32(self.status)
+            oprot.writeFieldEnd()
+        if self.base_status is not None:
+            oprot.writeFieldBegin('base_status', TType.I32, 18)
+            oprot.writeI32(self.base_status)
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        if self.status is None:
+            raise TProtocol.TProtocolException(message='Required field status is unset!')
+        if self.base_status is None:
+            raise TProtocol.TProtocolException(message='Required field base_status is unset!')
+        return
+
+    def __hash__(self):
+        value = 17
+        value = (value * 31) ^ hash(self.ID2)
+        value = (value * 31) ^ hash(self.ev1)
+        value = (value * 31) ^ hash(self.ev2)
+        value = (value * 31) ^ hash(self.ID)
+        value = (value * 31) ^ hash(self.thing)
+        value = (value * 31) ^ hash(self.thing2)
+        value = (value * 31) ^ hash(self.listfield)
+        value = (value * 31) ^ hash(self.ID3)
+        value = (value * 31) ^ hash(self.bin_field)
+        value = (value * 31) ^ hash(self.bin_field2)
+        value = (value * 31) ^ hash(self.bin_field3)
+        value = (value * 31) ^ hash(self.bin_field4)
+        value = (value * 31) ^ hash(self.list2)
+        value = (value * 31) ^ hash(self.list3)
+        value = (value * 31) ^ hash(self.list4)
+        value = (value * 31) ^ hash(self.a_map)
+        value = (value * 31) ^ hash(self.status)
+        value = (value * 31) ^ hash(self.base_status)
+        return value
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+            for key, value in self.__dict__.iteritems()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+
+class EventWrapper:
+    """
+    Attributes:
+     - ID
+     - Ev
+     - Events
+     - Events2
+     - EventMap
+     - Nums
+     - Enums
+    """
+    thrift_spec = (
+        None,  # 0
+        (1, TType.I64, 'ID', None, None),  # 1
+        (2, TType.STRUCT, 'Ev', (Event, Event.thrift_spec), None),  # 2
+        (3, TType.LIST, 'Events', (TType.STRUCT, (Event, Event.thrift_spec)), None),  # 3
+        (4, TType.SET, 'Events2', (TType.STRUCT, (Event, Event.thrift_spec)), None),  # 4
+        (5, TType.MAP, 'EventMap', (TType.I64, None, TType.STRUCT, (Event, Event.thrift_spec)), None),  # 5
+        (6, TType.LIST, 'Nums', (TType.LIST, (TType.I32, None)), None),  # 6
+        (7, TType.LIST, 'Enums', (TType.I32, None), None),  # 7
+    )
+
+    def __init__(self, ID=None, Ev=None, Events=None, Events2=None, EventMap=None, Nums=None, Enums=None):
+        self.ID = ID
+        self.Ev = Ev
+        self.Events = Events
+        self.Events2 = Events2
+        self.EventMap = EventMap
+        self.Nums = Nums
+        self.Enums = Enums
+
+    def read(self, iprot):
+        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
+            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.I64:
+                    self.ID = iprot.readI64()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 2:
+                if ftype == TType.STRUCT:
+                    self.Ev = Event()
+                    self.Ev.read(iprot)
+                else:
+                    iprot.skip(ftype)
+            elif fid == 3:
+                if ftype == TType.LIST:
+                    self.Events = []
+                    (_, _elem17) = iprot.readListBegin()
+                    for _ in xrange(_elem17):
+                        _elem18 = Event()
+                        _elem18.read(iprot)
+                        self.Events.append(_elem18)
+                    iprot.readListEnd()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 4:
+                if ftype == TType.SET:
+                    self.Events2 = set()
+                    (_, _elem19) = iprot.readSetBegin()
+                    for _ in xrange(_elem19):
+                        _elem20 = Event()
+                        _elem20.read(iprot)
+                        self.Events2.add(_elem20)
+                    iprot.readSetEnd()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 5:
+                if ftype == TType.MAP:
+                    self.EventMap = {}
+                    (_, _, _elem21) = iprot.readMapBegin()
+                    for _ in xrange(_elem21):
+                        _elem23 = iprot.readI64()
+                        _elem22 = Event()
+                        _elem22.read(iprot)
+                        self.EventMap[_elem23] = _elem22
+                    iprot.readMapEnd()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 6:
+                if ftype == TType.LIST:
+                    self.Nums = []
+                    (_, _elem24) = iprot.readListBegin()
+                    for _ in xrange(_elem24):
+                        _elem25 = []
+                        (_, _elem26) = iprot.readListBegin()
+                        for _ in xrange(_elem26):
+                            _elem27 = iprot.readI32()
+                            _elem25.append(_elem27)
+                        iprot.readListEnd()
+                        self.Nums.append(_elem25)
+                    iprot.readListEnd()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 7:
+                if ftype == TType.LIST:
+                    self.Enums = []
+                    (_, _elem28) = iprot.readListBegin()
+                    for _ in xrange(_elem28):
+                        _elem29 = iprot.readI32()
+                        self.Enums.append(_elem29)
+                    iprot.readListEnd()
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
+            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
+            return
+        oprot.writeStructBegin('EventWrapper')
+        if self.ID is not None:
+            oprot.writeFieldBegin('ID', TType.I64, 1)
+            oprot.writeI64(self.ID)
+            oprot.writeFieldEnd()
+        if self.Ev is not None:
+            oprot.writeFieldBegin('Ev', TType.STRUCT, 2)
+            self.Ev.write(oprot)
+            oprot.writeFieldEnd()
+        if self.Events is not None:
+            oprot.writeFieldBegin('Events', TType.LIST, 3)
+            oprot.writeListBegin(TType.STRUCT, len(self.Events))
+            for _elem30 in self.Events:
+                _elem30.write(oprot)
+            oprot.writeListEnd()
+            oprot.writeFieldEnd()
+        if self.Events2 is not None:
+            oprot.writeFieldBegin('Events2', TType.SET, 4)
+            oprot.writeSetBegin(TType.STRUCT, len(self.Events2))
+            for _elem31 in self.Events2:
+                _elem31.write(oprot)
+            oprot.writeSetEnd()
+            oprot.writeFieldEnd()
+        if self.EventMap is not None:
+            oprot.writeFieldBegin('EventMap', TType.MAP, 5)
+            oprot.writeMapBegin(TType.I64TType.STRUCT, len(self.EventMap))
+            for _elem33, _elem32 in self.EventMap.items():
+                oprot.writeI64(_elem33)
+                _elem32.write(oprot)
+            oprot.writeMapEnd()
+            oprot.writeFieldEnd()
+        if self.Nums is not None:
+            oprot.writeFieldBegin('Nums', TType.LIST, 6)
+            oprot.writeListBegin(TType.LIST, len(self.Nums))
+            for _elem34 in self.Nums:
+                oprot.writeListBegin(TType.I32, len(_elem34))
+                for _elem35 in _elem34:
+                    oprot.writeI32(_elem35)
+                oprot.writeListEnd()
+            oprot.writeListEnd()
+            oprot.writeFieldEnd()
+        if self.Enums is not None:
+            oprot.writeFieldBegin('Enums', TType.LIST, 7)
+            oprot.writeListBegin(TType.I32, len(self.Enums))
+            for _elem36 in self.Enums:
+                oprot.writeI32(_elem36)
+            oprot.writeListEnd()
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        if self.Ev is None:
+            raise TProtocol.TProtocolException(message='Required field Ev is unset!')
+        return
+
+    def __hash__(self):
+        value = 17
+        value = (value * 31) ^ hash(self.ID)
+        value = (value * 31) ^ hash(self.Ev)
+        value = (value * 31) ^ hash(self.Events)
+        value = (value * 31) ^ hash(self.Events2)
+        value = (value * 31) ^ hash(self.EventMap)
+        value = (value * 31) ^ hash(self.Nums)
+        value = (value * 31) ^ hash(self.Enums)
+        return value
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+            for key, value in self.__dict__.iteritems()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+
+class AwesomeException(TException):
+    """
+    Attributes:
+     - ID: ID is a unique identifier for an awesome exception.
+     - Reason: Reason contains the error message.
+    """
+    thrift_spec = (
+        None,  # 0
+        (1, TType.I64, 'ID', None, None),  # 1
+        (2, TType.STRING, 'Reason', None, None),  # 2
+    )
+
+    def __init__(self, ID=None, Reason=None):
+        self.ID = ID
+        self.Reason = Reason
+
+    def read(self, iprot):
+        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
+            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.I64:
+                    self.ID = iprot.readI64()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 2:
+                if ftype == TType.STRING:
+                    self.Reason = iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
+            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
+            return
+        oprot.writeStructBegin('AwesomeException')
+        if self.ID is not None:
+            oprot.writeFieldBegin('ID', TType.I64, 1)
+            oprot.writeI64(self.ID)
+            oprot.writeFieldEnd()
+        if self.Reason is not None:
+            oprot.writeFieldBegin('Reason', TType.STRING, 2)
+            oprot.writeString(self.Reason)
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __str__(self):
+        return repr(self)
+
+    def __hash__(self):
+        value = 17
+        value = (value * 31) ^ hash(self.ID)
+        value = (value * 31) ^ hash(self.Reason)
+        return value
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+            for key, value in self.__dict__.iteritems()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+

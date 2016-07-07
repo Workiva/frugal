@@ -14,7 +14,7 @@ import (
 const (
 	lang             = "py"
 	defaultOutputDir = "gen-py"
-	tab              = "  "
+	tab              = "    "
 	tabtab           = tab + tab
 	tabtabtab        = tab + tab + tab
 	tabtabtabtab     = tab + tab + tab + tab
