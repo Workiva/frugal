@@ -5,7 +5,7 @@
 #
 
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException
-import actual_base.python.f_types
+import actual_base.python.ttypes
 
 
 from thrift.transport import TTransport
@@ -214,7 +214,7 @@ class blah_result:
     thrift_spec = (
         (0, TType.I64, 'success', None, None),  # 0
         (1, TType.STRUCT, 'awe', (AwesomeException, AwesomeException.thrift_spec), None),  # 1
-        (2, TType.STRUCT, 'api', (actual_base.python.f_types.api_exception, actual_base.python.f_types.api_exception.thrift_spec), None),  # 2
+        (2, TType.STRUCT, 'api', (actual_base.python.ttypes.api_exception, actual_base.python.ttypes.api_exception.thrift_spec), None),  # 2
     )
 
     def __init__(self, success=None, awe=None, api=None):
@@ -244,7 +244,7 @@ class blah_result:
                     iprot.skip(ftype)
             elif fid == 2:
                 if ftype == TType.STRUCT:
-                    self.api = actual_base.python.f_types.api_exception()
+                    self.api = actual_base.python.ttypes.api_exception()
                     self.api.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -464,7 +464,7 @@ class bin_method_result:
     """
     thrift_spec = (
         (0, TType.STRING, 'success', None, None),  # 0
-        (1, TType.STRUCT, 'api', (actual_base.python.f_types.api_exception, actual_base.python.f_types.api_exception.thrift_spec), None),  # 1
+        (1, TType.STRUCT, 'api', (actual_base.python.ttypes.api_exception, actual_base.python.ttypes.api_exception.thrift_spec), None),  # 1
     )
 
     def __init__(self, success=None, api=None):
@@ -487,7 +487,7 @@ class bin_method_result:
                     iprot.skip(ftype)
             elif fid == 1:
                 if ftype == TType.STRUCT:
-                    self.api = actual_base.python.f_types.api_exception()
+                    self.api = actual_base.python.ttypes.api_exception()
                     self.api.read(iprot)
                 else:
                     iprot.skip(ftype)

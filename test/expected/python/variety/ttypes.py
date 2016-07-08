@@ -5,7 +5,7 @@
 #
 
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException
-import actual_base.python.f_types
+import actual_base.python.ttypes
 
 
 from thrift.transport import TTransport
@@ -60,7 +60,7 @@ class TestBase:
     """
     thrift_spec = (
         None,  # 0
-        (1, TType.STRUCT, 'base_struct', (actual_base.python.f_types.thing, actual_base.python.f_types.thing.thrift_spec), None),  # 1
+        (1, TType.STRUCT, 'base_struct', (actual_base.python.ttypes.thing, actual_base.python.ttypes.thing.thrift_spec), None),  # 1
     )
 
     def __init__(self, base_struct=None):
@@ -77,7 +77,7 @@ class TestBase:
                 break
             if fid == 1:
                 if ftype == TType.STRUCT:
-                    self.base_struct = actual_base.python.f_types.thing()
+                    self.base_struct = actual_base.python.ttypes.thing()
                     self.base_struct.read(iprot)
                 else:
                     iprot.skip(ftype)

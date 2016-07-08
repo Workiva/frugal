@@ -44,17 +44,17 @@ func TestValidPythonFrugalCompiler(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	baseConstantsPath := filepath.Join(outputDir, "actual_base", "python", "f_constants.py")
-	compareFiles(t, "expected/python/actual_base/f_constants.py", baseConstantsPath)
-	baseFtypesPath := filepath.Join(outputDir, "actual_base", "python", "f_types.py")
-	compareFiles(t, "expected/python/actual_base/f_types.py", baseFtypesPath)
+	baseConstantsPath := filepath.Join(outputDir, "actual_base", "python", "constants.py")
+	compareFiles(t, "expected/python/actual_base/constants.py", baseConstantsPath)
+	baseFtypesPath := filepath.Join(outputDir, "actual_base", "python", "ttypes.py")
+	compareFiles(t, "expected/python/actual_base/ttypes.py", baseFtypesPath)
 	baseFooPath := filepath.Join(outputDir, "actual_base", "python", "BaseFoo.py")
 	compareFiles(t, "expected/python/actual_base/BaseFoo.py", baseFooPath)
 
-	varietyConstantsPath := filepath.Join(outputDir, "variety", "python", "f_constants.py")
-	compareFiles(t, "expected/python/variety/f_constants.py", varietyConstantsPath)
-	varietyFtypesPath := filepath.Join(outputDir, "variety", "python", "f_types.py")
-	compareFiles(t, "expected/python/variety/f_types.py", varietyFtypesPath)
+	varietyConstantsPath := filepath.Join(outputDir, "variety", "python", "constants.py")
+	compareFiles(t, "expected/python/variety/constants.py", varietyConstantsPath)
+	varietyFtypesPath := filepath.Join(outputDir, "variety", "python", "ttypes.py")
+	compareFiles(t, "expected/python/variety/ttypes.py", varietyFtypesPath)
 	varietyFooPath := filepath.Join(outputDir, "variety", "python", "Foo.py")
 	compareFiles(t, "expected/python/variety/Foo.py", varietyFooPath)
 }

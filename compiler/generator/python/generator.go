@@ -55,7 +55,7 @@ func (g *Generator) SetupGenerator(outputDir string) error {
 	}
 
 	// create types file
-	typesFile, err := g.GenerateFile("f_types", outputDir, generator.ObjectFile)
+	typesFile, err := g.GenerateFile("ttypes", outputDir, generator.ObjectFile)
 	if err != nil {
 		return err
 	}
@@ -85,14 +85,14 @@ func (g *Generator) TeardownGenerator() error {
 func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) error {
 	contents := "\n\n"
 	contents += "from thrift.Thrift import TType, TMessageType, TException, TApplicationException\n"
-	contents += "from f_types import *\n\n"
+	contents += "from ttypes import *\n\n"
 
 	for _, constant := range constants {
 		value := g.generateConstantValue(constant.Type, constant.Value, "")
 		contents += fmt.Sprintf("%s = %s\n", constant.Name, value)
 	}
 
-	file, err := g.GenerateFile("f_constants", g.outputDir, generator.ObjectFile)
+	file, err := g.GenerateFile("constants", g.outputDir, generator.ObjectFile)
 	defer file.Close()
 	if err != nil {
 		return err
@@ -757,7 +757,7 @@ func (g *Generator) GenerateTypesImports(file *os.File) error {
 		if !ok {
 			includeName = include.Name
 		}
-		contents += fmt.Sprintf("import %s.f_types\n", includeName)
+		contents += fmt.Sprintf("import %s.ttypes\n", includeName)
 	}
 	contents += "\n\n"
 	contents += "from thrift.transport import TTransport\n"
@@ -1060,7 +1060,7 @@ func (g *Generator) qualifiedTypeName(t *parser.Type) string {
 		if !ok {
 			namespace = include
 		}
-		return fmt.Sprintf("%s.f_types.%s", namespace, param)
+		return fmt.Sprintf("%s.ttypes.%s", namespace, param)
 	} else {
 		return param
 	}
