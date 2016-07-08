@@ -5,7 +5,7 @@
 #
 
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException
-import base.f_types
+import actual_base.python.f_types
 
 
 from thrift.transport import TTransport
@@ -60,7 +60,7 @@ class TestBase:
     """
     thrift_spec = (
         None,  # 0
-        (1, TType.STRUCT, 'base_struct', (base.f_types.thing, base.f_types.thing.thrift_spec), None),  # 1
+        (1, TType.STRUCT, 'base_struct', (actual_base.python.f_types.thing, actual_base.python.f_types.thing.thrift_spec), None),  # 1
     )
 
     def __init__(self, base_struct=None):
@@ -77,7 +77,7 @@ class TestBase:
                 break
             if fid == 1:
                 if ftype == TType.STRUCT:
-                    self.base_struct = base.f_types.thing()
+                    self.base_struct = actual_base.python.f_types.thing()
                     self.base_struct.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -784,6 +784,131 @@ class EventWrapper:
         value = (value * 31) ^ hash(self.EventMap)
         value = (value * 31) ^ hash(self.Nums)
         value = (value * 31) ^ hash(self.Enums)
+        return value
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+            for key, value in self.__dict__.iteritems()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+
+class TestingUnions:
+    """
+    Attributes:
+     - AnID
+     - aString
+     - someotherthing
+     - AnInt16
+     - Requests
+    """
+    thrift_spec = (
+        None,  # 0
+        (1, TType.I64, 'AnID', None, None),  # 1
+        (2, TType.STRING, 'aString', None, None),  # 2
+        (3, TType.I32, 'someotherthing', None, None),  # 3
+        (4, TType.I16, 'AnInt16', None, None),  # 4
+        (5, TType.MAP, 'Requests', (TType.I32, None, TType.STRING, None), None),  # 5
+    )
+
+    def __init__(self, AnID=None, aString=None, someotherthing=None, AnInt16=None, Requests=None):
+        self.AnID = AnID
+        self.aString = aString
+        self.someotherthing = someotherthing
+        self.AnInt16 = AnInt16
+        self.Requests = Requests
+
+    def read(self, iprot):
+        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
+            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.I64:
+                    self.AnID = iprot.readI64()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 2:
+                if ftype == TType.STRING:
+                    self.aString = iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 3:
+                if ftype == TType.I32:
+                    self.someotherthing = iprot.readI32()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 4:
+                if ftype == TType.I16:
+                    self.AnInt16 = iprot.readI16()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 5:
+                if ftype == TType.MAP:
+                    self.Requests = {}
+                    (_, _, _elem37) = iprot.readMapBegin()
+                    for _ in xrange(_elem37):
+                        _elem39 = iprot.readI32()
+                        _elem38 = iprot.readString()
+                        self.Requests[_elem39] = _elem38
+                    iprot.readMapEnd()
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
+            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
+            return
+        oprot.writeStructBegin('TestingUnions')
+        if self.AnID is not None:
+            oprot.writeFieldBegin('AnID', TType.I64, 1)
+            oprot.writeI64(self.AnID)
+            oprot.writeFieldEnd()
+        if self.aString is not None:
+            oprot.writeFieldBegin('aString', TType.STRING, 2)
+            oprot.writeString(self.aString)
+            oprot.writeFieldEnd()
+        if self.someotherthing is not None:
+            oprot.writeFieldBegin('someotherthing', TType.I32, 3)
+            oprot.writeI32(self.someotherthing)
+            oprot.writeFieldEnd()
+        if self.AnInt16 is not None:
+            oprot.writeFieldBegin('AnInt16', TType.I16, 4)
+            oprot.writeI16(self.AnInt16)
+            oprot.writeFieldEnd()
+        if self.Requests is not None:
+            oprot.writeFieldBegin('Requests', TType.MAP, 5)
+            oprot.writeMapBegin(TType.I32TType.STRING, len(self.Requests))
+            for _elem41, _elem40 in self.Requests.items():
+                oprot.writeI32(_elem41)
+                oprot.writeString(_elem40)
+            oprot.writeMapEnd()
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __hash__(self):
+        value = 17
+        value = (value * 31) ^ hash(self.AnID)
+        value = (value * 31) ^ hash(self.aString)
+        value = (value * 31) ^ hash(self.someotherthing)
+        value = (value * 31) ^ hash(self.AnInt16)
+        value = (value * 31) ^ hash(self.Requests)
         return value
 
     def __repr__(self):

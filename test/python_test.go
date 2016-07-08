@@ -35,7 +35,7 @@ func TestValidPythonTornado(t *testing.T) {
 func TestValidPythonFrugalCompiler(t *testing.T) {
 	options := compiler.Options{
 		File:    frugalGenFile,
-		Gen:     "py:gen_with_frugal",
+		Gen:     "py:tornado,gen_with_frugal",
 		Out:     outputDir,
 		Delim:   delim,
 		Recurse: true,
@@ -44,8 +44,10 @@ func TestValidPythonFrugalCompiler(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	varietyConstantsPath := filepath.Join(outputDir, "variety", "f_constants.py")
+	varietyConstantsPath := filepath.Join(outputDir, "variety", "python", "f_constants.py")
 	compareFiles(t, "expected/python/variety/f_constants.py", varietyConstantsPath)
-	varietyFtypesPath := filepath.Join(outputDir, "variety", "f_types.py")
+	varietyFtypesPath := filepath.Join(outputDir, "variety", "python", "f_types.py")
 	compareFiles(t, "expected/python/variety/f_types.py", varietyFtypesPath)
+	varietyFooPath := filepath.Join(outputDir, "variety", "python", "Foo.py")
+	compareFiles(t, "expected/python/variety/Foo.py", varietyFooPath)
 }

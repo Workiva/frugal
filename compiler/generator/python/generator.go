@@ -43,7 +43,19 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 func (g *Generator) SetupGenerator(outputDir string) error {
 	g.outputDir = outputDir
 
-	typesFile, err := g.GenerateFile("types", outputDir, generator.ObjectFile)
+	dir := g.outputDir
+	for dir != "." {
+		file, err := g.GenerateFile("__init__", dir, generator.ObjectFile)
+		file.Close()
+		if err != nil {
+			return err
+		}
+
+		dir = filepath.Dir(dir)
+	}
+
+	// create types file
+	typesFile, err := g.GenerateFile("f_types", outputDir, generator.ObjectFile)
 	if err != nil {
 		return err
 	}
@@ -80,7 +92,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 		contents += fmt.Sprintf("%s = %s\n", constant.Name, value)
 	}
 
-	file, err := g.GenerateFile("constants", g.outputDir, generator.ObjectFile)
+	file, err := g.GenerateFile("f_constants", g.outputDir, generator.ObjectFile)
 	defer file.Close()
 	if err != nil {
 		return err
@@ -264,8 +276,9 @@ func (g *Generator) GenerateStruct(s *parser.Struct) error {
 }
 
 // GenerateUnion generates the given union.
-func (g *Generator) GenerateUnion(*parser.Struct) error {
-	return nil
+func (g *Generator) GenerateUnion(union *parser.Struct) error {
+	_, err := g.typesFile.WriteString(g.generateStruct(union))
+	return err
 }
 
 // GenerateException generates the given exception.
@@ -276,8 +289,33 @@ func (g *Generator) GenerateException(exception *parser.Struct) error {
 
 // GenerateServiceArgsResults generates the args and results objects for the
 // given service.
-func (g *Generator) GenerateServiceArgsResults(string, string, []*parser.Struct) error {
-	return nil
+func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir string, structs []*parser.Struct) error {
+	file, err := g.GenerateFile(serviceName, g.outputDir, generator.ObjectFile)
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+
+	if err = g.GenerateDocStringComment(file); err != nil {
+		return err
+	}
+	if _, err = file.WriteString("\n\n"); err != nil {
+		return err
+	}
+	if err = g.GenerateTypesImports(file); err != nil {
+		return err
+	}
+	if _, err = file.WriteString("\n\n"); err != nil {
+		return err
+	}
+
+	contents := ""
+	for _, s := range structs {
+		contents += g.generateStruct(s)
+	}
+
+	_, err = file.WriteString(contents)
+	return err
 }
 
 // generateStruct generates a python representation of a thrift struct
@@ -681,7 +719,7 @@ func (g *Generator) GenerateFile(name, outputDir string, fileType generator.File
 	case generator.CombinedServiceFile:
 		return g.CreateFile(fmt.Sprintf("f_%s", name), outputDir, lang, false)
 	case generator.ObjectFile:
-		return g.CreateFile(fmt.Sprintf("f_%s", name), outputDir, lang, false)
+		return g.CreateFile(fmt.Sprintf("%s", name), outputDir, lang, false)
 	default:
 		return nil, fmt.Errorf("Bad file type for Python generator: %s", fileType)
 	}
