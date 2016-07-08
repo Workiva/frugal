@@ -280,6 +280,7 @@ func (g *Generator) GenerateServiceArgsResults(string, string, []*parser.Struct)
 	return nil
 }
 
+// generateStruct generates a python representation of a thrift struct
 func (g *Generator) generateStruct(s *parser.Struct) string {
 	contents := ""
 
@@ -302,24 +303,24 @@ func (g *Generator) generateStruct(s *parser.Struct) string {
 	return contents
 }
 
+// generateThriftSpec generates a tuple containing information about each
+// field of the struct, from thrift:
+// thrift_spec -> tuple of item_spec
+// item_spec -> None | (tag, type_enum, name, spec_args, default)
+// tag -> integer
+// type_enum -> TType.I32 | TType.STRING | TType.STRUCT | ...
+// name -> string_literal
+// default -> None  # Handled by __init__
+// spec_args -> None  # For simple types
+//            | (type_enum, spec_args)  # Value type for list/set
+//            | (type_enum, spec_args, type_enum, spec_args)
+//              # Key and value for map
+//            | (class_name, spec_args_ptr) # For struct/exception
+// class_name -> identifier  # Basically a pointer to the class
+// spec_args_ptr -> expression  # just class_name.spec_args
 func (g *Generator) generateThriftSpec(s *parser.Struct) string {
 	contents := ""
 	// TODO change this for 2.0? Have to figure out fastbinary
-	// From thrift:
-	// thrift_spec -> tuple of item_spec
-	// item_spec -> None | (tag, type_enum, name, spec_args, default)
-	// tag -> integer
-	// type_enum -> TType.I32 | TType.STRING | TType.STRUCT | ...
-	// name -> string_literal
-	// default -> None  # Handled by __init__
-	// spec_args -> None  # For simple types
-	//            | (type_enum, spec_args)  # Value type for list/set
-	//            | (type_enum, spec_args, type_enum, spec_args)
-	//              # Key and value for map
-	//            | (class_name, spec_args_ptr) # For struct/exception
-	// class_name -> identifier  # Basically a pointer to the class
-	// spec_args_ptr -> expression  # just class_name.spec_args
-
 	max := -1
 	for _, field := range s.Fields {
 		if field.ID > max {
@@ -345,6 +346,7 @@ func (g *Generator) generateThriftSpec(s *parser.Struct) string {
 	return contents
 }
 
+// generateInit generates the init method for a class.
 func (g *Generator) generateInit(s *parser.Struct) string {
 	contents := ""
 	argList := ""
@@ -371,6 +373,9 @@ func (g *Generator) generateInit(s *parser.Struct) string {
 	return contents
 }
 
+// generateClassDocstring generates a docstring for class. This includes a
+// description of the class, if present, a list of attributes, and descriptions
+// of each attribute, if present.
 func (g *Generator) generateClassDocstring(s *parser.Struct) string {
 	lines := []string{}
 	if s.Comment != nil {
@@ -393,6 +398,7 @@ func (g *Generator) generateClassDocstring(s *parser.Struct) string {
 	return g.generateDocString(lines, tab)
 }
 
+// generateRead generates the read method for a struct.
 func (g *Generator) generateRead(s *parser.Struct) string {
 	contents := ""
 	contents += tab + "def read(self, iprot):\n"
@@ -420,6 +426,7 @@ func (g *Generator) generateRead(s *parser.Struct) string {
 	return contents
 }
 
+// generateWrite generates the write method for a struct.
 func (g *Generator) generateWrite(s *parser.Struct) string {
 	contents := ""
 	contents += tab + "def write(self, oprot):\n"
@@ -439,6 +446,8 @@ func (g *Generator) generateWrite(s *parser.Struct) string {
 	return contents
 }
 
+// generateValidate generates a validate method for a class. This ensures
+// required fields are present.
 func (g *Generator) generateValidate(s *parser.Struct) string {
 	contents := ""
 	contents += tab + "def validate(self):\n"
@@ -452,6 +461,8 @@ func (g *Generator) generateValidate(s *parser.Struct) string {
 	return contents
 }
 
+// generateMagicMethods generates magic methods for the class, such as
+// '__hash__', '__repr__', '__eq__', and '__ne__'.
 func (g *Generator) generateMagicMethods(s *parser.Struct) string {
 	contents := ""
 	if s.Type == parser.StructTypeException {
@@ -479,6 +490,8 @@ func (g *Generator) generateMagicMethods(s *parser.Struct) string {
 	return contents
 }
 
+// generateSpecArgs is a recursive function that returns the type of the
+// argument in the format thrift_spec requires.
 func (g *Generator) generateSpecArgs(t *parser.Type) string {
 	underlyingType := g.Frugal.UnderlyingType(t)
 
@@ -503,6 +516,7 @@ func (g *Generator) generateSpecArgs(t *parser.Type) string {
 	panic("unrecognized type: " + t.Name)
 }
 
+// generateReadFieldRec recursively generates code to read a field.
 func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind string) string {
 	contents := ""
 
@@ -569,6 +583,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 	return contents
 }
 
+// generateReadFieldRec recursively generates code to write a field.
 func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind string) string {
 	contents := ""
 
