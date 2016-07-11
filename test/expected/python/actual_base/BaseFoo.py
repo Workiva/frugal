@@ -16,13 +16,8 @@ except:
 
 
 class basePing_args:
-    """
-    Attributes:
-    """
     thrift_spec = (
     )
-
-    def __init__(self):
 
     def read(self, iprot):
         if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -65,13 +60,8 @@ class basePing_args:
         return not (self == other)
 
 class basePing_result:
-    """
-    Attributes:
-    """
     thrift_spec = (
     )
-
-    def __init__(self):
 
     def read(self, iprot):
         if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:

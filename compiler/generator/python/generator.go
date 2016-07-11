@@ -386,6 +386,10 @@ func (g *Generator) generateThriftSpec(s *parser.Struct) string {
 
 // generateInit generates the init method for a class.
 func (g *Generator) generateInit(s *parser.Struct) string {
+	if len(s.Fields) == 0 {
+		return ""
+	}
+
 	contents := ""
 	argList := ""
 	for _, field := range s.Fields {
@@ -421,16 +425,22 @@ func (g *Generator) generateClassDocstring(s *parser.Struct) string {
 		lines = append(lines, "")
 	}
 
-	lines = append(lines, "Attributes:")
-	for _, field := range s.Fields {
-		line := fmt.Sprintf(" - %s", field.Name)
-		if len(field.Comment) > 0 {
-			line = fmt.Sprintf("%s: %s", line, field.Comment[0])
-			lines = append(lines, line)
-			lines = append(lines, field.Comment[1:]...)
-		} else {
-			lines = append(lines, line)
+	if len(s.Fields) > 0 {
+		lines = append(lines, "Attributes:")
+		for _, field := range s.Fields {
+			line := fmt.Sprintf(" - %s", field.Name)
+			if len(field.Comment) > 0 {
+				line = fmt.Sprintf("%s: %s", line, field.Comment[0])
+				lines = append(lines, line)
+				lines = append(lines, field.Comment[1:]...)
+			} else {
+				lines = append(lines, line)
+			}
 		}
+	}
+
+	if len(lines) == 0 {
+		return ""
 	}
 
 	return g.generateDocString(lines, tab)
