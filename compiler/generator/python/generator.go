@@ -63,7 +63,7 @@ func (g *Generator) SetupGenerator(outputDir string) error {
 	if _, err = typesFile.WriteString("\n\n"); err != nil {
 		return err
 	}
-	if err = g.GenerateTypesImports(typesFile); err != nil {
+	if err = g.GenerateTypesImports(typesFile, false); err != nil {
 		return err
 	}
 	if _, err = typesFile.WriteString("\n\n"); err != nil {
@@ -300,7 +300,7 @@ func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir str
 	if _, err = file.WriteString("\n\n"); err != nil {
 		return err
 	}
-	if err = g.GenerateTypesImports(file); err != nil {
+	if err = g.GenerateTypesImports(file, true); err != nil {
 		return err
 	}
 	if _, err = file.WriteString("\n\n"); err != nil {
@@ -757,7 +757,7 @@ func (g *Generator) GenerateScopePackage(file *os.File, s *parser.Scope) error {
 	return nil
 }
 
-func (g *Generator) GenerateTypesImports(file *os.File) error {
+func (g *Generator) GenerateTypesImports(file *os.File, isArgsOrResult bool) error {
 	contents := ""
 	contents += "from thrift.Thrift import TType, TMessageType, TException, TApplicationException\n"
 	for _, include := range g.Frugal.Thrift.Includes {
@@ -767,7 +767,10 @@ func (g *Generator) GenerateTypesImports(file *os.File) error {
 		}
 		contents += fmt.Sprintf("import %s.ttypes\n", includeName)
 	}
-	contents += "\n\n"
+	contents += "\n"
+	if isArgsOrResult {
+		contents += "from ttypes import *\n"
+	}
 	contents += "from thrift.transport import TTransport\n"
 	contents += "from thrift.protocol import TBinaryProtocol, TProtocol\n"
 	contents += "try:\n"
