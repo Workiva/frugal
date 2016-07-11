@@ -37,8 +37,6 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 	return gen
 }
 
-// TODO Unimplemented methods
-
 // SetupGenerator performs any setup logic before generation.
 func (g *Generator) SetupGenerator(outputDir string) error {
 	g.outputDir = outputDir
