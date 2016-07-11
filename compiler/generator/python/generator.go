@@ -42,7 +42,7 @@ func (g *Generator) SetupGenerator(outputDir string) error {
 	g.outputDir = outputDir
 
 	dir := g.outputDir
-	for dir != "." {
+	for filepath.Dir(dir) != "." {
 		file, err := g.GenerateFile("__init__", dir, generator.ObjectFile)
 		file.Close()
 		if err != nil {
