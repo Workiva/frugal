@@ -275,6 +275,8 @@ func (g *Generator) GenerateStruct(s *parser.Struct) error {
 
 // GenerateUnion generates the given union.
 func (g *Generator) GenerateUnion(union *parser.Struct) error {
+	// TODO 2.0 consider adding validation only one field is set,
+	// similar to other languages
 	_, err := g.typesFile.WriteString(g.generateStruct(union))
 	return err
 }
