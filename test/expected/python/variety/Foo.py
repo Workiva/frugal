@@ -7,7 +7,7 @@
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException
 import actual_base.python.ttypes
 
-
+from ttypes import *
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol, TProtocol
 try:
