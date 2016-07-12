@@ -343,7 +343,8 @@ func (g *Generator) generateStruct(s *parser.Struct) string {
 
 // generateDefaultMarkers generates marker objects to provide as defaults to
 // an __init__ method. The __init__ method can then determine if the default
-// was provided and generate
+// was provided and generate the constant appropriately. Don't generate the
+// constant as a class variable to avoid order of declaration issues.
 func (g *Generator) generateDefaultMarkers(s *parser.Struct) string {
 	contents := ""
 	for _, field := range s.Fields {
