@@ -9,10 +9,6 @@ import actual_base.python.ttypes
 
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol, TProtocol
-try:
-    from thrift.protocol import fastbinary
-except:
-    fastbinary = None
 
 
 class HealthCondition:
@@ -57,18 +53,10 @@ class TestBase:
     Attributes:
      - base_struct
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.STRUCT, 'base_struct', (actual_base.python.ttypes.thing, actual_base.python.ttypes.thing.thrift_spec), None),  # 1
-    )
-
     def __init__(self, base_struct=None):
         self.base_struct = base_struct
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -86,9 +74,6 @@ class TestBase:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('TestBase')
         if self.base_struct is not None:
             oprot.writeFieldBegin('base_struct', TType.STRUCT, 1)
@@ -125,22 +110,12 @@ class Event:
      - ID: ID is a unique identifier for an event.
      - Message: Message contains the event payload.
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.I64, 'ID', None, -1),  # 1
-        (2, TType.STRING, 'Message', None, None),  # 2
-    )
-
-    def __init__(self, ID=thrift_spec[1][4], Message=None):
-        if ID is self.thrift_spec[1][4]:
-            ID = -1
+    _DEFAULT_ID_MARKER = -1
+    def __init__(self, ID=_DEFAULT_ID_MARKER, Message=None):
         self.ID = ID
         self.Message = Message
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -162,9 +137,6 @@ class Event:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('Event')
         if self.ID is not None:
             oprot.writeFieldBegin('ID', TType.I64, 1)
@@ -219,76 +191,38 @@ class TestingDefaults:
      - status
      - base_status
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.I64, 'ID2', None, -1),  # 1
-        (2, TType.STRUCT, 'ev1', (Event, Event.thrift_spec), Event(**{
-            "ID": -1,
-            "Message": "a message",
-        })),  # 2
-        (3, TType.STRUCT, 'ev2', (Event, Event.thrift_spec), Event(**{
-            "ID": 5,
-            "Message": "a message2",
-        })),  # 3
-        (4, TType.I64, 'ID', None, -2),  # 4
-        (5, TType.STRING, 'thing', None, "a constant"),  # 5
-        (6, TType.STRING, 'thing2', None, "another constant"),  # 6
-        (7, TType.LIST, 'listfield', (TType.I32, None), [
-            1,
-            2,
-            3,
-            4,
-            5,
-        ]),  # 7
-        (8, TType.I64, 'ID3', None, -1),  # 8
-        (9, TType.STRING, 'bin_field', None, None),  # 9
-        (10, TType.STRING, 'bin_field2', None, None),  # 10
-        (11, TType.STRING, 'bin_field3', None, None),  # 11
-        (12, TType.STRING, 'bin_field4', None, "hello"),  # 12
-        (13, TType.LIST, 'list2', (TType.I32, None), [
-            1,
-            3,
-            4,
-            5,
-            8,
-        ]),  # 13
-        (14, TType.LIST, 'list3', (TType.I32, None), None),  # 14
-        (15, TType.LIST, 'list4', (TType.I32, None), [
-            1,
-            2,
-            3,
-            6,
-        ]),  # 15
-        (16, TType.MAP, 'a_map', (TType.STRING, None, TType.STRING, None), {
-            "k1": "v1",
-            "k2": "v2",
-        }),  # 16
-        (17, TType.I32, 'status', None, 1),  # 17
-        (18, TType.I32, 'base_status', None, 3),  # 18
-    )
-
-    def __init__(self, ID2=thrift_spec[1][4], ev1=thrift_spec[2][4], ev2=thrift_spec[3][4], ID=thrift_spec[4][4], thing=thrift_spec[5][4], thing2=thrift_spec[6][4], listfield=thrift_spec[7][4], ID3=thrift_spec[8][4], bin_field=None, bin_field2=None, bin_field3=None, bin_field4=thrift_spec[12][4], list2=thrift_spec[13][4], list3=None, list4=thrift_spec[15][4], a_map=thrift_spec[16][4], status=thrift_spec[17][4], base_status=thrift_spec[18][4]):
-        if ID2 is self.thrift_spec[1][4]:
-            ID2 = -1
+    _DEFAULT_ID2_MARKER = -1
+    _DEFAULT_ev1_MARKER = object()
+    _DEFAULT_ev2_MARKER = object()
+    _DEFAULT_ID_MARKER = -2
+    _DEFAULT_thing_MARKER = "a constant"
+    _DEFAULT_thing2_MARKER = "another constant"
+    _DEFAULT_listfield_MARKER = object()
+    _DEFAULT_ID3_MARKER = -1
+    _DEFAULT_bin_field4_MARKER = "hello"
+    _DEFAULT_list2_MARKER = object()
+    _DEFAULT_list4_MARKER = object()
+    _DEFAULT_a_map_MARKER = object()
+    _DEFAULT_status_MARKER = 1
+    _DEFAULT_base_status_MARKER = 3
+    def __init__(self, ID2=_DEFAULT_ID2_MARKER, ev1=_DEFAULT_ev1_MARKER, ev2=_DEFAULT_ev2_MARKER, ID=_DEFAULT_ID_MARKER, thing=_DEFAULT_thing_MARKER, thing2=_DEFAULT_thing2_MARKER, listfield=_DEFAULT_listfield_MARKER, ID3=_DEFAULT_ID3_MARKER, bin_field=None, bin_field2=None, bin_field3=None, bin_field4=_DEFAULT_bin_field4_MARKER, list2=_DEFAULT_list2_MARKER, list3=None, list4=_DEFAULT_list4_MARKER, a_map=_DEFAULT_a_map_MARKER, status=_DEFAULT_status_MARKER, base_status=_DEFAULT_base_status_MARKER):
         self.ID2 = ID2
-        if ev1 is self.thrift_spec[2][4]:
+        if ev1 is self._DEFAULT_ev1_MARKER:
             ev1 = Event(**{
                 "ID": -1,
                 "Message": "a message",
             })
         self.ev1 = ev1
-        if ev2 is self.thrift_spec[3][4]:
+        if ev2 is self._DEFAULT_ev2_MARKER:
             ev2 = Event(**{
                 "ID": 5,
                 "Message": "a message2",
             })
         self.ev2 = ev2
-        if ID is self.thrift_spec[4][4]:
-            ID = -2
         self.ID = ID
         self.thing = thing
         self.thing2 = thing2
-        if listfield is self.thrift_spec[7][4]:
+        if listfield is self._DEFAULT_listfield_MARKER:
             listfield = [
                 1,
                 2,
@@ -297,14 +231,12 @@ class TestingDefaults:
                 5,
             ]
         self.listfield = listfield
-        if ID3 is self.thrift_spec[8][4]:
-            ID3 = -1
         self.ID3 = ID3
         self.bin_field = bin_field
         self.bin_field2 = bin_field2
         self.bin_field3 = bin_field3
         self.bin_field4 = bin_field4
-        if list2 is self.thrift_spec[13][4]:
+        if list2 is self._DEFAULT_list2_MARKER:
             list2 = [
                 1,
                 3,
@@ -314,7 +246,7 @@ class TestingDefaults:
             ]
         self.list2 = list2
         self.list3 = list3
-        if list4 is self.thrift_spec[15][4]:
+        if list4 is self._DEFAULT_list4_MARKER:
             list4 = [
                 1,
                 2,
@@ -322,7 +254,7 @@ class TestingDefaults:
                 6,
             ]
         self.list4 = list4
-        if a_map is self.thrift_spec[16][4]:
+        if a_map is self._DEFAULT_a_map_MARKER:
             a_map = {
                 "k1": "v1",
                 "k2": "v2",
@@ -332,9 +264,6 @@ class TestingDefaults:
         self.base_status = base_status
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -464,9 +393,6 @@ class TestingDefaults:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('TestingDefaults')
         if self.ID2 is not None:
             oprot.writeFieldBegin('ID2', TType.I64, 1)
@@ -610,17 +536,6 @@ class EventWrapper:
      - Nums
      - Enums
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.I64, 'ID', None, None),  # 1
-        (2, TType.STRUCT, 'Ev', (Event, Event.thrift_spec), None),  # 2
-        (3, TType.LIST, 'Events', (TType.STRUCT, (Event, Event.thrift_spec)), None),  # 3
-        (4, TType.SET, 'Events2', (TType.STRUCT, (Event, Event.thrift_spec)), None),  # 4
-        (5, TType.MAP, 'EventMap', (TType.I64, None, TType.STRUCT, (Event, Event.thrift_spec)), None),  # 5
-        (6, TType.LIST, 'Nums', (TType.LIST, (TType.I32, None)), None),  # 6
-        (7, TType.LIST, 'Enums', (TType.I32, None), None),  # 7
-    )
-
     def __init__(self, ID=None, Ev=None, Events=None, Events2=None, EventMap=None, Nums=None, Enums=None):
         self.ID = ID
         self.Ev = Ev
@@ -631,9 +546,6 @@ class EventWrapper:
         self.Enums = Enums
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -715,9 +627,6 @@ class EventWrapper:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('EventWrapper')
         if self.ID is not None:
             oprot.writeFieldBegin('ID', TType.I64, 1)
@@ -805,15 +714,6 @@ class TestingUnions:
      - AnInt16
      - Requests
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.I64, 'AnID', None, None),  # 1
-        (2, TType.STRING, 'aString', None, None),  # 2
-        (3, TType.I32, 'someotherthing', None, None),  # 3
-        (4, TType.I16, 'AnInt16', None, None),  # 4
-        (5, TType.MAP, 'Requests', (TType.I32, None, TType.STRING, None), None),  # 5
-    )
-
     def __init__(self, AnID=None, aString=None, someotherthing=None, AnInt16=None, Requests=None):
         self.AnID = AnID
         self.aString = aString
@@ -822,9 +722,6 @@ class TestingUnions:
         self.Requests = Requests
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -867,9 +764,6 @@ class TestingUnions:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('TestingUnions')
         if self.AnID is not None:
             oprot.writeFieldBegin('AnID', TType.I64, 1)
@@ -927,20 +821,11 @@ class AwesomeException(TException):
      - ID: ID is a unique identifier for an awesome exception.
      - Reason: Reason contains the error message.
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.I64, 'ID', None, None),  # 1
-        (2, TType.STRING, 'Reason', None, None),  # 2
-    )
-
     def __init__(self, ID=None, Reason=None):
         self.ID = ID
         self.Reason = Reason
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -962,9 +847,6 @@ class AwesomeException(TException):
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('AwesomeException')
         if self.ID is not None:
             oprot.writeFieldBegin('ID', TType.I64, 1)

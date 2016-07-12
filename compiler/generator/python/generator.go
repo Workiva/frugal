@@ -329,7 +329,7 @@ func (g *Generator) generateStruct(s *parser.Struct) string {
 	contents += fmt.Sprintf("class %s%s:\n", s.Name, extends)
 	contents += g.generateClassDocstring(s)
 
-	contents += g.generateThriftSpec(s)
+	contents += g.generateDefaultMarkers(s)
 	contents += g.generateInit(s)
 
 	contents += g.generateRead(s)
@@ -341,46 +341,23 @@ func (g *Generator) generateStruct(s *parser.Struct) string {
 	return contents
 }
 
-// generateThriftSpec generates a tuple containing information about each
-// field of the struct, from thrift:
-// thrift_spec -> tuple of item_spec
-// item_spec -> None | (tag, type_enum, name, spec_args, default)
-// tag -> integer
-// type_enum -> TType.I32 | TType.STRING | TType.STRUCT | ...
-// name -> string_literal
-// default -> None  # Handled by __init__
-// spec_args -> None  # For simple types
-//            | (type_enum, spec_args)  # Value type for list/set
-//            | (type_enum, spec_args, type_enum, spec_args)
-//              # Key and value for map
-//            | (class_name, spec_args_ptr) # For struct/exception
-// class_name -> identifier  # Basically a pointer to the class
-// spec_args_ptr -> expression  # just class_name.spec_args
-func (g *Generator) generateThriftSpec(s *parser.Struct) string {
+// generateDefaultMarkers generates marker objects to provide as defaults to
+// an __init__ method. The __init__ method can then determine if the default
+// was provided and generate
+func (g *Generator) generateDefaultMarkers(s *parser.Struct) string {
 	contents := ""
-	// TODO change this for 2.0? Have to figure out fastbinary
-	max := -1
 	for _, field := range s.Fields {
-		if field.ID > max {
-			max = field.ID
+		if field.Default != nil {
+			underlyingType := g.Frugal.UnderlyingType(field.Type)
+			// use 'object()' as a marker value to avoid instantiating
+			// a class defined later in the file
+			defaultVal := "object()"
+			if parser.IsThriftPrimitive(underlyingType) || g.Frugal.IsEnum(underlyingType) {
+				defaultVal = g.generateConstantValue(underlyingType, field.Default, tab)
+			}
+			contents += fmt.Sprintf(tab+"_DEFAULT_%s_MARKER = %s\n", field.Name, defaultVal)
 		}
 	}
-	thriftSpec := make([]string, max+1)
-	for _, field := range s.Fields {
-		defaultVal := g.generateConstantValue(field.Type, field.Default, tabtab)
-		spec := fmt.Sprintf("(%d, %s, '%s', %s, %s)",
-			field.ID, g.getTType(field.Type), field.Name, g.generateSpecArgs(field.Type), defaultVal)
-		thriftSpec[field.ID] = spec
-	}
-	contents += tab + "thrift_spec = (\n"
-	for idx, line := range thriftSpec {
-		spec := "None"
-		if line != "" {
-			spec = line
-		}
-		contents += fmt.Sprintf(tabtab+"%s,  # %d\n", spec, idx)
-	}
-	contents += tab + ")\n\n"
 	return contents
 }
 
@@ -395,17 +372,15 @@ func (g *Generator) generateInit(s *parser.Struct) string {
 	for _, field := range s.Fields {
 		defaultVal := "None"
 		if field.Default != nil {
-			defaultVal = fmt.Sprintf("thrift_spec[%d][4]", field.ID)
+			defaultVal = fmt.Sprintf("_DEFAULT_%s_MARKER", field.Name)
 		}
 		argList += fmt.Sprintf(", %s=%s", field.Name, defaultVal)
 	}
 	contents += fmt.Sprintf(tab+"def __init__(self%s):\n", argList)
 	for _, field := range s.Fields {
-		// TODO 2.0 this is the behaviour thrift has, but not using
-		// the underlying type gives different behaviour for aliased
-		// types, consider changing
-		if !parser.IsThriftPrimitive(field.Type) && !g.Frugal.IsEnum(field.Type) && field.Default != nil {
-			contents += fmt.Sprintf(tabtab+"if %s is self.thrift_spec[%d][4]:\n", field.Name, field.ID)
+		underlyingType := g.Frugal.UnderlyingType(field.Type)
+		if !parser.IsThriftPrimitive(underlyingType) && !g.Frugal.IsEnum(underlyingType) && field.Default != nil {
+			contents += fmt.Sprintf(tabtab+"if %s is self._DEFAULT_%s_MARKER:\n", field.Name, field.Name)
 			val := g.generateConstantValue(field.Type, field.Default, tabtabtab)
 			contents += fmt.Sprintf(tabtabtab+"%s = %s\n", field.Name, val)
 		}
@@ -450,9 +425,6 @@ func (g *Generator) generateClassDocstring(s *parser.Struct) string {
 func (g *Generator) generateRead(s *parser.Struct) string {
 	contents := ""
 	contents += tab + "def read(self, iprot):\n"
-	contents += tabtab + "if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:\n"
-	contents += tabtabtab + "fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))\n"
-	contents += tabtabtab + "return\n"
 	contents += tabtab + "iprot.readStructBegin()\n"
 	contents += tabtab + "while True:\n"
 	contents += tabtabtab + "(fname, ftype, fid) = iprot.readFieldBegin()\n"
@@ -478,9 +450,6 @@ func (g *Generator) generateRead(s *parser.Struct) string {
 func (g *Generator) generateWrite(s *parser.Struct) string {
 	contents := ""
 	contents += tab + "def write(self, oprot):\n"
-	contents += tabtab + "if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:\n"
-	contents += tabtabtab + "oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))\n"
-	contents += tabtabtab + "return\n"
 	contents += fmt.Sprintf(tabtab+"oprot.writeStructBegin('%s')\n", s.Name)
 	for _, field := range s.Fields {
 		contents += fmt.Sprintf(tabtab+"if self.%s is not None:\n", field.Name)
@@ -775,10 +744,6 @@ func (g *Generator) GenerateTypesImports(file *os.File, isArgsOrResult bool) err
 	}
 	contents += "from thrift.transport import TTransport\n"
 	contents += "from thrift.protocol import TBinaryProtocol, TProtocol\n"
-	contents += "try:\n"
-	contents += tab + "from thrift.protocol import fastbinary\n"
-	contents += "except:\n"
-	contents += tab + "fastbinary = None\n"
 
 	_, err := file.WriteString(contents)
 	return err

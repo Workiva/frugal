@@ -8,10 +8,6 @@ from thrift.Thrift import TType, TMessageType, TException, TApplicationException
 
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol, TProtocol
-try:
-    from thrift.protocol import fastbinary
-except:
-    fastbinary = None
 
 
 class base_health_condition:
@@ -40,20 +36,11 @@ class thing:
      - an_id
      - a_string
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.I32, 'an_id', None, None),  # 1
-        (2, TType.STRING, 'a_string', None, None),  # 2
-    )
-
     def __init__(self, an_id=None, a_string=None):
         self.an_id = an_id
         self.a_string = a_string
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -75,9 +62,6 @@ class thing:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('thing')
         if self.an_id is not None:
             oprot.writeFieldBegin('an_id', TType.I32, 1)
@@ -111,13 +95,7 @@ class thing:
         return not (self == other)
 
 class api_exception(TException):
-    thrift_spec = (
-    )
-
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -129,9 +107,6 @@ class api_exception(TException):
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('api_exception')
         oprot.writeFieldStop()
         oprot.writeStructEnd()

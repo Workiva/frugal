@@ -10,20 +10,10 @@ import actual_base.python.ttypes
 from ttypes import *
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol, TProtocol
-try:
-    from thrift.protocol import fastbinary
-except:
-    fastbinary = None
 
 
 class ping_args:
-    thrift_spec = (
-    )
-
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -35,9 +25,6 @@ class ping_args:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('ping_args')
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -61,13 +48,7 @@ class ping_args:
         return not (self == other)
 
 class ping_result:
-    thrift_spec = (
-    )
-
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -79,9 +60,6 @@ class ping_result:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('ping_result')
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -111,22 +89,12 @@ class blah_args:
      - Str
      - event
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.I32, 'num', None, None),  # 1
-        (2, TType.STRING, 'Str', None, None),  # 2
-        (3, TType.STRUCT, 'event', (Event, Event.thrift_spec), None),  # 3
-    )
-
     def __init__(self, num=None, Str=None, event=None):
         self.num = num
         self.Str = Str
         self.event = event
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -154,9 +122,6 @@ class blah_args:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('blah_args')
         if self.num is not None:
             oprot.writeFieldBegin('num', TType.I32, 1)
@@ -201,21 +166,12 @@ class blah_result:
      - awe
      - api
     """
-    thrift_spec = (
-        (0, TType.I64, 'success', None, None),  # 0
-        (1, TType.STRUCT, 'awe', (AwesomeException, AwesomeException.thrift_spec), None),  # 1
-        (2, TType.STRUCT, 'api', (actual_base.python.ttypes.api_exception, actual_base.python.ttypes.api_exception.thrift_spec), None),  # 2
-    )
-
     def __init__(self, success=None, awe=None, api=None):
         self.success = success
         self.awe = awe
         self.api = api
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -244,9 +200,6 @@ class blah_result:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('blah_result')
         if self.success is not None:
             oprot.writeFieldBegin('success', TType.I64, 0)
@@ -290,20 +243,11 @@ class oneWay_args:
      - id
      - req
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.I64, 'id', None, None),  # 1
-        (2, TType.MAP, 'req', (TType.I32, None, TType.STRING, None), None),  # 2
-    )
-
     def __init__(self, id=None, req=None):
         self.id = id
         self.req = req
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -331,9 +275,6 @@ class oneWay_args:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('oneWay_args')
         if self.id is not None:
             oprot.writeFieldBegin('id', TType.I64, 1)
@@ -376,20 +317,11 @@ class bin_method_args:
      - bin
      - Str
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.STRING, 'bin', None, None),  # 1
-        (2, TType.STRING, 'Str', None, None),  # 2
-    )
-
     def __init__(self, bin=None, Str=None):
         self.bin = bin
         self.Str = Str
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -411,9 +343,6 @@ class bin_method_args:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('bin_method_args')
         if self.bin is not None:
             oprot.writeFieldBegin('bin', TType.STRING, 1)
@@ -452,19 +381,11 @@ class bin_method_result:
      - success
      - api
     """
-    thrift_spec = (
-        (0, TType.STRING, 'success', None, None),  # 0
-        (1, TType.STRUCT, 'api', (actual_base.python.ttypes.api_exception, actual_base.python.ttypes.api_exception.thrift_spec), None),  # 1
-    )
-
     def __init__(self, success=None, api=None):
         self.success = success
         self.api = api
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -487,9 +408,6 @@ class bin_method_result:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('bin_method_result')
         if self.success is not None:
             oprot.writeFieldBegin('success', TType.STRING, 0)
@@ -529,22 +447,12 @@ class param_modifiers_args:
      - default_num
      - req_num
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.I32, 'opt_num', None, None),  # 1
-        (2, TType.I32, 'default_num', None, None),  # 2
-        (3, TType.I32, 'req_num', None, None),  # 3
-    )
-
     def __init__(self, opt_num=None, default_num=None, req_num=None):
         self.opt_num = opt_num
         self.default_num = default_num
         self.req_num = req_num
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -571,9 +479,6 @@ class param_modifiers_args:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('param_modifiers_args')
         if self.opt_num is not None:
             oprot.writeFieldBegin('opt_num', TType.I32, 1)
@@ -618,17 +523,10 @@ class param_modifiers_result:
     Attributes:
      - success
     """
-    thrift_spec = (
-        (0, TType.I64, 'success', None, None),  # 0
-    )
-
     def __init__(self, success=None):
         self.success = success
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -645,9 +543,6 @@ class param_modifiers_result:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('param_modifiers_result')
         if self.success is not None:
             oprot.writeFieldBegin('success', TType.I64, 0)
@@ -681,20 +576,11 @@ class underlying_types_test_args:
      - list_type
      - set_type
     """
-    thrift_spec = (
-        None,  # 0
-        (1, TType.LIST, 'list_type', (TType.I64, None), None),  # 1
-        (2, TType.SET, 'set_type', (TType.I64, None), None),  # 2
-    )
-
     def __init__(self, list_type=None, set_type=None):
         self.list_type = list_type
         self.set_type = set_type
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -726,9 +612,6 @@ class underlying_types_test_args:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('underlying_types_test_args')
         if self.list_type is not None:
             oprot.writeFieldBegin('list_type', TType.LIST, 1)
@@ -772,17 +655,10 @@ class underlying_types_test_result:
     Attributes:
      - success
     """
-    thrift_spec = (
-        (0, TType.LIST, 'success', (TType.I64, None), None),  # 0
-    )
-
     def __init__(self, success=None):
         self.success = success
 
     def read(self, iprot):
-        if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-            fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-            return
         iprot.readStructBegin()
         while True:
             (fname, ftype, fid) = iprot.readFieldBegin()
@@ -804,9 +680,6 @@ class underlying_types_test_result:
         iprot.readStructEnd()
 
     def write(self, oprot):
-        if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-            oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-            return
         oprot.writeStructBegin('underlying_types_test_result')
         if self.success is not None:
             oprot.writeFieldBegin('success', TType.LIST, 0)
