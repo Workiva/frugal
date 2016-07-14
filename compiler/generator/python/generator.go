@@ -37,13 +37,23 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 	return gen
 }
 
-// TODO Unimplemented methods
-
 // SetupGenerator performs any setup logic before generation.
 func (g *Generator) SetupGenerator(outputDir string) error {
 	g.outputDir = outputDir
 
-	typesFile, err := g.GenerateFile("types", outputDir, generator.ObjectFile)
+	dir := g.outputDir
+	for filepath.Dir(dir) != "." {
+		file, err := g.GenerateFile("__init__", dir, generator.ObjectFile)
+		file.Close()
+		if err != nil {
+			return err
+		}
+
+		dir = filepath.Dir(dir)
+	}
+
+	// create types file
+	typesFile, err := g.GenerateFile("ttypes", outputDir, generator.ObjectFile)
 	if err != nil {
 		return err
 	}
@@ -53,7 +63,7 @@ func (g *Generator) SetupGenerator(outputDir string) error {
 	if _, err = typesFile.WriteString("\n\n"); err != nil {
 		return err
 	}
-	if err = g.GenerateTypesImports(typesFile); err != nil {
+	if err = g.GenerateTypesImports(typesFile, false); err != nil {
 		return err
 	}
 	if _, err = typesFile.WriteString("\n\n"); err != nil {
@@ -73,7 +83,7 @@ func (g *Generator) TeardownGenerator() error {
 func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) error {
 	contents := "\n\n"
 	contents += "from thrift.Thrift import TType, TMessageType, TException, TApplicationException\n"
-	contents += "from f_types import *\n\n"
+	contents += "from ttypes import *\n\n"
 
 	for _, constant := range constants {
 		value := g.generateConstantValue(constant.Type, constant.Value, "")
@@ -264,8 +274,11 @@ func (g *Generator) GenerateStruct(s *parser.Struct) error {
 }
 
 // GenerateUnion generates the given union.
-func (g *Generator) GenerateUnion(*parser.Struct) error {
-	return nil
+func (g *Generator) GenerateUnion(union *parser.Struct) error {
+	// TODO 2.0 consider adding validation only one field is set,
+	// similar to other languages
+	_, err := g.typesFile.WriteString(g.generateStruct(union))
+	return err
 }
 
 // GenerateException generates the given exception.
@@ -276,8 +289,33 @@ func (g *Generator) GenerateException(exception *parser.Struct) error {
 
 // GenerateServiceArgsResults generates the args and results objects for the
 // given service.
-func (g *Generator) GenerateServiceArgsResults(string, string, []*parser.Struct) error {
-	return nil
+func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir string, structs []*parser.Struct) error {
+	file, err := g.GenerateFile(serviceName, g.outputDir, generator.ObjectFile)
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+
+	if err = g.GenerateDocStringComment(file); err != nil {
+		return err
+	}
+	if _, err = file.WriteString("\n\n"); err != nil {
+		return err
+	}
+	if err = g.GenerateTypesImports(file, true); err != nil {
+		return err
+	}
+	if _, err = file.WriteString("\n\n"); err != nil {
+		return err
+	}
+
+	contents := ""
+	for _, s := range structs {
+		contents += g.generateStruct(s)
+	}
+
+	_, err = file.WriteString(contents)
+	return err
 }
 
 // generateStruct generates a python representation of a thrift struct
@@ -348,6 +386,10 @@ func (g *Generator) generateThriftSpec(s *parser.Struct) string {
 
 // generateInit generates the init method for a class.
 func (g *Generator) generateInit(s *parser.Struct) string {
+	if len(s.Fields) == 0 {
+		return ""
+	}
+
 	contents := ""
 	argList := ""
 	for _, field := range s.Fields {
@@ -383,16 +425,22 @@ func (g *Generator) generateClassDocstring(s *parser.Struct) string {
 		lines = append(lines, "")
 	}
 
-	lines = append(lines, "Attributes:")
-	for _, field := range s.Fields {
-		line := fmt.Sprintf(" - %s", field.Name)
-		if len(field.Comment) > 0 {
-			line = fmt.Sprintf("%s: %s", line, field.Comment[0])
-			lines = append(lines, line)
-			lines = append(lines, field.Comment[1:]...)
-		} else {
-			lines = append(lines, line)
+	if len(s.Fields) > 0 {
+		lines = append(lines, "Attributes:")
+		for _, field := range s.Fields {
+			line := fmt.Sprintf(" - %s", field.Name)
+			if len(field.Comment) > 0 {
+				line = fmt.Sprintf("%s: %s", line, field.Comment[0])
+				lines = append(lines, line)
+				lines = append(lines, field.Comment[1:]...)
+			} else {
+				lines = append(lines, line)
+			}
 		}
+	}
+
+	if len(lines) == 0 {
+		return ""
 	}
 
 	return g.generateDocString(lines, tab)
@@ -681,7 +729,7 @@ func (g *Generator) GenerateFile(name, outputDir string, fileType generator.File
 	case generator.CombinedServiceFile:
 		return g.CreateFile(fmt.Sprintf("f_%s", name), outputDir, lang, false)
 	case generator.ObjectFile:
-		return g.CreateFile(fmt.Sprintf("f_%s", name), outputDir, lang, false)
+		return g.CreateFile(fmt.Sprintf("%s", name), outputDir, lang, false)
 	default:
 		return nil, fmt.Errorf("Bad file type for Python generator: %s", fileType)
 	}
@@ -711,7 +759,7 @@ func (g *Generator) GenerateScopePackage(file *os.File, s *parser.Scope) error {
 	return nil
 }
 
-func (g *Generator) GenerateTypesImports(file *os.File) error {
+func (g *Generator) GenerateTypesImports(file *os.File, isArgsOrResult bool) error {
 	contents := ""
 	contents += "from thrift.Thrift import TType, TMessageType, TException, TApplicationException\n"
 	for _, include := range g.Frugal.Thrift.Includes {
@@ -719,9 +767,12 @@ func (g *Generator) GenerateTypesImports(file *os.File) error {
 		if !ok {
 			includeName = include.Name
 		}
-		contents += fmt.Sprintf("import %s.f_types\n", includeName)
+		contents += fmt.Sprintf("import %s.ttypes\n", includeName)
 	}
-	contents += "\n\n"
+	contents += "\n"
+	if isArgsOrResult {
+		contents += "from ttypes import *\n"
+	}
 	contents += "from thrift.transport import TTransport\n"
 	contents += "from thrift.protocol import TBinaryProtocol, TProtocol\n"
 	contents += "try:\n"
@@ -1022,7 +1073,7 @@ func (g *Generator) qualifiedTypeName(t *parser.Type) string {
 		if !ok {
 			namespace = include
 		}
-		return fmt.Sprintf("%s.f_types.%s", namespace, param)
+		return fmt.Sprintf("%s.ttypes.%s", namespace, param)
 	} else {
 		return param
 	}

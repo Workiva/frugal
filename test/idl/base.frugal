@@ -1,6 +1,7 @@
 namespace java base
 namespace go actual_base
 namespace dart actual_base
+namespace py actual_base.python
 
 exception api_exception {}
 
