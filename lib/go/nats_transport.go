@@ -323,14 +323,20 @@ func (n *natsServiceTTransport) Read(p []byte) (int, error) {
 	return num, thrift.NewTTransportExceptionFromError(err)
 }
 
-// Write the bytes to a buffer. Returns ErrTooLarge if the buffer exceeds 1MB.
+// Write the bytes to a buffer.
 func (n *natsServiceTTransport) Write(p []byte) (int, error) {
 	if !n.IsOpen() {
 		return 0, n.getClosedConditionError("write:")
 	}
-	if len(p)+n.writeBuffer.Len() > natsMaxMessageSize {
-		n.writeBuffer.Reset() // Clear any existing bytes.
-		return 0, ErrTooLarge
+
+	// Include 4 bytes for frame size.
+	remaining := natsMaxMessageSize - 4 - n.writeBuffer.Len()
+	if remaining < len(p) {
+		n.writeBuffer.Write(p[0:remaining])
+		if err := n.Flush(); err != nil {
+			return 0, thrift.NewTTransportExceptionFromError(err)
+		}
+		return n.Write(p[remaining:])
 	}
 	num, err := n.writeBuffer.Write(p)
 	return num, thrift.NewTTransportExceptionFromError(err)
