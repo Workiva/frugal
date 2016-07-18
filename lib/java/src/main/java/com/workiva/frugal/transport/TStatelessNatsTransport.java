@@ -81,6 +81,10 @@ public class TStatelessNatsTransport extends TTransport {
         if (sub != null) {
             throw new TTransportException(TTransportException.ALREADY_OPEN, "NATS transport already open");
         }
+        // Make sure the frame buffer is completely empty (in case this
+        // transport was re-opened).
+        frameBuffer.clear();
+
         sub = conn.subscribe(inbox, new MessageHandler() {
             @Override
             public void onMessage(Message message) {
@@ -106,6 +110,7 @@ public class TStatelessNatsTransport extends TTransport {
             LOGGER.warn("NATS transport could not unsubscribe from subscription: " + e.getMessage());
         }
         sub = null;
+        frameBuffer.clear();
         try {
             frameBuffer.put(FRAME_BUFFER_CLOSED);
         } catch (InterruptedException e) {
