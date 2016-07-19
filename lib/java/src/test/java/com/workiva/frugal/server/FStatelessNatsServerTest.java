@@ -12,33 +12,53 @@ import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+@RunWith(JUnit4.class)
 public class FStatelessNatsServerTest {
 
-    private Connection conn;
-    private FProcessor processor;
-    private FProtocolFactory protocolFactory;
+    private Connection mockConn;
+    private FProcessor mockProcessor;
+    private FProtocolFactory mockProtocolFactory;
     private String subject = "foo";
     private String queue = "bar";
     private FStatelessNatsServer server;
 
     @Before
     public void setUp() {
-        conn = mock(Connection.class);
-        processor = mock(FProcessor.class);
-        protocolFactory = mock(FProtocolFactory.class);
-        server = new FStatelessNatsServer.Builder(conn, processor, protocolFactory, subject).withQueueGroup(queue).build();
+        mockConn = mock(Connection.class);
+        mockProcessor = mock(FProcessor.class);
+        mockProtocolFactory = mock(FProtocolFactory.class);
+        server = new FStatelessNatsServer.Builder(mockConn, mockProcessor, mockProtocolFactory, subject).withQueueGroup(queue).build();
+    }
+
+    @Test
+    public void testBuilderConfiguresServer() {
+        FStatelessNatsServer server =
+            new FStatelessNatsServer.Builder(mockConn, mockProcessor, mockProtocolFactory, subject)
+                .withHighWatermark(7)
+                .withQueueGroup("myQueue")
+                .withQueueLength(7)
+                .withWorkerCount(10)
+                .build();
+
+        assertEquals(server.getQueue(), "myQueue");
+        assertEquals(server.getWorkQueue().remainingCapacity(), 7);
+        assertEquals(((ThreadPoolExecutor) server.getWorkerPool()).getMaximumPoolSize(), 10);
     }
 
     @Test
@@ -47,26 +67,22 @@ public class FStatelessNatsServerTest {
         ArgumentCaptor<String> queueCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<MessageHandler> handlerCaptor = ArgumentCaptor.forClass(MessageHandler.class);
         Subscription sub = mock(Subscription.class);
-        when(conn.subscribe(subjectCaptor.capture(), queueCaptor.capture(), handlerCaptor.capture())).thenReturn(sub);
+        when(mockConn.subscribe(subjectCaptor.capture(), queueCaptor.capture(), handlerCaptor.capture())).thenReturn(sub);
 
-        final BlockingQueue<Object> wait = new SynchronousQueue<>();
+        CountDownLatch stopSignal = new CountDownLatch(1);
 
-        new Thread(new Runnable() {
-            public void run() {
-                try {
-                    server.serve();
-                    wait.put(new Object());
-                } catch (Exception e) {
-                    fail(e.getMessage());
-                }
+        // start/stop the server
+        new Thread(() -> {
+            try {
+                server.serve();
+                stopSignal.countDown(); // signal server stopped
+            } catch (TException e) {
+                fail(e.getMessage());
             }
         }).start();
-
         server.stop();
 
-        if (wait.poll(1, TimeUnit.SECONDS) == null) {
-            fail("Wait timed out");
-        }
+        stopSignal.await(); // wait for orderly shutdown
 
         assertEquals(subject, subjectCaptor.getValue());
         assertEquals(queue, queueCaptor.getValue());
@@ -79,7 +95,7 @@ public class FStatelessNatsServerTest {
         ExecutorService executor = mock(ExecutorService.class);
         ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
         when(executor.submit(captor.capture())).thenReturn(null);
-        server.workerPool = executor;
+        server.setWorkerPool(executor);
         MessageHandler handler = server.newRequestHandler();
         String reply = "reply";
         byte[] data = "this is a request".getBytes();
@@ -93,17 +109,17 @@ public class FStatelessNatsServerTest {
         assertArrayEquals(data, request.frameBytes);
         assertEquals(reply, request.reply);
         assertEquals(5000, request.highWatermark);
-        assertEquals(protocolFactory, request.inputProtoFactory);
-        assertEquals(protocolFactory, request.outputProtoFactory);
-        assertEquals(processor, request.processor);
-        assertEquals(conn, request.conn);
+        assertEquals(mockProtocolFactory, request.inputProtoFactory);
+        assertEquals(mockProtocolFactory, request.outputProtoFactory);
+        assertEquals(mockProcessor, request.processor);
+        assertEquals(mockConn, request.conn);
     }
 
     @Test
     public void testRequestHandler_noReply() {
         ExecutorService executor = mock(ExecutorService.class);
         when(executor.submit(any(Runnable.class))).thenReturn(null);
-        server.workerPool = executor;
+        server.setWorkerPool(executor);
         MessageHandler handler = server.newRequestHandler();
         byte[] data = "this is a request".getBytes();
         Message msg = new Message(subject, null, data);
@@ -120,14 +136,14 @@ public class FStatelessNatsServerTest {
         String reply = "reply";
         long highWatermark = 5000;
         MockFProcessor processor = new MockFProcessor(data, "blah".getBytes());
-        protocolFactory = new FProtocolFactory(new TJSONProtocol.Factory());
+        mockProtocolFactory = new FProtocolFactory(new TJSONProtocol.Factory());
         FStatelessNatsServer.Request request = new FStatelessNatsServer.Request(data, timestamp, reply, highWatermark,
-                protocolFactory, protocolFactory, processor, conn);
+                mockProtocolFactory, mockProtocolFactory, processor, mockConn);
 
         request.run();
 
         byte[] expected = new byte[]{0, 0, 0, 6, 34, 98, 108, 97, 104, 34};
-        verify(conn).publish(reply, expected);
+        verify(mockConn).publish(reply, expected);
     }
 
     @Test
@@ -137,13 +153,13 @@ public class FStatelessNatsServerTest {
         String reply = "reply";
         long highWatermark = 5000;
         MockFProcessor processor = new MockFProcessor(data, null);
-        protocolFactory = new FProtocolFactory(new TJSONProtocol.Factory());
+        mockProtocolFactory = new FProtocolFactory(new TJSONProtocol.Factory());
         FStatelessNatsServer.Request request = new FStatelessNatsServer.Request(data, timestamp, reply, highWatermark,
-                protocolFactory, protocolFactory, processor, conn);
+                mockProtocolFactory, mockProtocolFactory, processor, mockConn);
 
         request.run();
 
-        verify(conn, times(0)).publish(any(String.class), any(byte[].class));
+        verify(mockConn, times(0)).publish(any(String.class), any(byte[].class));
     }
 
     private class MockFProcessor implements FProcessor {

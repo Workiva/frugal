@@ -19,7 +19,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * An implementation of FServer which uses NATS as the underlying transport. Clients must connect with the
@@ -37,11 +41,14 @@ public class FStatelessNatsServer implements FServer {
     private final String subject;
     private final String queue;
     private long highWatermark = FTransport.DEFAULT_WATERMARK;
-    protected ExecutorService workerPool;
+
+    private ExecutorService workerPool;
     private final BlockingQueue<Object> shutdown = new ArrayBlockingQueue<>(1);
+    private final BlockingQueue<Runnable> workQueue;
 
     /**
      * Creates a new FStatelessNatsServer which receives requests on the given subject and queue.
+     * <p>
      * The worker count controls the size of the thread pool used to process requests. This uses a provided queue
      * length. If the queue fills up, newly received requests will block to be placed on the queue. If requests wait for
      * too long based on the high watermark, the server will log that it is backed up. Clients must connect with the
@@ -62,7 +69,7 @@ public class FStatelessNatsServer implements FServer {
         this.outputProtoFactory = protoFactory;
         this.subject = subject;
         this.queue = queue;
-        BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(queueLength);
+        this.workQueue = new ArrayBlockingQueue<>(queueLength);
         this.workerPool = new ThreadPoolExecutor(1, workerCount, 30, TimeUnit.SECONDS, workQueue,
                 new BlockingRejectedExecutionHandler());
     }
@@ -76,6 +83,7 @@ public class FStatelessNatsServer implements FServer {
         private final FProcessor processor;
         private final FProtocolFactory protoFactory;
         private final String subject;
+
         private String queue = "";
         private int workerCount = 1;
         private int queueLength = DEFAULT_WORK_QUEUE_LEN;
@@ -156,7 +164,7 @@ public class FStatelessNatsServer implements FServer {
     }
 
     @Override
-    public synchronized void serve() throws TException {
+    public void serve() throws TException {
         Subscription sub = conn.subscribe(subject, queue, newRequestHandler());
         LOGGER.info("Frugal server running...");
         try {
@@ -191,15 +199,6 @@ public class FStatelessNatsServer implements FServer {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    @Override
-    public synchronized void setHighWatermark(long watermark) {
-        highWatermark = watermark;
-    }
-
-    private synchronized long getHighWatermark() {
-        return highWatermark;
     }
 
     /**
@@ -286,6 +285,45 @@ public class FStatelessNatsServer implements FServer {
             }
         }
 
+    }
+
+    /**
+     * The NATS subject this server is listening on.
+     *
+     * @return the subject
+     */
+    public String getSubject() {
+        return subject;
+    }
+
+    /**
+     * The NATS queue group this server is listening on.
+     *
+     * @return the queue
+     */
+    public String getQueue() {
+        return queue;
+    }
+
+    ExecutorService getWorkerPool() {
+        return workerPool;
+    }
+
+    void setWorkerPool(ExecutorService workerPool) {
+        this.workerPool = workerPool;
+    }
+
+    BlockingQueue<Runnable> getWorkQueue() {
+        return workQueue;
+    }
+
+    @Override
+    public void setHighWatermark(long watermark) {
+        highWatermark = watermark;
+    }
+
+    private long getHighWatermark() {
+        return highWatermark;
     }
 
 }
