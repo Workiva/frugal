@@ -8,6 +8,7 @@ import (
 	"github.com/Workiva/frugal/compiler"
 	"github.com/Workiva/frugal/compiler/generator"
 	"github.com/Workiva/frugal/compiler/globals"
+	"github.com/Workiva/frugal/compiler/parser"
 	"github.com/urfave/cli"
 )
 
@@ -18,10 +19,14 @@ var (
 	gen                string
 	out                string
 	delim              string
+	sha                string
+	token              string
+	slug               string
 	retainIntermediate bool
 	recurse            bool
 	verbose            bool
 	version            bool
+	compare            bool
 )
 
 func main() {
@@ -73,6 +78,22 @@ func main() {
 			Name:        "version",
 			Usage:       "print the version",
 			Destination: &version,
+		}, cli.BoolFlag{
+			Name:        "compare",
+			Usage:       "do CI compare",
+			Destination: &compare,
+		}, cli.StringFlag{
+			Name:        "sha",
+			Usage:       "Sha to compare with. Only be used with compare flag",
+			Destination: &sha,
+		}, cli.StringFlag{
+			Name:        "token",
+			Usage:       "Token for fetching compare file from git. Only used with compare flag",
+			Destination: &token,
+		}, cli.StringFlag{
+			Name:        "slug",
+			Usage:       "slug for fetching compare file from git. Only used with compare flag",
+			Destination: &slug,
 		},
 	}
 
@@ -93,7 +114,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if gen == "" {
+		if gen == "" && !compare {
 			fmt.Println("No output language specified")
 			fmt.Printf("Usage: %s [options] file\n\n", app.Name)
 			fmt.Printf("Use %s -help for a list of options\n", app.Name)
@@ -119,9 +140,20 @@ func main() {
 			}
 		}()
 
-		if err := compiler.Compile(options); err != nil {
-			fmt.Printf("Failed to generate %s:\n\t%s\n", options.File, err.Error())
-			os.Exit(1)
+		if !compare {
+			if err := compiler.Compile(options); err != nil {
+				fmt.Printf("Failed to generate %s:\n\t%s\n", options.File, err.Error())
+				os.Exit(1)
+			}
+		} else {
+			// check sha, slug and token
+			if sha == "" || token == "" || slug == "" {
+				panic("specify compare fields with!\n$ frugal -compare -sha {commit} -token {token} -slug{git slug} {file strings}")
+			}
+			if err := parser.Compare(sha, slug, token, options.File); err != nil {
+				fmt.Printf("Failed to do comparison %s:\n\t%s\n", options.File, err.Error())
+				os.Exit(1)
+			}
 		}
 
 		return nil
