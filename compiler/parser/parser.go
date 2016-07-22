@@ -39,6 +39,7 @@ func parseFrugal(filePath string, visitedIncludes []string) (*Frugal, error) {
 	frugal.File = filePath
 	frugal.Dir = filepath.Dir(file.Name())
 	frugal.Path = filePath
+	// for smithy ci we dont need to parse all the included frugals
 	if os.Getenv("SMITHY_CI") != "TRUE" {
 		for _, incl := range frugal.Thrift.Includes {
 			// parse all the includes before validating.
