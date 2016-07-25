@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -22,53 +23,63 @@ const (
 	FIELD              = "Field"
 	ENUMVALUE          = "EnumValue"
 	METHOD             = "Method"
+	PREFIX             = "Prefix"
+	TYPE               = "Type"
+	THRIFT             = "Thrift"
+	MODIFIER           = "Modifier"
+	FIELDS             = "Fields"
 )
 
-func Compare(file, audit string) error {
+func cleanTrace(name string) {
+	if r := recover(); r != nil {
+		panic(fmt.Sprintf("%s -> %s", name, r))
+	}
+}
+
+func Compare(file, audit string) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovering from Error!\n", r)
+			err = errors.New(r.(string))
 		}
 	}()
 
 	// parse the current frugal
-	f1, err := ParseFrugal(file)
+	var f1 *Frugal
+	f1, err = ParseFrugal(file)
 	if err != nil || f1 == nil {
-		panic(fmt.Sprintf("Could not parse frugal file: %s\n\t%s", file, err))
+		return err
 	}
 
 	// parse the frugal to compare with
-	f2, err := ParseFrugal(audit)
+	var f2 *Frugal
+	f2, err = ParseFrugal(audit)
 	if err != nil || f2 == nil {
-		panic(fmt.Sprintf("Could not parse audit frugal file: %s\n\t%s", audit, err))
+		return err
 	}
 
-	// If the two definitions are not equal, do the checks
-	if !reflect.DeepEqual(f1, f2) {
-		checkScopes(f1.Scopes, f2.Scopes)
-		checkThrift(f1.Thrift, f2.Thrift)
-		// Can ignore if and when thrift is dead
-		// checkOrderedDefinitions(f.OrderedDefinitions, f2.OrderedDefinitions)
-	}
-	fmt.Printf("Passed: %s\n", file)
+	// check scopes
+	checkScopes(f1.Scopes, f2.Scopes, SCOPE)
+
+	// check thrift models
+	checkThrift(f1.Thrift, f2.Thrift, THRIFT)
+
 	return err
 }
 
-func checkScopes(scopes1, scopes2 []*Scope) {
+func checkScopes(scopes1, scopes2 []*Scope, trace string) {
+	defer cleanTrace(trace)
+
 	if len(scopes1) == len(scopes2) {
 		for i := range scopes1 {
 			checkString(scopes1[i].Name, scopes2[i].Name, SCOPE)
 			// check scope prefix
-			norm1 := normScopePrefix(scopes1[i].Prefix)
-			norm2 := normScopePrefix(scopes2[i].Prefix)
-			if norm1 != norm2 {
-				panic(fmt.Sprintf("Scope prefix not compatible! %s, %s\n", norm1, norm2))
-			}
+			checkPrefix(scopes1[i].Prefix, scopes2[i].Prefix, PREFIX)
+
 			// check scope operations
 			if len(scopes1[i].Operations) == len(scopes2[i].Operations) {
 				for j := range scopes1[i].Operations {
 					checkString(scopes1[i].Operations[j].Name, scopes2[i].Operations[j].Name, OPERATION)
-					checkType(scopes1[i].Operations[j].Type, scopes2[i].Operations[j].Type)
+					checkType(scopes1[i].Operations[j].Type, scopes2[i].Operations[j].Type, TYPE)
 				}
 			} else {
 				checkLen(len(scopes1[i].Operations), len(scopes1[i].Operations), OPERATION)
@@ -79,6 +90,15 @@ func checkScopes(scopes1, scopes2 []*Scope) {
 	}
 }
 
+func checkPrefix(pre1, pre2 *ScopePrefix, trace string) {
+	defer cleanTrace(trace)
+	norm1 := normScopePrefix(pre1)
+	norm2 := normScopePrefix(pre2)
+	if norm1 != norm2 {
+		panic(fmt.Sprintf("%s not compatible with %s", pre1.String, pre2.String))
+	}
+}
+
 func normScopePrefix(pre *ScopePrefix) string {
 	for i, v := range pre.Variables {
 		pre.String = strings.Replace(pre.String, v, strconv.Itoa(i), -1)
@@ -86,7 +106,8 @@ func normScopePrefix(pre *ScopePrefix) string {
 	return pre.String
 }
 
-func checkType(t1, t2 *Type) {
+func checkType(t1, t2 *Type, trace string) {
+	defer cleanTrace(trace)
 	if t1 == nil || t2 == nil {
 		if t1 != t2 {
 			panic(fmt.Sprintf("types not compatible! %s, %s\n", t1, t2))
@@ -94,47 +115,50 @@ func checkType(t1, t2 *Type) {
 		return
 	}
 	checkString(t1.Name, t2.Name, SCOPE+" "+OPERATION)
-	checkType(t1.KeyType, t2.KeyType)
-	checkType(t1.ValueType, t2.ValueType)
+	checkType(t1.KeyType, t2.KeyType, TYPE)
+	checkType(t1.ValueType, t2.ValueType, TYPE)
 }
 
-func checkThrift(thrift1, thrift2 *Thrift) {
+func checkThrift(thrift1, thrift2 *Thrift, trace string) {
+	defer cleanTrace(trace)
 	if !reflect.DeepEqual(thrift1, thrift2) {
-		checkThriftStructs(thrift1.Structs, thrift2.Structs)
-		checkThriftStructs(thrift1.Exceptions, thrift2.Exceptions)
-		checkThriftStructs(thrift1.Unions, thrift2.Unions)
-		checkThriftServices(thrift1.Services, thrift2.Services)
-		checkThriftTypeDefs(thrift1.Typedefs, thrift2.Typedefs)
-		checkThriftConstants(thrift1.Constants, thrift2.Constants)
-		checkThriftEnums(thrift1.Enums, thrift2.Enums)
-		checkThriftNamespaces(thrift1.Namespaces, thrift2.Namespaces)
+		checkThriftStructs(thrift1.Structs, thrift2.Structs, STRUCT)
+		checkThriftStructs(thrift1.Exceptions, thrift2.Exceptions, STRUCT)
+		checkThriftStructs(thrift1.Unions, thrift2.Unions, STRUCT)
+		checkThriftServices(thrift1.Services, thrift2.Services, SERVICE)
+		checkThriftTypeDefs(thrift1.Typedefs, thrift2.Typedefs, TYPEDEF)
+		checkThriftConstants(thrift1.Constants, thrift2.Constants, CONSTANT)
+		checkThriftEnums(thrift1.Enums, thrift2.Enums, ENUM)
+		checkThriftNamespaces(thrift1.Namespaces, thrift2.Namespaces, NAMESPACE)
 	}
 }
 
-func checkThriftStructs(structs1, structs2 []*Struct) {
+func checkThriftStructs(structs1, structs2 []*Struct, trace string) {
+	defer cleanTrace(trace)
 	if len(structs1) == len(structs2) {
 		for i := range structs1 {
 			checkString(structs1[i].Name, structs2[i].Name, STRUCT)
 			// check StructType (struct, exception, union)
-			checkString(structs1[i].Type.String(), structs2[i].Type.String(), STRUCT+"TYPE")
+			checkString(structs1[i].Type.String(), structs2[i].Type.String(), STRUCT+"Type")
 			// check Fields
-			checkFields(structs1[i].Fields, structs2[i].Fields)
+			checkFields(structs1[i].Fields, structs2[i].Fields, FIELDS)
 		}
 	} else {
 		checkLen(len(structs1), len(structs2), STRUCT)
 	}
 }
 
-func checkFields(f1s, f2s []*Field) {
+func checkFields(f1s, f2s []*Field, trace string) {
+	defer cleanTrace(trace)
 	f1_map := makeFieldMap(f1s)
 	f2_map := makeFieldMap(f2s)
 	if len(f2s) > len(f1s) {
-		checkAddedFields(f2_map, f1_map)
+		checkAddedFields(f2_map, f1_map, FIELD)
 	} else if len(f1s) > len(f2s) {
-		checkAddedFields(f1_map, f2_map)
+		checkAddedFields(f1_map, f2_map, FIELD)
 	} else {
 		for key, _ := range f1_map {
-			checkField(f1_map[key], f2_map[key])
+			checkField(f1_map[key], f2_map[key], FIELD)
 		}
 	}
 }
@@ -153,65 +177,67 @@ func makeFieldMap(f []*Field) map[int]*Field {
 	return out
 }
 
-func checkField(f1, f2 *Field) {
-	// We can let this one slide
-	if f1.Name != f2.Name {
-		fmt.Printf("Field names not equal, but thats ok... %s, %s\n", f1.Name, f2.Name)
-	}
+func checkField(f1, f2 *Field, trace string) {
+	defer cleanTrace(trace)
 	// check ID
 	if f1.ID != f2.ID {
 		panic(fmt.Sprintf("Field IDs not equal! %#v, %#v\n", f1.ID, f2.ID))
 	}
 	// check type
-	checkType(f1.Type, f2.Type)
+	checkType(f1.Type, f2.Type, TYPE)
 	// check modifier (Required, Optional, Default)
-	checkFieldModifier(f1, f2)
+	checkFieldModifier(f1, f2, MODIFIER)
 }
 
-func checkFieldModifier(f1, f2 *Field) {
+func checkFieldModifier(f1, f2 *Field, trace string) {
+	defer cleanTrace(trace)
 	if f1.Modifier == Required && f2.Modifier != Required {
-		panic("Field changed to required from optional or default")
+		panic(fmt.Sprintf("(%s) changed to required from optional or default (%s)", f1.Name, f2.Name))
 	}
 	if f1.Modifier != Required && f2.Modifier == Required {
-		panic("Field changed to optional or default from required")
+		panic(fmt.Sprintf("(%s) changed to optional or default from required (%s)", f1.Name, f2.Name))
 	}
 	if f1.Modifier == Default && f2.Modifier == Default {
 		if !reflect.DeepEqual(f1.Default, f2.Default) {
-			panic("Default values have changed")
+			panic(fmt.Sprintf("Default values have changed (%s)", f1.Name))
 		}
 	} else if f1.Modifier != Default && f2.Modifier == Default || f1.Modifier == Default && f2.Modifier != Default {
-		panic("Field default <-> non-default")
+		panic(fmt.Sprintf("(%s) is no longer defaulted", f1.Name))
+	} else if f1.Modifier == Default && f2.Modifier != Default {
+		panic(fmt.Sprintf("(%s) is defaulted", f1.Name))
 	}
 }
 
-func checkAddedFields(f1s, f2s map[int]*Field) {
-	fmt.Printf("there are added/removed fields, but it could be ok...\n")
+func checkAddedFields(f1s, f2s map[int]*Field, trace string) {
+	defer cleanTrace(trace)
 	// first go through the first N old fields and make sure they have not changed
 	for key, _ := range f1s {
 		_, ok := f2s[key]
 		if ok {
-			checkField(f1s[key], f2s[key])
+			checkField(f1s[key], f2s[key], FIELD)
 		} else {
 			if f1s[key].Modifier == Required {
-				panic("Added/Removed field is required!")
+				panic(fmt.Sprintf("Added/Removed field is required! %s", f1s[key].Name))
 			}
 		}
 	}
 }
 
-func checkThriftServices(services1, services2 []*Service) {
+func checkThriftServices(services1, services2 []*Service, trace string) {
+	defer cleanTrace(trace)
 	if len(services1) == len(services2) {
 		for i := range services1 {
 			checkString(services1[i].Name, services2[i].Name, SERVICE)
 			checkString(services1[i].Extends, services2[i].Extends, SERVICE+"Extends")
-			checkThriftServiceMethods(services1[i].Methods, services2[i].Methods)
+			checkThriftServiceMethods(services1[i].Methods, services2[i].Methods, METHOD)
 		}
 	} else {
 		checkLen(len(services1), len(services2), SERVICE)
 	}
 }
 
-func checkThriftServiceMethods(meths1, meths2 []*Method) {
+func checkThriftServiceMethods(meths1, meths2 []*Method, trace string) {
+	defer cleanTrace(trace)
 	if len(meths1) == len(meths2) {
 		for i := range meths1 {
 			checkString(meths1[i].Name, meths2[i].Name, METHOD)
@@ -219,27 +245,29 @@ func checkThriftServiceMethods(meths1, meths2 []*Method) {
 			if meths1[i].Oneway != meths2[i].Oneway {
 				panic(fmt.Sprintf("Method oneway not equal! %#v, %#v\n", meths1[i].Oneway, meths2[i].Oneway))
 			}
-			checkType(meths1[i].ReturnType, meths2[i].ReturnType)
-			checkFields(meths1[i].Arguments, meths2[i].Arguments)
-			checkFields(meths1[i].Exceptions, meths2[i].Exceptions)
+			checkType(meths1[i].ReturnType, meths2[i].ReturnType, TYPE)
+			checkFields(meths1[i].Arguments, meths2[i].Arguments, FIELDS)
+			checkFields(meths1[i].Exceptions, meths2[i].Exceptions, FIELDS)
 		}
 	} else {
 		checkLen(len(meths1), len(meths2), METHOD)
 	}
 }
 
-func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef) {
+func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef, trace string) {
+	defer cleanTrace(trace)
 	if len(typedefs1) == len(typedefs2) {
 		for i := range typedefs1 {
 			checkString(typedefs1[i].Name, typedefs2[i].Name, TYPEDEF)
-			checkType(typedefs1[i].Type, typedefs2[i].Type)
+			checkType(typedefs1[i].Type, typedefs2[i].Type, TYPE)
 		}
 	} else {
 		checkLen(len(typedefs1), len(typedefs2), TYPEDEF)
 	}
 }
 
-func checkThriftConstants(constants1, constants2 []*Constant) {
+func checkThriftConstants(constants1, constants2 []*Constant, trace string) {
+	defer cleanTrace(trace)
 	if len(constants1) == len(constants2) {
 		for i := range constants1 {
 			checkString(constants1[i].Name, constants2[i].Name, CONSTANT)
@@ -253,18 +281,20 @@ func checkThriftConstants(constants1, constants2 []*Constant) {
 	}
 }
 
-func checkThriftEnums(enums1, enums2 []*Enum) {
+func checkThriftEnums(enums1, enums2 []*Enum, trace string) {
+	defer cleanTrace(trace)
 	if len(enums1) == len(enums2) {
 		for i := range enums1 {
 			checkString(enums1[i].Name, enums2[i].Name, ENUM)
-			checkEnumValues(enums1[i].Values, enums2[i].Values)
+			checkEnumValues(enums1[i].Values, enums2[i].Values, ENUMVALUE)
 		}
 	} else {
 		checkLen(len(enums1), len(enums2), ENUM)
 	}
 }
 
-func checkEnumValues(vals1, vals2 []*EnumValue) {
+func checkEnumValues(vals1, vals2 []*EnumValue, trace string) {
+	defer cleanTrace(trace)
 	if len(vals1) == len(vals2) {
 		for i := range vals1 {
 			checkString(vals1[i].Name, vals2[i].Name, ENUMVALUE)
@@ -278,7 +308,8 @@ func checkEnumValues(vals1, vals2 []*EnumValue) {
 	}
 }
 
-func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace) {
+func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace, trace string) {
+	defer cleanTrace(trace)
 	if len(namespaces1) == len(namespaces2) {
 		for i := range namespaces1 {
 			// do deep equal on namespaces
@@ -291,17 +322,19 @@ func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace) {
 	}
 }
 
-func checkString(s1, s2, name string) {
+func checkString(s1, s2, trace string) {
+	defer cleanTrace(trace)
 	if s1 != s2 {
-		panic(fmt.Sprintf("%s name/string not equal! %s, %s\n", name, s1, s2))
+		panic(fmt.Sprintf("%s not equal! %s, %s\n", trace, s1, s2))
 	}
 }
 
-func checkLen(l1, l2 int, t string) {
+func checkLen(l1, l2 int, trace string) {
+	defer cleanTrace(trace)
 	if l1 > l2 {
-		panic(fmt.Sprintf("There are new %ss\n", t))
+		panic(fmt.Sprintf("There are new %ss", trace))
 	} else {
-		panic(fmt.Sprintf("There are removed %ss\n", t))
+		panic(fmt.Sprintf("There are removed %ss", trace))
 	}
 }
 

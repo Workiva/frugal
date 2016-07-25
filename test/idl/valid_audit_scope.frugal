@@ -1,0 +1,56 @@
+# This is a comment.
+
+namespace java foo
+
+include "excepts.frugal"
+include "validStructs.frugal"
+include "ValidTypes.frugal"
+
+/**@
+ * This is a docstring.
+ */
+struct Thing {}
+
+/** This is not a docstring. */
+struct Stuff {}
+
+typedef i32 Int
+
+// Exception
+exception InvalidOperation {
+    1: i32 whatOp,
+    2: string why
+}
+
+// This is a service. It has the same name as a scope. And that's ok.
+service Blah {
+    /**@ Use this to ping the server. */
+    void ping(),
+    /**@ Use this to tell the server how you feel. */
+    i64 bleh(1:Thing one, 2:Stuff Two, 3:list<Int> custom_ints) throws (1: InvalidOperation oops, 2: excepts.InvalidData err2),
+
+    validStructs.Thing getThing(),
+    ValidTypes.MyInt getMyInt(),
+}
+
+// This is a scope
+/**@ And this is a scope docstring. */
+scope Foo prefix foo.bar.{baz}.{biz}.qux {
+
+    /**@ This is an operation docstring. */
+    Foo: Thing // This is an operation.
+    Bar: Stuff
+}
+
+// This is a weirdly formatted scope, but it's still valid! And it has
+// the same name as a service. And that's ok.
+scope
+                blah
+{
+DoStuff :   Thing}
+
+
+// This scope is commented-out.
+//scope Baz {
+//    Blah: Stuff
+//}
