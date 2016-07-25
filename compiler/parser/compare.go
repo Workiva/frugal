@@ -1,16 +1,10 @@
 package parser
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
-
-	// "github.com/Workiva/frugal/compiler/parser"
 )
 
 const (
@@ -30,29 +24,23 @@ const (
 	METHOD             = "Method"
 )
 
-func Compare(compare_sha, slug, token, file string) error {
+func Compare(file, audit string) error {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovering from Error!\n", r)
 		}
 	}()
 
-	// get frugal to compare with
-	tmpfile, _ := ioutil.TempFile("", file)
-	defer tmpfile.Close()
-	defer os.Remove(tmpfile.Name()) // clean up
-	tmpfile.Write(getFile(slug, file, token))
-
 	// parse the current frugal
 	f1, err := ParseFrugal(file)
 	if err != nil || f1 == nil {
-		panic(fmt.Sprintf("Aawww snap! Could not parse frugal file: %s\n", file))
+		panic(fmt.Sprintf("Could not parse frugal file: %s\n\t%s", file, err))
 	}
 
 	// parse the frugal to compare with
-	f2, err := ParseFrugal(tmpfile.Name())
+	f2, err := ParseFrugal(audit)
 	if err != nil || f2 == nil {
-		panic(fmt.Sprintf("Aawww snap! Could not parse frugal file: %s\n", file))
+		panic(fmt.Sprintf("Could not parse audit frugal file: %s\n\t%s", audit, err))
 	}
 
 	// If the two definitions are not equal, do the checks
@@ -315,28 +303,6 @@ func checkLen(l1, l2 int, t string) {
 	} else {
 		panic(fmt.Sprintf("There are removed %ss\n", t))
 	}
-}
-
-func getFile(slug, file, token string) []byte {
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://api.github.com/repos/"+slug+"/contents/"+file, nil)
-	if err != nil {
-		panic(err)
-	}
-	req.Header.Add("Authorization", "token "+token)
-	res, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer res.Body.Close()
-	obj := struct {
-		Content []byte `json:"content"`
-	}{}
-	if err = json.NewDecoder(res.Body).Decode(&obj); err != nil {
-		panic(err)
-	}
-	return obj.Content
 }
 
 // func checkOrderedDefinitions(defs1, defs2 []interface{}) {
