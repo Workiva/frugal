@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -50,16 +51,14 @@ func Compare(file, audit string) error {
 	err.Append(checkScopes(newFrugal.Scopes, oldFrugal.Scopes, SCOPE))
 
 	// check thrift models
-	if !reflect.DeepEqual(newFrugal.Thrift, oldFrugal.Thrift) {
-		err.Append(checkThriftStructs(newFrugal.Thrift.Structs, oldFrugal.Thrift.Structs, STRUCT))
-		err.Append(checkThriftStructs(newFrugal.Thrift.Exceptions, oldFrugal.Thrift.Exceptions, EXCEPTION))
-		err.Append(checkThriftStructs(newFrugal.Thrift.Unions, oldFrugal.Thrift.Unions, UNION))
-		err.Append(checkThriftServices(newFrugal.Thrift.Services, oldFrugal.Thrift.Services, SERVICE))
-		err.Append(checkThriftTypeDefs(newFrugal.Thrift.Typedefs, oldFrugal.Thrift.Typedefs, TYPEDEF))
-		err.Append(checkThriftConstants(newFrugal.Thrift.Constants, oldFrugal.Thrift.Constants, CONSTANT))
-		err.Append(checkThriftEnums(newFrugal.Thrift.Enums, oldFrugal.Thrift.Enums, ENUM))
-		err.Append(checkThriftNamespaces(newFrugal.Thrift.Namespaces, oldFrugal.Thrift.Namespaces, NAMESPACE))
-	}
+	err.Append(checkThriftStructs(newFrugal.Thrift.Structs, oldFrugal.Thrift.Structs, STRUCT))
+	err.Append(checkThriftStructs(newFrugal.Thrift.Exceptions, oldFrugal.Thrift.Exceptions, EXCEPTION))
+	err.Append(checkThriftStructs(newFrugal.Thrift.Unions, oldFrugal.Thrift.Unions, UNION))
+	err.Append(checkThriftServices(newFrugal.Thrift.Services, oldFrugal.Thrift.Services, SERVICE))
+	err.Append(checkThriftTypeDefs(newFrugal.Thrift.Typedefs, oldFrugal.Thrift.Typedefs, TYPEDEF))
+	err.Append(checkThriftConstants(newFrugal.Thrift.Constants, oldFrugal.Thrift.Constants, CONSTANT))
+	err.Append(checkThriftEnums(newFrugal.Thrift.Enums, oldFrugal.Thrift.Enums, ENUM))
+	err.Append(checkThriftNamespaces(newFrugal.Thrift.Namespaces, oldFrugal.Thrift.Namespaces, NAMESPACE))
 
 	// return nil if no errors
 	if err.Error() == "" {
@@ -70,7 +69,7 @@ func Compare(file, audit string) error {
 
 func checkScopes(scopes1, scopes2 []*Scope, trace string) (err Error) {
 	defer err.Prefix(trace)
-	err.Append(checkLen(len(scopes1), len(scopes2)))
+
 	sc1_map, e := makeScopeMap(scopes1)
 	err.Append(e)
 	sc2_map, e := makeScopeMap(scopes2)
@@ -90,6 +89,12 @@ func checkScopes(scopes1, scopes2 []*Scope, trace string) (err Error) {
 					err.Append(checkType(op1_map[op].Type, op2_map[op].Type, TYPE))
 				}
 			}
+		}
+	}
+	// can add scopes but not remove them
+	for key, _ := range sc2_map {
+		if _, ok := sc1_map[key]; !ok {
+			err.Append(NewErrorf(" removed: %s", sc2_map[key].Name))
 		}
 	}
 	return err
@@ -128,7 +133,7 @@ func checkType(t1, t2 *Type, trace string) (err Error) {
 
 func checkThriftStructs(structs1, structs2 []*Struct, trace string) (err Error) {
 	defer err.Prefix(trace)
-	err.Append(checkLen(len(structs1), len(structs2)))
+
 	str1_map, e := makeStructureMap(structs1)
 	err.Append(e)
 	str2_map, e := makeStructureMap(structs2)
@@ -137,6 +142,12 @@ func checkThriftStructs(structs1, structs2 []*Struct, trace string) (err Error) 
 		if _, ok := str2_map[key]; ok {
 			// check Fields
 			err.Append(checkFields(str1_map[key].Fields, str2_map[key].Fields, " "+str1_map[key].Name+"."))
+		}
+	}
+	// can add structs but not remove them
+	for key, _ := range str2_map {
+		if _, ok := str1_map[key]; !ok {
+			err.Append(NewErrorf(" removed: %s", str2_map[key].Name))
 		}
 	}
 	return err
@@ -158,12 +169,10 @@ func checkFields(f1s, f2s []*Field, trace string) (err Error) {
 		}
 	}
 	// look for removed fields
-	if len(f2_map) > len(f1_map) {
-		for key, _ := range f2_map {
-			if _, ok := f1_map[key]; !ok {
-				if f2_map[key].Modifier == Required {
-					err.Append(NewErrorf("%s removed field is required", f2_map[key].Name))
-				}
+	for key, _ := range f2_map {
+		if _, ok := f1_map[key]; !ok {
+			if f2_map[key].Modifier == Required {
+				err.Append(NewErrorf("%s removed field is required", f2_map[key].Name))
 			}
 		}
 	}
@@ -191,10 +200,11 @@ func checkFieldModifier(f1, f2 *Field) (err Error) {
 		(f1.Modifier == Default && f2.Modifier != Default) {
 		err.Append(NewErrorf("changed to %s from %s", f1.Modifier.String(), f2.Modifier.String()))
 	}
-	// TODO is this check necessary?
+	// TODO is this check necessary? possibly for default method returns?
 	if f1.Modifier == Default && f2.Modifier == Default {
 		if !reflect.DeepEqual(f1.Default, f2.Default) {
-			err.Append(NewErrorf("default values have changed"))
+			// log.Printf("WARNING: Default values changed %s: new(%#v), old(%#v)\n", f1.Name, f1.Default, f2.Default)
+			err.Append(NewErrorf("default values have changed: new(%#v), old(%#v)", f1.Default, f2.Default))
 		}
 	}
 	return err
@@ -202,7 +212,7 @@ func checkFieldModifier(f1, f2 *Field) (err Error) {
 
 func checkThriftServices(services1, services2 []*Service, trace string) (err Error) {
 	defer err.Prefix(trace)
-	err.Append(checkLen(len(services1), len(services2)))
+
 	serv1_map, e := makeServiceMap(services1)
 	err.Append(e)
 	serv2_map, e := makeServiceMap(services2)
@@ -213,12 +223,18 @@ func checkThriftServices(services1, services2 []*Service, trace string) (err Err
 			err.Append(checkThriftServiceMethods(serv1_map[key].Methods, serv2_map[key].Methods, METHOD))
 		}
 	}
+	// can add services but not remove them
+	for key, _ := range serv2_map {
+		if _, ok := serv1_map[key]; !ok {
+			err.Append(NewErrorf(" removed: %s", serv2_map[key].Name))
+		}
+	}
 	return err
 }
 
 func checkThriftServiceMethods(meths1, meths2 []*Method, trace string) (err Error) {
 	defer err.Prefix(trace)
-	err.Append(checkLen(len(meths1), len(meths2)))
+
 	meth1_map, e := makeMethodMap(meths1)
 	err.Append(e)
 	meth2_map, e := makeMethodMap(meths2)
@@ -227,12 +243,24 @@ func checkThriftServiceMethods(meths1, meths2 []*Method, trace string) (err Erro
 		if _, ok := meth2_map[key]; ok {
 			// check direction of method
 			if meth1_map[key].Oneway != meth2_map[key].Oneway {
-				err.Append(NewErrorf("Method oneway not equal: %#v, %#v", meth1_map[key].Oneway, meth2_map[key].Oneway))
+				err.Append(NewErrorf("Method oneway not equal %s: %#v, %#v", key, meth1_map[key].Oneway, meth2_map[key].Oneway))
 			}
 			err.Append(checkType(meth1_map[key].ReturnType, meth2_map[key].ReturnType, TYPE))
 			err.Append(checkFields(meth1_map[key].Arguments, meth2_map[key].Arguments, FIELDS))
-			// TODO this should be vetted more thoroughly
+			// check exceptions to method
 			err.Append(checkFields(meth1_map[key].Exceptions, meth2_map[key].Exceptions, FIELDS))
+			// cant add exception with non-void return
+			if meth1_map[key].ReturnType != nil {
+				if len(meth1_map[key].Exceptions) > len(meth2_map[key].Exceptions) {
+					err.Append(NewErrorf("Cannot add a new exception to method %s with non-void return.", key))
+				}
+			}
+		}
+	}
+	// can add methods but not remove or rename them
+	for key, _ := range meth2_map {
+		if _, ok := meth1_map[key]; !ok {
+			err.Append(NewErrorf(" removed: %s", meth2_map[key].Name))
 		}
 	}
 	return err
@@ -251,11 +279,9 @@ func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef, trace string) (err Err
 		}
 	}
 	// can add typedefs but not remove them
-	if len(typedefs1) < len(typedefs2) {
-		for key, _ := range tdef2_map {
-			if _, ok := tdef1_map[key]; !ok {
-				err.Append(NewErrorf(" removed: %s", tdef2_map[key].Name))
-			}
+	for key, _ := range tdef2_map {
+		if _, ok := tdef1_map[key]; !ok {
+			err.Append(NewErrorf(" removed: %s", tdef2_map[key].Name))
 		}
 	}
 	return err
@@ -279,11 +305,9 @@ func checkThriftConstants(constants1, constants2 []*Constant, trace string) (err
 		}
 	}
 	// can add constants but not remove them
-	if len(constants1) < len(constants2) {
-		for key, _ := range cons2_map {
-			if _, ok := cons1_map[key]; !ok {
-				err.Append(NewErrorf(" removed: %s", cons2_map[key].Name))
-			}
+	for key, _ := range cons2_map {
+		if _, ok := cons1_map[key]; !ok {
+			err.Append(NewErrorf(" removed: %s", cons2_map[key].Name))
 		}
 	}
 	return err
@@ -302,12 +326,18 @@ func checkThriftEnums(enums1, enums2 []*Enum, trace string) (err Error) {
 			err.Append(checkEnumValues(enum1_map[key].Values, enum2_map[key].Values, " "+enum1_map[key].Name+"."))
 		}
 	}
+	// can add enum but not remove them
+	for key, _ := range enum2_map {
+		if _, ok := enum1_map[key]; !ok {
+			err.Append(NewErrorf(" removed: %s", enum2_map[key].Name))
+		}
+	}
 	return err
 }
 
 func checkEnumValues(vals1, vals2 []*EnumValue, trace string) (err Error) {
 	defer err.Prefix(trace)
-	err.Append(checkLen(len(vals1), len(vals2)))
+
 	eval1_map, e := makeEnumValueMap(vals1)
 	err.Append(e)
 	eval2_map, e := makeEnumValueMap(vals2)
@@ -320,12 +350,18 @@ func checkEnumValues(vals1, vals2 []*EnumValue, trace string) (err Error) {
 			}
 		}
 	}
+	// can add enum value but not remove them
+	for key, _ := range eval2_map {
+		if _, ok := eval1_map[key]; !ok {
+			err.Append(NewErrorf(" removed: %s", eval2_map[key].Name))
+		}
+	}
 	return err
 }
 
 func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace, trace string) (err Error) {
 	defer err.Prefix(trace)
-	err.Append(checkLen(len(namespaces1), len(namespaces2)))
+	// TODO is checking the namespace necessary?
 	ns1_map, e := makeNamespaceMap(namespaces1)
 	err.Append(e)
 	ns2_map, e := makeNamespaceMap(namespaces2)
@@ -334,10 +370,17 @@ func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace, trace string) 
 		if _, ok := ns2_map[key]; ok {
 			// do deep equal on namespaces
 			if !reflect.DeepEqual(ns1_map[key], ns2_map[key]) {
-				err.Append(NewErrorf(" not equal: %#v, %#v", ns1_map[key], ns2_map[key]))
+				log.Printf("WARNING: Namespaces not equal: %#v, %#v\n", ns1_map[key], ns2_map[key])
 			}
 		}
 	}
+	// can add namespaces but not remove them
+	for key, _ := range ns2_map {
+		if _, ok := ns1_map[key]; !ok {
+			log.Printf("WARNING: Namespaces removed: %s\n", key)
+		}
+	}
+
 	return err
 }
 
