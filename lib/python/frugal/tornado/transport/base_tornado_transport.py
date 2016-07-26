@@ -1,66 +1,14 @@
-import logging
-
-from thrift.transport.TTransport import TTransportBase, TTransportException
-from tornado import gen, locks
-
-from frugal.exceptions import FMessageSizeException
-
-logger = logging.getLogger(__name__)
+# TODO: Remove this with 2.0
+from frugal.tornado.transport import FTornadoTransport
+from frugal.util.deprecate import deprecated
 
 
-class TTornadoTransportBase(TTransportBase, object):
+class TTornadoTransportBase(FTornadoTransport):
+    """
+    @deprecated Use FTornadoTransport instead
+    """
 
-    def __init__(self, max_message_size=1024*1024):
-        self._open_lock = locks.Lock()
-        self._max_message_size = max_message_size
-        self._execute = None
-
-    def set_execute_callback(self, execute):
-        """Set the message callback execute function
-
-        Args:
-            execute: message callback execute function
-        """
-        self._execute = execute
-
-    @gen.coroutine
-    def isOpen(self):
-        raise gen.Return(NotImplementedError("You must override this."))
-
-    @gen.coroutine
-    def open(self):
-        raise gen.Return(NotImplementedError("You must override this."))
-
-    @gen.coroutine
-    def close(self):
-        raise gen.Return(NotImplementedError("You must override this."))
-
-    def read(self, size):
-        raise NotImplementedError("Don't call this.")
-
-    @gen.coroutine
-    def write(self, buff):
-        """Writes the bytes to a buffer.  Throws FMessageSizeException if
-        the buffer exceeds limit.
-
-        Args:
-            buff: buffer to append to the write buffer.
-        """
-        if not (yield self.isOpen()):
-            ex = TTransportException(TTransportException.NOT_OPEN,
-                                     "Transport not open!")
-            logger.exception(ex)
-            raise ex
-
-        size = len(buff) + len(self._wbuf.getvalue())
-
-        if size > self._max_message_size > 0:
-            ex = FMessageSizeException("Message exceeds max message size")
-            logger.exception(ex)
-            raise ex
-
-        self._wbuf.write(buff)
-
-    @gen.coroutine
-    def flush(self):
-        raise gen.Return(NotImplementedError("You must override this."))
+    @deprecated
+    def __init__(self, max_message_size=1024 * 1024):
+        super(TTornadoTransportBase, self).__init__(
+            max_message_size=max_message_size)

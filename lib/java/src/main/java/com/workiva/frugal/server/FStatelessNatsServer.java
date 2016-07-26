@@ -26,8 +26,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * An implementation of FServer which uses NATS as the underlying transport. Clients must connect with the
- * TStatelessNatsTransport.
+ * An implementation of FServer which uses NATS as the underlying transport.
+ * Clients must connect with the FNatsTransport.
+ *
+ * TODO: Rename this to FNatsServer with 2.0.
  */
 public class FStatelessNatsServer implements FServer {
 
@@ -52,7 +54,7 @@ public class FStatelessNatsServer implements FServer {
      * The worker count controls the size of the thread pool used to process requests. This uses a provided queue
      * length. If the queue fills up, newly received requests will block to be placed on the queue. If requests wait for
      * too long based on the high watermark, the server will log that it is backed up. Clients must connect with the
-     * TStatelessNatsTransport.
+     * FNatsTransport.
      *
      * @param conn         NATS connection
      * @param processor    FProcessor used to process requests

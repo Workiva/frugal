@@ -50,7 +50,6 @@ func main() {
 	}
 
 	fprotocolFactory := frugal.NewFProtocolFactory(protocolFactory)
-	ftransportFactory := frugal.NewFMuxTransportFactory(5)
 
 	natsOptions := nats.DefaultOptions
 	natsOptions.Servers = []string{*addr}
@@ -64,14 +63,14 @@ func main() {
 		if err := runPublisher(conn, fprotocolFactory); err != nil {
 			fmt.Println("error running publisher:", err)
 		}
-		if err := runClient(conn, ftransportFactory, fprotocolFactory, *port); err != nil {
+		if err := runClient(conn, fprotocolFactory, *port); err != nil {
 			fmt.Println("error running client:", err)
 		}
 	} else {
 		if err := runSubscriber(conn, fprotocolFactory); err != nil {
 			fmt.Println("error running subscriber:", err)
 		}
-		if err := runServer(conn, ftransportFactory, fprotocolFactory, *port); err != nil {
+		if err := runServer(conn, fprotocolFactory, *port); err != nil {
 			fmt.Println("error running server:", err)
 		}
 	}
@@ -104,9 +103,8 @@ func handleClient(client *event.FFooClient) (err error) {
 }
 
 // Client runner
-func runClient(conn *nats.Conn, transportFactory frugal.FTransportFactory, protocolFactory *frugal.FProtocolFactory, port string) error {
-	transport := frugal.NewNatsServiceTTransport(conn, "foo", 5*time.Second, 2)
-	natsT := transportFactory.GetTransport(transport)
+func runClient(conn *nats.Conn, protocolFactory *frugal.FProtocolFactory, port string) error {
+	natsT := frugal.NewFNatsTransport(conn, "foo", "bar")
 	defer natsT.Close()
 	if err := natsT.Open(); err != nil {
 		return err
@@ -116,8 +114,7 @@ func runClient(conn *nats.Conn, transportFactory frugal.FTransportFactory, proto
 		return err
 	}
 
-	transport = frugal.NewHttpTTransport(&http.Client{}, fmt.Sprintf("http://localhost:%s/frugal", port))
-	httpT := transportFactory.GetTransport(transport)
+	httpT := frugal.NewHttpFTransportBuilder(&http.Client{}, fmt.Sprintf("http://localhost:%s/frugal", port)).Build()
 	defer httpT.Close()
 	if err := httpT.Open(); err != nil {
 		return err
@@ -152,8 +149,7 @@ func (f *FooHandler) OneWay(ctx *frugal.FContext, id event.ID, req event.Request
 }
 
 // Server runner
-func runServer(conn *nats.Conn, transportFactory frugal.FTransportFactory,
-	protocolFactory *frugal.FProtocolFactory, port string) error {
+func runServer(conn *nats.Conn, protocolFactory *frugal.FProtocolFactory, port string) error {
 	handler := &FooHandler{}
 	processor := event.NewFFooProcessor(handler)
 
@@ -163,9 +159,8 @@ func runServer(conn *nats.Conn, transportFactory frugal.FTransportFactory,
 		http.ListenAndServe(fmt.Sprintf(":%s", port), http.DefaultServeMux)
 	}()
 
-	server := frugal.NewFNatsServerFactory(conn, "foo", 5*time.Second, 2,
-		frugal.NewFProcessorFactory(processor), transportFactory, protocolFactory)
-	fmt.Println("Starting the simple nats server... on ", "foo")
+	server := frugal.NewFNatsServerBuilder(conn, processor, protocolFactory, "foo").Build()
+	fmt.Println("Starting the nats server... on ", "foo")
 	return server.Serve()
 }
 

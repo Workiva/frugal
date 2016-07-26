@@ -34,7 +34,11 @@ import java.util.concurrent.TimeUnit;
 /**
  * An implementation of FServer which uses NATS as the underlying transport. Clients must connect with the
  * TNatsServiceTransport.
+ *
+ * @deprecated With the next major release of frugal, stateful NATS transports will no longer be supported.
+ * With the release of 2.0, FStatelessNatsServer will be renamed to FNatsServer.
  */
+@Deprecated
 public class FNatsServer implements FServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(FNatsServer.class);
 
@@ -56,12 +60,14 @@ public class FNatsServer implements FServer {
     private final ScheduledExecutorService heartbeatExecutor = Executors.newScheduledThreadPool(1);
 
 
+    @Deprecated
     public FNatsServer(Connection conn, String subject, long heartbeatInterval,
                        FProcessor processor, FTransportFactory transportFactory,
                        FProtocolFactory protocolFactory) {
         this(conn, new String[]{subject}, heartbeatInterval, processor, transportFactory, protocolFactory);
     }
 
+    @Deprecated
     public FNatsServer(Connection conn, String[] subjects, long heartbeatInterval,
                        FProcessor processor, FTransportFactory transportFactory,
                        FProtocolFactory protocolFactory) {
@@ -69,6 +75,7 @@ public class FNatsServer implements FServer {
                 new FProcessorFactory(processor), transportFactory, protocolFactory);
     }
 
+    @Deprecated
     public FNatsServer(Connection conn, String subject, long heartbeatInterval, int maxMissedHeartbeats,
                        FProcessorFactory processorFactory, FTransportFactory transportFactory,
                        FProtocolFactory protocolFactory) {
@@ -76,6 +83,7 @@ public class FNatsServer implements FServer {
                 processorFactory, transportFactory, protocolFactory);
     }
 
+    @Deprecated
     public FNatsServer(Connection conn, String[] subjects, long heartbeatInterval, int maxMissedHeartbeats,
                        FProcessorFactory processorFactory, FTransportFactory transportFactory,
                        FProtocolFactory protocolFactory) {

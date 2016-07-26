@@ -1,22 +1,20 @@
-// TODO: Remove this with 2.0
 package com.workiva.frugal.transport;
 
 import com.workiva.frugal.exception.FMessageSizeException;
+import com.workiva.frugal.protocol.FRegistry;
 import io.nats.client.AsyncSubscription;
 import io.nats.client.Connection;
 import io.nats.client.Constants;
+import io.nats.client.Message;
 import io.nats.client.MessageHandler;
+import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
@@ -27,21 +25,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests for {@link TStatelessNatsTransport}.
+ * Tests for {@link FNatsTransport}.
  */
-@RunWith(JUnit4.class)
-@Deprecated
-public class TStatelessNatsTransportTest {
+public class FNatsTransportTest {
 
     private Connection conn;
     private String subject = "foo";
     private String inbox = "bar";
-    private TStatelessNatsTransport transport;
+    private FNatsTransport transport;
 
     @Before
     public void setUp() {
         conn = mock(Connection.class);
-        transport = new TStatelessNatsTransport(conn, subject, inbox);
+        transport = new FNatsTransport(conn, subject, inbox);
     }
 
     @Test(expected = TTransportException.class)
@@ -53,7 +49,7 @@ public class TStatelessNatsTransportTest {
     }
 
     @Test
-    public void testOpenClose() throws TTransportException, IOException, InterruptedException {
+    public void testOpenCallbackClose() throws TException, IOException, InterruptedException {
         assertFalse(transport.isOpen());
         when(conn.getState()).thenReturn(Constants.ConnState.CONNECTED);
         ArgumentCaptor<String> inboxCaptor = ArgumentCaptor.forClass(String.class);
@@ -61,10 +57,19 @@ public class TStatelessNatsTransportTest {
         AsyncSubscription sub = mock(AsyncSubscription.class);
         when(conn.subscribe(inboxCaptor.capture(), handlerCaptor.capture())).thenReturn(sub);
 
+        FRegistry mockRegistry = mock(FRegistry.class);
+        transport.setRegistry(mockRegistry);
         transport.open();
 
         verify(conn).subscribe(inboxCaptor.getValue(), handlerCaptor.getValue());
         assertEquals(inbox, inboxCaptor.getValue());
+
+        MessageHandler handler = handlerCaptor.getValue();
+        byte[] framedPayload = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+        byte[] payload = new byte[]{4, 5, 6, 7};
+        Message msg = new Message("foo", "bar", framedPayload);
+        handler.onMessage(msg);
+        verify(mockRegistry).execute(payload);
 
         try {
             transport.open();
@@ -73,41 +78,18 @@ public class TStatelessNatsTransportTest {
             assertEquals(TTransportException.ALREADY_OPEN, e.getType());
         }
 
+        FTransportClosedCallback mockCallback = mock(FTransportClosedCallback.class);
+        transport.setClosedCallback(mockCallback);
         transport.close();
 
         verify(sub).unsubscribe();
-        assertEquals(FTransport.FRAME_BUFFER_CLOSED, transport.fNatsTransport.frameBuffer.poll(1, TimeUnit.SECONDS));
+        verify(mockCallback).onClose(null);
+        verify(mockRegistry).close();
     }
 
-    @Test(expected = TTransportException.class)
-    public void testRead_notOpen() throws TTransportException {
-        transport.read(new byte[5], 0, 5);
-    }
-
-    @Test
-    public void testRead() throws TTransportException, InterruptedException {
-        when(conn.getState()).thenReturn(Constants.ConnState.CONNECTED);
-        AsyncSubscription sub = mock(AsyncSubscription.class);
-        when(conn.subscribe(any(String.class), any(MessageHandler.class))).thenReturn(sub);
-        transport.open();
-
-        transport.fNatsTransport.frameBuffer.put("hello".getBytes());
-        transport.fNatsTransport.frameBuffer.put("world".getBytes());
-
-        byte[] buff = new byte[5];
-        assertEquals(5, transport.read(buff, 0, 5));
-        assertArrayEquals("hello".getBytes(), buff);
-        assertEquals(5, transport.read(buff, 0, 5));
-        assertArrayEquals("world".getBytes(), buff);
-
-        transport.fNatsTransport.frameBuffer.put(FTransport.FRAME_BUFFER_CLOSED);
-
-        try {
-            transport.read(buff, 0, 5);
-            fail("Expected TTransportException");
-        } catch (TTransportException e) {
-            assertEquals(TTransportException.END_OF_FILE, e.getType());
-        }
+    @Test(expected = UnsupportedOperationException.class)
+    public void testRead() throws TTransportException {
+        transport.read(new byte[0], 0, 0);
     }
 
     @Test(expected = TTransportException.class)
@@ -137,7 +119,11 @@ public class TStatelessNatsTransportTest {
         transport.write(buff);
         transport.flush();
 
-        verify(conn).publish(subject, inbox, buff);
+        byte[] expected = new byte[4 + buff.length];
+        expected[3] = (byte) buff.length;
+        System.arraycopy(buff, 0, expected, 4, buff.length);
+
+        verify(conn).publish(subject, inbox, expected);
     }
 
     @Test(expected = TTransportException.class)

@@ -15,12 +15,15 @@ class _TFramedTransport extends TTransport {
 
   StreamController<_FrameWrapper> _frameStream = new StreamController();
 
-  bool _isOpen;
+  bool _isOpen = false;
 
   final Uint8List headerBytes = new Uint8List(headerByteCount);
 
   StreamSubscription _messageSub;
 
+  /// Instantiate new TFramedTransport for the given TSocket.
+  /// Add a listener to the socket state that opens/closes the
+  /// transport in response to socket state changes.
   _TFramedTransport(this.socket) {
     if (socket == null) {
       throw new ArgumentError.notNull('socket');
@@ -60,6 +63,8 @@ class _TFramedTransport extends TTransport {
   @override
   Future open() async {
     _reset(isOpen: true);
+    // TODO: With 2.0, don't check socket state before
+    // calling through to socket open.
     if (socket.isClosed) {
       await socket.open();
     }
@@ -72,6 +77,8 @@ class _TFramedTransport extends TTransport {
   @override
   Future close() async {
     _reset(isOpen: false);
+    // TODO: With 2.0, don't check socket state before
+    // calling through to socket close.
     if (socket.isOpen) {
       await socket.close();
     }

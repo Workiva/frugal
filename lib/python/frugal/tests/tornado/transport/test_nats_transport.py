@@ -1,4 +1,3 @@
-# TODO: Remove with 2.0
 import mock
 import struct
 
@@ -6,21 +5,20 @@ from tornado import concurrent
 from tornado.testing import gen_test, AsyncTestCase
 from thrift.transport.TTransport import TTransportException
 
-from frugal.exceptions import FExecuteCallbackNotSet
-from frugal.tornado.transport import TStatelessNatsTransport
+from frugal.tornado.transport import FNatsTransport
 
 
-class TestTNatsStatelessTransport(AsyncTestCase):
+class TestFNatsTransport(AsyncTestCase):
 
     def setUp(self):
         self.mock_nats_client = mock.Mock()
         self.subject = "foo"
         self.inbox = "new_inbox"
-        super(TestTNatsStatelessTransport, self).setUp()
+        super(TestFNatsTransport, self).setUp()
 
-        self.transport = TStatelessNatsTransport(self.mock_nats_client,
-                                                 self.subject,
-                                                 self.inbox)
+        self.transport = FNatsTransport(self.mock_nats_client,
+                                        self.subject,
+                                        self.inbox)
 
     @mock.patch('frugal.tornado.transport.nats_transport.new_inbox')
     def test_init(self, mock_new_inbox):
@@ -30,8 +28,7 @@ class TestTNatsStatelessTransport(AsyncTestCase):
 
         mock_new_inbox.return_value = "asdf"
 
-        transport = TStatelessNatsTransport(self.mock_nats_client,
-                                            self.subject)
+        transport = FNatsTransport(self.mock_nats_client, self.subject)
 
         mock_new_inbox.assert_called_with()
         self.assertEquals("asdf", transport._inbox)
@@ -65,13 +62,17 @@ class TestTNatsStatelessTransport(AsyncTestCase):
 
         self.assertEquals(1, self.transport._sub_id)
         self.mock_nats_client.subscribe.assert_called_with(
-            "new_inbox", "", self.transport._ttransport_on_message_callback)
+            "new_inbox", "", self.transport._on_message_callback)
 
-    def test_execute_not_set_raises_exception(self):
-        self.transport._execute = None
+    @gen_test
+    def test_on_message_callback(self):
+        registry_mock = mock.Mock()
+        self.transport.set_registry(registry_mock)
 
-        with self.assertRaises(FExecuteCallbackNotSet):
-            self.transport._ttransport_on_message_callback("")
+        data = b'fooobar'
+        msg_mock = mock.Mock(data=data)
+        self.transport._on_message_callback(msg_mock)
+        registry_mock.execute.assert_called_once_with(data[4:])
 
     @gen_test
     def test_close_calls_unsubscribe_and_sets_is_open_to_false(self):

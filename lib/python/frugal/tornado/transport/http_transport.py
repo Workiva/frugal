@@ -1,8 +1,6 @@
 import base64
 import httplib
-from io import BytesIO
 import logging
-import struct
 
 from thrift.transport.TTransport import TTransportException
 from tornado import gen
@@ -10,12 +8,12 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado.httpclient import HTTPError
 from tornado.httpclient import HTTPRequest
 
-from frugal.tornado.transport import TTornadoTransportBase
+from frugal.tornado.transport import FTornadoTransport
 
 logger = logging.getLogger(__name__)
 
 
-class FHttpTransport(TTornadoTransportBase):
+class FHttpTransport(FTornadoTransport):
     def __init__(self, url, request_capacity=0, response_capacity=0):
         """
         Create an HTTP transport.
@@ -30,7 +28,6 @@ class FHttpTransport(TTornadoTransportBase):
         super(FHttpTransport, self).__init__(max_message_size=request_capacity)
         self._url = url
         self._http = AsyncHTTPClient()
-        self._wbuf = BytesIO()
 
         # create headers
         self._headers = {
@@ -62,15 +59,15 @@ class FHttpTransport(TTornadoTransportBase):
     @gen.coroutine
     def flush(self):
         """
-        Write the current buffer and execute the set callback with the response.
+        Write the current buffer and execute the set callback with the
+        response.
         """
-        frame = self._wbuf.getvalue()
-        if len(frame) == 0:
+        frame = self.get_write_bytes()
+        if not frame:
             return
 
-        self._wbuf = BytesIO()
-        frame_length = struct.pack('!I', len(frame))
-        encoded = base64.b64encode(frame_length + frame)
+        self.reset_write_buffer()
+        encoded = base64.b64encode(frame)
         request = HTTPRequest(self._url, method='POST', body=encoded,
                               headers=self._headers)
 
@@ -82,7 +79,7 @@ class FHttpTransport(TTornadoTransportBase):
                                           message='response was too large')
 
             message = 'response errored with code {0} and body {1}'.format(
-                    e.code, e.message
+                e.code, e.message
             )
             raise TTransportException(type=TTransportException.UNKNOWN,
                                       message=message)
@@ -97,7 +94,4 @@ class FHttpTransport(TTornadoTransportBase):
             # One-way method, drop response
             return
 
-        if not self._execute:
-            raise TTransportException(type=TTransportException.UNKNOWN,
-                                      message='callback is not set')
-        self._execute(decoded)
+        self.execute_frame(decoded)

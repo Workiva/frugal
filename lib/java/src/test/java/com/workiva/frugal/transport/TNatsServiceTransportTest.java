@@ -1,3 +1,4 @@
+// TODO: Remove this with 2.0
 package com.workiva.frugal.transport;
 
 import io.nats.client.Connection;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.when;
  * Tests for {@link TNatsServiceTransport}.
  */
 @RunWith(JUnit4.class)
+@Deprecated
 public class TNatsServiceTransportTest {
 
     private final Connection mockConn = mock(Connection.class);

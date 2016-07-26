@@ -1,3 +1,4 @@
+# TODO: Remove this with 2.0
 import json
 import logging
 import re
@@ -10,6 +11,7 @@ from frugal.server import FServer
 from frugal.transport import FTransport
 from frugal.tornado.transport import TNatsServiceTransport
 from frugal.registry import FServerRegistry
+from frugal.util.deprecate import deprecated
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +22,13 @@ _QUEUE = "rpc"
 
 
 class FNatsTornadoServer(FServer):
+    """
+    @deprecated With the next major release of frugal, stateful NATS transports
+    will no longer be supported. With the release of 2.0,
+    FStatelessNatsTornadoServer will be renamed to FNatsTornadoServer.
+    """
 
+    @deprecated
     def __init__(self,
                  nats_client,
                  subject,

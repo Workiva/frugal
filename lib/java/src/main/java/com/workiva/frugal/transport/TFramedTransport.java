@@ -1,5 +1,6 @@
 package com.workiva.frugal.transport;
 
+import com.workiva.frugal.util.ProtocolUtils;
 import org.apache.thrift.TByteArrayOutputStream;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
@@ -77,7 +78,7 @@ class TFramedTransport extends TTransport {
 
     public byte[] readFrame() throws TTransportException {
         transport.readAll(readi32buf, 0, 4);
-        int size = decodeFrameSize(readi32buf);
+        int size = ProtocolUtils.readInt(readi32buf, 0);
 
         if (size < 0) {
             close();
@@ -105,24 +106,9 @@ class TFramedTransport extends TTransport {
         int len = writeBuffer.len();
         writeBuffer.reset();
 
-        encodeFrameSize(len, writei32buf);
+        ProtocolUtils.writeInt(len, writei32buf, 0);
         transport.write(writei32buf, 0, 4);
         transport.write(buf, 0, len);
         transport.flush();
-    }
-
-    private static void encodeFrameSize(final int frameSize, final byte[] buf) {
-        buf[0] = (byte) (0xff & (frameSize >> 24));
-        buf[1] = (byte) (0xff & (frameSize >> 16));
-        buf[2] = (byte) (0xff & (frameSize >> 8));
-        buf[3] = (byte) (0xff & (frameSize));
-    }
-
-    private static int decodeFrameSize(final byte[] buf) {
-        return
-                ((buf[0] & 0xff) << 24) |
-                        ((buf[1] & 0xff) << 16) |
-                        ((buf[2] & 0xff) << 8) |
-                        ((buf[3] & 0xff));
     }
 }

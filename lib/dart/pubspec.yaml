@@ -14,11 +14,10 @@ dependencies:
 description: A frugal client for Dart
 dev_dependencies:
   coverage: ^0.7.2
-  dart_dev: ^1.0.6
-  dart_style: ^0.2.0
-  dartdoc: ^0.4.0
+  dart_dev: ^1.4.0
+  dart_style: ^0.2.4
   mockito: ^0.11.0
-  test: ^0.12.6
+  test: ^0.12.15
 environment:
   sdk: '>=1.13.0 <2.0.0'
 homepage: https://github.com/Workiva/frugal/lib/dart

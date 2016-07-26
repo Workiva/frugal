@@ -8,6 +8,7 @@ import 'package:test/test.dart';
 import 'package:thrift/thrift.dart';
 import 'package:w_transport/w_transport.dart';
 import 'package:w_transport/w_transport_mock.dart';
+import 'f_transport_test.dart' show MockFRegistry;
 
 void main() {
   configureWTransportForTest();
@@ -16,7 +17,7 @@ void main() {
   group('FHttpClientTransport', () {
     Client client;
     FHttpConfig config;
-    FakeFRegistry registry;
+    MockFRegistry registry;
     FHttpClientTransport transport;
 
     Map expectedRequestHeaders = {
@@ -45,7 +46,7 @@ void main() {
       config = new FHttpConfig(Uri.parse('http://localhost'), {'foo': 'bar'},
           responseSizeLimit: 10);
       transport = new FHttpClientTransport(client, config);
-      registry = new FakeFRegistry();
+      registry = new MockFRegistry();
       transport.setRegistry(registry);
     });
 
@@ -120,7 +121,7 @@ void main() {
 
   group('FHttpClientTransport request size too large', () {
     Client client;
-    FakeFRegistry registry;
+    MockFRegistry registry;
     FHttpClientTransport transport;
 
     setUp(() {
@@ -128,7 +129,7 @@ void main() {
       var config = new FHttpConfig(Uri.parse('http://localhost'), {},
           requestSizeLimit: 10);
       transport = new FHttpClientTransport(client, config);
-      registry = new FakeFRegistry();
+      registry = new MockFRegistry();
       transport.setRegistry(registry);
     });
 
@@ -141,13 +142,13 @@ void main() {
 
   group('FHttpClientTransport http post failed', () {
     FHttpConfig config;
-    FakeFRegistry registry;
+    MockFRegistry registry;
     FHttpClientTransport transport;
 
     setUp(() {
       config = new FHttpConfig(Uri.parse('http://localhost'), {});
       transport = new FHttpClientTransport(new Client(), config);
-      registry = new FakeFRegistry();
+      registry = new MockFRegistry();
       transport.setRegistry(registry);
     });
 
@@ -188,24 +189,4 @@ void main() {
           throwsA(new isInstanceOf<ArgumentError>()));
     });
   });
-}
-
-class FakeFRegistry extends FRegistry {
-  List<Uint8List> data;
-
-  FakeFRegistry() {
-    this.data = new List();
-  }
-
-  void register(FContext ctx, FAsyncCallback callback) {
-    return;
-  }
-
-  void unregister(FContext ctx) {
-    return;
-  }
-
-  void execute(Uint8List data) {
-    this.data.add(data);
-  }
 }

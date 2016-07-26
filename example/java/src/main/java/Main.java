@@ -1,11 +1,10 @@
 
 import com.workiva.frugal.middleware.InvocationHandler;
 import com.workiva.frugal.middleware.ServiceMiddleware;
-import com.workiva.frugal.processor.FProcessorFactory;
 import com.workiva.frugal.protocol.*;
 import com.workiva.frugal.provider.FScopeProvider;
-import com.workiva.frugal.server.FNatsServer;
 import com.workiva.frugal.server.FServer;
+import com.workiva.frugal.server.FStatelessNatsServer;
 import com.workiva.frugal.transport.*;
 import example.*;
 import io.nats.client.*;
@@ -23,16 +22,15 @@ public class Main {
 
     public static void main(String[] args) throws IOException, TimeoutException, TException {
         FProtocolFactory protocolFactory = new FProtocolFactory(new TBinaryProtocol.Factory());
-        FTransportFactory transportFactory = new FMuxTransport.Factory(5);
         ConnectionFactory cf = new ConnectionFactory(Constants.DEFAULT_URL);
         Connection conn = cf.createConnection();
 
         if (args.length > 0) {
             runSubscriber(conn, protocolFactory);
-            runServer(conn, transportFactory, protocolFactory);
+            runServer(conn, protocolFactory);
         } else {
             runPublisher(conn, protocolFactory);
-            runClient(conn, transportFactory, protocolFactory);
+            runClient(conn, protocolFactory);
         }
     }
 
@@ -65,21 +63,18 @@ public class Main {
         }
     }
 
-    private static void runServer(Connection conn, FTransportFactory transportFactory, FProtocolFactory protocolFactory) throws TException {
+    private static void runServer(Connection conn, FProtocolFactory protocolFactory) throws TException {
         FFoo.Iface handler = new FooHandler();
         FFoo.Processor processor = new FFoo.Processor(handler, new LoggingMiddleware());
-        FProcessorFactory processorFactory = new FProcessorFactory(processor);
         String subject = "foo";
-        int heartbeatInterval = 20 * 1000;
-        int maxMissedHeartbeats = 2;
 
-        FServer server = new FNatsServer(conn, subject, heartbeatInterval, maxMissedHeartbeats, processorFactory, transportFactory, protocolFactory);
+        FServer server = new FStatelessNatsServer.Builder(conn, processor, protocolFactory, subject).build();
         System.out.println("Starting nats server on 'foo'");
         server.serve();
     }
 
-    private static void runClient(Connection conn, FTransportFactory transportFactory, FProtocolFactory protocolFactory) throws TTransportException {
-        FTransport transport = transportFactory.getTransport(TNatsServiceTransport.client(conn, "foo", 5000, 2));
+    private static void runClient(Connection conn, FProtocolFactory protocolFactory) throws TTransportException {
+        FTransport transport = new FNatsTransport(conn, "foo");
         transport.open();
         try {
             handleClient(new FFoo.Client(transport, protocolFactory, new RetryMiddleware()));

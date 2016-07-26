@@ -20,8 +20,8 @@ class TestFHttpTransport(AsyncTestCase):
         self.request_capacity = 100
         self.response_capacity = 200
         self.transport = FHttpTransport(
-                self.url, request_capacity=self.request_capacity,
-                response_capacity=self.response_capacity
+            self.url, request_capacity=self.request_capacity,
+            response_capacity=self.response_capacity
         )
         self.http_mock = mock.Mock(spec=AsyncHTTPClient)
         self.headers = {
@@ -49,8 +49,8 @@ class TestFHttpTransport(AsyncTestCase):
 
     @gen_test
     def test_flush_success(self):
-        callback_mock = mock.Mock()
-        self.transport.set_execute_callback(callback_mock)
+        registry_mock = mock.Mock()
+        self.transport.set_registry(registry_mock)
         self.transport._http = self.http_mock
 
         request_data = bytearray([4, 5, 6, 8, 9, 10, 11, 13, 12, 3])
@@ -77,7 +77,7 @@ class TestFHttpTransport(AsyncTestCase):
         self.assertEqual(request.body, base64.b64encode(expected_payload))
         self.assertEqual(request.headers, self.headers)
 
-        callback_mock.assert_called_once_with(response_frame)
+        registry_mock.execute.assert_called_once_with(response_data)
 
     @gen_test
     def test_flush_invalid_response_frame(self):

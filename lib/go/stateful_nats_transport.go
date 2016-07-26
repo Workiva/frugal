@@ -1,3 +1,4 @@
+// TODO: Remove this with 2.0
 package frugal
 
 import (
@@ -33,6 +34,9 @@ func newFrugalInbox() string {
 // with the server and maintains it via heartbeats for the duration of the
 // transport lifecycle. This is useful if requests/responses need to span
 // multiple NATS messages.
+// DEPRECATED - With the next major release of frugal, stateful NATS transports
+// will no longer be supported. Use the "stateless" Nats transport instead with
+// FNatsTransport.
 type natsServiceTTransport struct {
 	conn                *nats.Conn
 	listenTo            string
@@ -62,8 +66,9 @@ type natsServiceTTransport struct {
 // limited to 1MB in size. See NewStatelessNatsTTransport for a stateless NATS
 // transport which does not rely on maintaining a connection between client
 // and server.
-// TODO: Support >1MB messages.
-// TODO 2.0.0: Remove "Service" from the name.
+// DEPRECATED - With the next major release of frugal, stateful NATS transports
+// will no longer be supported. Use the "stateless" Nats transport instead with
+// FNatsTransport.
 func NewNatsServiceTTransport(conn *nats.Conn, subject string,
 	timeout time.Duration, maxMissedHeartbeats uint) thrift.TTransport {
 

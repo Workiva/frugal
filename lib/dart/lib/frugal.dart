@@ -25,6 +25,7 @@ part 'src/protocol/f_protocol.dart';
 part 'src/protocol/f_protocol_factory.dart';
 part 'src/registry/f_client_registry.dart';
 part 'src/registry/f_registry.dart';
+part 'src/transport/f_adapter_transport.dart';
 part 'src/transport/f_scope_transport.dart';
 part 'src/transport/f_scope_transport_factory.dart';
 part 'src/transport/f_transport.dart';

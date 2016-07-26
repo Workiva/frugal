@@ -1,3 +1,4 @@
+// TODO: Remove this with 2.0
 package frugal
 
 import (
@@ -37,6 +38,9 @@ func newInbox(prefix string) string {
 
 // FNatsServer implements FServer by using NATS as the underlying transport.
 // Clients must connect with the transport created by NewNatsServiceTTransport.
+// DEPRECATED - With the next major release of frugal, stateful NATS transports
+// will no longer be supported. Use the "stateless" Nats server instead with
+// FNatsServerBuilder.
 type FNatsServer struct {
 	conn                *nats.Conn
 	subjects            []string
@@ -56,6 +60,9 @@ type FNatsServer struct {
 // NewFNatsServer creates a new FNatsServer which listens for requests on the
 // given subject. Clients must connect with the transport created by
 // NewNatsServiceTTransport.
+// DEPRECATED - With the next major release of frugal, stateful NATS transports
+// will no longer be supported. With the release of 2.0, FStatelessNatsServer
+// will be renamed to FNatsServer.
 func NewFNatsServer(
 	conn *nats.Conn,
 	subject string,
@@ -78,6 +85,9 @@ func NewFNatsServer(
 // NewFNatsServerWithSubjects creates a new FNatsServer which listens for
 // requests on the given subjects. Clients must connect with the transport
 // created by NewNatsServiceTTransport.
+// DEPRECATED - With the next major release of frugal, stateful NATS transports
+// will no longer be supported. With the release of 2.0, FStatelessNatsServer
+// will be renamed to FNatsServer.
 func NewFNatsServerWithSubjects(
 	conn *nats.Conn,
 	subjects []string,
@@ -100,6 +110,9 @@ func NewFNatsServerWithSubjects(
 // NewFNatsServerFactory creates a new FNatsServer which listens for requests
 // on the given subject. Clients must connect with the transport created by
 // NewNatsServiceTTransport.
+// DEPRECATED - With the next major release of frugal, stateful NATS transports
+// will no longer be supported. With the release of 2.0, FStatelessNatsServer
+// will be renamed to FNatsServer.
 func NewFNatsServerFactory(
 	conn *nats.Conn,
 	subject string,
@@ -123,6 +136,9 @@ func NewFNatsServerFactory(
 // NewFNatsServerFactoryWithSubjects creates a new FNatsServer which listens
 // for requests on the given subjects. Clients must connect with the transport
 // created by NewNatsServiceTTransport.
+// DEPRECATED - With the next major release of frugal, stateful NATS transports
+// will no longer be supported. With the release of 2.0, FStatelessNatsServer
+// will be renamed to FNatsServer.
 func NewFNatsServerFactoryWithSubjects(
 	conn *nats.Conn,
 	subjects []string,

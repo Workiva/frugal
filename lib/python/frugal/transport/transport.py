@@ -2,7 +2,7 @@ from thrift.transport.TTransport import TTransportBase
 
 
 class FTransport(TTransportBase, object):
-    """FTranpsort is a Thrift TTransport for services."""
+    """FTransport is a Thrift TTransport for services."""
 
     DEFAULT_HIGH_WATERMARK = 5 * 1000
 

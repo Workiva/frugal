@@ -1,29 +1,33 @@
 package frugal
 
 import (
-	"bytes"
+	"errors"
 	"fmt"
-	"io"
 	"sync"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	log "github.com/Sirupsen/logrus"
 	"github.com/nats-io/nats"
 )
 
-// statelessNatsTTransport implements thrift.TTransport. This is a "stateless"
-// transport in the sense that there is no connection with a server. A request
+// NewFNatsTransport returns a new FTransport which uses the NATS messaging
+// system as the underlying transport. This FTransport is stateless in that
+// there is no connection maintained between the client and server. A request
 // is simply published to a subject and responses are received on another
-// subject. This assumes requests/responses fit within a single NATS message.
-type statelessNatsTTransport struct {
-	conn          *nats.Conn
-	subject       string
-	inbox         string
-	frameBuffer   chan []byte
-	currentFrame  []byte
-	requestBuffer *bytes.Buffer
-	sub           *nats.Subscription
-	mu            sync.RWMutex
-	closeChan     chan struct{}
+// subject. This requires requests and responses to fit within a single NATS
+// message.
+func NewFNatsTransport(conn *nats.Conn, subject, inbox string) FTransport {
+	if inbox == "" {
+		inbox = nats.NewInbox()
+	}
+	return &fNatsTransport{
+		// FTransports manually frame messages.
+		// Leave enough room for frame size.
+		fBaseTransport: newFBaseTransport(natsMaxMessageSize - 4),
+		conn:           conn,
+		subject:        subject,
+		inbox:          inbox,
+	}
 }
 
 // NewStatelessNatsTTransport returns a new Thrift TTransport which uses the
@@ -33,23 +37,45 @@ type statelessNatsTTransport struct {
 // is simply published to a subject and responses are received on another
 // subject. This requires requests and responses to fit within a single NATS
 // message.
+// DEPRECATED - Use NewNatsFTransport to create an FTransport directly.
+// TODO: Remove this with 2.0
 func NewStatelessNatsTTransport(conn *nats.Conn, subject, inbox string) thrift.TTransport {
 	if inbox == "" {
 		inbox = nats.NewInbox()
 	}
-	return &statelessNatsTTransport{
-		conn:          conn,
-		subject:       subject,
-		inbox:         inbox,
-		frameBuffer:   make(chan []byte, frameBufferSize),
-		requestBuffer: bytes.NewBuffer(make([]byte, 0, natsMaxMessageSize)),
+	return &fNatsTransport{
+		fBaseTransport: newFBaseTransportForTTransport(natsMaxMessageSize, frameBufferSize),
+		conn:           conn,
+		subject:        subject,
+		inbox:          inbox,
+		isTTransport:   true,
 	}
 }
 
+// fNatsTransport implements FTransport and, until the next major release,
+// thrift.TTransport that may be wrapped with fMuxTransport (DEPRECATED). This
+// is a "stateless" transport in the sense that there is no connection with a
+// server. A request is simply published to a subject and responses are
+// received on another subject. This assumes requests/responses fit within a
+// single NATS message.
+type fNatsTransport struct {
+	*fBaseTransport
+	conn    *nats.Conn
+	subject string
+	inbox   string
+	sub     *nats.Subscription
+
+	// TODO: Remove these with 2.0
+	isTTransport bool
+	mu           sync.RWMutex
+}
+
 // Open subscribes to the configured inbox subject.
-func (f *statelessNatsTTransport) Open() error {
+func (f *fNatsTransport) Open() error {
+	// TODO: Remove locking with 2.0
 	f.mu.Lock()
 	defer f.mu.Unlock()
+
 	if f.conn.Status() != nats.CONNECTED {
 		return thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION,
 			fmt.Sprintf("frugal: NATS not connected, has status %d", f.conn.Status()))
@@ -57,34 +83,56 @@ func (f *statelessNatsTTransport) Open() error {
 	if f.sub != nil {
 		return thrift.NewTTransportException(thrift.ALREADY_OPEN, "frugal: NATS transport already open")
 	}
-	sub, err := f.conn.Subscribe(f.inbox, f.handler)
+
+	handler := f.handler
+	// TODO: Remove this with 2.0
+	if f.isTTransport {
+		handler = f.tTransportHandler
+	}
+
+	sub, err := f.conn.Subscribe(f.inbox, handler)
 	if err != nil {
 		return thrift.NewTTransportExceptionFromError(err)
 	}
 	f.sub = sub
-	f.closeChan = make(chan struct{})
+
+	// TODO: Remove this with 2.0
+	f.fBaseTransport.Open()
 	return nil
 }
 
-// handler receives a NATS message and places it on the frame buffer for
-// reading.
-func (f *statelessNatsTTransport) handler(msg *nats.Msg) {
-	select {
-	case f.frameBuffer <- msg.Data:
-	case <-f.closeChan:
+// handler receives a NATS message and executes the frame
+func (f *fNatsTransport) handler(msg *nats.Msg) {
+	if err := f.fBaseTransport.ExecuteFrame(msg.Data); err != nil {
+		log.Warn("Could not execute frame", err)
 	}
 }
 
-func (f *statelessNatsTTransport) IsOpen() bool {
+// tTransportHandler receives a NATS message and places it on the frame buffer
+// for reading.
+// TODO: Remove this with 2.0
+func (f *fNatsTransport) tTransportHandler(msg *nats.Msg) {
+	select {
+	case f.frameBuffer <- msg.Data:
+	case <-f.fBaseTransport.ClosedChannel():
+	}
+}
+
+// Returns true if the transport is open
+func (f *fNatsTransport) IsOpen() bool {
+	// TODO: Remove locking with 2.0
 	f.mu.RLock()
 	defer f.mu.RUnlock()
+
 	return f.sub != nil && f.conn.Status() == nats.CONNECTED
 }
 
 // Close unsubscribes from the inbox subject.
-func (f *statelessNatsTTransport) Close() error {
+func (f *fNatsTransport) Close() error {
+	// TODO: Remove locking with 2.0
 	f.mu.Lock()
 	defer f.mu.Unlock()
+
 	if f.sub == nil {
 		return nil
 	}
@@ -92,62 +140,59 @@ func (f *statelessNatsTTransport) Close() error {
 		return thrift.NewTTransportExceptionFromError(err)
 	}
 	f.sub = nil
-	close(f.closeChan)
+
+	f.fBaseTransport.Close(nil)
+
 	return nil
 }
 
-func (f *statelessNatsTTransport) Read(buf []byte) (int, error) {
+// Read up to len(buf) bytes into buf.
+// TODO: This should just return an error with 2.0
+func (f *fNatsTransport) Read(buf []byte) (int, error) {
+	if !f.isTTransport {
+		return 0, errors.New("Cannot read on FTransport")
+	}
+
+	// TODO: Remove all read logic with 2.0
 	if !f.IsOpen() {
 		return 0, f.getClosedConditionError("read:")
 	}
-	if len(f.currentFrame) == 0 {
-		select {
-		case frame := <-f.frameBuffer:
-			f.currentFrame = frame
-		case <-f.closeChan:
-			return 0, thrift.NewTTransportExceptionFromError(io.EOF)
-		}
-	}
-	num := copy(buf, f.currentFrame)
-	// TODO: We could be more efficient here. If the provided buffer isn't
-	// full, we could attempt to get the next frame.
-
-	f.currentFrame = f.currentFrame[num:]
-	return num, nil
+	return f.fBaseTransport.Read(buf)
 }
 
 // Write the bytes to a buffer. Returns ErrTooLarge if the buffer exceeds 1MB.
-func (f *statelessNatsTTransport) Write(buf []byte) (int, error) {
+func (f *fNatsTransport) Write(buf []byte) (int, error) {
 	if !f.IsOpen() {
 		return 0, f.getClosedConditionError("write:")
 	}
-	if len(buf)+f.requestBuffer.Len() > natsMaxMessageSize {
-		f.requestBuffer.Reset()
-		return 0, ErrTooLarge
-	}
-	num, err := f.requestBuffer.Write(buf)
-	return num, thrift.NewTTransportExceptionFromError(err)
+	return f.fBaseTransport.Write(buf)
 }
 
 // Flush sends the buffered bytes over NATS.
-func (f *statelessNatsTTransport) Flush() error {
+func (f *fNatsTransport) Flush() error {
 	if !f.IsOpen() {
 		return f.getClosedConditionError("flush:")
 	}
-	defer f.requestBuffer.Reset()
-	data := f.requestBuffer.Bytes()
+	data := f.GetWriteBytes()
 	if len(data) == 0 {
 		return nil
 	}
+
+	f.ResetWriteBuffer()
+	// TODO: Remove this check in 2.0
+	if !f.isTTransport {
+		data = prependFrameSize(data)
+	}
+
 	err := f.conn.PublishRequest(f.subject, f.inbox, data)
 	return thrift.NewTTransportExceptionFromError(err)
 }
 
-func (f *statelessNatsTTransport) RemainingBytes() uint64 {
-	return ^uint64(0)
+// This is a no-op for fNatsTransport
+func (f *fNatsTransport) SetMonitor(monitor FTransportMonitor) {
 }
 
-func (f *statelessNatsTTransport) getClosedConditionError(prefix string) error {
+func (f *fNatsTransport) getClosedConditionError(prefix string) error {
 	if f.conn.Status() != nats.CONNECTED {
 		return thrift.NewTTransportException(thrift.NOT_OPEN,
 			fmt.Sprintf("%s stateless NATS client not connected (has status code %d)", prefix, f.conn.Status()))

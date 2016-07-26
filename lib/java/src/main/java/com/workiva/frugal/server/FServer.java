@@ -36,7 +36,10 @@ public interface FServer {
      * before triggering transport overload logic.
      *
      * @param watermark the watermark time in milliseconds.
+     *
+     * @deprecated This will be a constructor implementation detail for
+     * servers which buffer client requests.
      */
+    @Deprecated
     void setHighWatermark(long watermark);
-
 }

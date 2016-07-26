@@ -1,3 +1,4 @@
+// TODO: Remove this with 2.0
 package frugal
 
 import (

@@ -9,43 +9,17 @@ class FHttpClientTransport extends FTransport {
   final List<int> _writeBuffer = [];
   final wt.Client client;
   final FHttpConfig config;
-  FRegistry _registry;
 
   FHttpClientTransport(this.client, this.config) {}
 
   @override
-  bool get isOpen => _registry != null;
+  bool get isOpen => true;
 
   @override
   Future open() => new Future.value();
 
   @override
   Future close() => new Future.value();
-
-  @override
-  void setRegistry(FRegistry registry) {
-    if (registry == null) {
-      throw new FError.withMessage('registry cannot be null');
-    }
-    if (_registry != null) return;
-    _registry = registry;
-  }
-
-  @override
-  void register(FContext ctx, FAsyncCallback callback) {
-    if (_registry == null) {
-      throw new FError.withMessage('transport registry not set');
-    }
-    _registry.register(ctx, callback);
-  }
-
-  @override
-  void unregister(FContext ctx) {
-    if (_registry == null) {
-      throw new FError.withMessage('frugal: transport registry not set');
-    }
-    _registry.unregister(ctx);
-  }
 
   @override
   void write(Uint8List buffer, int offset, int length) {
@@ -112,7 +86,7 @@ class FHttpClientTransport extends FTransport {
     }
 
     // Process the request, but drop the frame size
-    _registry.execute(data.sublist(4));
+    executeFrame(data);
   }
 
   @override

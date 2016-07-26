@@ -2,6 +2,7 @@ package frugal
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
@@ -38,7 +39,10 @@ func (m *mockTTransport) Read(b []byte) (int, error) {
 	if m.readError != nil {
 		return 0, m.readError
 	}
-	read := <-m.reads
+	read, ok := <-m.reads
+	if !ok {
+		return 0, thrift.NewTTransportExceptionFromError(io.EOF)
+	}
 	copy(b, read)
 	num := len(b)
 	if len(read) < num {
