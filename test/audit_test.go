@@ -34,24 +34,24 @@ func TestInvalidAudit(t *testing.T) {
 
 func TestValidAuditThrift(t *testing.T) {
 	err := parser.Compare(validFile, validAuditThrift)
-	if err.Error() != "Thrift -> Struct -> Fields -> Field -> Modifier -> (why) changed to optional or default from required (why)" {
+	if err.Error() != "Exception InvalidOperation.why changed to DEFAULT from REQUIRED" {
 		t.Fatal(err.Error())
 	}
 
 	err = parser.Compare(validAuditThrift, validFile)
-	if err.Error() != "Thrift -> Struct -> Fields -> Field -> Modifier -> (why) changed to required from optional or default (why)" {
+	if err.Error() != "Exception InvalidOperation.why changed to REQUIRED from DEFAULT" {
 		t.Fatal(err.Error())
 	}
 }
 
 func TestValidAuditScope(t *testing.T) {
 	err := parser.Compare(validFile, validAuditScope)
-	if err.Error() != "Scope -> Prefix -> foo.bar.{0}.qux not compatible with foo.bar.{0}.{1}.qux" {
+	if err.Error() != "Scope Foo Prefix foo.bar.{0}.qux not compatible with foo.bar.{0}.{1}.qux" {
 		t.Fatal(err.Error())
 	}
 
 	err = parser.Compare(validAuditScope, validFile)
-	if err.Error() != "Scope -> Prefix -> foo.bar.{0}.{1}.qux not compatible with foo.bar.{0}.qux" {
+	if err.Error() != "Scope Foo Prefix foo.bar.{0}.{1}.qux not compatible with foo.bar.{0}.qux" {
 		t.Fatal(err.Error())
 	}
 }

@@ -13,8 +13,7 @@ type Error struct {
 
 // NewError ...
 func NewError(s string) Error {
-	x := Error{prefix: s}
-	return x
+	return Error{prefix: s}
 }
 
 // NewErrorf ...

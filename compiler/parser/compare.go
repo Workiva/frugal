@@ -3,7 +3,6 @@ package parser
 import (
 	"fmt"
 	"reflect"
-	// "sort"
 	"strconv"
 	"strings"
 )
@@ -72,16 +71,20 @@ func Compare(file, audit string) error {
 func checkScopes(scopes1, scopes2 []*Scope, trace string) (err Error) {
 	defer err.Prefix(trace)
 	err.Append(checkLen(len(scopes1), len(scopes2)))
-	sc1_map, err := makeScopeMap(scopes1)
-	sc2_map, err := makeScopeMap(scopes2)
+	sc1_map, e := makeScopeMap(scopes1)
+	err.Append(e)
+	sc2_map, e := makeScopeMap(scopes2)
+	err.Append(e)
 	for key, _ := range sc1_map {
 		if _, ok := sc2_map[key]; ok {
-			// 		// check scope prefix
-			err.Append(checkPrefix(sc1_map[key].Prefix, sc2_map[key].Prefix, PREFIX))
-			// 		// check scope operations
+			// check scope prefix
+			err.Append(checkPrefix(sc1_map[key].Prefix, sc2_map[key].Prefix, " "+key+" "+PREFIX))
+			// check scope operations
 			err.Append(checkLen(len(sc1_map[key].Operations), len(sc2_map[key].Operations)))
-			op1_map, err := makeOperationMap(sc1_map[key].Operations)
-			op2_map, err := makeOperationMap(sc2_map[key].Operations)
+			op1_map, e := makeOperationMap(sc1_map[key].Operations)
+			err.Append(e)
+			op2_map, e := makeOperationMap(sc2_map[key].Operations)
+			err.Append(e)
 			for op, _ := range op1_map {
 				if _, ok := op2_map[op]; ok {
 					err.Append(checkType(op1_map[op].Type, op2_map[op].Type, TYPE))
@@ -126,8 +129,10 @@ func checkType(t1, t2 *Type, trace string) (err Error) {
 func checkThriftStructs(structs1, structs2 []*Struct, trace string) (err Error) {
 	defer err.Prefix(trace)
 	err.Append(checkLen(len(structs1), len(structs2)))
-	str1_map, err := makeStructureMap(structs1)
-	str2_map, err := makeStructureMap(structs2)
+	str1_map, e := makeStructureMap(structs1)
+	err.Append(e)
+	str2_map, e := makeStructureMap(structs2)
+	err.Append(e)
 	for key, _ := range str1_map {
 		if _, ok := str2_map[key]; ok {
 			// check Fields
@@ -139,8 +144,10 @@ func checkThriftStructs(structs1, structs2 []*Struct, trace string) (err Error) 
 
 func checkFields(f1s, f2s []*Field, trace string) (err Error) {
 	defer err.Prefix(trace)
-	f1_map, err := makeFieldMap(f1s)
-	f2_map, err := makeFieldMap(f2s)
+	f1_map, e := makeFieldMap(f1s)
+	err.Append(e)
+	f2_map, e := makeFieldMap(f2s)
+	err.Append(e)
 	for key, _ := range f1_map {
 		if _, ok := f2_map[key]; ok {
 			err.Append(checkField(f1_map[key], f2_map[key], f1_map[key].Name))
@@ -196,8 +203,10 @@ func checkFieldModifier(f1, f2 *Field) (err Error) {
 func checkThriftServices(services1, services2 []*Service, trace string) (err Error) {
 	defer err.Prefix(trace)
 	err.Append(checkLen(len(services1), len(services2)))
-	serv1_map, err := makeServiceMap(services1)
-	serv2_map, err := makeServiceMap(services2)
+	serv1_map, e := makeServiceMap(services1)
+	err.Append(e)
+	serv2_map, e := makeServiceMap(services2)
+	err.Append(e)
 	for key, _ := range serv1_map {
 		if _, ok := serv2_map[key]; ok {
 			err.Append(checkString(serv1_map[key].Extends, serv2_map[key].Extends))
@@ -210,8 +219,10 @@ func checkThriftServices(services1, services2 []*Service, trace string) (err Err
 func checkThriftServiceMethods(meths1, meths2 []*Method, trace string) (err Error) {
 	defer err.Prefix(trace)
 	err.Append(checkLen(len(meths1), len(meths2)))
-	meth1_map, err := makeMethodMap(meths1)
-	meth2_map, err := makeMethodMap(meths2)
+	meth1_map, e := makeMethodMap(meths1)
+	err.Append(e)
+	meth2_map, e := makeMethodMap(meths2)
+	err.Append(e)
 	for key, _ := range meth1_map {
 		if _, ok := meth2_map[key]; ok {
 			// check direction of method
@@ -230,8 +241,10 @@ func checkThriftServiceMethods(meths1, meths2 []*Method, trace string) (err Erro
 func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef, trace string) (err Error) {
 	defer err.Prefix(trace)
 
-	tdef1_map, err := makeTypeDefMap(typedefs1)
-	tdef2_map, err := makeTypeDefMap(typedefs2)
+	tdef1_map, e := makeTypeDefMap(typedefs1)
+	err.Append(e)
+	tdef2_map, e := makeTypeDefMap(typedefs2)
+	err.Append(e)
 	for key, _ := range tdef1_map {
 		if _, ok := tdef2_map[key]; ok {
 			err.Append(checkType(tdef1_map[key].Type, tdef2_map[key].Type, TYPE))
@@ -251,8 +264,10 @@ func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef, trace string) (err Err
 func checkThriftConstants(constants1, constants2 []*Constant, trace string) (err Error) {
 	defer err.Prefix(trace)
 
-	cons1_map, err := makeConstantMap(constants1)
-	cons2_map, err := makeConstantMap(constants2)
+	cons1_map, e := makeConstantMap(constants1)
+	err.Append(e)
+	cons2_map, e := makeConstantMap(constants2)
+	err.Append(e)
 	for key, _ := range cons1_map {
 		if _, ok := cons2_map[key]; ok {
 			err.Append(checkType(cons1_map[key].Type, cons2_map[key].Type, TYPE))
@@ -278,8 +293,10 @@ func checkThriftConstants(constants1, constants2 []*Constant, trace string) (err
 func checkThriftEnums(enums1, enums2 []*Enum, trace string) (err Error) {
 	defer err.Prefix(trace)
 	err.Append(checkLen(len(enums1), len(enums2)))
-	enum1_map, err := makeEnumMap(enums1)
-	enum2_map, err := makeEnumMap(enums2)
+	enum1_map, e := makeEnumMap(enums1)
+	err.Append(e)
+	enum2_map, e := makeEnumMap(enums2)
+	err.Append(e)
 	for key, _ := range enum1_map {
 		if _, ok := enum2_map[key]; ok {
 			err.Append(checkEnumValues(enum1_map[key].Values, enum2_map[key].Values, " "+enum1_map[key].Name+"."))
@@ -291,8 +308,10 @@ func checkThriftEnums(enums1, enums2 []*Enum, trace string) (err Error) {
 func checkEnumValues(vals1, vals2 []*EnumValue, trace string) (err Error) {
 	defer err.Prefix(trace)
 	err.Append(checkLen(len(vals1), len(vals2)))
-	eval1_map, err := makeEnumValueMap(vals1)
-	eval2_map, err := makeEnumValueMap(vals2)
+	eval1_map, e := makeEnumValueMap(vals1)
+	err.Append(e)
+	eval2_map, e := makeEnumValueMap(vals2)
+	err.Append(e)
 	for key, _ := range eval1_map {
 		if _, ok := eval2_map[key]; ok {
 			// check value
@@ -307,8 +326,10 @@ func checkEnumValues(vals1, vals2 []*EnumValue, trace string) (err Error) {
 func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace, trace string) (err Error) {
 	defer err.Prefix(trace)
 	err.Append(checkLen(len(namespaces1), len(namespaces2)))
-	ns1_map, err := makeNamespaceMap(namespaces1)
-	ns2_map, err := makeNamespaceMap(namespaces2)
+	ns1_map, e := makeNamespaceMap(namespaces1)
+	err.Append(e)
+	ns2_map, e := makeNamespaceMap(namespaces2)
+	err.Append(e)
 	for key, _ := range ns1_map {
 		if _, ok := ns2_map[key]; ok {
 			// do deep equal on namespaces
