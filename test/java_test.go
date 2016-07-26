@@ -18,7 +18,7 @@ func TestValidJava(t *testing.T) {
 
 	options := compiler.Options{
 		File:  validFile,
-		Gen:   "java",
+		Gen:   "java:gen_with_frugal=false",
 		Out:   outputDir,
 		Delim: delim,
 	}
@@ -47,7 +47,7 @@ func TestValidJavaWithAsync(t *testing.T) {
 
 	options := compiler.Options{
 		File:  validFile,
-		Gen:   "java:async",
+		Gen:   "java:async,gen_with_frugal=false",
 		Out:   outputDir,
 		Delim: delim,
 	}
@@ -68,10 +68,10 @@ func TestValidJavaFrugalCompiler(t *testing.T) {
 	globals.Now = time.Date(2015, 11, 24, 0, 0, 0, 0, time.UTC)
 
 	options := compiler.Options{
-		File:  frugalGenFile,
-		Gen:   "java:gen_with_frugal",
-		Out:   outputDir,
-		Delim: delim,
+		File:    frugalGenFile,
+		Gen:     "java:gen_with_frugal=true",
+		Out:     outputDir,
+		Delim:   delim,
 		Recurse: true,
 	}
 	if err := compiler.Compile(options); err != nil {

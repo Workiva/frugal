@@ -11,9 +11,9 @@ rm -rf test/integration/log/*
 # RM and Generate Go Code
 rm -rf test/integration/go/gen/*
 if [ $# -eq 1 ] && [ "$1" == "-gen_with_frugal" ]; then
-    frugal --gen go:package_prefix=github.com/Workiva/frugal/,gen_with_frugal -r --out='test/integration/go/gen' test/integration/frugalTest.frugal
-else
     frugal --gen go:package_prefix=github.com/Workiva/frugal/ -r --out='test/integration/go/gen' test/integration/frugalTest.frugal
+else
+    frugal --gen go:package_prefix=github.com/Workiva/frugal/,gen_with_frugal=false -r --out='test/integration/go/gen' test/integration/frugalTest.frugal
 fi
 
 # Create Go binaries
@@ -24,9 +24,9 @@ go build -o test/integration/go/bin/testserver test/integration/go/src/bin/tests
 # RM and Generate Dart Code
 rm -rf test/integration/dart/gen-dart/
 if [ $# -eq 1 ] && [ "$1" == "-gen_with_frugal" ]; then
-    frugal --gen dart:gen_with_frugal -r --out='test/integration/dart/gen-dart' test/integration/frugalTest.frugal
-else
     frugal --gen dart -r --out='test/integration/dart/gen-dart' test/integration/frugalTest.frugal
+else
+    frugal --gen dart:gen_with_frugal=false -r --out='test/integration/dart/gen-dart' test/integration/frugalTest.frugal
 fi
 
 cd test/integration/dart/test_client
@@ -37,7 +37,7 @@ cd ${frugalDir}
 
 # RM and Generate Java Code
 rm -rf test/integration/java/frugal-integration-test/gen-java/
-frugal --gen java -r --out='test/integration/java/frugal-integration-test/gen-java' test/integration/frugalTest.frugal
+frugal --gen java:gen_with_frugal=false -r --out='test/integration/java/frugal-integration-test/gen-java' test/integration/frugalTest.frugal
 
 cd lib/java
 mvn clean verify

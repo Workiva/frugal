@@ -10,7 +10,7 @@ import (
 func TestValidGo(t *testing.T) {
 	options := compiler.Options{
 		File:  validFile,
-		Gen:   "go:package_prefix=github.com/Workiva/frugal/test/out/",
+		Gen:   "go:package_prefix=github.com/Workiva/frugal/test/out/,gen_with_frugal=false",
 		Out:   outputDir,
 		Delim: delim,
 	}
@@ -29,7 +29,7 @@ func TestValidGo(t *testing.T) {
 func TestValidGoWithAsync(t *testing.T) {
 	options := compiler.Options{
 		File:  validFile,
-		Gen:   "go:package_prefix=github.com/Workiva/frugal/test/out/,async",
+		Gen:   "go:package_prefix=github.com/Workiva/frugal/test/out/,async,gen_with_frugal=false",
 		Out:   outputDir,
 		Delim: delim,
 	}
@@ -44,7 +44,7 @@ func TestValidGoWithAsync(t *testing.T) {
 func TestValidGoFrugalCompiler(t *testing.T) {
 	options := compiler.Options{
 		File:    frugalGenFile,
-		Gen:     "go:package_prefix=github.com/Workiva/frugal/test/out/,gen_with_frugal",
+		Gen:     "go:package_prefix=github.com/Workiva/frugal/test/out/,gen_with_frugal=true",
 		Out:     outputDir,
 		Delim:   delim,
 		Recurse: true,

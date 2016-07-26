@@ -40,7 +40,7 @@ var Languages = LanguageOptions{
 		"thrift_import":   "Override Thrift package import path (default: git.apache.org/thrift.git/lib/go/thrift)",
 		"frugal_import":   "Override Frugal package import path (default: github.com/Workiva/frugal/lib/go)",
 		"package_prefix":  "Package prefix for generated files",
-		"gen_with_frugal": "Whether to generate thrift files with frugal (experimental)",
+		"gen_with_frugal": "[true|false] Whether to generate thrift files with frugal (experimental, true by default)",
 		"async":           "Generate async client code using channels",
 	},
 	"java": Options{
@@ -48,17 +48,28 @@ var Languages = LanguageOptions{
 			"undated: suppress the date at @Generated annotations, " +
 			"suppress: suppress @Generated annotations entirely",
 		"async":           "Generate async client code using futures",
-		"gen_with_frugal": "Whether to generate thrift files with frugal (experimental)",
+		"gen_with_frugal": "[true|false] Whether to generate thrift files with frugal (experimental, true by default)",
 	},
 	"dart": Options{
 		"library_prefix": "Generate code that can be used within an existing library. " +
 			"Use a dot-separated string, e.g. \"my_parent_lib.src.gen\"",
-		"gen_with_frugal": "Whether to generate thrift files with frugal (experimental)",
+		"gen_with_frugal": "[true|false] Whether to generate thrift files with frugal (experimental, true by default)",
 	},
 	"py": Options{
-		"tornado": "Generate code for use with Tornado",
-		"gen_with_frugal": "Whether to generate thrift files with frugal (experimental)",
+		"tornado":         "Generate code for use with Tornado",
+		"gen_with_frugal": "[true|false] Whether to generate thrift files with frugal (experimental, true by default)",
 	},
+}
+
+// ValidateOption indicates if the language option is supported for the given
+// language.
+func ValidateOption(lang, option string) bool {
+	options, ok := Languages[lang]
+	if !ok {
+		return false
+	}
+	_, ok = options[option]
+	return ok
 }
 
 // ProgramGenerator generates source code in a specified language for a Frugal
@@ -136,7 +147,6 @@ func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string, gen
 	}
 
 	if err := o.GenerateDependencies(outputDir); err != nil {
-		println("err! " + err.Error())
 		return err
 	}
 

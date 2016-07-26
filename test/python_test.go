@@ -10,7 +10,7 @@ import (
 func TestValidPythonTornado(t *testing.T) {
 	options := compiler.Options{
 		File:  validFile,
-		Gen:   "py:tornado",
+		Gen:   "py:tornado,gen_with_frugal=false",
 		Out:   outputDir,
 		Delim: delim,
 	}
@@ -35,7 +35,7 @@ func TestValidPythonTornado(t *testing.T) {
 func TestValidPythonFrugalCompiler(t *testing.T) {
 	options := compiler.Options{
 		File:    frugalGenFile,
-		Gen:     "py:tornado,gen_with_frugal",
+		Gen:     "py:tornado,gen_with_frugal=true",
 		Out:     outputDir,
 		Delim:   delim,
 		Recurse: true,

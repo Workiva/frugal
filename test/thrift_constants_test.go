@@ -17,7 +17,7 @@ const (
 func TestThriftConstants(t *testing.T) {
 	options := compiler.Options{
 		File:               frugalFile,
-		Gen:                "go",
+		Gen:                "go:gen_with_frugal=false",
 		Out:                "out",
 		Delim:              ".",
 		DryRun:             true,

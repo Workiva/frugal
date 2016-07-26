@@ -23,7 +23,7 @@ var (
 func TestInvalid(t *testing.T) {
 	options := compiler.Options{
 		File:  invalidFile,
-		Gen:   languages[0],
+		Gen:   languages[0] + ":gen_with_frugal=false",
 		Out:   outputDir,
 		Delim: delim,
 	}
