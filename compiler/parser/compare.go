@@ -51,17 +51,17 @@ func Compare(file, audit string) error {
 	}
 
 	// check scopes
-	err.Append(checkScopes(newFrugal.Scopes, oldFrugal.Scopes, SCOPE))
+	err.Append(checkScopes(newFrugal.Scopes, oldFrugal.Scopes))
 
 	// check thrift models
-	err.Append(checkThriftStructs(newFrugal.Thrift.Structs, oldFrugal.Thrift.Structs, STRUCT))
-	err.Append(checkThriftStructs(newFrugal.Thrift.Exceptions, oldFrugal.Thrift.Exceptions, EXCEPTION))
-	err.Append(checkThriftStructs(newFrugal.Thrift.Unions, oldFrugal.Thrift.Unions, UNION))
-	err.Append(checkThriftServices(newFrugal.Thrift.Services, oldFrugal.Thrift.Services, SERVICE))
-	err.Append(checkThriftTypeDefs(newFrugal.Thrift.Typedefs, oldFrugal.Thrift.Typedefs, TYPEDEF))
-	err.Append(checkThriftConstants(newFrugal.Thrift.Constants, oldFrugal.Thrift.Constants, CONSTANT))
-	err.Append(checkThriftEnums(newFrugal.Thrift.Enums, oldFrugal.Thrift.Enums, ENUM))
-	err.Append(checkThriftNamespaces(newFrugal.Thrift.Namespaces, oldFrugal.Thrift.Namespaces, NAMESPACE))
+	err.Append(checkThriftStructs(newFrugal.Thrift.Structs, oldFrugal.Thrift.Structs))
+	err.Append(checkThriftStructs(newFrugal.Thrift.Exceptions, oldFrugal.Thrift.Exceptions))
+	err.Append(checkThriftStructs(newFrugal.Thrift.Unions, oldFrugal.Thrift.Unions))
+	err.Append(checkThriftServices(newFrugal.Thrift.Services, oldFrugal.Thrift.Services))
+	err.Append(checkThriftTypeDefs(newFrugal.Thrift.Typedefs, oldFrugal.Thrift.Typedefs))
+	err.Append(checkThriftConstants(newFrugal.Thrift.Constants, oldFrugal.Thrift.Constants))
+	err.Append(checkThriftEnums(newFrugal.Thrift.Enums, oldFrugal.Thrift.Enums))
+	err.Append(checkThriftNamespaces(newFrugal.Thrift.Namespaces, oldFrugal.Thrift.Namespaces))
 
 	// return nil if no errors
 	if err.Error() == "" {
@@ -70,8 +70,8 @@ func Compare(file, audit string) error {
 	return &err
 }
 
-func checkScopes(scopes1, scopes2 []*Scope, trace string) (err Error) {
-	defer err.Prefix(trace)
+func checkScopes(scopes1, scopes2 []*Scope) (err Error) {
+	defer err.Prefix(SCOPE)
 
 	sc1_map, e := makeScopeMap(scopes1)
 	err.Append(e)
@@ -143,9 +143,10 @@ func checkType(t1, t2 *Type, trace string) (err Error) {
 	return err
 }
 
-func checkThriftStructs(structs1, structs2 []*Struct, trace string) (err Error) {
-	defer err.Prefix(trace)
-
+func checkThriftStructs(structs1, structs2 []*Struct) (err Error) {
+	if len(structs1) != 0 {
+		defer err.Prefix(structs1[0].Type.String())
+	}
 	str1_map, e := makeStructureMap(structs1)
 	err.Append(e)
 	str2_map, e := makeStructureMap(structs2)
@@ -236,8 +237,8 @@ func checkFieldModifier(f1, f2 *Field) (err Error) {
 	return err
 }
 
-func checkThriftServices(services1, services2 []*Service, trace string) (err Error) {
-	defer err.Prefix(trace)
+func checkThriftServices(services1, services2 []*Service) (err Error) {
+	defer err.Prefix(SERVICE)
 
 	serv1_map, e := makeServiceMap(services1)
 	err.Append(e)
@@ -294,8 +295,8 @@ func checkThriftServiceMethods(meths1, meths2 []*Method, trace string) (err Erro
 	return err
 }
 
-func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef, trace string) (err Error) {
-	defer err.Prefix(trace)
+func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef) (err Error) {
+	defer err.Prefix(TYPEDEF)
 
 	tdef1_map, e := makeTypeDefMap(typedefs1)
 	err.Append(e)
@@ -315,8 +316,8 @@ func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef, trace string) (err Err
 	return err
 }
 
-func checkThriftConstants(constants1, constants2 []*Constant, trace string) (err Error) {
-	defer err.Prefix(trace)
+func checkThriftConstants(constants1, constants2 []*Constant) (err Error) {
+	defer err.Prefix(CONSTANT)
 
 	cons1_map, e := makeConstantMap(constants1)
 	err.Append(e)
@@ -337,8 +338,8 @@ func checkThriftConstants(constants1, constants2 []*Constant, trace string) (err
 
 }
 
-func checkThriftEnums(enums1, enums2 []*Enum, trace string) (err Error) {
-	defer err.Prefix(trace)
+func checkThriftEnums(enums1, enums2 []*Enum) (err Error) {
+	defer err.Prefix(ENUM)
 
 	enum1_map, e := makeEnumMap(enums1)
 	err.Append(e)
@@ -382,8 +383,8 @@ func checkEnumValues(vals1, vals2 []*EnumValue, trace string) (err Error) {
 	return err
 }
 
-func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace, trace string) (err Error) {
-	defer err.Prefix(trace)
+func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace) (err Error) {
+	defer err.Prefix(NAMESPACE)
 	// Namespace changes only generate warnings
 	ns1_map, e := makeNamespaceMap(namespaces1)
 	err.Append(e)
