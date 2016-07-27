@@ -1,9 +1,5 @@
 package parser
 
-import (
-	"strconv"
-)
-
 func makeFieldMap(f []*Field) (out map[int]*Field, e Error) {
 	defer e.Prefix(" ")
 	// map the fields according to their ID
@@ -12,7 +8,7 @@ func makeFieldMap(f []*Field) (out map[int]*Field, e Error) {
 		if _, ok := out[f[i].ID]; !ok {
 			out[f[i].ID] = f[i]
 		} else {
-			e.Append(NewErrorf("Duplicate IDs present %s: %s, %s", strconv.Itoa(f[i].ID), f[i].Name, out[f[i].ID].Name))
+			e.Append(NewErrorf("Duplicate IDs present %d: %s, %s", f[i].ID, f[i].Name, out[f[i].ID].Name))
 		}
 	}
 	return out, e
