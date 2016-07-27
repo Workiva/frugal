@@ -189,7 +189,7 @@ func checkFields(f1s, f2s []*Field, trace string) (err Error) {
 		if key < min_id {
 			min_id = key
 		}
-		if _, ok := f1_map[key]; !ok {
+		if _, ok := f1_map[key]; !ok && f2_map[key].Modifier != Optional {
 			err.Append(NewErrorf("%s, ID=%d: removed", f2_map[key].Name, key))
 		}
 	}
@@ -202,7 +202,7 @@ func checkFields(f1s, f2s []*Field, trace string) (err Error) {
 				err.Append(NewErrorf("%s, ID=%d: additional field is required", f1_map[key].Name, key))
 			}
 			if key < max_id && key > min_id {
-				err.Append(NewErrorf("%s, ID=%d: additional field does not have ID outside original range", f1_map[key].Name, key))
+				log.Printf("WARNING! %s, ID=%d: additional field does not have ID outside original range", f1_map[key].Name, key)
 			}
 		}
 	}
@@ -229,10 +229,8 @@ func checkFieldModifier(f1, f2 *Field) (err Error) {
 		err.Append(NewErrorf("changed to %s from %s", f1.Modifier.String(), f2.Modifier.String()))
 	}
 	// changing default values only generates a warning
-	if f1.Modifier == Default && f2.Modifier == Default {
-		if !reflect.DeepEqual(f1.Default, f2.Default) {
-			log.Printf("WARNING: Default values changed %s: %#v, %#v\n", f1.Name, f1.Default, f2.Default)
-		}
+	if !reflect.DeepEqual(f1.Default, f2.Default) {
+		log.Printf("WARNING! Default values changed %s: %#v, %#v\n", f1.Name, f1.Default, f2.Default)
 	}
 	return err
 }
@@ -272,7 +270,7 @@ func checkThriftServiceMethods(meths1, meths2 []*Method, trace string) (err Erro
 		if _, ok := meth2_map[key]; ok {
 			// check direction of method
 			if meth1_map[key].Oneway != meth2_map[key].Oneway {
-				err.Append(NewErrorf(" %s: oneway not equal %#v, %#v", key, meth1_map[key].Oneway, meth2_map[key].Oneway))
+				err.Append(NewErrorf(" %s: oneway not equal %t, %t", key, meth1_map[key].Oneway, meth2_map[key].Oneway))
 			}
 			err.Append(checkType(meth1_map[key].ReturnType, meth2_map[key].ReturnType, key+", "+RTYPE))
 			err.Append(checkFields(meth1_map[key].Arguments, meth2_map[key].Arguments, " "+key+", "+ARGUMENT+" "))
@@ -305,12 +303,6 @@ func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef) (err Error) {
 	for key, _ := range tdef1_map {
 		if _, ok := tdef2_map[key]; ok {
 			err.Append(checkType(tdef1_map[key].Type, tdef2_map[key].Type, key+" "+TYPE))
-		}
-	}
-	// can add typedefs but not remove them
-	for key, _ := range tdef2_map {
-		if _, ok := tdef1_map[key]; !ok {
-			err.Append(NewErrorf(" %s: removed", tdef2_map[key].Name))
 		}
 	}
 	return err
@@ -361,23 +353,20 @@ func checkThriftEnums(enums1, enums2 []*Enum) (err Error) {
 
 func checkEnumValues(vals1, vals2 []*EnumValue, trace string) (err Error) {
 	defer err.Prefix(trace)
-
+	// EnumValue map keys are the int values
 	eval1_map, e := makeEnumValueMap(vals1)
 	err.Append(e)
 	eval2_map, e := makeEnumValueMap(vals2)
 	err.Append(e)
 	for key, _ := range eval1_map {
-		if _, ok := eval2_map[key]; ok {
-			// check value
-			if eval1_map[key].Value != eval2_map[key].Value {
-				err.Append(NewErrorf("%s: values differ %#v, %#v", eval1_map[key].Name, eval1_map[key].Value, eval2_map[key].Value))
-			}
+		if _, ok := eval2_map[key]; !ok {
+			err.Append(NewErrorf("%s: value added %d", eval1_map[key].Name, key))
 		}
 	}
 	// can add enum value but not remove them
 	for key, _ := range eval2_map {
 		if _, ok := eval1_map[key]; !ok {
-			err.Append(NewErrorf("%s: removed", eval2_map[key].Name))
+			err.Append(NewErrorf("%s: value removed %d", eval2_map[key].Name, key))
 		}
 	}
 	return err
@@ -394,14 +383,14 @@ func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace) (err Error) {
 		if _, ok := ns2_map[key]; ok {
 			// do deep equal on namespaces
 			if !reflect.DeepEqual(ns1_map[key], ns2_map[key]) {
-				log.Printf("WARNING: Namespaces not equal %#v, %#v\n", ns1_map[key], ns2_map[key])
+				log.Printf("WARNING! Namespaces not equal %#v, %#v\n", ns1_map[key], ns2_map[key])
 			}
 		}
 	}
 	// can add namespaces but not remove them
 	for key, _ := range ns2_map {
 		if _, ok := ns1_map[key]; !ok {
-			log.Printf("WARNING: Namespace removed %s\n", key)
+			log.Printf("WARNING! Namespace removed %s\n", key)
 		}
 	}
 

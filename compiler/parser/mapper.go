@@ -30,7 +30,7 @@ func makeScopeMap(f []*Scope) (out map[string]*Scope, e Error) {
 
 func makeOperationMap(f []*Operation) (out map[string]*Operation, e Error) {
 	defer e.Prefix(" ")
-	// map the scopes according to their Name
+	// map the operations according to their Name
 	out = make(map[string]*Operation)
 	for i := range f {
 		if _, ok := out[f[i].Name]; !ok {
@@ -44,7 +44,7 @@ func makeOperationMap(f []*Operation) (out map[string]*Operation, e Error) {
 
 func makeStructureMap(f []*Struct) (out map[string]*Struct, e Error) {
 	defer e.Prefix(" ")
-	// map the scopes according to their Name
+	// map the structures according to their Name
 	out = make(map[string]*Struct)
 	for i := range f {
 		if _, ok := out[f[i].Name]; !ok {
@@ -58,7 +58,7 @@ func makeStructureMap(f []*Struct) (out map[string]*Struct, e Error) {
 
 func makeServiceMap(f []*Service) (out map[string]*Service, e Error) {
 	defer e.Prefix(" ")
-	// map the scopes according to their Name
+	// map the services according to their Name
 	out = make(map[string]*Service)
 	for i := range f {
 		if _, ok := out[f[i].Name]; !ok {
@@ -72,7 +72,7 @@ func makeServiceMap(f []*Service) (out map[string]*Service, e Error) {
 
 func makeMethodMap(f []*Method) (out map[string]*Method, e Error) {
 	defer e.Prefix(" ")
-	// map the scopes according to their Name
+	// map the methods according to their Name
 	out = make(map[string]*Method)
 	for i := range f {
 		if _, ok := out[f[i].Name]; !ok {
@@ -86,7 +86,7 @@ func makeMethodMap(f []*Method) (out map[string]*Method, e Error) {
 
 func makeTypeDefMap(f []*TypeDef) (out map[string]*TypeDef, e Error) {
 	defer e.Prefix(" ")
-	// map the scopes according to their Name
+	// map the typedefs according to their Name
 	out = make(map[string]*TypeDef)
 	for i := range f {
 		if _, ok := out[f[i].Name]; !ok {
@@ -100,7 +100,7 @@ func makeTypeDefMap(f []*TypeDef) (out map[string]*TypeDef, e Error) {
 
 func makeConstantMap(f []*Constant) (out map[string]*Constant, e Error) {
 	defer e.Prefix(" ")
-	// map the scopes according to their Name
+	// map the constants according to their Name
 	out = make(map[string]*Constant)
 	for i := range f {
 		if _, ok := out[f[i].Name]; !ok {
@@ -114,7 +114,7 @@ func makeConstantMap(f []*Constant) (out map[string]*Constant, e Error) {
 
 func makeEnumMap(f []*Enum) (out map[string]*Enum, e Error) {
 	defer e.Prefix(" ")
-	// map the scopes according to their Name
+	// map the enums according to their Name
 	out = make(map[string]*Enum)
 	for i := range f {
 		if _, ok := out[f[i].Name]; !ok {
@@ -126,15 +126,15 @@ func makeEnumMap(f []*Enum) (out map[string]*Enum, e Error) {
 	return out, e
 }
 
-func makeEnumValueMap(f []*EnumValue) (out map[string]*EnumValue, e Error) {
+func makeEnumValueMap(f []*EnumValue) (out map[int]*EnumValue, e Error) {
 	defer e.Prefix(" ")
-	// map the scopes according to their Name
-	out = make(map[string]*EnumValue)
+	// map the enumvalues according to their int value (because name can change values cannot)
+	out = make(map[int]*EnumValue)
 	for i := range f {
-		if _, ok := out[f[i].Name]; !ok {
-			out[f[i].Name] = f[i]
+		if _, ok := out[f[i].Value]; !ok {
+			out[f[i].Value] = f[i]
 		} else {
-			e.Append(NewErrorf("Duplicate names present: %s", f[i].Name))
+			e.Append(NewErrorf("Duplicate values present: %s", f[i].Name))
 		}
 	}
 	return out, e
@@ -142,7 +142,7 @@ func makeEnumValueMap(f []*EnumValue) (out map[string]*EnumValue, e Error) {
 
 func makeNamespaceMap(f []*Namespace) (out map[string]*Namespace, e Error) {
 	defer e.Prefix(" ")
-	// map the scopes according to their Scope
+	// map the namespaces according to their Scope
 	out = make(map[string]*Namespace)
 	for i := range f {
 		if _, ok := out[f[i].Scope]; !ok {

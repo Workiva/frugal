@@ -84,9 +84,9 @@ func TestBreakingChanges(t *testing.T) {
 		"Service derived2, Method, derived2_function6, ReturnType, ValueType: not equal test_struct3, test_struct2",
 		"Service base, Method base_oneway: oneway not equal false, true",
 		"Service base, Method base_function1: oneway not equal true, false",
-		"Enum test_enum1.enum1_value0: removed",
-		"Enum test_enum2.enum2_value3: removed",
-		"Enum test_enum1.enum1_value2: removed",
+		"Enum test_enum1.enum1_value0: value removed 0",
+		"Enum test_enum2.enum2_value3: value removed 3",
+		"Enum test_enum1.enum1_value2: value removed 2",
 		"struct test_struct4.struct4_member3, ID=3: additional field is required",
 		"Service derived1: extention not equal , base",
 		"Service derived2: extention not equal derived1, base",
@@ -104,8 +104,12 @@ func TestBreakingChanges(t *testing.T) {
 
 		badFile := fmt.Sprintf("idl/breaking_changes/break%d.thrift", i+1)
 		err := parser.Compare(badFile, testFileThrift)
-		if err.Error() != expected[i] {
-			t.Fatalf("checking %s\nExpected: %s\nBut got : %s\n", badFile, expected[i], err.Error())
+		if err != nil {
+			if err.Error() != expected[i] {
+				t.Fatalf("checking %s\nExpected: %s\nBut got : %s\n", badFile, expected[i], err.Error())
+			}
+		} else {
+			fmt.Printf("No errors found for %s\n", badFile)
 		}
 	}
 }
