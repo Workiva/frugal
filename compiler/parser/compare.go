@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"log"
 	"reflect"
 	"strconv"
@@ -79,7 +78,6 @@ func checkScopes(scopes1, scopes2 []*Scope, trace string) (err Error) {
 			// check scope prefix
 			err.Append(checkPrefix(sc1_map[key].Prefix, sc2_map[key].Prefix, " "+key+" "+PREFIX))
 			// check scope operations
-			err.Append(checkLen(len(sc1_map[key].Operations), len(sc2_map[key].Operations)))
 			op1_map, e := makeOperationMap(sc1_map[key].Operations)
 			err.Append(e)
 			op2_map, e := makeOperationMap(sc2_map[key].Operations)
@@ -87,6 +85,12 @@ func checkScopes(scopes1, scopes2 []*Scope, trace string) (err Error) {
 			for op, _ := range op1_map {
 				if _, ok := op2_map[op]; ok {
 					err.Append(checkType(op1_map[op].Type, op2_map[op].Type, TYPE))
+				}
+			}
+			// can add scope operations but not remove them
+			for key, _ := range op2_map {
+				if _, ok := op1_map[key]; !ok {
+					err.Append(NewErrorf(" removed: %s", op2_map[key].Name))
 				}
 			}
 		}
@@ -121,7 +125,7 @@ func checkType(t1, t2 *Type, trace string) (err Error) {
 	defer err.Prefix(" " + trace)
 	if t1 == nil || t2 == nil {
 		if t1 != t2 {
-			err.Append(NewErrorf("types not compatible: %s, %s", t1, t2))
+			err.Append(NewErrorf(" types not compatible: %s, %s", t1, t2))
 		}
 		return err
 	}
@@ -181,10 +185,7 @@ func checkFields(f1s, f2s []*Field, trace string) (err Error) {
 
 func checkField(f1, f2 *Field, trace string) (err Error) {
 	defer err.Prefix(trace)
-	// check ID
-	if f1.ID != f2.ID {
-		err.Append(NewErrorf("Field IDs not equal: %#v, %#v", f1.ID, f2.ID))
-	}
+
 	// check type
 	err.Append(checkType(f1.Type, f2.Type, TYPE))
 	// check modifier (Required, Optional, Default)
@@ -252,7 +253,7 @@ func checkThriftServiceMethods(meths1, meths2 []*Method, trace string) (err Erro
 			// cant add exception with non-void return
 			if meth1_map[key].ReturnType != nil {
 				if len(meth1_map[key].Exceptions) > len(meth2_map[key].Exceptions) {
-					err.Append(NewErrorf("Cannot add a new exception to method %s with non-void return.", key))
+					err.Append(NewErrorf("Cannot add a new exception to method %s.", key))
 				}
 			}
 		}
@@ -297,11 +298,6 @@ func checkThriftConstants(constants1, constants2 []*Constant, trace string) (err
 	for key, _ := range cons1_map {
 		if _, ok := cons2_map[key]; ok {
 			err.Append(checkType(cons1_map[key].Type, cons2_map[key].Type, TYPE))
-			// do deep equal on value
-			// TODO is this check necessary?
-			if !reflect.DeepEqual(cons1_map[key].Value, cons2_map[key].Value) {
-				err.Append(NewErrorf(" %s values differ: new(%#v), old(%#v)", key, cons1_map[key].Value, cons2_map[key].Value))
-			}
 		}
 	}
 	// can add constants but not remove them
@@ -316,7 +312,7 @@ func checkThriftConstants(constants1, constants2 []*Constant, trace string) (err
 
 func checkThriftEnums(enums1, enums2 []*Enum, trace string) (err Error) {
 	defer err.Prefix(trace)
-	err.Append(checkLen(len(enums1), len(enums2)))
+
 	enum1_map, e := makeEnumMap(enums1)
 	err.Append(e)
 	enum2_map, e := makeEnumMap(enums2)
@@ -361,7 +357,7 @@ func checkEnumValues(vals1, vals2 []*EnumValue, trace string) (err Error) {
 
 func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace, trace string) (err Error) {
 	defer err.Prefix(trace)
-	// TODO is checking the namespace necessary?
+	// Namespace changes only generate warnings
 	ns1_map, e := makeNamespaceMap(namespaces1)
 	err.Append(e)
 	ns2_map, e := makeNamespaceMap(namespaces2)
@@ -388,14 +384,6 @@ func checkString(s1, s2 string) (err Error) {
 	defer err.Prefix(" ")
 	if s1 != s2 {
 		err.Append(NewErrorf("not equal: %s, %s", s1, s2))
-	}
-	return err
-}
-
-func checkLen(l1, l2 int) (err Error) {
-	defer err.Prefix(" ")
-	if l1 != l2 {
-		err.Append(NewErrorf(fmt.Sprintf("lengths differ new(%s), old(%s)", strconv.Itoa(l1), strconv.Itoa(l2))))
 	}
 	return err
 }
