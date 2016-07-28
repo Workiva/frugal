@@ -34,6 +34,9 @@ const (
 	VALUETYPE          = "ValueType"
 )
 
+//need global variable for typedefs to use in type checks
+var oldTypeDefs, newTypeDefs map[string]*TypeDef
+
 //Comparison of file with the audit file
 func Compare(file, audit string) error {
 	var err Error
@@ -50,15 +53,15 @@ func Compare(file, audit string) error {
 		return e
 	}
 
+	// check typedefs first so we can use them later
+	err.Append(checkThriftTypeDefs(newFrugal.Thrift.Typedefs, oldFrugal.Thrift.Typedefs))
 	// check scopes
 	err.Append(checkScopes(newFrugal.Scopes, oldFrugal.Scopes))
-
 	// check thrift models
 	err.Append(checkThriftStructs(newFrugal.Thrift.Structs, oldFrugal.Thrift.Structs))
 	err.Append(checkThriftStructs(newFrugal.Thrift.Exceptions, oldFrugal.Thrift.Exceptions))
 	err.Append(checkThriftStructs(newFrugal.Thrift.Unions, oldFrugal.Thrift.Unions))
 	err.Append(checkThriftServices(newFrugal.Thrift.Services, oldFrugal.Thrift.Services))
-	err.Append(checkThriftTypeDefs(newFrugal.Thrift.Typedefs, oldFrugal.Thrift.Typedefs))
 	err.Append(checkThriftConstants(newFrugal.Thrift.Constants, oldFrugal.Thrift.Constants))
 	err.Append(checkThriftEnums(newFrugal.Thrift.Enums, oldFrugal.Thrift.Enums))
 	err.Append(checkThriftNamespaces(newFrugal.Thrift.Namespaces, oldFrugal.Thrift.Namespaces))
@@ -135,12 +138,34 @@ func checkType(t1, t2 *Type, trace string) (err Error) {
 	}
 	// if the types are different we dont need to recurse further
 	if t1.Name != t2.Name {
-		err.Append(NewErrorf(": not equal %s, %s", t1.Name, t2.Name))
+		t1, t1IsTypeDef := checkForTypeDef(t1, newTypeDefs)
+		t2, t2IsTypeDef := checkForTypeDef(t2, oldTypeDefs)
+		if t1IsTypeDef || t2IsTypeDef {
+			err.Append(checkType(t1, t2, TYPEDEF))
+		} else {
+			err.Append(NewErrorf(": not equal %s, %s", t1.Name, t2.Name))
+		}
 	} else {
 		err.Append(checkType(t1.KeyType, t2.KeyType, KEYTYPE))
 		err.Append(checkType(t1.ValueType, t2.ValueType, VALUETYPE))
 	}
 	return err
+}
+
+func checkForTypeDef(t *Type, typeDefs map[string]*TypeDef) (*Type, bool) {
+	// check if t is in thriftBaseTypes
+	for key, _ := range thriftBaseTypes {
+		if key == t.Name {
+			return t, false
+		}
+	}
+	// check if t is a typedef
+	for key, _ := range typeDefs {
+		if key == t.Name {
+			return typeDefs[key].Type, true
+		}
+	}
+	return t, false
 }
 
 func checkThriftStructs(structs1, structs2 []*Struct) (err Error) {
@@ -295,14 +320,14 @@ func checkThriftServiceMethods(meths1, meths2 []*Method, trace string) (err Erro
 
 func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef) (err Error) {
 	defer err.Prefix(TYPEDEF)
-
-	tdef1_map, e := makeTypeDefMap(typedefs1)
+	var e Error
+	newTypeDefs, e = makeTypeDefMap(typedefs1)
 	err.Append(e)
-	tdef2_map, e := makeTypeDefMap(typedefs2)
+	oldTypeDefs, e = makeTypeDefMap(typedefs2)
 	err.Append(e)
-	for key, _ := range tdef1_map {
-		if _, ok := tdef2_map[key]; ok {
-			err.Append(checkType(tdef1_map[key].Type, tdef2_map[key].Type, key+" "+TYPE))
+	for key, _ := range newTypeDefs {
+		if _, ok := oldTypeDefs[key]; ok {
+			err.Append(checkType(newTypeDefs[key].Type, oldTypeDefs[key].Type, key+" "+TYPE))
 		}
 	}
 	return err
