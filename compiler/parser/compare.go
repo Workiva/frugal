@@ -159,6 +159,12 @@ func checkForTypeDef(t *Type, typeDefs map[string]*TypeDef) (*Type, bool) {
 			return t, false
 		}
 	}
+	// check if t is in thriftContainerTypes
+	for key, _ := range thriftContainerTypes {
+		if key == t.Name {
+			return t, false
+		}
+	}
 	// check if t is a typedef
 	for key, _ := range typeDefs {
 		if key == t.Name {
