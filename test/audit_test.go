@@ -95,7 +95,7 @@ func TestBreakingChanges(t *testing.T) {
 		"Service derived1, Method derived1_function5, Argument function5_arg1, Type: not equal list, map",
 		"Service base, Method base_function2, Argument function2_arg5, Type: not equal string, list",
 		"Service derived1, Method, derived1_function6, ReturnType: not equal map, test_struct1",
-		"Service base, Method base_function2, Exception e, ID=1: removed",
+		"Service base, Method base_function2: Cannot remove exceptions",
 		"exception test_exception1.code, Type: not equal i64, i32",
 		"Service derived1, Method derived1_function1, Exception e, Type: not equal test_exception1, test_exception2",
 		"struct test_struct3.struct3_member6, ID=6: additional field does not have ID outside original range",

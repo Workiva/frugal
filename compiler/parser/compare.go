@@ -76,7 +76,6 @@ func Compare(file, audit string) error {
 
 func checkScopes(scopes1, scopes2 []*Scope) (err Error) {
 	defer err.Prefix(SCOPE)
-
 	sc1_map, e := makeScopeMap(scopes1)
 	err.Append(e)
 	sc2_map, e := makeScopeMap(scopes2)
@@ -238,13 +237,11 @@ func checkFields(f1s, f2s []*Field, trace string) (err Error) {
 			}
 		}
 	}
-
 	return err
 }
 
 func checkField(f1, f2 *Field, trace string) (err Error) {
 	defer err.Prefix(trace)
-
 	// check type
 	err.Append(checkType(f1.Type, f2.Type, TYPE))
 	// check modifier (Required, Optional, Default)
@@ -269,7 +266,6 @@ func checkFieldModifier(f1, f2 *Field) (err Error) {
 
 func checkThriftServices(services1, services2 []*Service) (err Error) {
 	defer err.Prefix(SERVICE)
-
 	serv1_map, e := makeServiceMap(services1)
 	err.Append(e)
 	serv2_map, e := makeServiceMap(services2)
@@ -293,7 +289,6 @@ func checkThriftServices(services1, services2 []*Service) (err Error) {
 
 func checkThriftServiceMethods(meths1, meths2 []*Method, trace string) (err Error) {
 	defer err.Prefix(" " + trace + ", " + METHOD)
-
 	meth1_map, e := makeMethodMap(meths1)
 	err.Append(e)
 	meth2_map, e := makeMethodMap(meths2)
@@ -311,8 +306,12 @@ func checkThriftServiceMethods(meths1, meths2 []*Method, trace string) (err Erro
 			// cant add exception with non-void return
 			if meth1_map[key].ReturnType != nil {
 				if len(meth1_map[key].Exceptions) > len(meth2_map[key].Exceptions) {
-					err.Append(NewErrorf(": Cannot add a new exception to %s", key))
+					err.Append(NewErrorf(" %s: Cannot add exceptions", key))
 				}
+			}
+			// cant remove an exception
+			if len(meth1_map[key].Exceptions) < len(meth2_map[key].Exceptions) {
+				err.Append(NewErrorf(" %s: Cannot remove exceptions", key))
 			}
 		}
 	}
@@ -342,7 +341,6 @@ func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef) (err Error) {
 
 func checkThriftEnums(enums1, enums2 []*Enum) (err Error) {
 	defer err.Prefix(ENUM)
-
 	enum1_map, e := makeEnumMap(enums1)
 	err.Append(e)
 	enum2_map, e := makeEnumMap(enums2)
