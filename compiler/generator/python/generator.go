@@ -650,7 +650,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 			keyElem := getElem()
 			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
 			keyTType := g.getTType(underlyingType.KeyType)
-			contents += fmt.Sprintf(ind+"oprot.writeMapBegin(%s%s, len(%s%s))\n", keyTType, valTType, prefix, field.Name)
+			contents += fmt.Sprintf(ind+"oprot.writeMapBegin(%s, %s, len(%s%s))\n", keyTType, valTType, prefix, field.Name)
 			contents += fmt.Sprintf(ind+"for %s, %s in %s%s.items():\n", keyElem, valElem, prefix, field.Name)
 			contents += g.generateWriteFieldRec(keyField, false, ind+tab)
 			contents += g.generateWriteFieldRec(valField, false, ind+tab)
