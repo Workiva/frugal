@@ -7,59 +7,15 @@ import (
 )
 
 const (
-	validAuditThrift = "idl/valid_audit_thrift.frugal"
-	validAuditScope  = "idl/valid_audit_scope.frugal"
-	testFileThrift   = "idl/breaking_changes/test.thrift"
-	testWarning      = "idl/breaking_changes/warning.thrift"
+	testFileThrift = "idl/breaking_changes/test.thrift"
+	testWarning    = "idl/breaking_changes/warning.thrift"
+	scopeFile      = "idl/breaking_changes/scope.frugal"
 )
 
 func TestPassingAudit(t *testing.T) {
 
 	if err := parser.Compare(validFile, validFile); err != nil {
 		t.Fatal("Unexpected error", err)
-	}
-}
-
-func TestInvalidAudit(t *testing.T) {
-
-	if err := parser.Compare(invalidFile, validFile); err == nil {
-		t.Fatal("Compare should fail for invalid frugal file")
-	}
-
-	if err := parser.Compare(validFile, invalidFile); err == nil {
-		t.Fatal("Compare should fail for invalid frugal file")
-	}
-
-	if err := parser.Compare(invalidFile, invalidFile); err == nil {
-		t.Fatal("Compare should fail for invalid frugal file")
-	}
-}
-
-func TestValidAuditThrift(t *testing.T) {
-	err := parser.Compare(validFile, validAuditThrift)
-	expected := "exception InvalidOperation.why: changed to DEFAULT from REQUIRED"
-	if err.Error() != expected {
-		t.Fatal(fmt.Sprintf("\nExpected: %s\nBut got : %s\n", expected, err.Error()))
-	}
-
-	err = parser.Compare(validAuditThrift, validFile)
-	expected = "exception InvalidOperation.why: changed to REQUIRED from DEFAULT"
-	if err.Error() != expected {
-		t.Fatal(fmt.Sprintf("\nExpected: %s\nBut got : %s\n", expected, err.Error()))
-	}
-}
-
-func TestValidAuditScope(t *testing.T) {
-	err := parser.Compare(validFile, validAuditScope)
-	expected := "Scope Foo, Prefix: normalized foo.bar.{0}.qux not compatible with foo.bar.{0}.{1}.qux"
-	if err.Error() != expected {
-		t.Fatal(fmt.Sprintf("\nExpected: %s\nBut got : %s\n", expected, err.Error()))
-	}
-
-	err = parser.Compare(validAuditScope, validFile)
-	expected = "Scope Foo, Prefix: normalized foo.bar.{0}.{1}.qux not compatible with foo.bar.{0}.qux"
-	if err.Error() != expected {
-		t.Fatal(fmt.Sprintf("\nExpected: %s\nBut got : %s\n", expected, err.Error()))
 	}
 }
 
@@ -98,9 +54,8 @@ func TestBreakingChanges(t *testing.T) {
 		"Service base, Method base_function2: Cannot remove exceptions",
 		"exception test_exception1.code, Type: not equal i64, i32",
 		"Service derived1, Method derived1_function1, Exception e, Type: not equal test_exception1, test_exception2",
-		"struct test_struct3.struct3_member6, ID=6: additional field does not have ID outside original range",
 	}
-	for i := 0; i < 34; i++ {
+	for i := 0; i < 33; i++ {
 
 		badFile := fmt.Sprintf("idl/breaking_changes/break%d.thrift", i+1)
 		err := parser.Compare(badFile, testFileThrift)
@@ -109,7 +64,7 @@ func TestBreakingChanges(t *testing.T) {
 				t.Fatalf("checking %s\nExpected: %s\nBut got : %s\n", badFile, expected[i], err.Error())
 			}
 		} else {
-			fmt.Printf("No errors found for %s\n", badFile)
+			t.Fatalf("No errors found for %s\n", badFile)
 		}
 	}
 }
@@ -118,5 +73,28 @@ func TestWarningChanges(t *testing.T) {
 	err := parser.Compare(testWarning, testFileThrift)
 	if err != nil {
 		t.Fatalf("\nExpected no errors, but got: %s", err.Error())
+	}
+}
+
+func TestScopeBreakingChanges(t *testing.T) {
+	expected := []string{
+		"Scope Foo, Prefix: normalized foo.bar.{0}.{1}.{2}.qux not compatible with foo.bar.{0}.{1}.qux",
+		"Scope Foo, Prefix: normalized foo.bar.{0}.qux not compatible with foo.bar.{0}.{1}.qux",
+		"Scope blah: removed",
+		"Scope Foo, Prefix: normalized foo.bar.{0}.{1}.qux.que not compatible with foo.bar.{0}.{1}.qux",
+		"Scope Foo, Prefix: normalized foo.bar.{0}.{1} not compatible with foo.bar.{0}.{1}.qux",
+		"Scope Foo, Operation Bar: removed",
+		"Scope Foo, Operation Foo, Type: not equal int, Thing",
+	}
+	for i := 0; i < 7; i++ {
+		badFile := fmt.Sprintf("idl/breaking_changes/scope%d.frugal", i+1)
+		err := parser.Compare(badFile, scopeFile)
+		if err != nil {
+			if err.Error() != expected[i] {
+				t.Fatalf("checking %s\nExpected: %s\nBut got : %s\n", badFile, expected[i], err.Error())
+			}
+		} else {
+			t.Fatalf("No errors found for %s\n", badFile)
+		}
 	}
 }

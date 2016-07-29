@@ -85,27 +85,33 @@ func checkScopes(scopes1, scopes2 []*Scope) (err Error) {
 			// check scope prefix
 			err.Append(checkPrefix(sc1_map[key].Prefix, sc2_map[key].Prefix, " "+key+", "+PREFIX))
 			// check scope operations
-			op1_map, e := makeOperationMap(sc1_map[key].Operations)
-			err.Append(e)
-			op2_map, e := makeOperationMap(sc2_map[key].Operations)
-			err.Append(e)
-			for op, _ := range op1_map {
-				if _, ok := op2_map[op]; ok {
-					err.Append(checkType(op1_map[op].Type, op2_map[op].Type, TYPE))
-				}
-			}
-			// can add scope operations but not remove them
-			for op, _ := range op2_map {
-				if _, ok := op1_map[op]; !ok {
-					err.Append(NewErrorf("%s, Operation %s: removed", key, op2_map[op].Name))
-				}
-			}
+			err.Append(checkOperations(sc1_map[key].Operations, sc2_map[key].Operations, " "+key))
 		}
 	}
 	// can add scopes but not remove them
 	for key, _ := range sc2_map {
 		if _, ok := sc1_map[key]; !ok {
-			err.Append(NewErrorf("%s: removed", sc2_map[key].Name))
+			err.Append(NewErrorf(" %s: removed", sc2_map[key].Name))
+		}
+	}
+	return err
+}
+
+func checkOperations(ops1, ops2 []*Operation, trace string) (err Error) {
+	defer err.Prefix(trace)
+	op1_map, e := makeOperationMap(ops1)
+	err.Append(e)
+	op2_map, e := makeOperationMap(ops2)
+	err.Append(e)
+	for op, _ := range op1_map {
+		if _, ok := op2_map[op]; ok {
+			err.Append(checkType(op1_map[op].Type, op2_map[op].Type, OPERATION+" "+op+", "+TYPE))
+		}
+	}
+	// can add scope operations but not remove them
+	for op, _ := range op2_map {
+		if _, ok := op1_map[op]; !ok {
+			err.Append(NewErrorf(", Operation %s: removed", op2_map[op].Name))
 		}
 	}
 	return err
