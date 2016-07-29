@@ -62,9 +62,10 @@ func Compare(file, audit string) error {
 	err.Append(checkThriftStructs(newFrugal.Thrift.Exceptions, oldFrugal.Thrift.Exceptions))
 	err.Append(checkThriftStructs(newFrugal.Thrift.Unions, oldFrugal.Thrift.Unions))
 	err.Append(checkThriftServices(newFrugal.Thrift.Services, oldFrugal.Thrift.Services))
-	err.Append(checkThriftConstants(newFrugal.Thrift.Constants, oldFrugal.Thrift.Constants))
 	err.Append(checkThriftEnums(newFrugal.Thrift.Enums, oldFrugal.Thrift.Enums))
+	// checking namespaces and constants only generate warnings
 	err.Append(checkThriftNamespaces(newFrugal.Thrift.Namespaces, oldFrugal.Thrift.Namespaces))
+	err.Append(checkThriftConstants(newFrugal.Thrift.Constants, oldFrugal.Thrift.Constants))
 
 	// return nil if no errors
 	if err.Error() == "" {
@@ -339,28 +340,6 @@ func checkThriftTypeDefs(typedefs1, typedefs2 []*TypeDef) (err Error) {
 	return err
 }
 
-func checkThriftConstants(constants1, constants2 []*Constant) (err Error) {
-	defer err.Prefix(CONSTANT)
-
-	cons1_map, e := makeConstantMap(constants1)
-	err.Append(e)
-	cons2_map, e := makeConstantMap(constants2)
-	err.Append(e)
-	for key, _ := range cons1_map {
-		if _, ok := cons2_map[key]; ok {
-			err.Append(checkType(cons1_map[key].Type, cons2_map[key].Type, key+" "+TYPE))
-		}
-	}
-	// can add constants but not remove them
-	for key, _ := range cons2_map {
-		if _, ok := cons1_map[key]; !ok {
-			err.Append(NewErrorf(" %s: removed", cons2_map[key].Name))
-		}
-	}
-	return err
-
-}
-
 func checkThriftEnums(enums1, enums2 []*Enum) (err Error) {
 	defer err.Prefix(ENUM)
 
@@ -403,8 +382,32 @@ func checkEnumValues(vals1, vals2 []*EnumValue, trace string) (err Error) {
 	return err
 }
 
+// THE FOLLOWING FUNCTIONS ONLY GENERATE WARNINGS
+
+func checkThriftConstants(constants1, constants2 []*Constant) (err Error) {
+	// constant changes only generates warnings
+	cons1_map, e := makeConstantMap(constants1)
+	err.Append(e)
+	cons2_map, e := makeConstantMap(constants2)
+	err.Append(e)
+	for key, _ := range cons1_map {
+		if _, ok := cons2_map[key]; ok {
+			// do deep equal on constant values
+			if !reflect.DeepEqual(cons1_map[key].Value, cons2_map[key].Value) {
+				log.Printf("WARNING! Constant value changed %s: %#v, %#v\n", key, cons1_map[key].Value, cons2_map[key].Value)
+			}
+		}
+	}
+	// warn if constant value is removed
+	for key, _ := range cons2_map {
+		if _, ok := cons1_map[key]; !ok {
+			log.Printf("WARNING! Constant removed %s, %#v\n", key, cons2_map[key].Value)
+		}
+	}
+	return err
+}
+
 func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace) (err Error) {
-	defer err.Prefix(NAMESPACE)
 	// Namespace changes only generate warnings
 	ns1_map, e := makeNamespaceMap(namespaces1)
 	err.Append(e)
@@ -418,12 +421,11 @@ func checkThriftNamespaces(namespaces1, namespaces2 []*Namespace) (err Error) {
 			}
 		}
 	}
-	// can add namespaces but not remove them
+	// warn if namespace is removed
 	for key, _ := range ns2_map {
 		if _, ok := ns1_map[key]; !ok {
 			log.Printf("WARNING! Namespace removed %s\n", key)
 		}
 	}
-
 	return err
 }
