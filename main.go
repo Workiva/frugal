@@ -131,7 +131,8 @@ func main() {
 				os.Exit(1)
 			}
 		} else {
-			if err := parser.Compare(options.File, audit); err != nil {
+			auditor := parser.NewAuditor()
+			if err := auditor.Compare(options.File, audit); err != nil {
 				fmt.Printf("FAILED: audit of %s against %s\n%s\n", options.File, audit, err.Error())
 				os.Exit(1)
 			}
