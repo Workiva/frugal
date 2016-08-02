@@ -73,7 +73,7 @@ func (a *Auditor) Compare(newFile, oldFile string) error {
 	a.checkServices(oldFrugal.Thrift.Services, newFrugal.Thrift.Services)
 
 	if a.logger.ErrorsLogged() {
-		return fmt.Errorf("audit faled between %s and %s", oldFile, newFile)
+		return fmt.Errorf("audit failed between %s and %s", oldFile, newFile)
 	}
 	return nil
 }
