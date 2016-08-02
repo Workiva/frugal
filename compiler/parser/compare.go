@@ -91,7 +91,7 @@ func (a *Auditor) checkScopes(old, new []*Scope) {
 			a.checkScopePrefix(oldScope.Prefix, newScope.Prefix, context)
 			a.checkOperations(oldScope.Operations, newScope.Operations, context)
 		} else {
-			a.logger.LogError("missing scope:", newScope.Name)
+			a.logger.LogError("missing scope:", oldScope.Name)
 		}
 	}
 }
@@ -99,7 +99,7 @@ func (a *Auditor) checkScopes(old, new []*Scope) {
 func (a *Auditor) checkScopePrefix(old, new *ScopePrefix, context string) {
 	// TODO variable tokens should be allowed to change names
 	if old.String != new.String {
-		a.logger.LogError(context, "prefix changed")
+		a.logger.LogError(context, fmt.Sprintf("prefix changed: %s -> %s", old.String, new.String))
 	}
 }
 
@@ -163,14 +163,15 @@ func (a *Auditor) checkEnums(old, new []*Enum) {
 
 	for _, oldEnum := range old {
 		if newEnum, ok := newMap[oldEnum.Name]; ok {
-			a.checkEnumValues(oldEnum.Values, newEnum.Values)
+			context := fmt.Sprintf("enum %s:", oldEnum.Name)
+			a.checkEnumValues(oldEnum.Values, newEnum.Values, context)
 		} else {
 			a.logger.LogWarning("enum removed:", oldEnum.Name)
 		}
 	}
 }
 
-func (a *Auditor) checkEnumValues(old, new []*EnumValue) {
+func (a *Auditor) checkEnumValues(old, new []*EnumValue, context string) {
 	newMap := make(map[int]*EnumValue)
 	for _, value := range new {
 		newMap[value.Value] = value
@@ -182,7 +183,8 @@ func (a *Auditor) checkEnumValues(old, new []*EnumValue) {
 				a.logger.LogWarning("enum variant name changed:", oldValue.Name)
 			}
 		} else {
-			a.logger.LogError("enum variant removed", oldValue.Name)
+			a.logger.LogError(fmt.Sprintf("%s variant %s: removed with ID=%d",
+				context, oldValue.Name, oldValue.Value))
 		}
 	}
 }
@@ -213,7 +215,8 @@ func (a *Auditor) checkServices(old, new []*Service) {
 		if newService, ok := newMap[oldService.Name]; ok {
 			// It's fine to add inheritance, but not change it if it already exists
 			if oldService.Extends != "" && oldService.Extends != newService.Extends {
-				a.logger.LogError("service extends changed:", oldService.Name)
+				a.logger.LogError(fmt.Sprintf("service %s: extends changed: '%s' -> '%s'",
+					oldService.Name, oldService.Extends, newService.Extends))
 			}
 			context := fmt.Sprintf("service %s:", oldService.Name)
 			a.checkServiceMethods(oldService.Methods, newService.Methods, context)
@@ -236,7 +239,7 @@ func (a *Auditor) checkServiceMethods(old, new []*Method, context string) {
 				a.logger.LogError(context, "one way changed for method:", oldMethod.Name)
 			}
 
-			methodContext := fmt.Sprintf("%s: method %s:", context, oldMethod.Name)
+			methodContext := fmt.Sprintf("%s method %s:", context, oldMethod.Name)
 			// return types must be equal
 			a.checkType(oldMethod.ReturnType, newMethod.ReturnType, false, methodContext)
 
@@ -244,7 +247,11 @@ func (a *Auditor) checkServiceMethods(old, new []*Method, context string) {
 			a.checkFields(oldMethod.Exceptions, newMethod.Exceptions, methodContext)
 
 			if oldMethod.ReturnType == nil && len(oldMethod.Exceptions) == 0 && len(newMethod.Exceptions) > 0 {
-				a.logger.LogError(context, "can't add exceptions")
+				a.logger.LogError(methodContext, "can't add exceptions") // TODO error message can be better
+			}
+
+			if newMethod.ReturnType == nil && len(newMethod.Exceptions) == 0 && len(oldMethod.Exceptions) > 0 {
+				a.logger.LogError(methodContext, "can't remove exceptions") // TODO error message can be better
 			}
 		} else {
 			a.logger.LogError(context, "missing method: " + oldMethod.Name)
@@ -257,32 +264,34 @@ func (a *Auditor) checkFields(old, new []*Field, context string) {
 	newMap := makeFieldsMap(new)
 
 	for _, oldField := range oldMap {
+		fieldContext := fmt.Sprintf("%s field %s:", context, oldField.Name)
 		if newField, ok := newMap[oldField.ID]; ok {
 			// TODO add in the middle check
-			fieldContext := fmt.Sprintf("%s field %s:", context, oldField.Name)
 			a.checkType(oldField.Type, newField.Type, false, fieldContext)
 
 			oldFieldReq := oldField.Modifier == Required
 			newFieldReq := newField.Modifier == Required
 			if oldFieldReq != newFieldReq {
-				a.logger.LogError(context, "field presence modifier changed")
+				a.logger.LogError(fieldContext, fmt.Sprintf("field presence modifier changed: %s -> %s",
+					oldField.Modifier.String(), newField.Modifier.String()))
 			}
 
 			if !reflect.DeepEqual(oldField.Default, newField.Default) {
-				a.logger.LogWarning(context, "default value changed")
+				a.logger.LogWarning(fieldContext, "default value changed")
 			}
 			if oldField.Name != newField.Name {
-				a.logger.LogWarning(context, "name changed")
+				a.logger.LogWarning(fieldContext, "name changed")
 			}
 		} else if oldField.Modifier != Optional {
-			a.logger.LogError(context, "field removed")
+			a.logger.LogError(fieldContext, fmt.Sprintf("field removed with ID=%d", oldField.ID))
 		}
 	}
 
 	for _, newField := range newMap {
 		if _, ok := oldMap[newField.ID]; !ok {
 			if newField.Modifier == Required {
-				a.logger.LogError(context, "required field added")
+				fieldContext := fmt.Sprintf("%s field %s:", context, newField.Name)
+				a.logger.LogError(fieldContext, "added field is required")
 			}
 		}
 	}
@@ -314,7 +323,8 @@ func (a *Auditor) checkType(old, new *Type, warn bool, context string) {
 	underlyingNewType := a.newFrugal.UnderlyingType(new)
 	// TODO should this exclude the include name?
 	if underlyingOldType.Name != underlyingNewType.Name {
-		logMismatch(context, "types not equal")
+		logMismatch(context, fmt.Sprintf("types not equal: %s -> %s",
+			underlyingOldType.Name, underlyingNewType.Name))
 		return
 	}
 
