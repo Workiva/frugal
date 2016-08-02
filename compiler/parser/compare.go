@@ -98,7 +98,6 @@ func (a *Auditor) checkScopes(old, new []*Scope) {
 }
 
 func (a *Auditor) checkScopePrefix(old, new *ScopePrefix, context string) {
-	// TODO variable tokens should be allowed to change names
 	oldNorm := normalizeScopePrefix(old.String)
 	newNorm := normalizeScopePrefix(new.String)
 	if oldNorm != newNorm {
@@ -254,7 +253,7 @@ func (a *Auditor) checkServiceMethods(old, new []*Method, context string) {
 			}
 
 			// return types must be equal
-			a.checkType(oldMethod.ReturnType, newMethod.ReturnType, false, methodContext)
+			a.checkType(oldMethod.ReturnType, newMethod.ReturnType, false, methodContext + " return type:")
 
 			a.checkFields(oldMethod.Arguments, newMethod.Arguments, methodContext)
 			a.checkFields(oldMethod.Exceptions, newMethod.Exceptions, methodContext)
@@ -336,7 +335,7 @@ func (a *Auditor) checkType(old, new *Type, warn bool, context string) {
 	underlyingNewType := a.newFrugal.UnderlyingType(new)
 	// TODO should this exclude the include name?
 	if underlyingOldType.Name != underlyingNewType.Name {
-		logMismatch(context, fmt.Sprintf("types not equal: %s -> %s",
+		logMismatch(context, fmt.Sprintf("types not equal: '%s' -> '%s'",
 			underlyingOldType.Name, underlyingNewType.Name))
 		return
 	}
