@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Workiva/frugal/compiler/parser"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -46,8 +47,8 @@ func TestBreakingChanges(t *testing.T) {
 		"struct test_struct1: field struct1_member6: types not equal: 'bool' -> 'string'",
 		"struct test_struct1: field struct1_member6: types not equal: 'bool' -> 'list'",
 		"struct test_struct2: field struct2_member4: value type: types not equal: 'double' -> 'i16'",
-		"struct test_struct6: field struct6_member2: field presence modifier changed: REQUIRED -> DEFAULT",
-		"struct test_struct5: field struct5_member2: field presence modifier changed: DEFAULT -> REQUIRED",
+		"struct test_struct6: field struct6_member2: field presence modifier changed: 'REQUIRED' -> 'DEFAULT'",
+		"struct test_struct5: field struct5_member2: field presence modifier changed: 'DEFAULT' -> 'REQUIRED'",
 		"struct test_struct1: field struct1_member7: field removed with ID=7",
 		"struct test_struct2: field struct2_member1: field removed with ID=1",
 		"struct test_struct3: field struct3_member7: field removed with ID=7",
@@ -70,7 +71,7 @@ func TestBreakingChanges(t *testing.T) {
 		"service derived1: method derived1_function5: field function5_arg1: types not equal: 'map' -> 'list'",
 		"service base: method base_function2: field function2_arg5: types not equal: 'list' -> 'string'",
 		"service derived1: method derived1_function6: return type: types not equal: 'test_struct1' -> 'map'",
-		"service base: method base_function2: can't remove exceptions",
+		"service base: method base_function2: can't remove exceptions with nil return type",
 		"struct test_exception1: field code: types not equal: 'i32' -> 'i64'",
 		"service derived1: method derived1_function1: field e: types not equal: 'test_exception2' -> 'test_exception1'",
 	}
@@ -84,6 +85,8 @@ func TestBreakingChanges(t *testing.T) {
 			if logger.errors[0] != expected[i] {
 				t.Fatalf("checking %s\nExpected: %s\nBut got : %s\n", badFile, expected[i], logger.errors[0])
 			}
+			assert.Len(t, logger.errors, 1)
+			assert.Len(t, logger.warnings, 0)
 		} else {
 			t.Fatalf("No errors found for %s\n", badFile)
 		}

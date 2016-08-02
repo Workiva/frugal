@@ -49,7 +49,6 @@ func NewAuditorWithLogger(logger ValidationLogger) *Auditor {
 	}
 }
 
-// TODO make error messages better
 func (a *Auditor) Compare(newFile, oldFile string) error {
 	newFrugal, err := ParseFrugal(newFile)
 	if err != nil {
@@ -75,7 +74,7 @@ func (a *Auditor) Compare(newFile, oldFile string) error {
 	a.checkServices(oldFrugal.Thrift.Services, newFrugal.Thrift.Services)
 
 	if a.logger.ErrorsLogged() {
-		return fmt.Errorf("errors occurred")
+		return fmt.Errorf("audit faled between %s and %s", oldFile, newFile)
 	}
 	return nil
 }
@@ -259,11 +258,11 @@ func (a *Auditor) checkServiceMethods(old, new []*Method, context string) {
 			a.checkFields(oldMethod.Exceptions, newMethod.Exceptions, methodContext)
 
 			if oldMethod.ReturnType == nil && len(oldMethod.Exceptions) == 0 && len(newMethod.Exceptions) > 0 {
-				a.logger.LogError(methodContext, "can't add exceptions") // TODO error message can be better
+				a.logger.LogError(methodContext, "can't add exceptions with nil return type")
 			}
 
 			if newMethod.ReturnType == nil && len(newMethod.Exceptions) == 0 && len(oldMethod.Exceptions) > 0 {
-				a.logger.LogError(methodContext, "can't remove exceptions") // TODO error message can be better
+				a.logger.LogError(methodContext, "can't remove exceptions with nil return type")
 			}
 		} else {
 			a.logger.LogError(context, "missing method: " + oldMethod.Name)
@@ -275,16 +274,24 @@ func (a *Auditor) checkFields(old, new []*Field, context string) {
 	oldMap := makeFieldsMap(old)
 	newMap := makeFieldsMap(new)
 
+	min := int(^uint(0) >> 1)
+	max := 0
 	for _, oldField := range oldMap {
+		if oldField.ID < min {
+			min = oldField.ID
+		}
+		if oldField.ID > max {
+			max = oldField.ID
+		}
+
 		fieldContext := fmt.Sprintf("%s field %s:", context, oldField.Name)
 		if newField, ok := newMap[oldField.ID]; ok {
-			// TODO add in the middle check
 			a.checkType(oldField.Type, newField.Type, false, fieldContext)
 
 			oldFieldReq := oldField.Modifier == Required
 			newFieldReq := newField.Modifier == Required
 			if oldFieldReq != newFieldReq {
-				a.logger.LogError(fieldContext, fmt.Sprintf("field presence modifier changed: %s -> %s",
+				a.logger.LogError(fieldContext, fmt.Sprintf("field presence modifier changed: '%s' -> '%s'",
 					oldField.Modifier.String(), newField.Modifier.String()))
 			}
 
@@ -301,8 +308,12 @@ func (a *Auditor) checkFields(old, new []*Field, context string) {
 
 	for _, newField := range newMap {
 		if _, ok := oldMap[newField.ID]; !ok {
+			fieldContext := fmt.Sprintf("%s field %s:", context, newField.Name)
+			if min < newField.ID && newField.ID < max {
+				a.logger.LogWarning(fieldContext, fmt.Sprintf("added field in the middle with ID=%d", newField.ID))
+			}
+
 			if newField.Modifier == Required {
-				fieldContext := fmt.Sprintf("%s field %s:", context, newField.Name)
 				a.logger.LogError(fieldContext, "added field is required")
 			}
 		}
