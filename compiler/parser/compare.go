@@ -31,11 +31,10 @@ func (s *StdOutLogger) ErrorsLogged() bool {
 }
 
 type Auditor struct {
-	logger ValidationLogger
+	logger    ValidationLogger
 	oldFrugal *Frugal
 	newFrugal *Frugal
 }
-
 
 func NewAuditor() *Auditor {
 	return &Auditor{
@@ -252,7 +251,7 @@ func (a *Auditor) checkServiceMethods(old, new []*Method, context string) {
 			}
 
 			// return types must be equal
-			a.checkType(oldMethod.ReturnType, newMethod.ReturnType, false, methodContext + " return type:")
+			a.checkType(oldMethod.ReturnType, newMethod.ReturnType, false, methodContext+" return type:")
 
 			a.checkFields(oldMethod.Arguments, newMethod.Arguments, methodContext)
 			a.checkFields(oldMethod.Exceptions, newMethod.Exceptions, methodContext)
@@ -265,7 +264,7 @@ func (a *Auditor) checkServiceMethods(old, new []*Method, context string) {
 				a.logger.LogError(methodContext, "can't remove exceptions with nil return type")
 			}
 		} else {
-			a.logger.LogError(context, "missing method: " + oldMethod.Name)
+			a.logger.LogError(context, "missing method: "+oldMethod.Name)
 		}
 	}
 }
@@ -351,6 +350,6 @@ func (a *Auditor) checkType(old, new *Type, warn bool, context string) {
 		return
 	}
 
-	a.checkType(underlyingOldType.KeyType, underlyingNewType.KeyType, warn, context + " key type:")
-	a.checkType(underlyingOldType.ValueType, underlyingNewType.ValueType, warn, context + " value type:")
+	a.checkType(underlyingOldType.KeyType, underlyingNewType.KeyType, warn, context+" key type:")
+	a.checkType(underlyingOldType.ValueType, underlyingNewType.ValueType, warn, context+" value type:")
 }

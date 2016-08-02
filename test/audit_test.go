@@ -2,8 +2,8 @@ package test
 
 import (
 	"fmt"
-	"testing"
 	"strings"
+	"testing"
 
 	"github.com/Workiva/frugal/compiler/parser"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +16,7 @@ const (
 )
 
 type MockValidationLogger struct {
-	errors []string
+	errors   []string
 	warnings []string
 }
 
