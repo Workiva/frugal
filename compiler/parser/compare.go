@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 type ValidationLogger interface {
@@ -98,9 +99,21 @@ func (a *Auditor) checkScopes(old, new []*Scope) {
 
 func (a *Auditor) checkScopePrefix(old, new *ScopePrefix, context string) {
 	// TODO variable tokens should be allowed to change names
-	if old.String != new.String {
-		a.logger.LogError(context, fmt.Sprintf("prefix changed: %s -> %s", old.String, new.String))
+	oldNorm := normalizeScopePrefix(old.String)
+	newNorm := normalizeScopePrefix(new.String)
+	if oldNorm != newNorm {
+		a.logger.LogError(context, fmt.Sprintf("prefix changed: '%s' -> '%s'", oldNorm, newNorm))
 	}
+}
+
+func normalizeScopePrefix(s string) string {
+	separated := strings.Split(s, ".")
+	for idx, piece := range separated {
+		if strings.HasPrefix(piece, "{") && strings.HasSuffix(piece, "}") {
+			separated[idx] = "{}"
+		}
+	}
+	return strings.Join(separated, ".")
 }
 
 func (a *Auditor) checkOperations(old, new []*Operation, context string) {
@@ -235,11 +248,11 @@ func (a *Auditor) checkServiceMethods(old, new []*Method, context string) {
 	for _, oldMethod := range old {
 		if newMethod, ok := newMap[oldMethod.Name]; ok {
 			// one way must be equal
+			methodContext := fmt.Sprintf("%s method %s:", context, oldMethod.Name)
 			if oldMethod.Oneway != newMethod.Oneway {
-				a.logger.LogError(context, "one way changed for method:", oldMethod.Name)
+				a.logger.LogError(methodContext, "one way modifier changed")
 			}
 
-			methodContext := fmt.Sprintf("%s method %s:", context, oldMethod.Name)
 			// return types must be equal
 			a.checkType(oldMethod.ReturnType, newMethod.ReturnType, false, methodContext)
 

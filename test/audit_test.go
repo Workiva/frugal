@@ -57,8 +57,8 @@ func TestBreakingChanges(t *testing.T) {
 		"service derived2: method derived2_function1: types not equal: i32 -> i16",
 		"service derived2: method derived2_function5: types not equal: test_enum1 -> test_enum3",
 		"service derived2: method derived2_function6: types not equal: test_struct2 -> test_struct3",
-		"service base: one way changed for method: base_oneway", // TODO make consistent
-		"service base: one way changed for method: base_function1",
+		"service base: method base_oneway: one way modifier changed",
+		"service base: method base_function1: one way modifier changed",
 		"enum test_enum1: variant enum1_value0: removed with ID=0",
 		"enum test_enum2: variant enum2_value3: removed with ID=3",
 		"enum test_enum1: variant enum1_value2: removed with ID=2",
@@ -100,11 +100,11 @@ func TestWarningChanges(t *testing.T) {
 
 func TestScopeBreakingChanges(t *testing.T) {
 	expected := []string{
-		"scope Foo: prefix changed: foo.bar.{baz}.{biz}.qux -> foo.bar.{baz}.{biz}.{ble}.qux",
-		"scope Foo: prefix changed: foo.bar.{baz}.{biz}.qux -> foo.bar.{baz}.qux",
+		"scope Foo: prefix changed: 'foo.bar.{}.{}.qux' -> 'foo.bar.{}.{}.{}.qux'",
+		"scope Foo: prefix changed: 'foo.bar.{}.{}.qux' -> 'foo.bar.{}.qux'",
 		"missing scope: blah",
-		"scope Foo: prefix changed: foo.bar.{baz}.{biz}.qux -> foo.bar.{baz}.{biz}.qux.que",
-		"scope Foo: prefix changed: foo.bar.{baz}.{biz}.qux -> foo.bar.{baz}.{biz}",
+		"scope Foo: prefix changed: 'foo.bar.{}.{}.qux' -> 'foo.bar.{}.{}.qux.que'",
+		"scope Foo: prefix changed: 'foo.bar.{}.{}.qux' -> 'foo.bar.{}.{}'",
 		"scope Foo: operation removed: Bar",
 		"scope Foo: operation Foo: types not equal: Thing -> int",
 	}
