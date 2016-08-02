@@ -326,7 +326,7 @@ func (a *Auditor) checkType(old, new *Type, warn bool, context string) {
 	// guarding here makes recursive calls easier
 	if old == nil || new == nil {
 		if old != new {
-			logMismatch(context, "types not equal")
+			logMismatch(context, fmt.Sprintf("types not equal: '%v' -> '%v'", old, new))
 		}
 		return
 	}
@@ -340,6 +340,6 @@ func (a *Auditor) checkType(old, new *Type, warn bool, context string) {
 		return
 	}
 
-	a.checkType(underlyingOldType.KeyType, underlyingNewType.KeyType, warn, context)
-	a.checkType(underlyingOldType.ValueType, underlyingNewType.ValueType, warn, context)
+	a.checkType(underlyingOldType.KeyType, underlyingNewType.KeyType, warn, context + " key type:")
+	a.checkType(underlyingOldType.ValueType, underlyingNewType.ValueType, warn, context + " value type:")
 }
