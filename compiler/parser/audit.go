@@ -48,7 +48,7 @@ func NewAuditorWithLogger(logger ValidationLogger) *Auditor {
 	}
 }
 
-func (a *Auditor) Compare(newFile, oldFile string) error {
+func (a *Auditor) Compare(oldFile, newFile string) error {
 	newFrugal, err := ParseFrugal(newFile)
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (a *Auditor) Compare(newFile, oldFile string) error {
 	a.checkServices(oldFrugal.Thrift.Services, newFrugal.Thrift.Services)
 
 	if a.logger.ErrorsLogged() {
-		return fmt.Errorf("audit failed between %s and %s", oldFile, newFile)
+		return fmt.Errorf("FAILED: audit of %s against %s", newFile, oldFile)
 	}
 	return nil
 }
