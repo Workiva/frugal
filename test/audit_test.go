@@ -34,7 +34,7 @@ func (m *MockValidationLogger) ErrorsLogged() bool {
 
 func TestPassingAudit(t *testing.T) {
 	auditor := parser.NewAuditorWithLogger(&MockValidationLogger{})
-	if err := auditor.Compare(validFile, validFile); err != nil {
+	if err := auditor.Audit(validFile, validFile); err != nil {
 		t.Fatal("unexpected error", err)
 	}
 }
@@ -80,7 +80,7 @@ func TestBreakingChanges(t *testing.T) {
 		badFile := fmt.Sprintf("idl/breaking_changes/break%d.thrift", i+1)
 		logger := &MockValidationLogger{}
 		auditor := parser.NewAuditorWithLogger(logger)
-		err := auditor.Compare(testFileThrift, badFile)
+		err := auditor.Audit(testFileThrift, badFile)
 		if err != nil {
 			if logger.errors[0] != expected[i] {
 				t.Fatalf("checking %s\nExpected: %s\nBut got : %s\n", badFile, expected[i], logger.errors[0])
@@ -95,7 +95,7 @@ func TestBreakingChanges(t *testing.T) {
 
 func TestWarningChanges(t *testing.T) {
 	auditor := parser.NewAuditorWithLogger(&MockValidationLogger{})
-	err := auditor.Compare(testFileThrift, testWarning)
+	err := auditor.Audit(testFileThrift, testWarning)
 	if err != nil {
 		t.Fatalf("\nExpected no errors, but got: %s", err.Error())
 	}
@@ -115,7 +115,7 @@ func TestScopeBreakingChanges(t *testing.T) {
 		badFile := fmt.Sprintf("idl/breaking_changes/scope%d.frugal", i+1)
 		logger := &MockValidationLogger{}
 		auditor := parser.NewAuditorWithLogger(logger)
-		err := auditor.Compare(scopeFile, badFile)
+		err := auditor.Audit(scopeFile, badFile)
 		if err != nil {
 			if logger.errors[0] != expected[i] {
 				t.Fatalf("checking %s\nExpected: %s\nBut got : %s\n", badFile, expected[i], logger.errors[0])

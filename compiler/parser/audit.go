@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// ValidationLogger
+// ValidationLogger provides an interface to output validation results.
 type ValidationLogger interface {
 	// LogWarning should log a warning message
 	LogWarning(...string)
@@ -18,24 +18,26 @@ type ValidationLogger interface {
 }
 
 // StdOutLogger is a validation logger that prints message to standard out
-type StdOutLogger struct {
+type stdOutLogger struct {
 	errorsLogged bool
 }
 
 // TODO use tty colors to emphasize things?
-func (s *StdOutLogger) LogWarning(warning ...string) {
+func (s *stdOutLogger) LogWarning(warning ...string) {
 	fmt.Println("WARNING:", warning)
 }
 
-func (s *StdOutLogger) LogError(errorMessage ...string) {
+func (s *stdOutLogger) LogError(errorMessage ...string) {
 	s.errorsLogged = true
 	fmt.Println("ERROR:", errorMessage)
 }
 
-func (s *StdOutLogger) ErrorsLogged() bool {
+func (s *stdOutLogger) ErrorsLogged() bool {
 	return s.errorsLogged
 }
 
+// Auditor provides an interface for auditing one frugal file against another
+// for breaking API changes.
 type Auditor struct {
 	logger    ValidationLogger
 	oldFrugal *Frugal
@@ -44,7 +46,7 @@ type Auditor struct {
 
 func NewAuditor() *Auditor {
 	return &Auditor{
-		logger: &StdOutLogger{},
+		logger: &stdOutLogger{},
 	}
 }
 
@@ -56,7 +58,7 @@ func NewAuditorWithLogger(logger ValidationLogger) *Auditor {
 
 // Compare checks the contents of newFile for breaking changes with respect to
 // oldFile
-func (a *Auditor) Compare(oldFile, newFile string) error {
+func (a *Auditor) Audit(oldFile, newFile string) error {
 	newFrugal, err := ParseFrugal(newFile)
 	if err != nil {
 		return err
@@ -86,13 +88,19 @@ func (a *Auditor) Compare(oldFile, newFile string) error {
 	return nil
 }
 
-func (a *Auditor) checkScopes(old, new []*Scope) {
+// checkScopes requirements:
+// Error:
+// - Scopes removed
+// - Scope prefix changed in any way other than renaming variables
+// - Operation removed
+// - Operation type changed
+func (a *Auditor) checkScopes(oldScopes, newScopes []*Scope) {
 	newMap := make(map[string]*Scope)
-	for _, scope := range new {
+	for _, scope := range newScopes {
 		newMap[scope.Name] = scope
 	}
 
-	for _, oldScope := range old {
+	for _, oldScope := range oldScopes {
 		if newScope, ok := newMap[oldScope.Name]; ok {
 			context := fmt.Sprintf("scope %s:", oldScope.Name)
 			a.checkScopePrefix(oldScope.Prefix, newScope.Prefix, context)
@@ -103,12 +111,12 @@ func (a *Auditor) checkScopes(old, new []*Scope) {
 	}
 }
 
-func (a *Auditor) checkScopePrefix(old, new *ScopePrefix, context string) {
+func (a *Auditor) checkScopePrefix(oldPrefix, newPrefix *ScopePrefix, context string) {
 	// variable names in scope prefixes should be able to change,
 	// but nothing else should be able to. Changing all the variables
 	// to '{}' allows this
-	oldNorm := normalizeScopePrefix(old.String)
-	newNorm := normalizeScopePrefix(new.String)
+	oldNorm := normalizeScopePrefix(oldPrefix.String)
+	newNorm := normalizeScopePrefix(newPrefix.String)
 	if oldNorm != newNorm {
 		a.logger.LogError(context, fmt.Sprintf("prefix changed: '%s' -> '%s'", oldNorm, newNorm))
 	}
@@ -126,13 +134,13 @@ func normalizeScopePrefix(s string) string {
 	return strings.Join(separated, ".")
 }
 
-func (a *Auditor) checkOperations(old, new []*Operation, context string) {
+func (a *Auditor) checkOperations(oldOps, newOps []*Operation, context string) {
 	newMap := make(map[string]*Operation)
-	for _, op := range new {
+	for _, op := range newOps {
 		newMap[op.Name] = op
 	}
 
-	for _, oldOp := range old {
+	for _, oldOp := range oldOps {
 		if newOp, ok := newMap[oldOp.Name]; ok {
 			opContext := fmt.Sprintf("%s operation %s:", context, oldOp.Name)
 			a.checkType(oldOp.Type, newOp.Type, false, opContext)
@@ -142,15 +150,19 @@ func (a *Auditor) checkOperations(old, new []*Operation, context string) {
 	}
 }
 
-func (a *Auditor) checkNamespaces(old, new []*Namespace) {
+// checkNamespaces requirements:
+// Warning:
+// - Namespace changed
+// - Namespace removed
+func (a *Auditor) checkNamespaces(oldNamespace, newNamespace []*Namespace) {
 	newMap := make(map[string]*Namespace)
-	for _, namespace := range new {
+	for _, namespace := range newNamespace {
 		newMap[namespace.Scope] = namespace
 	}
 
 	// These are warnings as namespace information isn't sent over the
 	// network
-	for _, oldNamespace := range old {
+	for _, oldNamespace := range oldNamespace {
 		if newNamespace, ok := newMap[oldNamespace.Scope]; ok {
 			if oldNamespace.Value != newNamespace.Value {
 				a.logger.LogWarning("namespace changed:", oldNamespace.Scope)
@@ -161,14 +173,19 @@ func (a *Auditor) checkNamespaces(old, new []*Namespace) {
 	}
 }
 
-func (a *Auditor) checkConstants(old, new []*Constant) {
+// checkConstants requirements
+// Warning:
+// - Constant removed
+// - Constant value changed
+// - Constant type changed
+func (a *Auditor) checkConstants(oldConstants, newConstants []*Constant) {
 	newMap := make(map[string]*Constant)
-	for _, constant := range new {
+	for _, constant := range newConstants {
 		newMap[constant.Name] = constant
 	}
 
 	// These are warnings as only the actual value is sent over the network
-	for _, oldConstant := range old {
+	for _, oldConstant := range oldConstants {
 		if newConstant, ok := newMap[oldConstant.Name]; ok {
 			context := fmt.Sprintf("constant %s:", oldConstant.Name)
 			a.checkType(oldConstant.Type, newConstant.Type, true, context)
@@ -181,13 +198,19 @@ func (a *Auditor) checkConstants(old, new []*Constant) {
 	}
 }
 
-func (a *Auditor) checkEnums(old, new []*Enum) {
+// checkEnums requirements
+// Warning:
+// - Enum struct removed
+// - Enum variant name changed
+// Error:
+// - Enum variant removed
+func (a *Auditor) checkEnums(oldEnums, newEnums []*Enum) {
 	newMap := make(map[string]*Enum)
-	for _, enum := range new {
+	for _, enum := range newEnums {
 		newMap[enum.Name] = enum
 	}
 
-	for _, oldEnum := range old {
+	for _, oldEnum := range oldEnums {
 		if newEnum, ok := newMap[oldEnum.Name]; ok {
 			context := fmt.Sprintf("enum %s:", oldEnum.Name)
 			a.checkEnumValues(oldEnum.Values, newEnum.Values, context)
@@ -197,13 +220,13 @@ func (a *Auditor) checkEnums(old, new []*Enum) {
 	}
 }
 
-func (a *Auditor) checkEnumValues(old, new []*EnumValue, context string) {
+func (a *Auditor) checkEnumValues(oldValues, newValues []*EnumValue, context string) {
 	newMap := make(map[int]*EnumValue)
-	for _, value := range new {
+	for _, value := range newValues {
 		newMap[value.Value] = value
 	}
 
-	for _, oldValue := range old {
+	for _, oldValue := range oldValues {
 		if newValue, ok := newMap[oldValue.Value]; ok {
 			if oldValue.Name != newValue.Name {
 				// enum variant names are allowed to change as
@@ -218,13 +241,24 @@ func (a *Auditor) checkEnumValues(old, new []*EnumValue, context string) {
 	}
 }
 
-func (a *Auditor) checkStructLike(old, new []*Struct) {
+// checkStructLike requirements:
+// Warning:
+// - Field name changed
+// - Default value of field changed
+// - Adding a field "in the middle"
+// Error:
+// - Struct removed
+// - Presence modifier changed from optional/default to required (or vice versa)
+// - Field type changed
+// - Non-optional field removed
+// - Addition of required field
+func (a *Auditor) checkStructLike(oldStructs, newStructs []*Struct) {
 	newMap := make(map[string]*Struct)
-	for _, s := range new {
+	for _, s := range newStructs {
 		newMap[s.Name] = s
 	}
 
-	for _, oldStruct := range old {
+	for _, oldStruct := range oldStructs {
 		if newStruct, ok := newMap[oldStruct.Name]; ok {
 			context := fmt.Sprintf("struct %s:", oldStruct.Name)
 			a.checkFields(oldStruct.Fields, newStruct.Fields, context)
@@ -234,13 +268,29 @@ func (a *Auditor) checkStructLike(old, new []*Struct) {
 	}
 }
 
-func (a *Auditor) checkServices(old, new []*Service) {
+// checkService requirements:
+// Warning:
+// - Name of argument changed
+// - Name of exception changed
+// - Adding argument "in the middle"
+// - Adding exception "in the middle"
+// Error:
+// - Service inheritance changed
+// - Service removed/renamed
+// - Method removed/renamed
+// - Method one-way changed
+// - Method return type change
+// - Method argument type changed
+// - Method exception type changed
+// - Adding an exception with a nil return value and no current exceptions
+// - Removing an exception with a nil return value and only one current exception
+func (a *Auditor) checkServices(oldServices, newServices []*Service) {
 	newMap := make(map[string]*Service)
-	for _, service := range new {
+	for _, service := range newServices {
 		newMap[service.Name] = service
 	}
 
-	for _, oldService := range old {
+	for _, oldService := range oldServices {
 		if newService, ok := newMap[oldService.Name]; ok {
 			// It's fine to add inheritance, but not change it if it already exists
 			if oldService.Extends != "" && oldService.Extends != newService.Extends {
@@ -255,13 +305,13 @@ func (a *Auditor) checkServices(old, new []*Service) {
 	}
 }
 
-func (a *Auditor) checkServiceMethods(old, new []*Method, context string) {
+func (a *Auditor) checkServiceMethods(oldMethods, newMethods []*Method, context string) {
 	newMap := make(map[string]*Method)
-	for _, method := range new {
+	for _, method := range newMethods {
 		newMap[method.Name] = method
 	}
 
-	for _, oldMethod := range old {
+	for _, oldMethod := range oldMethods {
 		if newMethod, ok := newMap[oldMethod.Name]; ok {
 			methodContext := fmt.Sprintf("%s method %s:", context, oldMethod.Name)
 			if oldMethod.Oneway != newMethod.Oneway {
@@ -291,9 +341,9 @@ func (a *Auditor) checkServiceMethods(old, new []*Method, context string) {
 	}
 }
 
-func (a *Auditor) checkFields(old, new []*Field, context string) {
-	oldMap := makeFieldsMap(old)
-	newMap := makeFieldsMap(new)
+func (a *Auditor) checkFields(oldFields, newFields []*Field, context string) {
+	oldMap := makeFieldsMap(oldFields)
+	newMap := makeFieldsMap(newFields)
 
 	min := int(^uint(0) >> 1)
 	max := 0
@@ -351,22 +401,22 @@ func makeFieldsMap(fields []*Field) map[int]*Field {
 	return fieldsMap
 }
 
-func (a *Auditor) checkType(old, new *Type, warn bool, context string) {
+func (a *Auditor) checkType(oldType, newType *Type, warn bool, context string) {
 	logMismatch := a.logger.LogWarning
 	if !warn {
 		logMismatch = a.logger.LogError
 	}
 
 	// guarding here makes recursive calls easier
-	if old == nil || new == nil {
-		if old != new {
-			logMismatch(context, fmt.Sprintf("types not equal: '%v' -> '%v'", old, new))
+	if oldType == nil || newType == nil {
+		if oldType != newType {
+			logMismatch(context, fmt.Sprintf("types not equal: '%v' -> '%v'", oldType, newType))
 		}
 		return
 	}
 
-	underlyingOldType := a.oldFrugal.UnderlyingType(old)
-	underlyingNewType := a.newFrugal.UnderlyingType(new)
+	underlyingOldType := a.oldFrugal.UnderlyingType(oldType)
+	underlyingNewType := a.newFrugal.UnderlyingType(newType)
 	// TODO should this exclude the include name?
 	if underlyingOldType.Name != underlyingNewType.Name {
 		logMismatch(context, fmt.Sprintf("types not equal: '%s' -> '%s'",

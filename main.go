@@ -132,7 +132,7 @@ func main() {
 			}
 		} else {
 			auditor := parser.NewAuditor()
-			if err := auditor.Compare(audit, options.File); err != nil {
+			if err := auditor.Audit(audit, options.File); err != nil {
 				fmt.Println(err.Error())
 				os.Exit(1)
 			}
