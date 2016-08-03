@@ -6,12 +6,18 @@ import (
 	"strings"
 )
 
+// ValidationLogger
 type ValidationLogger interface {
+	// LogWarning should log a warning message
 	LogWarning(...string)
+	// LogError should log an error message
 	LogError(...string)
+	// ErrorsLogged should return true if any errors have been logged,
+	// and false otherwise
 	ErrorsLogged() bool
 }
 
+// StdOutLogger is a validation logger that prints message to standard out
 type StdOutLogger struct {
 	errorsLogged bool
 }
@@ -48,6 +54,8 @@ func NewAuditorWithLogger(logger ValidationLogger) *Auditor {
 	}
 }
 
+// Compare checks the contents of newFile for breaking changes with respect to
+// oldFile
 func (a *Auditor) Compare(oldFile, newFile string) error {
 	newFrugal, err := ParseFrugal(newFile)
 	if err != nil {
@@ -96,6 +104,9 @@ func (a *Auditor) checkScopes(old, new []*Scope) {
 }
 
 func (a *Auditor) checkScopePrefix(old, new *ScopePrefix, context string) {
+	// variable names in scope prefixes should be able to change,
+	// but nothing else should be able to. Changing all the variables
+	// to '{}' allows this
 	oldNorm := normalizeScopePrefix(old.String)
 	newNorm := normalizeScopePrefix(new.String)
 	if oldNorm != newNorm {
@@ -103,6 +114,8 @@ func (a *Auditor) checkScopePrefix(old, new *ScopePrefix, context string) {
 	}
 }
 
+// normalizeScopePrefix changes variables in scope prefixes to '{}',
+// i.e. "foo.{bar}.baz" -> "foo.{}.baz"
 func normalizeScopePrefix(s string) string {
 	separated := strings.Split(s, ".")
 	for idx, piece := range separated {
@@ -135,6 +148,8 @@ func (a *Auditor) checkNamespaces(old, new []*Namespace) {
 		newMap[namespace.Scope] = namespace
 	}
 
+	// These are warnings as namespace information isn't sent over the
+	// network
 	for _, oldNamespace := range old {
 		if newNamespace, ok := newMap[oldNamespace.Scope]; ok {
 			if oldNamespace.Value != newNamespace.Value {
@@ -152,6 +167,7 @@ func (a *Auditor) checkConstants(old, new []*Constant) {
 		newMap[constant.Name] = constant
 	}
 
+	// These are warnings as only the actual value is sent over the network
 	for _, oldConstant := range old {
 		if newConstant, ok := newMap[oldConstant.Name]; ok {
 			context := fmt.Sprintf("constant %s:", oldConstant.Name)
@@ -190,6 +206,9 @@ func (a *Auditor) checkEnumValues(old, new []*EnumValue, context string) {
 	for _, oldValue := range old {
 		if newValue, ok := newMap[oldValue.Value]; ok {
 			if oldValue.Name != newValue.Name {
+				// enum variant names are allowed to change as
+				// only the numeric value is sent over the
+				// network
 				a.logger.LogWarning("enum variant name changed:", oldValue.Name)
 			}
 		} else {
@@ -244,18 +263,21 @@ func (a *Auditor) checkServiceMethods(old, new []*Method, context string) {
 
 	for _, oldMethod := range old {
 		if newMethod, ok := newMap[oldMethod.Name]; ok {
-			// one way must be equal
 			methodContext := fmt.Sprintf("%s method %s:", context, oldMethod.Name)
 			if oldMethod.Oneway != newMethod.Oneway {
 				a.logger.LogError(methodContext, "one way modifier changed")
 			}
 
-			// return types must be equal
 			a.checkType(oldMethod.ReturnType, newMethod.ReturnType, false, methodContext+" return type:")
 
 			a.checkFields(oldMethod.Arguments, newMethod.Arguments, methodContext)
 			a.checkFields(oldMethod.Exceptions, newMethod.Exceptions, methodContext)
 
+			// If the return type is nil and not exceptions exist,
+			// the generated code doesn't expect anything to be
+			// returned, so transitioning between the states of
+			// "nothing can be returned" and "something can be
+			// returned" isn't allowed
 			if oldMethod.ReturnType == nil && len(oldMethod.Exceptions) == 0 && len(newMethod.Exceptions) > 0 {
 				a.logger.LogError(methodContext, "can't add exceptions with nil return type")
 			}
@@ -308,6 +330,8 @@ func (a *Auditor) checkFields(old, new []*Field, context string) {
 	for _, newField := range newMap {
 		if _, ok := oldMap[newField.ID]; !ok {
 			fieldContext := fmt.Sprintf("%s field %s:", context, newField.Name)
+			// Adding a field "in the middle" is generally a sign
+			// of field ID reuse, which isn't allowed
 			if min < newField.ID && newField.ID < max {
 				a.logger.LogWarning(fieldContext, fmt.Sprintf("added field in the middle with ID=%d", newField.ID))
 			}
