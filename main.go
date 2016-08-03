@@ -8,6 +8,7 @@ import (
 	"github.com/Workiva/frugal/compiler"
 	"github.com/Workiva/frugal/compiler/generator"
 	"github.com/Workiva/frugal/compiler/globals"
+	"github.com/Workiva/frugal/compiler/parser"
 	"github.com/urfave/cli"
 )
 
@@ -18,6 +19,7 @@ var (
 	gen                string
 	out                string
 	delim              string
+	audit              string
 	retainIntermediate bool
 	recurse            bool
 	verbose            bool
@@ -73,6 +75,10 @@ func main() {
 			Name:        "version",
 			Usage:       "print the version",
 			Destination: &version,
+		}, cli.StringFlag{
+			Name:        "audit",
+			Usage:       "frugal file to run audit against",
+			Destination: &audit,
 		},
 	}
 
@@ -93,7 +99,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if gen == "" {
+		if gen == "" && audit == "" {
 			fmt.Println("No output language specified")
 			fmt.Printf("Usage: %s [options] file\n\n", app.Name)
 			fmt.Printf("Use %s -help for a list of options\n", app.Name)
@@ -119,9 +125,17 @@ func main() {
 			}
 		}()
 
-		if err := compiler.Compile(options); err != nil {
-			fmt.Printf("Failed to generate %s:\n\t%s\n", options.File, err.Error())
-			os.Exit(1)
+		if audit == "" {
+			if err := compiler.Compile(options); err != nil {
+				fmt.Printf("Failed to generate %s:\n\t%s\n", options.File, err.Error())
+				os.Exit(1)
+			}
+		} else {
+			auditor := parser.NewAuditor()
+			if err := auditor.Audit(audit, options.File); err != nil {
+				fmt.Println(err.Error())
+				os.Exit(1)
+			}
 		}
 
 		return nil
