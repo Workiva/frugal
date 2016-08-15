@@ -4,33 +4,21 @@ import (
 	"bufio"
 	"os"
 	"testing"
-
-	"github.com/Workiva/frugal/compiler"
 )
 
 const (
-	outputDir     = "out"
-	delim         = "."
-	validFile     = "idl/valid.frugal"
-	invalidFile   = "idl/invalid.frugal"
-	frugalGenFile = "idl/variety.frugal"
+	outputDir               = "out"
+	delim                   = "."
+	validFile               = "idl/valid.frugal"
+	invalidFile             = "idl/invalid.frugal"
+	duplicateMethodArgIds   = "idl/duplicate_arg_ids.frugal"
+	duplicateStructFieldIds = "idl/duplicate_field_ids.frugal"
+	frugalGenFile           = "idl/variety.frugal"
 )
 
 var (
 	languages = []string{"go", "dart", "java"}
 )
-
-func TestInvalid(t *testing.T) {
-	options := compiler.Options{
-		File:  invalidFile,
-		Gen:   languages[0] + ":gen_with_frugal=false",
-		Out:   outputDir,
-		Delim: delim,
-	}
-	if compiler.Compile(options) == nil {
-		t.Fatal("Expected error")
-	}
-}
 
 func compareFiles(t *testing.T, expectedPath, generatedPath string) {
 	expected, err := os.Open(expectedPath)

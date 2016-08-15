@@ -347,6 +347,16 @@ func (s *Service) validate() error {
 					s.Name, method.Name, method.ReturnType)
 			}
 		}
+
+		// Ensure field ids aren't duplicated.
+		ids := make(map[int]struct{})
+		for _, arg := range method.Arguments {
+			if _, ok := ids[arg.ID]; ok {
+				return fmt.Errorf("Duplicate field id %d in method %s.%s",
+					arg.ID, s.Name, method.Name)
+			}
+			ids[arg.ID] = struct{}{}
+		}
 	}
 	return nil
 }
@@ -471,7 +481,7 @@ func (t *Thrift) validateConstants(includes map[string]*Frugal) error {
 func (t *Thrift) validateConstant(constant *Constant, includes map[string]*Frugal) error {
 	// validate the type exists
 	if ok := t.isValidType(constant.Type, includes); !ok {
-		return fmt.Errorf("invalid type '%s'", constant.Type.Name)
+		return fmt.Errorf("Invalid type %s", constant.Type.Name)
 	}
 
 	identifier, ok := constant.Value.(Identifier)
@@ -493,7 +503,7 @@ func (t *Thrift) validateConstant(constant *Constant, includes map[string]*Fruga
 				return nil
 			}
 		}
-		return fmt.Errorf("referenced constant '%s' not found", name)
+		return fmt.Errorf("Referenced constant %s not found", name)
 	} else if len(pieces) == 2 {
 		// From an include
 		thrift := t
@@ -502,7 +512,7 @@ func (t *Thrift) validateConstant(constant *Constant, includes map[string]*Fruga
 		if includeName != "" {
 			frugalInclude, ok := includes[includeName]
 			if !ok {
-				return fmt.Errorf("include '%s' not found", includeName)
+				return fmt.Errorf("Include %s not found", includeName)
 			}
 			thrift = frugalInclude.Thrift
 		}
@@ -511,16 +521,18 @@ func (t *Thrift) validateConstant(constant *Constant, includes map[string]*Fruga
 				return nil
 			}
 		}
-		return fmt.Errorf("refenced constant '%s' from include '%s' not found", paramName, includeName)
+		return fmt.Errorf("Referenced constant %s from include %s not found",
+			paramName, includeName)
 	}
 
-	return fmt.Errorf("invalid constant name '%s'", name)
+	return fmt.Errorf("Invalid constant name %s", name)
 }
 
 func (t *Thrift) validateTypedefs(includes map[string]*Frugal) error {
 	for _, typedef := range t.Typedefs {
 		if !t.isValidType(typedef.Type, includes) {
-			return fmt.Errorf("invalid alias '%s', type '%s' doesn't exist", typedef.Name, typedef.Type.Name)
+			return fmt.Errorf("Invalid alias %s, type %s doesn't exist",
+				typedef.Name, typedef.Type.Name)
 		}
 	}
 	return nil
@@ -554,10 +566,15 @@ func (t *Thrift) validateExceptions(includes map[string]*Frugal) error {
 }
 
 func (t *Thrift) validateStructLike(s *Struct, includes map[string]*Frugal) error {
+	ids := make(map[int]struct{})
 	for _, field := range s.Fields {
 		if !t.isValidType(field.Type, includes) {
-			return fmt.Errorf("invalid type '%s' on struct '%s'", field.Type.String(), s.Name)
+			return fmt.Errorf("Invalid type %s on struct %s", field.Type.String(), s.Name)
 		}
+		if _, ok := ids[field.ID]; ok {
+			return fmt.Errorf("Duplicate field id %d in struct %s", field.ID, s.Name)
+		}
+		ids[field.ID] = struct{}{}
 	}
 	return nil
 }
@@ -640,17 +657,20 @@ func (t *Thrift) validateServiceTypes(service *Service, includes map[string]*Fru
 	for _, method := range service.Methods {
 		if method.ReturnType != nil {
 			if !t.isValidType(method.ReturnType, includes) {
-				return fmt.Errorf("invalid return type '%s' for %s.%s", method.ReturnType.Name, service.Name, method.Name)
+				return fmt.Errorf("Invalid return type %s for %s.%s",
+					method.ReturnType.Name, service.Name, method.Name)
 			}
 		}
 		for _, field := range method.Arguments {
 			if !t.isValidType(field.Type, includes) {
-				return fmt.Errorf("invalid argument type '%s' for %s.%s", field.Type.Name, service.Name, method.Name)
+				return fmt.Errorf("Invalid argument type %s for %s.%s",
+					field.Type.Name, service.Name, method.Name)
 			}
 		}
 		for _, field := range method.Exceptions {
 			if !t.isValidType(field.Type, includes) {
-				return fmt.Errorf("invalid exception type '%s' for %s.%s", field.Type.Name, service.Name, method.Name)
+				return fmt.Errorf("Invalid exception type %s for %s.%s",
+					field.Type.Name, service.Name, method.Name)
 			}
 		}
 	}
