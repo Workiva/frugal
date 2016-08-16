@@ -22,7 +22,7 @@ type FNatsScopeTransportFactory struct {
 
 // NewFNatsScopeTransportFactory creates an FNatsScopeTransportFactory using
 // the provided NATS connection. Subscribers using this transport will not use
-// a queue.
+// a queue group.
 func NewFNatsScopeTransportFactory(conn *nats.Conn) *FNatsScopeTransportFactory {
 	return &FNatsScopeTransportFactory{conn: conn}
 }
@@ -58,7 +58,7 @@ type fNatsScopeTransport struct {
 }
 
 // NewNatsFScopeTransport creates a new FScopeTransport which is used for
-// pub/sub. Subscribers using this transport will not use a queue.
+// pub/sub. Subscribers using this transport will not use a queue group.
 func NewNatsFScopeTransport(conn *nats.Conn) FScopeTransport {
 	return &fNatsScopeTransport{conn: conn}
 }
