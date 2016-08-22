@@ -1,8 +1,0 @@
-namespace java base
-
-exception api_exception {}
-
-
-service BaseFoo {
-    void basePing()
-}
