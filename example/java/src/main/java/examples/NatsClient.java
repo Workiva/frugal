@@ -19,6 +19,7 @@ import java.util.concurrent.TimeoutException;
  * Creates a NATS client.
  */
 public class NatsClient {
+
     public static void main(String[] args) throws IOException, TimeoutException, TException {
         // Specify the protocol used for serializing requests.
         // The protocol stack must match the protocol stack of the server.

@@ -1,8 +1,5 @@
 package examples;
 
-import com.workiva.frugal.middleware.InvocationHandler;
-import com.workiva.frugal.middleware.ServiceMiddleware;
-import com.workiva.frugal.protocol.FContext;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.server.FServer;
 import com.workiva.frugal.server.FStatelessNatsServer;
@@ -10,26 +7,17 @@ import com.workiva.frugal.transport.FNatsTransport;
 import com.workiva.frugal.transport.FTransport;
 import io.nats.client.Connection;
 import io.nats.client.ConnectionFactory;
-import music.Album;
 import music.FStore;
-import music.PerfRightsOrg;
-import music.PurchasingError;
-import music.Track;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 
 /**
  * Creates a NATS server listening for incoming requests.
  */
 public class NatsServer {
-    private static final double MIN_DURATION = 0;
-    private static final double MAX_DURATION = 10000;
     public static final String SERVICE_SUBJECT = "music-service";
 
     public static void main(String[] args) throws IOException, TimeoutException, TException {
@@ -62,51 +50,4 @@ public class NatsServer {
         server.serve();
     }
 
-    /**
-     * A handler handles all incoming requests to the server.
-     * The handler must satisfy the interface the server exposes.
-     */
-    private static class FStoreHandler implements FStore.Iface {
-
-        /**
-         * Return an album; always buy the same one.
-         */
-        @Override
-        public Album buyAlbum(FContext ctx, String ASIN, String acct) throws TException, PurchasingError {
-            Album album = new Album();
-            album.setASIN(UUID.randomUUID().toString());
-            album.setDuration(ThreadLocalRandom.current().nextDouble(MIN_DURATION, MAX_DURATION));
-            album.addToTracks(
-                    new Track(
-                            "Coloring Book",
-                            "Summer Friends",
-                            "The Social Experiment",
-                            "Chance the Rapper",
-                            203,
-                            PerfRightsOrg.ASCAP));
-            return album;
-        }
-
-        @Override
-        public boolean enterAlbumGiveaway(FContext ctx, String email, String name) throws TException {
-            return true;
-        }
-    }
-
-    private static class LoggingMiddleware implements ServiceMiddleware {
-
-        @Override
-        public <T> InvocationHandler<T> apply(T next) {
-            return new InvocationHandler<T>(next) {
-                @Override
-                public Object invoke(Method method, Object receiver, Object[] args) throws Throwable {
-                    System.out.printf("==== CALLING %s.%s ====\n", method.getDeclaringClass().getName(), method.getName());
-                    Object ret = method.invoke(receiver, args);
-                    System.out.printf("==== CALLED  %s.%s ====\n", method.getDeclaringClass().getName(), method.getName());
-                    return ret;
-                }
-            };
-        }
-
-    }
 }
