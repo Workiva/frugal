@@ -6,25 +6,23 @@
 
 
 
+import asyncio
 from datetime import timedelta
-from threading import Lock
+import inspect
 
+from frugal.aio.processor import FBaseProcessor
+from frugal.aio.processor import FProcessorFunction
+from frugal.aio.registry import FClientRegistry
 from frugal.middleware import Method
-from frugal.processor import FBaseProcessor
-from frugal.processor import FProcessorFunction
-from frugal.registry import FClientRegistry
 from thrift.Thrift import TApplicationException
 from thrift.Thrift import TMessageType
-from tornado import gen
-from tornado.concurrent import Future
-
 from music.Store import *
 from music.ttypes import *
 
 
 class Iface(object):
 
-    def buyAlbum(self, ctx, ASIN, acct):
+    async def buyAlbum(self, ctx, ASIN, acct):
         """
         Args:
             ctx: FContext
@@ -33,7 +31,7 @@ class Iface(object):
         """
         pass
 
-    def enterAlbumGiveaway(self, ctx, email, name):
+    async def enterAlbumGiveaway(self, ctx, email, name):
         """
         Args:
             ctx: FContext
@@ -60,38 +58,37 @@ class Client(Iface):
         self._transport = transport
         self._protocol_factory = protocol_factory
         self._oprot = protocol_factory.get_protocol(transport)
-        self._write_lock = Lock()
+        self._write_lock = asyncio.Lock()
         self._methods = {
             'buyAlbum': Method(self._buyAlbum, middleware),
             'enterAlbumGiveaway': Method(self._enterAlbumGiveaway, middleware),
         }
 
-    def buyAlbum(self, ctx, ASIN, acct):
+    async def buyAlbum(self, ctx, ASIN, acct):
         """
         Args:
             ctx: FContext
             ASIN: string
             acct: string
         """
-        return self._methods['buyAlbum']([ctx, ASIN, acct])
+        await self._methods['buyAlbum']([ctx, ASIN, acct])
 
-    @gen.coroutine
-    def _buyAlbum(self, ctx, ASIN, acct):
-        delta = timedelta(milliseconds=ctx.get_timeout())
-        future = gen.with_timeout(delta, Future())
-        self._transport.register(ctx, self._recv_buyAlbum(ctx, future))
-        yield self._send_buyAlbum(ctx, ASIN, acct)
+    async def _buyAlbum(self, ctx, ASIN, acct):
+        timeout = ctx.get_timeout() / 1000.0
+        future = asyncio.Future()
+        timed_future = asyncio.wait_for(future, timeout)
+        await self._transport.register(ctx, self._recv_buyAlbum(ctx, future))
+        await self._send_buyAlbum(ctx, ASIN, acct)
 
         try:
-            result = yield future
+            result = await timed_future
         finally:
-            self._transport.unregister(ctx)
-        raise gen.Return(result)
+            await self._transport.unregister(ctx)
+        return result
 
-    @gen.coroutine
-    def _send_buyAlbum(self, ctx, ASIN, acct):
+    async def _send_buyAlbum(self, ctx, ASIN, acct):
         oprot = self._oprot
-        with self._write_lock:
+        async with self._write_lock:
             oprot.write_request_headers(ctx)
             oprot.writeMessageBegin('buyAlbum', TMessageType.CALL, 0)
             args = buyAlbum_args()
@@ -99,7 +96,7 @@ class Client(Iface):
             args.acct = acct
             args.write(oprot)
             oprot.writeMessageEnd()
-            yield oprot.get_transport().flush()
+            await oprot.get_transport().flush()
 
     def _recv_buyAlbum(self, ctx, future):
         def buyAlbum_callback(transport):
@@ -126,32 +123,31 @@ class Client(Iface):
             raise x
         return buyAlbum_callback
 
-    def enterAlbumGiveaway(self, ctx, email, name):
+    async def enterAlbumGiveaway(self, ctx, email, name):
         """
         Args:
             ctx: FContext
             email: string
             name: string
         """
-        return self._methods['enterAlbumGiveaway']([ctx, email, name])
+        await self._methods['enterAlbumGiveaway']([ctx, email, name])
 
-    @gen.coroutine
-    def _enterAlbumGiveaway(self, ctx, email, name):
-        delta = timedelta(milliseconds=ctx.get_timeout())
-        future = gen.with_timeout(delta, Future())
-        self._transport.register(ctx, self._recv_enterAlbumGiveaway(ctx, future))
-        yield self._send_enterAlbumGiveaway(ctx, email, name)
+    async def _enterAlbumGiveaway(self, ctx, email, name):
+        timeout = ctx.get_timeout() / 1000.0
+        future = asyncio.Future()
+        timed_future = asyncio.wait_for(future, timeout)
+        await self._transport.register(ctx, self._recv_enterAlbumGiveaway(ctx, future))
+        await self._send_enterAlbumGiveaway(ctx, email, name)
 
         try:
-            result = yield future
+            result = await timed_future
         finally:
-            self._transport.unregister(ctx)
-        raise gen.Return(result)
+            await self._transport.unregister(ctx)
+        return result
 
-    @gen.coroutine
-    def _send_enterAlbumGiveaway(self, ctx, email, name):
+    async def _send_enterAlbumGiveaway(self, ctx, email, name):
         oprot = self._oprot
-        with self._write_lock:
+        async with self._write_lock:
             oprot.write_request_headers(ctx)
             oprot.writeMessageBegin('enterAlbumGiveaway', TMessageType.CALL, 0)
             args = enterAlbumGiveaway_args()
@@ -159,7 +155,7 @@ class Client(Iface):
             args.name = name
             args.write(oprot)
             oprot.writeMessageEnd()
-            yield oprot.get_transport().flush()
+            await oprot.get_transport().flush()
 
     def _recv_enterAlbumGiveaway(self, ctx, future):
         def enterAlbumGiveaway_callback(transport):
@@ -202,19 +198,21 @@ class _buyAlbum(FProcessorFunction):
 
     def __init__(self, handler, lock):
         self._handler = handler
-        self._lock = lock
+        self._write_lock = lock
 
-    @gen.coroutine
-    def process(self, ctx, iprot, oprot):
+    async def process(self, ctx, iprot, oprot):
         args = buyAlbum_args()
         args.read(iprot)
         iprot.readMessageEnd()
         result = buyAlbum_result()
         try:
-            result.success = yield gen.maybe_future(self._handler.buyAlbum(ctx, args.ASIN, args.acct))
+            ret = self._handler.buyAlbum(ctx, args.ASIN, args.acct)
+            if inspect.iscoroutine(ret):
+                ret = await ret
+            result.success = ret
         except PurchasingError as error:
             result.error = error
-        with self._lock:
+        async with self._write_lock:
             oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('buyAlbum', TMessageType.REPLY, 0)
             result.write(oprot)
@@ -226,16 +224,18 @@ class _enterAlbumGiveaway(FProcessorFunction):
 
     def __init__(self, handler, lock):
         self._handler = handler
-        self._lock = lock
+        self._write_lock = lock
 
-    @gen.coroutine
-    def process(self, ctx, iprot, oprot):
+    async def process(self, ctx, iprot, oprot):
         args = enterAlbumGiveaway_args()
         args.read(iprot)
         iprot.readMessageEnd()
         result = enterAlbumGiveaway_result()
-        result.success = yield gen.maybe_future(self._handler.enterAlbumGiveaway(ctx, args.email, args.name))
-        with self._lock:
+        ret = self._handler.enterAlbumGiveaway(ctx, args.email, args.name)
+        if inspect.iscoroutine(ret):
+            ret = await ret
+        result.success = ret
+        async with self._write_lock:
             oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('enterAlbumGiveaway', TMessageType.REPLY, 0)
             result.write(oprot)

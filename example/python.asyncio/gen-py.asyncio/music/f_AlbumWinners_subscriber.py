@@ -15,23 +15,18 @@ from thrift.Thrift import TType
 from frugal.middleware import Method
 from frugal.subscription import FSubscription
 
-from event.ttypes import *
+from music.ttypes import *
 
 
 
 
-class EventsSubscriber(object):
-    """
-    This docstring gets added to the generated code because it has
-    the @ sign. Prefix specifies topic prefix tokens, which can be static or
-    variable.
-    """
+class AlbumWinnersSubscriber(object):
 
     _DELIMITER = '.'
 
     def __init__(self, provider, middleware=None):
         """
-        Create a new EventsSubscriber.
+        Create a new AlbumWinnersSubscriber.
 
         Args:
             provider: FScopeProvider
@@ -43,22 +38,18 @@ class EventsSubscriber(object):
         self._middleware = middleware
         self._transport, self._protocol_factory = provider.new()
 
-    async def subscribe_EventCreated(self, user, EventCreated_handler):
+    async def subscribe_Winner(self, Winner_handler):
         """
-        This is a docstring.
-        
-        Args:
-            user: string
-            EventCreated_handler: function which takes FContext and Event
+            Winner_handler: function which takes FContext and Album
         """
 
-        op = 'EventCreated'
-        prefix = 'foo.{}.'.format(user)
-        topic = '{}Events{}{}'.format(prefix, self._DELIMITER, op)
+        op = 'Winner'
+        prefix = 'store.'
+        topic = '{}AlbumWinners{}{}'.format(prefix, self._DELIMITER, op)
 
-        await self._transport.subscribe(topic, self._recv_EventCreated(self._protocol_factory, op, EventCreated_handler))
+        await self._transport.subscribe(topic, self._recv_Winner(self._protocol_factory, op, Winner_handler))
 
-    def _recv_EventCreated(self, protocol_factory, op, handler):
+    def _recv_Winner(self, protocol_factory, op, handler):
         method = Method(handler, self._middleware)
 
         def callback(transport):
@@ -69,7 +60,7 @@ class EventsSubscriber(object):
                 iprot.skip(TType.STRUCT)
                 iprot.readMessageEnd()
                 raise TApplicationException(TApplicationException.UNKNOWN_METHOD)
-            req = Event()
+            req = Album()
             req.read(iprot)
             iprot.readMessageEnd()
             try:
