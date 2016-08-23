@@ -7,7 +7,7 @@
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException
 import actual_base.python.ttypes
 
-from ttypes import *
+from .ttypes import *
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol, TProtocol
 
@@ -38,7 +38,7 @@ class ping_args:
 
     def __repr__(self):
         L = ['%s=%r' % (key, value)
-            for key, value in self.__dict__.iteritems()]
+            for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
     def __eq__(self, other):
@@ -73,7 +73,7 @@ class ping_result:
 
     def __repr__(self):
         L = ['%s=%r' % (key, value)
-            for key, value in self.__dict__.iteritems()]
+            for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
     def __eq__(self, other):
@@ -150,7 +150,7 @@ class blah_args:
 
     def __repr__(self):
         L = ['%s=%r' % (key, value)
-            for key, value in self.__dict__.iteritems()]
+            for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
     def __eq__(self, other):
@@ -228,7 +228,7 @@ class blah_result:
 
     def __repr__(self):
         L = ['%s=%r' % (key, value)
-            for key, value in self.__dict__.iteritems()]
+            for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
     def __eq__(self, other):
@@ -261,11 +261,11 @@ class oneWay_args:
             elif fid == 2:
                 if ftype == TType.MAP:
                     self.req = {}
-                    (_, _, _elem42) = iprot.readMapBegin()
-                    for _ in xrange(_elem42):
-                        _elem44 = iprot.readI32()
-                        _elem43 = iprot.readString()
-                        self.req[_elem44] = _elem43
+                    (_, _, _elem45) = iprot.readMapBegin()
+                    for _ in range(_elem45):
+                        _elem47 = iprot.readI32()
+                        _elem46 = iprot.readString()
+                        self.req[_elem47] = _elem46
                     iprot.readMapEnd()
                 else:
                     iprot.skip(ftype)
@@ -283,9 +283,9 @@ class oneWay_args:
         if self.req is not None:
             oprot.writeFieldBegin('req', TType.MAP, 2)
             oprot.writeMapBegin(TType.I32, TType.STRING, len(self.req))
-            for _elem46, _elem45 in self.req.items():
-                oprot.writeI32(_elem46)
-                oprot.writeString(_elem45)
+            for _elem49, _elem48 in self.req.items():
+                oprot.writeI32(_elem49)
+                oprot.writeString(_elem48)
             oprot.writeMapEnd()
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
@@ -302,7 +302,7 @@ class oneWay_args:
 
     def __repr__(self):
         L = ['%s=%r' % (key, value)
-            for key, value in self.__dict__.iteritems()]
+            for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
     def __eq__(self, other):
@@ -366,7 +366,7 @@ class bin_method_args:
 
     def __repr__(self):
         L = ['%s=%r' % (key, value)
-            for key, value in self.__dict__.iteritems()]
+            for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
     def __eq__(self, other):
@@ -431,7 +431,7 @@ class bin_method_result:
 
     def __repr__(self):
         L = ['%s=%r' % (key, value)
-            for key, value in self.__dict__.iteritems()]
+            for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
     def __eq__(self, other):
@@ -509,7 +509,7 @@ class param_modifiers_args:
 
     def __repr__(self):
         L = ['%s=%r' % (key, value)
-            for key, value in self.__dict__.iteritems()]
+            for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
     def __eq__(self, other):
@@ -561,7 +561,7 @@ class param_modifiers_result:
 
     def __repr__(self):
         L = ['%s=%r' % (key, value)
-            for key, value in self.__dict__.iteritems()]
+            for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
     def __eq__(self, other):
@@ -589,20 +589,20 @@ class underlying_types_test_args:
             if fid == 1:
                 if ftype == TType.LIST:
                     self.list_type = []
-                    (_, _elem47) = iprot.readListBegin()
-                    for _ in xrange(_elem47):
-                        _elem48 = iprot.readI64()
-                        self.list_type.append(_elem48)
+                    (_, _elem50) = iprot.readListBegin()
+                    for _ in range(_elem50):
+                        _elem51 = iprot.readI64()
+                        self.list_type.append(_elem51)
                     iprot.readListEnd()
                 else:
                     iprot.skip(ftype)
             elif fid == 2:
                 if ftype == TType.SET:
                     self.set_type = set()
-                    (_, _elem49) = iprot.readSetBegin()
-                    for _ in xrange(_elem49):
-                        _elem50 = iprot.readI64()
-                        self.set_type.add(_elem50)
+                    (_, _elem52) = iprot.readSetBegin()
+                    for _ in range(_elem52):
+                        _elem53 = iprot.readI64()
+                        self.set_type.add(_elem53)
                     iprot.readSetEnd()
                 else:
                     iprot.skip(ftype)
@@ -616,15 +616,15 @@ class underlying_types_test_args:
         if self.list_type is not None:
             oprot.writeFieldBegin('list_type', TType.LIST, 1)
             oprot.writeListBegin(TType.I64, len(self.list_type))
-            for _elem51 in self.list_type:
-                oprot.writeI64(_elem51)
+            for _elem54 in self.list_type:
+                oprot.writeI64(_elem54)
             oprot.writeListEnd()
             oprot.writeFieldEnd()
         if self.set_type is not None:
             oprot.writeFieldBegin('set_type', TType.SET, 2)
             oprot.writeSetBegin(TType.I64, len(self.set_type))
-            for _elem52 in self.set_type:
-                oprot.writeI64(_elem52)
+            for _elem55 in self.set_type:
+                oprot.writeI64(_elem55)
             oprot.writeSetEnd()
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
@@ -641,7 +641,7 @@ class underlying_types_test_args:
 
     def __repr__(self):
         L = ['%s=%r' % (key, value)
-            for key, value in self.__dict__.iteritems()]
+            for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
     def __eq__(self, other):
@@ -667,10 +667,10 @@ class underlying_types_test_result:
             if fid == 0:
                 if ftype == TType.LIST:
                     self.success = []
-                    (_, _elem53) = iprot.readListBegin()
-                    for _ in xrange(_elem53):
-                        _elem54 = iprot.readI64()
-                        self.success.append(_elem54)
+                    (_, _elem56) = iprot.readListBegin()
+                    for _ in range(_elem56):
+                        _elem57 = iprot.readI64()
+                        self.success.append(_elem57)
                     iprot.readListEnd()
                 else:
                     iprot.skip(ftype)
@@ -684,8 +684,8 @@ class underlying_types_test_result:
         if self.success is not None:
             oprot.writeFieldBegin('success', TType.LIST, 0)
             oprot.writeListBegin(TType.I64, len(self.success))
-            for _elem55 in self.success:
-                oprot.writeI64(_elem55)
+            for _elem58 in self.success:
+                oprot.writeI64(_elem58)
             oprot.writeListEnd()
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
@@ -701,7 +701,7 @@ class underlying_types_test_result:
 
     def __repr__(self):
         L = ['%s=%r' % (key, value)
-            for key, value in self.__dict__.iteritems()]
+            for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
     def __eq__(self, other):

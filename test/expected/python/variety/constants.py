@@ -5,7 +5,7 @@
 #
 
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException
-from ttypes import *
+from .ttypes import *
 
 redef_const = 582
 DEFAULT_ID = -1

@@ -26,7 +26,7 @@ class _Headers(object):
             bytearray containing binary headers
         """
         utf8_headers = [(key.encode('utf8'), val.encode('utf8'))
-                        for (key, val) in headers.iteritems()]
+                        for (key, val) in headers.items()]
         size = sum([8 + len(key) + len(val) for (key, val) in utf8_headers])
         buff = bytearray(size + 5)
 

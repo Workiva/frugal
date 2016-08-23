@@ -84,7 +84,7 @@ class FBaseHttpTransport(FSynchronousTransport):
             headers.update(self._get_headers())
 
         if self._custom_headers:
-            for name, value in self._custom_headers.iteritems():
+            for name, value in self._custom_headers.items():
                 headers[name] = value
 
         if 'User-Agent' not in headers:

@@ -23,6 +23,14 @@ const (
 	tabtabtabtabtab  = tab + tab + tab + tab + tab
 )
 
+type concurrencyModel int
+
+const (
+	synchronous concurrencyModel = iota
+	tornado
+	asyncio
+)
+
 // Generator implements the LanguageGenerator interface for Python.
 type Generator struct {
 	*generator.BaseGenerator
@@ -33,8 +41,11 @@ type Generator struct {
 // NewGenerator creates a new Python LanguageGenerator.
 func NewGenerator(options map[string]string) generator.LanguageGenerator {
 	gen := &Generator{&generator.BaseGenerator{Options: options}, "", nil}
-	if _, ok := options["tornado"]; ok {
+	switch getAsyncOpt(options) {
+	case tornado:
 		return &TornadoGenerator{gen}
+	case asyncio:
+		return &AsyncIOGenerator{gen}
 	}
 	return gen
 }
@@ -89,7 +100,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 
 	contents := "\n\n"
 	contents += "from thrift.Thrift import TType, TMessageType, TException, TApplicationException\n"
-	contents += "from ttypes import *\n\n"
+	contents += "from .ttypes import *\n\n"
 
 	for _, constant := range constants {
 		value := g.generateConstantValue(constant.Type, constant.Value, "")
@@ -503,7 +514,7 @@ func (g *Generator) generateMagicMethods(s *parser.Struct) string {
 
 	contents += tab + "def __repr__(self):\n"
 	contents += tabtab + "L = ['%s=%r' % (key, value)\n"
-	contents += tabtabtab + "for key, value in self.__dict__.iteritems()]\n"
+	contents += tabtabtab + "for key, value in self.__dict__.items()]\n"
 	contents += tabtab + "return '%s(%s)' % (self.__class__.__name__, ', '.join(L))\n\n"
 
 	contents += tab + "def __eq__(self, other):\n"
@@ -580,21 +591,21 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 		case "list":
 			contents += fmt.Sprintf(ind+"%s%s = []\n", prefix, field.Name)
 			contents += fmt.Sprintf(ind+"(_, %s) = iprot.readListBegin()\n", sizeElem)
-			contents += fmt.Sprintf(ind+"for _ in xrange(%s):\n", sizeElem)
+			contents += fmt.Sprintf(ind+"for _ in range(%s):\n", sizeElem)
 			contents += g.generateReadFieldRec(valField, false, ind+tab)
 			contents += fmt.Sprintf(ind+tab+"%s%s.append(%s)\n", prefix, field.Name, valElem)
 			contents += fmt.Sprintf(ind + "iprot.readListEnd()\n")
 		case "set":
 			contents += fmt.Sprintf(ind+"%s%s = set()\n", prefix, field.Name)
 			contents += fmt.Sprintf(ind+"(_, %s) = iprot.readSetBegin()\n", sizeElem)
-			contents += fmt.Sprintf(ind+"for _ in xrange(%s):\n", sizeElem)
+			contents += fmt.Sprintf(ind+"for _ in range(%s):\n", sizeElem)
 			contents += g.generateReadFieldRec(valField, false, ind+tab)
 			contents += fmt.Sprintf(ind+tab+"%s%s.add(%s)\n", prefix, field.Name, valElem)
 			contents += fmt.Sprintf(ind + "iprot.readSetEnd()\n")
 		case "map":
 			contents += fmt.Sprintf(ind+"%s%s = {}\n", prefix, field.Name)
 			contents += fmt.Sprintf(ind+"(_, _, %s) = iprot.readMapBegin()\n", sizeElem)
-			contents += fmt.Sprintf(ind+"for _ in xrange(%s):\n", sizeElem)
+			contents += fmt.Sprintf(ind+"for _ in range(%s):\n", sizeElem)
 			keyElem := getElem()
 			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
 			contents += g.generateReadFieldRec(keyField, false, ind+tab)
@@ -681,8 +692,11 @@ func (g *Generator) GetOutputDir(dir string) string {
 // DefaultOutputDir returns the default output directory for generated files.
 func (g *Generator) DefaultOutputDir() string {
 	dir := defaultOutputDir
-	if _, ok := g.Options["tornado"]; ok {
+	switch getAsyncOpt(g.Options) {
+	case tornado:
 		dir += ".tornado"
+	case asyncio:
+		dir += ".asyncio"
 	}
 	return dir
 }
@@ -747,7 +761,7 @@ func (g *Generator) GenerateTypesImports(file *os.File, isArgsOrResult bool) err
 	}
 	contents += "\n"
 	if isArgsOrResult {
-		contents += "from ttypes import *\n"
+		contents += "from .ttypes import *\n"
 	}
 	contents += "from thrift.transport import TTransport\n"
 	contents += "from thrift.protocol import TBinaryProtocol, TProtocol\n"
@@ -838,23 +852,40 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	}
 	publisher += tabtab + "}\n\n"
 
-	if _, ok := g.Options["tornado"]; ok {
-		publisher += tab + "@gen.coroutine\n"
+	asyncOpt := getAsyncOpt(g.Options)
+	publisher += tab
+	switch asyncOpt {
+	case tornado:
+		publisher += "@gen.coroutine\n" + tab
+	case asyncio:
+		publisher += "async "
 	}
-	publisher += tab + "def open(self):\n"
+	publisher += "def open(self):\n"
+
 	publisher += tabtab
-	if _, ok := g.Options["tornado"]; ok {
+	switch asyncOpt {
+	case tornado:
 		publisher += "yield "
+	case asyncio:
+		publisher += "await "
 	}
 	publisher += "self._transport.open()\n\n"
 
-	if _, ok := g.Options["tornado"]; ok {
-		publisher += tab + "@gen.coroutine\n"
+	publisher += tab
+	switch asyncOpt {
+	case tornado:
+		publisher += "@gen.coroutine\n" + tab
+	case asyncio:
+		publisher += "async "
 	}
-	publisher += tab + "def close(self):\n"
+	publisher += "def close(self):\n"
+
 	publisher += tabtab
-	if _, ok := g.Options["tornado"]; ok {
+	switch asyncOpt {
+	case tornado:
 		publisher += "yield "
+	case asyncio:
+		publisher += "await "
 	}
 	publisher += "self._transport.close()\n\n"
 
@@ -885,22 +916,43 @@ func (g *Generator) generatePublishMethod(scope *parser.Scope, op *parser.Operat
 		docstr[0] = "\n" + tabtab + docstr[0]
 		docstr = append(op.Comment, docstr...)
 	}
-	method := tab + fmt.Sprintf("def publish_%s(self, ctx, %sreq):\n", op.Name, args)
-	method += g.generateDocString(docstr, tabtab)
-	method += tabtab + fmt.Sprintf("self._methods['publish_%s']([ctx, %sreq])\n\n", op.Name, args)
 
-	method += tab + fmt.Sprintf("def _publish_%s(self, ctx, %sreq):\n", op.Name, args)
+	method := tab
+	if getAsyncOpt(g.Options) == asyncio {
+		method += "async "
+	}
+	method += fmt.Sprintf("def publish_%s(self, ctx, %sreq):\n", op.Name, args)
+	method += g.generateDocString(docstr, tabtab)
+	method += tabtab
+	if getAsyncOpt(g.Options) == asyncio {
+		method += "await "
+	}
+	method += fmt.Sprintf("self._methods['publish_%s']([ctx, %sreq])\n\n", op.Name, args)
+
+	method += tab
+	if getAsyncOpt(g.Options) == asyncio {
+		method += "async "
+	}
+	method += fmt.Sprintf("def _publish_%s(self, ctx, %sreq):\n", op.Name, args)
 	method += tabtab + fmt.Sprintf("op = '%s'\n", op.Name)
 	method += tabtab + fmt.Sprintf("prefix = %s\n", generatePrefixStringTemplate(scope))
 	method += tabtab + fmt.Sprintf("topic = '{}%s{}{}'.format(prefix, self._DELIMITER, op)\n", scope.Name)
 	method += tabtab + "oprot = self._protocol\n"
-	method += tabtab + "self._transport.lock_topic(topic)\n"
+	method += tabtab
+	if getAsyncOpt(g.Options) == asyncio {
+		method += "await "
+	}
+	method += "self._transport.lock_topic(topic)\n"
 	method += tabtab + "try:\n"
 	method += tabtabtab + "oprot.write_request_headers(ctx)\n"
 	method += tabtabtab + "oprot.writeMessageBegin(op, TMessageType.CALL, 0)\n"
 	method += tabtabtab + "req.write(oprot)\n"
 	method += tabtabtab + "oprot.writeMessageEnd()\n"
-	method += tabtabtab + "oprot.get_transport().flush()\n"
+	method += tabtabtab
+	if getAsyncOpt(g.Options) == asyncio {
+		method += "await "
+	}
+	method += "oprot.get_transport().flush()\n"
 	method += tabtab + "finally:\n"
 	method += tabtabtab + "self._transport.unlock_topic()\n"
 	return method
@@ -1217,7 +1269,11 @@ func (g *Generator) generateMethodSignature(method *parser.Method) string {
 		docstr[0] = "\n" + tabtab + docstr[0]
 		docstr = append(method.Comment, docstr...)
 	}
-	contents += tab + fmt.Sprintf("def %s(self, ctx%s):\n", method.Name, g.generateClientArgs(method.Arguments))
+	contents += tab
+	if getAsyncOpt(g.Options) == asyncio {
+		contents += "async "
+	}
+	contents += fmt.Sprintf("def %s(self, ctx%s):\n", method.Name, g.generateClientArgs(method.Arguments))
 	contents += g.generateDocString(docstr, tabtab)
 	return contents
 }
@@ -1324,4 +1380,13 @@ func getElem() string {
 	s := fmt.Sprintf("_elem%d", elemNum)
 	elemNum++
 	return s
+}
+
+func getAsyncOpt(options map[string]string) concurrencyModel {
+	if _, ok := options["tornado"]; ok {
+		return tornado
+	} else if _, ok := options["asyncio"]; ok {
+		return asyncio
+	}
+	return synchronous
 }

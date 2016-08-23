@@ -16,7 +16,7 @@ class TestFUrlfetchTransport(unittest.TestCase):
         url = 'http://localhost:8080/frugal'
         headers = {'foo': 'bar'}
         resp = Mock(status=200)
-        response = 'response'
+        response = b'response'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(response))
         resp_body = b64encode(buff + response)
@@ -28,12 +28,12 @@ class TestFUrlfetchTransport(unittest.TestCase):
 
         tr = FUrlfetchTransport(url, headers=headers, get_headers=get_headers)
         deadline = 5
-        tr.set_timeout(deadline*1000)
+        tr.set_timeout(deadline * 1000)
 
         tr.open()
         self.assertTrue(tr.isOpen())
 
-        data = 'helloworld'
+        data = b'helloworld'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(data))
         encoded_frame = b64encode(buff + data)
@@ -58,7 +58,7 @@ class TestFUrlfetchTransport(unittest.TestCase):
     def test_request_https(self, mock_urlfetch):
         url = 'https://localhost:8080/frugal'
         resp = Mock(status=200)
-        response = 'response'
+        response = b'response'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(response))
         resp_body = b64encode(buff + response)
@@ -67,7 +67,7 @@ class TestFUrlfetchTransport(unittest.TestCase):
 
         tr = FUrlfetchTransport(url)
 
-        data = 'helloworld'
+        data = b'helloworld'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(data))
         encoded_frame = b64encode(buff + data)
@@ -100,7 +100,7 @@ class TestFUrlfetchTransport(unittest.TestCase):
 
         tr = FUrlfetchTransport(url)
 
-        data = 'helloworld'
+        data = b'helloworld'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(data))
         encoded_frame = b64encode(buff + data)
@@ -127,7 +127,7 @@ class TestFUrlfetchTransport(unittest.TestCase):
 
         tr = FUrlfetchTransport(url)
 
-        data = 'helloworld'
+        data = b'helloworld'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(data))
         encoded_frame = b64encode(buff + data)
@@ -154,7 +154,7 @@ class TestFUrlfetchTransport(unittest.TestCase):
 
         tr = FUrlfetchTransport(url)
 
-        data = 'helloworld'
+        data = b'helloworld'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(data))
         encoded_frame = b64encode(buff + data)
@@ -170,4 +170,4 @@ class TestFUrlfetchTransport(unittest.TestCase):
         )
 
         resp = tr.read(10)
-        self.assertEqual('', resp)
+        self.assertEqual(b'', resp)

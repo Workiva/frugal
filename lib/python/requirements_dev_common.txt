@@ -1,7 +1,7 @@
 nose
+nose-exclude==0.4.1
 rednose
 mock==1.0.1
 coverage
-nats-client==0.2.4
 
 -r requirements.txt

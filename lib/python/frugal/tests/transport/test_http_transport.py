@@ -18,7 +18,7 @@ class TestFHttpTransport(unittest.TestCase):
         headers = {'foo': 'bar'}
         mock_http_client = mock_http.return_value
         resp = Mock(status=200)
-        response = 'response'
+        response = b'response'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(response))
         resp_body = b64encode(buff + response)
@@ -33,7 +33,7 @@ class TestFHttpTransport(unittest.TestCase):
         tr.open()
         self.assertTrue(tr.isOpen())
 
-        data = 'helloworld'
+        data = b'helloworld'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(data))
         encoded_frame = b64encode(buff + data)
@@ -72,7 +72,7 @@ class TestFHttpTransport(unittest.TestCase):
 
         tr = FHttpTransport(url)
 
-        data = 'helloworld'
+        data = b'helloworld'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(data))
         encoded_frame = b64encode(buff + data)
@@ -100,7 +100,7 @@ class TestFHttpTransport(unittest.TestCase):
 
         tr = FHttpTransport(url)
 
-        data = 'helloworld'
+        data = b'helloworld'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(data))
         encoded_frame = b64encode(buff + data)
@@ -128,7 +128,7 @@ class TestFHttpTransport(unittest.TestCase):
 
         tr = FHttpTransport(url)
 
-        data = 'helloworld'
+        data = b'helloworld'
         buff = bytearray(4)
         pack_into('!I', buff, 0, len(data))
         encoded_frame = b64encode(buff + data)
@@ -144,7 +144,7 @@ class TestFHttpTransport(unittest.TestCase):
                      'User-Agent': 'Python/FHttpTransport'})
 
         resp = tr.read(10)
-        self.assertEqual('', resp)
+        self.assertEqual(b'', resp)
 
     def test_write_limit_exceeded(self, mock_http):
         url = 'http://localhost:8080/frugal'
@@ -157,7 +157,7 @@ class TestFHttpTransport(unittest.TestCase):
 
         tr = FHttpTransport(url, request_capacity=5)
 
-        data = 'helloworld'
+        data = b'helloworld'
 
         with self.assertRaises(FMessageSizeException):
             tr.write(data)
