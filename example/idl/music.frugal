@@ -1,0 +1,43 @@
+namespace * music		
+
+enum PerfRightsOrg {	
+    ASCAP = 1
+    BMI = 2
+    SESAC = 3
+    Other = 4
+}
+
+typedef double Minutes	
+
+struct Track {		
+    1: string title
+    2: string artist
+    3: string publisher
+    4: string composer
+    5: Minutes duration
+    6: PerfRightsOrg pro
+}
+
+
+struct Album {
+    1: list<Track> tracks
+    2: Minutes duration
+    3: string ASIN
+}
+
+exception PurchasingError {
+    1: string       message
+    2: i16          error_code
+}
+
+// A store service.
+// Users can buy an album or enter a giveaway for a free album.
+service Store {
+    Album buyAlbum( 1: string ASIN, 2: string acct ) throws (1: PurchasingError error)
+    bool enterAlbumGiveaway( 1: string email, 2: string name )
+}
+
+// Notify contest winners via PubSub
+scope AlbumWinners prefix store {
+    Winner: Album
+}
