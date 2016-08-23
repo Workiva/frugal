@@ -1,5 +1,6 @@
 import logging
 import sys
+import uuid
 
 from thrift.protocol import TBinaryProtocol
 
@@ -14,7 +15,8 @@ sys.path.append('gen-py.tornado')
 sys.path.append('example_handler.py')
 
 from music.f_Store import Processor as FStoreProcessor  # noqa
-from example_handler import ExampleHandler  # noqa
+from music.f_Store import Iface  # noqa
+from music.ttypes import Album, Track  # noqa
 
 
 root = logging.getLogger()
@@ -26,6 +28,28 @@ formatter = logging.Formatter(
     '%(asctime)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 root.addHandler(ch)
+
+
+class StoreHandler(Iface):
+    """
+    A handler handles all incoming requests to the server.
+    The handler must satisfy the interface the server exposes.
+    """
+
+    def buyAlbum(self, ctx, ASIN, acct):
+        """
+        Return an album; always buy the same one.
+        """
+        album = Album()
+        album.ASIN = uuid.uuid4()
+        album.duration = 12000
+        return album
+
+    def enterAlbumGiveaway(self, ctx, email, name):
+        """
+        Always return success (true)
+        """
+        return True
 
 
 @gen.coroutine
@@ -43,11 +67,15 @@ def main():
 
     yield nats_client.connect(**options)
 
-    handler = ExampleHandler()
-    processor = FStoreProcessor(handler)
-    subject = "music-service"
+    # Create a new server processor.
+    # Incoming requests to the processor are passed to the handler.
+    # Results from the handler are returned back to the client.
+    processor = FStoreProcessor(StoreHandler())
+
+    # Create a new music store server using the processor,
+    # The sever will listen on the music-service NATS topic
     server = FStatelessNatsTornadoServer(nats_client,
-                                         subject,
+                                         "music-service",
                                          processor,
                                          prot_factory)
 
