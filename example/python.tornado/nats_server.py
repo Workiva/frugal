@@ -1,7 +1,5 @@
 import logging
 import sys
-sys.path.append('gen-py.tornado')
-sys.path.append('example_handler.py')
 
 from thrift.protocol import TBinaryProtocol
 
@@ -9,12 +7,14 @@ from tornado import gen, ioloop
 
 from nats.io.client import Client as NATS
 
-from frugal.processor import FProcessorFactory
 from frugal.protocol import FProtocolFactory
 from frugal.tornado.server import FStatelessNatsTornadoServer
 
-from event.f_Foo import Processor as FFooProcessor
-from example_handler import ExampleHandler
+sys.path.append('gen-py.tornado')
+sys.path.append('example_handler.py')
+
+from music.f_Store import Processor as FStoreProcessor  # noqa
+from example_handler import ExampleHandler  # noqa
 
 
 root = logging.getLogger()
@@ -30,7 +30,11 @@ root.addHandler(ch)
 
 @gen.coroutine
 def main():
+    # Declare the protocol stack used for serialization.
+    # Protocol stacks must match between clients and servers.
+    prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
 
+    # Open a NATS connection to receive requests
     nats_client = NATS()
     options = {
         "verbose": True,
@@ -39,13 +43,9 @@ def main():
 
     yield nats_client.connect(**options)
 
-    prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
-
     handler = ExampleHandler()
-    processor = FFooProcessor(handler)
-
-    subject = "foo"
-
+    processor = FStoreProcessor(handler)
+    subject = "music-service"
     server = FStatelessNatsTornadoServer(nats_client,
                                          subject,
                                          processor,

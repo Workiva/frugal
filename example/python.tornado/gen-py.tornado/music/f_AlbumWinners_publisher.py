@@ -6,8 +6,17 @@
 
 
 
+import sys
+import traceback
+
+from thrift.Thrift import TApplicationException
 from thrift.Thrift import TMessageType
+from thrift.Thrift import TType
+from tornado import gen
 from frugal.middleware import Method
+from frugal.subscription import FSubscription
+
+from music.ttypes import *
 
 
 
@@ -33,11 +42,13 @@ class AlbumWinnersPublisher(object):
             'publish_Winner': Method(self._publish_Winner, middleware),
         }
 
+    @gen.coroutine
     def open(self):
-        self._transport.open()
+        yield self._transport.open()
 
+    @gen.coroutine
     def close(self):
-        self._transport.close()
+        yield self._transport.close()
 
     def publish_Winner(self, ctx, req):
         """
