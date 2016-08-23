@@ -1,16 +1,19 @@
 import logging
 import sys
-import uuid
+import asyncio
 
-from nats.io.client import Client as NATS
-from tornado import ioloop, gen
+from nats.aio.client import Client as NatsClient
 from thrift.protocol import TBinaryProtocol
 from thrift.transport.TTransport import TTransportException
 from frugal.context import FContext
 from frugal.protocol import FProtocolFactory
-from frugal.tornado.transport import FNatsTransport
-sys.path.append('gen-py.tornado')
+from frugal.provider import FScopeProvider
+from frugal.aio.transport import (
+    FNatsTransport,
+    FNatsScopeTransportFactory,
+)
 
+sys.path.append('gen-py.asyncio')
 from music.f_Store import Client as FStoreClient  # noqa
 from music.ttypes import Album  # noqa
 
@@ -26,60 +29,56 @@ ch.setFormatter(formatter)
 root.addHandler(ch)
 
 
-@gen.coroutine
-def main():
+async def main():
     # Declare the protocol stack used for serialization.
     # Protocol stacks must match between clients and servers.
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
 
     # Open a NATS connection to send requests
-    nats_client = NATS()
+    nats_client = NatsClient()
     options = {
         "verbose": True,
         "servers": ["nats://127.0.0.1:4222"]
     }
-    yield nats_client.connect(**options)
+    await nats_client.connect(**options)
 
     # Create a nats transport using the connected client
     # The transport sends data on the music-service NATS topic
     nats_transport = FNatsTransport(nats_client, "music-service")
-
     try:
-        yield nats_transport.open()
+        await nats_transport.open()
     except TTransportException as ex:
         root.error(ex)
-        raise gen.Return()
+        return
 
     # Using the configured transport and protocol, create a client
     # to talk to the music store service.
     store_client = FStoreClient(nats_transport, prot_factory,
                                 middleware=logging_middleware)
 
-    album = yield store_client.buyAlbum(FContext(),
+    album = await store_client.buyAlbum(FContext(),
                                         uuid.uuid4(),
                                         "ACT-12345")
 
     root.info("Bought an album %s\n", album)
 
-    yield store_client.EnterAlbumGiveaway(FContext(),
+    await store_client.EnterAlbumGiveaway(FContext(),
                                           "kevin@workiva.com",
                                           "Kevin")
 
-    yield nats_transport.close()
-    yield nats_client.close()
+    await nats_transport.close()
+    await nats_client.close()
 
 
 def logging_middleware(next):
     def handler(method, args):
-        service = '%s.%s' % (method.im_self.__module__,
-                             method.im_class.__name__)
-        print '==== CALLING %s.%s ====' % (service, method.im_func.func_name)
+        print('==== CALLING %s ====', method.__name__)
         ret = next(method, args)
-        print '==== CALLED  %s.%s ====' % (service, method.im_func.func_name)
+        print('==== CALLED  %s ====', method.__name__)
         return ret
     return handler
 
 
 if __name__ == '__main__':
-    # Since we can exit after the client calls use `run_sync`
-    ioloop.IOLoop.instance().run_sync(main)
+    io_loop = asyncio.get_event_loop()
+    io_loop.run_until_complete(main())
