@@ -25,7 +25,7 @@ public class NatsClient {
         FProtocolFactory protocolFactory = new FProtocolFactory(new TBinaryProtocol.Factory());
 
         // Create a NATS client (using default options for local dev)
-        ConnectionFactory cf = new ConnectionFactory(Constants.DEFAULT_URL);
+        ConnectionFactory cf = new ConnectionFactory(ConnectionFactory.DEFAULT_URL);
         Connection conn = cf.createConnection();
 
         // Create and open a new transport that uses NATS for sending data.
