@@ -11,9 +11,10 @@ setup(
     url='http://github.com/Workiva/frugal',
     packages=find_packages(exclude=('frugal.tests', 'frugal.tests.*')),
     install_requires=[
-        'thrift==0.9.3'
+        "w-thrift==1.0.0-dev5",
     ],
     extras_require={
-        'tornado': ["nats-client==0.2.4"]
+        'tornado': ["nats-client==0.2.4"],
+        'asyncio': ["asyncio-nats-client==0.3.1", "aiohttp==0.22.3"]
     }
 )

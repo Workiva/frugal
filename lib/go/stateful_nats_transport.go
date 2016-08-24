@@ -329,9 +329,6 @@ func (n *natsServiceTTransport) Read(p []byte) (int, error) {
 
 // Write the bytes to a buffer. Returns ErrTooLarge if the buffer exceeds 1MB.
 func (n *natsServiceTTransport) Write(p []byte) (int, error) {
-	if !n.IsOpen() {
-		return 0, n.getClosedConditionError("write:")
-	}
 	if len(p)+n.writeBuffer.Len() > natsMaxMessageSize {
 		n.writeBuffer.Reset() // Clear any existing bytes.
 		return 0, ErrTooLarge

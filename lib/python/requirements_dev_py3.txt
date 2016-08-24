@@ -1,0 +1,4 @@
+asyncio-nats-client==0.3.1
+aiohttp==0.22.3
+
+-r requirements_dev_common.txt

@@ -92,12 +92,6 @@ public class FNatsTransportTest {
         transport.read(new byte[0], 0, 0);
     }
 
-    @Test(expected = TTransportException.class)
-    public void testWrite_notOpen() throws TTransportException {
-        when(conn.getState()).thenReturn(Constants.ConnState.CONNECTED);
-        transport.write(new byte[5]);
-    }
-
     @Test(expected = FMessageSizeException.class)
     public void testWrite_sizeException() throws TTransportException {
         when(conn.getState()).thenReturn(Constants.ConnState.CONNECTED);

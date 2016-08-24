@@ -2,7 +2,6 @@ package python
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -30,25 +29,11 @@ func (t *TornadoGenerator) GenerateServiceImports(file *os.File, s *parser.Servi
 	imports += "from tornado import gen\n"
 	imports += "from tornado.concurrent import Future\n\n"
 
-	// Import include modules.
-	for _, include := range s.ReferencedIncludes() {
-		namespace, ok := t.Frugal.NamespaceForInclude(include, lang)
-		if !ok {
-			namespace = include
-		}
-		imports += fmt.Sprintf("import %s\n", namespace)
-	}
-
-	// Import this service's modules.
-	namespace, ok := t.Frugal.Thrift.Namespace(lang)
-	if !ok {
-		namespace = t.Frugal.Name
-	}
-	imports += fmt.Sprintf("from %s.%s import *\n", namespace, s.Name)
-	imports += fmt.Sprintf("from %s.ttypes import *\n", namespace)
+	imports += t.generateServiceIncludeImports(s)
 
 	_, err := file.WriteString(imports)
 	return err
+
 }
 
 // GenerateScopeImports generates necessary imports for the given scope.
@@ -86,66 +71,13 @@ func (t *TornadoGenerator) GenerateService(file *os.File, s *parser.Service) err
 	return err
 }
 
-func (t *TornadoGenerator) exposeServiceModule(path string, service *parser.Service) error {
-	// Expose service in __init__.py.
-	// TODO: Generate __init__.py ourselves once Thrift is removed.
-	initFile := fmt.Sprintf("%s%s__init__.py", path, string(os.PathSeparator))
-	init, err := ioutil.ReadFile(initFile)
-	if err != nil {
-		return err
-	}
-	initStr := string(init)
-	initStr += fmt.Sprintf("\nimport f_%s\n", service.Name)
-	initStr += fmt.Sprintf("from f_%s import *\n", service.Name)
-	init = []byte(initStr)
-	return ioutil.WriteFile(initFile, init, os.ModePerm)
-}
-
 func (t *TornadoGenerator) generateClient(service *parser.Service) string {
 	contents := "\n"
-	if service.Extends != "" {
-		contents += fmt.Sprintf("class Client(%s.Client, Iface):\n\n", t.getServiceExtendsName(service))
-	} else {
-		contents += "class Client(Iface):\n\n"
-	}
-
-	contents += tab + "def __init__(self, transport, protocol_factory, middleware=None):\n"
-	contents += t.generateDocString([]string{
-		"Create a new Client with a transport and protocol factory.\n",
-		"Args:",
-		tab + "transport: FTransport",
-		tab + "protocol_factory: FProtocolFactory",
-		tab + "middleware: ServiceMiddleware or list of ServiceMiddleware",
-	}, tabtab)
-	contents += tabtab + "if middleware and not isinstance(middleware, list):\n"
-	contents += tabtabtab + "middleware = [middleware]\n"
-	if service.Extends != "" {
-		contents += tabtab + "super(Client, self).__init__(transport, protocol_factory,\n"
-		contents += tabtab + "                             middleware=middleware)\n"
-		contents += tabtab + "self._methods.update("
-	} else {
-		contents += tabtab + "transport.set_registry(FClientRegistry())\n"
-		contents += tabtab + "self._transport = transport\n"
-		contents += tabtab + "self._protocol_factory = protocol_factory\n"
-		contents += tabtab + "self._oprot = protocol_factory.get_protocol(transport)\n"
-		contents += tabtab + "self._write_lock = Lock()\n"
-		contents += tabtab + "self._methods = "
-	}
-	contents += "{\n"
-	for _, method := range service.Methods {
-		contents += tabtabtab + fmt.Sprintf("'%s': Method(self._%s, middleware),\n", method.Name, method.Name)
-	}
-	contents += tabtab + "}"
-	if service.Extends != "" {
-		contents += ")"
-	}
-	contents += "\n\n"
-
+	contents += t.generateClientConstructor(service, true)
 	for _, method := range service.Methods {
 		contents += t.generateClientMethod(method)
 	}
 	contents += "\n"
-
 	return contents
 }
 
@@ -155,19 +87,19 @@ func (t *TornadoGenerator) generateClientMethod(method *parser.Method) string {
 	contents += tabtab + fmt.Sprintf("return self._methods['%s']([ctx%s])\n\n",
 		method.Name, t.generateClientArgs(method.Arguments))
 
+	contents += tab + "@gen.coroutine\n"
+	contents += tab + fmt.Sprintf("def _%s(self, ctx%s):\n", method.Name, t.generateClientArgs(method.Arguments))
+
 	if method.Oneway {
-		contents += tab + fmt.Sprintf("def _%s(self, ctx%s):\n", method.Name, t.generateClientArgs(method.Arguments))
-		contents += tabtab + fmt.Sprintf("self._send_%s(ctx%s)\n\n", method.Name, t.generateClientArgs(method.Arguments))
+		contents += tabtab + fmt.Sprintf("yield self._send_%s(ctx%s)\n\n", method.Name, t.generateClientArgs(method.Arguments))
 		contents += t.generateClientSendMethod(method)
 		return contents
 	}
 
-	contents += tab + "@gen.coroutine\n"
-	contents += tab + fmt.Sprintf("def _%s(self, ctx%s):\n", method.Name, t.generateClientArgs(method.Arguments))
 	contents += tabtab + "delta = timedelta(milliseconds=ctx.get_timeout())\n"
 	contents += tabtab + "future = gen.with_timeout(delta, Future())\n"
 	contents += tabtab + fmt.Sprintf("self._transport.register(ctx, self._recv_%s(ctx, future))\n", method.Name)
-	contents += tabtab + fmt.Sprintf("self._send_%s(ctx%s)\n\n", method.Name, t.generateClientArgs(method.Arguments))
+	contents += tabtab + fmt.Sprintf("yield self._send_%s(ctx%s)\n\n", method.Name, t.generateClientArgs(method.Arguments))
 	contents += tabtab + "try:\n"
 	contents += tabtabtab + "result = yield future\n"
 	contents += tabtab + "finally:\n"
@@ -181,6 +113,7 @@ func (t *TornadoGenerator) generateClientMethod(method *parser.Method) string {
 
 func (t *TornadoGenerator) generateClientSendMethod(method *parser.Method) string {
 	contents := ""
+	contents += tab + "@gen.coroutine\n"
 	contents += tab + fmt.Sprintf("def _send_%s(self, ctx%s):\n", method.Name, t.generateClientArgs(method.Arguments))
 	contents += tabtab + "oprot = self._oprot\n"
 	contents += tabtab + "with self._write_lock:\n"
@@ -192,7 +125,7 @@ func (t *TornadoGenerator) generateClientSendMethod(method *parser.Method) strin
 	}
 	contents += tabtabtab + "args.write(oprot)\n"
 	contents += tabtabtab + "oprot.writeMessageEnd()\n"
-	contents += tabtabtab + "oprot.get_transport().flush()\n\n"
+	contents += tabtabtab + "yield oprot.get_transport().flush()\n\n"
 
 	return contents
 }

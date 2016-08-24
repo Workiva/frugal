@@ -111,9 +111,6 @@ public class FAdapterTransport extends FTransport {
 
     @Override
     public void write(byte[] buff, int off, int len) throws TTransportException {
-        if (!isOpen()) {
-            throw new TTransportException(TTransportException.NOT_OPEN);
-        }
         framedTransport.write(buff, off, len);
     }
 

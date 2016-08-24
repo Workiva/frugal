@@ -223,9 +223,6 @@ public class FNatsScopeTransport extends FScopeTransport {
 
     @Override
     public void write(byte[] bytes, int off, int len) throws TTransportException {
-        if (!isOpen()) {
-            throw TNatsServiceTransport.getClosedConditionException(conn, "write:");
-        }
         // Include 4 bytes for frame size.
         if (writeBuffer.remaining() < len + 4) {
             int size = 4 + len + TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE - writeBuffer.remaining();

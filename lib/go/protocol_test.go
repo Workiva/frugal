@@ -272,6 +272,21 @@ func TestAddHeadersToFrameBadFrameSize(t *testing.T) {
 	assert.Equal(thrift.INVALID_DATA, err.(FProtocolException).TypeId())
 }
 
+// Ensures headers with non-ascii characters can be encodeded and decoded
+// properly.
+func TestMarshalUnmarshalHeadersUTF8(t *testing.T) {
+	assert := assert.New(t)
+	marshaler := v0Marshaler
+	headers := map[string]string {
+		"Đ¥ÑØ": "δάüΓ",
+		"good\u00F1ight": "moo\u00F1",
+	}
+	encodedHeaders := marshaler.marshalHeaders(headers)
+	decodedHeaders, err := marshaler.unmarshalHeadersFromFrame(encodedHeaders[1:])
+	assert.Nil(err)
+	assert.Equal(headers, decodedHeaders)
+}
+
 func BenchmarkAddHeadersToFrame(b *testing.B) {
 	headers := map[string]string{"bat": "man", "spider": "man", "super": "man"}
 	b.ResetTimer()

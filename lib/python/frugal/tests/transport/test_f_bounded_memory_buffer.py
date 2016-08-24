@@ -12,8 +12,8 @@ class TestFBoundedMemoryBuffer(unittest.TestCase):
         self.buffer = FBoundedMemoryBuffer(10)
 
     def test_write(self):
-        self.buffer.write(bytearray("foo"))
-        self.assertSequenceEqual(bytearray("foo"), self.buffer.getvalue())
+        self.buffer.write(b'foo')
+        self.assertSequenceEqual(b'foo', self.buffer.getvalue())
 
     def test_write_size_exception(self):
         self.assertEqual(0, len(self.buffer))
@@ -24,5 +24,5 @@ class TestFBoundedMemoryBuffer(unittest.TestCase):
         self.assertEqual(0, len(self.buffer))
 
     def test_len(self):
-        self.buffer.write(bytearray("12345"))
+        self.buffer.write(b'12345')
         self.assertEqual(len(self.buffer), 5)

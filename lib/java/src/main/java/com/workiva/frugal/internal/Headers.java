@@ -1,6 +1,7 @@
 package com.workiva.frugal.internal;
 
 import com.workiva.frugal.exception.FProtocolException;
+import com.workiva.frugal.util.Pair;
 import com.workiva.frugal.util.ProtocolUtils;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TProtocolException;
@@ -8,8 +9,10 @@ import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -25,9 +28,13 @@ public class Headers {
             headers = new HashMap<>();
         }
 
+        List<Pair<byte[], byte[]>> utf8Headers = new ArrayList<>();
         // Get total frame size headers
         for (Map.Entry<String, String> pair : headers.entrySet()) {
-            size += 8 + pair.getKey().length() + pair.getValue().length();
+            byte[] keyBytes = ProtocolUtils.encodeString(pair.getKey());
+            byte[] valueBytes = ProtocolUtils.encodeString(pair.getValue());
+            size += 8 + keyBytes.length + valueBytes.length;
+            utf8Headers.add(Pair.of(keyBytes, valueBytes));
         }
 
         byte[] buff = new byte[size + 5];
@@ -40,20 +47,20 @@ public class Headers {
 
         int i = 5;
         // Write headers
-        for (Map.Entry<String, String> pair : headers.entrySet()) {
+        for (Pair<byte[], byte[]> pair : utf8Headers) {
             // Write key
-            String key = pair.getKey();
-            ProtocolUtils.writeInt(key.length(), buff, i);
+            byte[] key = pair.getLeft();
+            ProtocolUtils.writeInt(key.length, buff, i);
             i += 4;
-            ProtocolUtils.writeString(key, buff, i);
-            i += key.length();
+            ProtocolUtils.writeStringBytes(key, buff, i);
+            i += key.length;
 
             // Write value
-            String value = pair.getValue();
-            ProtocolUtils.writeInt(value.length(), buff, i);
+            byte[] value = pair.getRight();
+            ProtocolUtils.writeInt(value.length, buff, i);
             i += 4;
-            ProtocolUtils.writeString(value, buff, i);
-            i += value.length();
+            ProtocolUtils.writeStringBytes(value, buff, i);
+            i += value.length;
         }
         return buff;
     }

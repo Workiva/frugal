@@ -1,13 +1,9 @@
-import logging
-
 from nats.io.utils import new_inbox
 from thrift.transport.TTransport import TTransportException
 from tornado import gen, locks
 
 from frugal.exceptions import FExecuteCallbackNotSet
 from frugal.tornado.transport import FTornadoTransport
-
-logger = logging.getLogger(__name__)
 
 
 class FNatsTransport(FTornadoTransport):
@@ -46,16 +42,12 @@ class FNatsTransport(FTornadoTransport):
     def open(self):
         """Subscribes to the configured inbox subject"""
         if not self._nats_client.is_connected():
-            ex = TTransportException(TTransportException.NOT_OPEN,
-                                     "NATS not connected.")
-            logger.error(ex.message)
-            raise ex
+            raise TTransportException(TTransportException.NOT_OPEN,
+                                      "NATS not connected.")
 
         elif (yield self.isOpen()):
-            ex = TTransportException(TTransportException.ALREADY_OPEN,
-                                     "NATS transport already open")
-            logger.error(ex.message)
-            raise ex
+            raise TTransportException(TTransportException.ALREADY_OPEN,
+                                      "NATS transport already open")
 
         handler = self._on_message_callback
         if self._is_ttransport:
@@ -73,9 +65,7 @@ class FNatsTransport(FTornadoTransport):
 
     def _ttransport_on_message_callback(self, msg):
         if not self._execute:
-            ex = FExecuteCallbackNotSet("Execute callback not set")
-            logger.error(ex.message)
-            raise ex
+            raise FExecuteCallbackNotSet("Execute callback not set")
 
         self._execute(msg.data)
 
@@ -93,10 +83,8 @@ class FNatsTransport(FTornadoTransport):
     def flush(self):
         """Sends the buffered bytes over NATS"""
         if not (yield self.isOpen()):
-            ex = TTransportException(TTransportException.NOT_OPEN,
-                                     "Nats not connected!")
-            logger.exception(ex)
-            raise ex
+            raise TTransportException(TTransportException.NOT_OPEN,
+                                      "Nats not connected!")
 
         frame = self.get_write_bytes()
         if not frame:

@@ -137,19 +137,6 @@ public class FNatsTransport extends FTransport {
     }
 
     /**
-     * Writes the bytes to a buffer. Throws FMessageSizeException if the buffer exceeds 1MB.
-     *
-     * @throws TTransportException
-     */
-    @Override
-    public void write(byte[] bytes, int off, int len) throws TTransportException {
-        if (!isOpen()) {
-            throw getClosedConditionException(conn, "write:");
-        }
-        super.write(bytes, off, len);
-    }
-
-    /**
      * Sends the buffered bytes over NATS.
      *
      * @throws TTransportException

@@ -41,11 +41,10 @@ class TestFHttpTransport(AsyncTestCase):
         self.assertTrue((yield self.transport.isOpen()))
         self.assertIsNotNone(self.transport._http)
 
-    @gen_test
     def test_write_too_much_data(self):
         self.transport._http = self.http_mock
         with self.assertRaises(FMessageSizeException):
-            yield self.transport.write(bytearray([0] * 101))
+            self.transport.write(bytearray([0] * 101))
 
     @gen_test
     def test_flush_success(self):
@@ -65,10 +64,10 @@ class TestFHttpTransport(AsyncTestCase):
         response_future.set_result(response_mock)
         self.http_mock.fetch.return_value = response_future
 
-        yield self.transport.write(request_data[:3])
-        yield self.transport.write(request_data[3:7])
-        yield self.transport.write(request_data[7:])
-        yield self.transport.flush()
+        self.transport.write(request_data[:3])
+        self.transport.write(request_data[3:7])
+        self.transport.write(request_data[7:])
+        self.transport.flush()
 
         self.assertTrue(self.http_mock.fetch.called)
         request = self.http_mock.fetch.call_args[0][0]
@@ -88,7 +87,7 @@ class TestFHttpTransport(AsyncTestCase):
         response_future.set_result(response_mock)
         self.http_mock.fetch.return_value = response_future
 
-        yield self.transport.write(bytearray([1, 2, 3, 4]))
+        self.transport.write(bytearray([1, 2, 3, 4]))
 
         with self.assertRaises(TTransportException):
             yield self.transport.flush()
@@ -108,7 +107,7 @@ class TestFHttpTransport(AsyncTestCase):
         response_future.set_result(response_mock)
         self.http_mock.fetch.return_value = response_future
 
-        yield self.transport.write(bytearray([1, 2, 3]))
+        self.transport.write(bytearray([1, 2, 3]))
         yield self.transport.flush()
 
         self.assertTrue(self.http_mock.fetch.called)
@@ -119,7 +118,7 @@ class TestFHttpTransport(AsyncTestCase):
         self.transport._http = self.http_mock
 
         self.http_mock.fetch.side_effect = HTTPError(code=413)
-        yield self.transport.write(bytearray([0]))
+        self.transport.write(bytearray([0]))
 
         with self.assertRaises(TTransportException) as cm:
             yield self.transport.flush()
@@ -131,7 +130,7 @@ class TestFHttpTransport(AsyncTestCase):
         self.transport._http = self.http_mock
 
         self.http_mock.fetch.side_effect = HTTPError(code=404)
-        yield self.transport.write(bytearray([0]))
+        self.transport.write(bytearray([0]))
 
         with self.assertRaises(TTransportException):
             yield self.transport.flush()

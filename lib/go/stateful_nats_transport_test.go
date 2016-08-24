@@ -149,44 +149,6 @@ func TestNatsServiceTTransportReadNatsDisconnected(t *testing.T) {
 	assert.Equal(t, 0, n)
 }
 
-// Ensures Write returns a NOT_OPEN TTransportException if the transport is not
-// open.
-func TestNatsServiceTTransportWriteNotOpen(t *testing.T) {
-	s := runServer(nil)
-	defer s.Shutdown()
-	conn, err := nats.Connect(fmt.Sprintf("nats://localhost:%d", defaultOptions.Port))
-	if err != nil {
-		t.Fatal(err)
-	}
-	tr := NewNatsServiceTTransport(conn, "foo", 10*time.Millisecond, 3)
-
-	n, err := tr.Write(make([]byte, 10))
-
-	assert.Equal(t, 0, n)
-	trErr := err.(thrift.TTransportException)
-	assert.Equal(t, thrift.NOT_OPEN, trErr.TypeId())
-}
-
-// Ensures Write returns a NOT_OPEN TTransportException if NATS is not
-// connected.
-func TestNatsServiceTTransportWriteNatsDisconnected(t *testing.T) {
-	s := runServer(nil)
-	defer s.Shutdown()
-	tr, server, conn := newNatsServiceClientAndServer(t)
-	defer server.Stop()
-	assert.Nil(t, tr.Open())
-	defer tr.Close()
-	assert.True(t, tr.IsOpen())
-
-	conn.Close()
-
-	buff := make([]byte, 5)
-	n, err := tr.Write(buff)
-	trErr := err.(thrift.TTransportException)
-	assert.Equal(t, thrift.NOT_OPEN, trErr.TypeId())
-	assert.Equal(t, 0, n)
-}
-
 // Ensures Write buffers data. If the buffer exceeds 1MB, ErrTooLarge is
 // returned.
 func TestNatsServiceTTransportWrite(t *testing.T) {

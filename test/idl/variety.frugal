@@ -97,6 +97,9 @@ enum ItsAnEnum {
     THIRD
 }
 
+typedef string t1_string;
+typedef t1_string t2_string;
+
 struct EventWrapper {
     1: optional id ID,
     2: required Event Ev,
@@ -107,6 +110,7 @@ struct EventWrapper {
     7: list<ItsAnEnum> Enums,
     8: bool aBoolField,
     9: TestingUnions a_union,
+    10: t2_string typedefOfTypedef,
 }
 
 exception AwesomeException {

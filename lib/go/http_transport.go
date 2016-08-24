@@ -249,15 +249,6 @@ func (h *httpFTransport) Read(buf []byte) (int, error) {
 	return h.fBaseTransport.Read(buf)
 }
 
-// Write the bytes to a buffer. Returns ErrTooLarge if the buffer exceeds the
-// client specified request size limit.
-func (h *httpFTransport) Write(buf []byte) (int, error) {
-	if !h.IsOpen() {
-		return 0, h.getClosedConditionError("write:")
-	}
-	return h.fBaseTransport.Write(buf)
-}
-
 // Flush sends the buffered bytes over HTTP.
 func (h *httpFTransport) Flush() error {
 	if !h.IsOpen() {

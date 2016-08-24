@@ -95,6 +95,16 @@ public class HeadersTest {
     }
 
     @Test
+    public void testEncodeDecodeUTF8() throws TException {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Đ¥ÑØ", "δάüΓ");
+        headers.put("good\u00F1ight", "moo\u00F1");
+        byte[] encodedHeaders = Headers.encode(headers);
+        Map<String, String> decodedHeaders = Headers.decodeFromFrame(encodedHeaders);
+        assertEquals(headers, decodedHeaders);
+    }
+
+    @Test
     public void testDecodeHeadersFromFrameThrowsFExceptionForBadFrame() throws TException {
         thrown.expect(FProtocolException.class);
         thrown.expectMessage("invalid frame size 3");

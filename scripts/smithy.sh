@@ -54,11 +54,21 @@ pub run dart_dev analyze
 # Python
 virtualenv -p /usr/bin/python /tmp/frugal
 source /tmp/frugal/bin/activate
+pip install -U pip
 cd $ROOT/lib/python
-make deps
-make xunit
+make deps-py2
+make xunit-py2
+deactivate
+
+virtualenv -p /usr/bin/python3.5 /tmp/frugal-py3
+source /tmp/frugal-py3/bin/activate
+pip install -U pip
+cd $ROOT/lib/python
+make deps-py3
+make xunit-py3
 make install
 mv dist/frugal-*.tar.gz $ROOT
+deactivate
 
 # Run the generator tests
 cd $ROOT

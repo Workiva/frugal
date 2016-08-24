@@ -1,5 +1,4 @@
 from io import BytesIO
-import logging
 from struct import pack
 
 from thrift.transport.TTransport import TTransportException
@@ -8,8 +7,6 @@ from tornado import gen, locks
 from frugal.exceptions import FMessageSizeException
 from frugal.transport import FTransport
 from frugal.util.deprecate import deprecated
-
-logger = logging.getLogger(__name__)
 
 
 class FTornadoTransport(FTransport):
@@ -47,9 +44,7 @@ class FTornadoTransport(FTransport):
             registry: FRegistry to set on the transport
         """
         if not registry:
-            ex = ValueError("registry cannot be null.")
-            logger.exception(ex)
-            raise ex
+            raise ValueError("registry cannot be null.")
 
         # TODO: With 2.0, consider throwing a StandardError.
         # Currently, the generated code sets the registry for each extending
@@ -63,9 +58,7 @@ class FTornadoTransport(FTransport):
     # with a tornado lock
     def register(self, context, callback):
         if not self._registry:
-            ex = StandardError("registry cannot be null.")
-            logger.exception(ex)
-            raise ex
+            raise StandardError("registry cannot be null.")
 
         self._registry.register(context, callback)
 
@@ -73,9 +66,7 @@ class FTornadoTransport(FTransport):
     # with a tornado lock
     def unregister(self, context):
         if not self._registry:
-            ex = StandardError("registry cannot be null.")
-            logger.exception(ex)
-            raise ex
+            raise StandardError("registry cannot be null.")
 
         self._registry.unregister(context)
 
@@ -94,7 +85,6 @@ class FTornadoTransport(FTransport):
     def read(self, size):
         raise NotImplementedError("Don't call this.")
 
-    @gen.coroutine
     def write(self, buff):
         """Writes the bytes to a buffer. Throws FMessageSizeException if the
         buffer exceeds limit.
@@ -102,18 +92,10 @@ class FTornadoTransport(FTransport):
         Args:
             buff: buffer to append to the write buffer.
         """
-        if not (yield self.isOpen()):
-            ex = TTransportException(TTransportException.NOT_OPEN,
-                                     "Transport not open!")
-            logger.exception(ex)
-            raise ex
-
         size = len(buff) + len(self._wbuf.getvalue())
 
         if size > self._max_message_size > 0:
-            ex = FMessageSizeException("Message exceeds max message size")
-            logger.exception(ex)
-            raise ex
+            raise FMessageSizeException("Message exceeds max message size")
 
         self._wbuf.write(buff)
 

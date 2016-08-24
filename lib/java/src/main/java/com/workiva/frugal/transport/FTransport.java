@@ -183,9 +183,6 @@ public abstract class FTransport extends TTransport {
             throw new UnsupportedOperationException("No write buffer set on FTranspprt");
         }
 
-        if (!isOpen()) {
-            throw new TTransportException(TTransportException.NOT_OPEN);
-        }
         if (writeBufferSize > 0 && writeBuffer.size() + len > writeBufferSize) {
             int size = writeBuffer.size() + len;
             writeBuffer.reset();

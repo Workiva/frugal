@@ -48,7 +48,6 @@ class FBaseProcessor(FProcessor):
             TApplicationException: if the processor does not know how to handle
                                    this type of function.
         """
-
         context = iprot.read_request_headers()
         name, _, _ = iprot.readMessageBegin()
 
@@ -58,13 +57,12 @@ class FBaseProcessor(FProcessor):
         # If the function was in our dict, call process on it.
         if processor_function:
             try:
-                processor_function.process(context, iprot, oprot)
-            except Exception, e:
+                return processor_function.process(context, iprot, oprot)
+            except Exception as e:
                 logging.warn('frugal: error processing request with ' +
                              'correlation id %s: %s' %
                              (context.get_correlation_id(), e))
                 raise
-            return
 
         iprot.skip(TType.STRUCT)
         iprot.readMessageEnd()

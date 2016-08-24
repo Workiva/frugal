@@ -144,7 +144,8 @@ func (f *Frugal) UnderlyingType(t *Type) *Type {
 		typedefIndex = parsed.Thrift.typedefIndex
 	}
 	if typedef, ok := typedefIndex[t.ParamName()]; ok {
-		return typedef.Type
+		// Recursively call underlying type to handle typedef nesting.
+		return f.UnderlyingType(typedef.Type)
 	}
 	return t
 }

@@ -3,6 +3,13 @@ part of frugal;
 var _encoder = new Utf8Encoder();
 var _decoder = new Utf8Decoder();
 
+class Pair<A, B> {
+  A one;
+  B two;
+
+  Pair(this.one, this.two);
+}
+
 /**
  * This is an internal-only class. Don't use it!
  */
@@ -13,10 +20,15 @@ class Headers {
   static Uint8List encode(Map<String, String> headers) {
     var size = 0;
     // Get total frame size headers
+    List<Pair<List<int>, List<int>>> utf8Headers = new List();
     if (headers != null && headers.length > 0) {
       for (var name in headers.keys) {
+        List<int> keyBytes = _encoder.convert(name);
+        List<int> valueBytes = _encoder.convert(headers[name]);
+        utf8Headers.add(new Pair(keyBytes, valueBytes));
+
         // 4 bytes each for name, value length
-        size += 8 + name.length + headers[name].length;
+        size += 8 + keyBytes.length + valueBytes.length;
       }
     }
 
@@ -30,21 +42,22 @@ class Headers {
     _writeInt(size, buff, 1);
 
     // Write headers
-    if (headers != null && headers.length > 0) {
+    if (utf8Headers.length > 0) {
       var i = 5;
-      for (var name in headers.keys) {
+      for (var pair in utf8Headers) {
         // Write name length
+        var name = pair.one;
         _writeInt(name.length, buff, i);
         i += 4;
         // Write name
-        _writeString(name, buff, i);
+        _writeStringBytes(name, buff, i);
         i += name.length;
 
         // Write value length
-        var value = headers[name];
+        var value = pair.two;
         _writeInt(value.length, buff, i);
         i += 4;
-        _writeString(value, buff, i);
+        _writeStringBytes(value, buff, i);
         i += value.length;
       }
     }
@@ -125,8 +138,7 @@ class Headers {
     buff[i1 + 3] = (0xff & (i));
   }
 
-  static void _writeString(String s, Uint8List buff, int i) {
-    var strBytes = _encoder.convert(s);
+  static void _writeStringBytes(List<int> strBytes, Uint8List buff, int i) {
     buff.setRange(i, i + strBytes.length, strBytes);
   }
 

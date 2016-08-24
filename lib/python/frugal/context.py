@@ -1,5 +1,6 @@
 import uuid
 from copy import copy
+from frugal import _IS_PY2
 from frugal.exceptions import FContextHeaderException
 
 _C_ID = "_cid"
@@ -66,7 +67,7 @@ class FContext(object):
         self._request_headers[_OP_ID] = str(op_id)
 
     def _set_response_op_id(self, op_id):
-        self._response_headers[_OP_ID] = str(op_id)
+        self._response_headers[_OP_ID] = op_id
 
     def get_request_headers(self):
         """Returns request headers for this FConext."""
@@ -150,8 +151,12 @@ class FContext(object):
         return self
 
     def _check_string(self, string):
-        if not isinstance(string, str):
-            raise TypeError("Value should be a string.")
+        if _IS_PY2 and not \
+                (isinstance(string, str) or isinstance(string, unicode)):
+            raise TypeError("Value should either be a string or unicode.")
+        if not _IS_PY2 and not \
+                (isinstance(string, str) or isinstance(string, bytes)):
+            raise TypeError("Value should be either a string or bytes.")
 
     def _generate_cid(self):
         return uuid.uuid4().hex

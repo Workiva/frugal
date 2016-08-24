@@ -38,12 +38,10 @@ class FProtocol(TProtocolBase, object):
 
     def write_response_headers(self, context):
         """Write the response headers to the underlying TTransport."""
-
         self._write_headers(context.get_response_headers())
 
     def _write_headers(self, headers):
         buff = _Headers._write_to_bytearray(headers)
-
         self.get_transport().write(buff)
 
     def read_request_headers(self):
@@ -57,7 +55,7 @@ class FProtocol(TProtocolBase, object):
 
         context = FContext()
 
-        for key, value in headers.iteritems():
+        for key, value in headers.items():
             context._set_request_header(key, value)
 
         op_id = headers[_OP_ID]
@@ -73,7 +71,7 @@ class FProtocol(TProtocolBase, object):
         """
         headers = _Headers._read(self.get_transport())
 
-        for key, value in headers.iteritems():
+        for key, value in headers.items():
             context._set_response_header(key, value)
 
     # Thrift Transport pass through methods

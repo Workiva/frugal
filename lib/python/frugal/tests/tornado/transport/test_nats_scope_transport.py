@@ -111,14 +111,6 @@ class TestFNatsScopeTransport(AsyncTestCase):
         self.assertTrue(self.subscriber_transport.isOpen())
 
     @gen_test
-    def test_write_throws_if_transport_not_open(self):
-        with self.assertRaises(TTransportException) as cm:
-            yield self.publisher_transport.write(bytearray())
-
-        self.assertEquals(TTransportException.NOT_OPEN, cm.exception.type)
-        self.assertEquals("Nats not connected!", cm.exception.message)
-
-    @gen_test
     def test_write_throws_if_max_message_size_exceeded(self):
         self.nats_client.is_connected.return_value = True
         self.publisher_transport._is_open = True
@@ -131,14 +123,13 @@ class TestFNatsScopeTransport(AsyncTestCase):
         self.assertEquals("Message exceeds NATS max message size",
                           cm.exception.message)
 
-    @gen_test
     def test_write_writes_to_write_buffer(self):
         self.nats_client.is_connected.return_value = True
         self.publisher_transport._is_open = True
         self.publisher_transport._write_buffer = BytesIO()
         buff = bytearray(b'\x00\x00\x00\x00\x01')
 
-        yield self.publisher_transport.write(buff)
+        self.publisher_transport.write(buff)
 
         self.assertEquals(buff,
                           self.publisher_transport._write_buffer.getvalue())
@@ -164,7 +155,7 @@ class TestFNatsScopeTransport(AsyncTestCase):
         f.set_result("")
         self.nats_client.publish.return_value = f
 
-        yield self.publisher_transport.write(buff)
+        self.publisher_transport.write(buff)
         yield self.publisher_transport.flush()
 
         self.nats_client.publish.assert_called_with("frugal.batman",

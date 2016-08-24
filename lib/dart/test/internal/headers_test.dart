@@ -79,6 +79,16 @@ void main() {
     expect(decodedHeaders, {});
   });
 
+  test('encode encodes utf-8 headers and decodeFromFrame decodes them', () {
+    Map<String, String> headers = {
+      'Đ¥ÑØ': 'δάüΓ',
+      'good\u00F1ight': 'moo\u00F1',
+    };
+    var encodedHeaders = Headers.encode(headers);
+    var decodedHeaders = Headers.decodeFromFrame(encodedHeaders);
+    expect(headers, decodedHeaders);
+  });
+
   test("decodFromFrame throws error for bad frame", () {
     expect(() => Headers.decodeFromFrame(new Uint8List(3)),
         throwsA(new isInstanceOf<FProtocolError>()));

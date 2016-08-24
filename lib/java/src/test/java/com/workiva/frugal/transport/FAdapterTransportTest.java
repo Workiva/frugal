@@ -192,15 +192,6 @@ public class FAdapterTransportTest {
     }
 
     /**
-     * Ensures write throws TTransportException if the transport is not open.
-     */
-    @Test(expected = TTransportException.class)
-    public void testWrite_notOpen() throws TTransportException {
-        tr.write(new byte[1]);
-    }
-
-
-    /**
      * Ensures flush throws TTransportException if the transport is not open.
      */
     @Test(expected = TTransportException.class)

@@ -132,6 +132,13 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		warnGenWithoutFrugal(genWithFrugal)
 		g = generator.NewProgramGenerator(dartlang.NewGenerator(options, genWithFrugal), false)
 	case "go":
+		// Make sure the package prefix ends with a "/"
+		if package_prefix, ok := options["package_prefix"]; ok {
+			if package_prefix != "" && !strings.HasSuffix(package_prefix, "/") {
+				options["package_prefix"] = package_prefix + "/"
+			}
+		}
+
 		// TODO: Remove this once gen_with frugal is no longer experimental
 		// and is the default.
 		warnGenWithoutFrugal(genWithFrugal)

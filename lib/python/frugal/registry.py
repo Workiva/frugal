@@ -107,9 +107,7 @@ class FClientRegistry(FRegistry):
         # map to ensure that request is not still in-flight.
         with self._handlers_lock:
             if str(context._get_op_id()) in self._handlers:
-                ex = FException("context already registered")
-                logger.exception(ex)
-                raise ex
+                raise FException("context already registered")
 
         op_id = self._increment_and_get_next_op_id()
         context._set_op_id(op_id)

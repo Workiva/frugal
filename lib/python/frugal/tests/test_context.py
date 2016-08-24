@@ -50,15 +50,17 @@ class TestContext(unittest.TestCase):
         headers = context.get_response_headers()
         self.assertEqual("bar", headers.get('foo'))
 
-    def test_request_header_put_only_allows_string(self):
+    def test_request_header_put_allows_string_unicode(self):
         context = FContext(self.correlation_id)
         self.assertRaises(TypeError, context.set_request_header, 1, "foo")
         self.assertRaises(TypeError, context.set_request_header, "foo", 3)
+        context.set_request_header(u'foo', u'bar')
 
-    def test_response_header_put_only_allows_string(self):
+    def test_response_header_put_allows_string_unicode(self):
         context = FContext(self.correlation_id)
         self.assertRaises(TypeError, context.set_response_header, 1, "foo")
         self.assertRaises(TypeError, context.set_response_header, "foo", 3)
+        context.set_request_header(u'foo', u'bar')
 
     def test_cant_set_cid_public_method(self):
         context = FContext(self.correlation_id)

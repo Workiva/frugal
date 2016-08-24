@@ -1,4 +1,4 @@
-name: standard
+name: go-integration-tests
 
 run:
   when-branch-name-is:
@@ -19,25 +19,7 @@ env:
   - GORACE="halt_on_errors=1"
 
 scripts:
-  - testing=$PWD
-  - ./scripts/skynet_setup.sh
-
-  - export PATH=$PATH:$PWD/bin
-  - frugal=$GOPATH/src/github.com/Workiva/frugal
-  - rm -rf $frugal/example/go/gen-go
-  - cd $frugal/example
-  - frugal --gen go:package_prefix=github.com/Workiva/frugal/example/go/gen-go/ -r --out='go/gen-go' event.frugal
-
-  # Start nats server
-  - cd $testing
-  - wget -O gnatsd.tar.gz https://github.com/nats-io/gnatsd/releases/download/v0.7.2/gnatsd-v0.7.2-linux-amd64.tar.gz
-  - tar xzf gnatsd.tar.gz
-  - chmod 0755 gnatsd
-  - ./gnatsd &
-
-  # recycle the Godeps (frugal-go) from lib/go
-  - cd $frugal
-  - ./scripts/run_tests_skynet.sh
+  - ./scripts/skynet/run_go_integration_tests_skynet.sh
 
 timeout: moderate
 
@@ -50,9 +32,6 @@ test-reports:
 # TODO: change test/integration/test.py line 100 when this configuration is no longer needed
 name: cross
 
-requires:
-  Workiva/frugal:
-    - artifactory
 run:
   when-branch-name-is:
     - .+
@@ -64,17 +43,8 @@ image: "drydock.workiva.org/workiva/skynet-images:51355"
 
 
 scripts:
-  - testing=$PWD
-  - ./scripts/skynet_setup.sh
+  - ./scripts/skynet/run_cross_skynet.sh
 
-  - export PATH=$PATH:$testing/bin
-
-  # Catch non-zero exit code and fail after results are uploaded
-  - ./scripts/run_cross.sh || code=$?
-  - ./scripts/test_cleanup.sh
-
-  # If applicable, fail here
-  - if [ $code > 0 ]; then exit $code; fi
 
 timeout: long
 
@@ -87,9 +57,6 @@ size: large
 
 name: cross-gen_with_thrift
 
-requires:
-  Workiva/frugal:
-    - artifactory
 run:
   when-branch-name-is:
     - .+
@@ -100,17 +67,7 @@ contact: messaging@workiva.com
 image: "drydock.workiva.org/workiva/skynet-images:51355"
 
 scripts:
-  - testing=$PWD
-  - ./scripts/skynet_setup.sh
-
-  - export PATH=$PATH:$testing/bin
-
-  # Catch non-zero exit code and fail after results are uploaded
-  - ./scripts/run_cross.sh -gen_with_thrift || code=$?
-  - ./scripts/test_cleanup.sh
-
-  # If applicable, fail here
-  - if [ $code > 0 ]; then exit $code; fi
+  - ./scripts/skynet/run_cross_skynet.sh -gen_with_thrift
 
 timeout: long
 

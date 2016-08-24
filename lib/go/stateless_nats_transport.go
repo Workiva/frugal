@@ -159,14 +159,6 @@ func (f *fNatsTransport) Read(buf []byte) (int, error) {
 	return f.fBaseTransport.Read(buf)
 }
 
-// Write the bytes to a buffer. Returns ErrTooLarge if the buffer exceeds 1MB.
-func (f *fNatsTransport) Write(buf []byte) (int, error) {
-	if !f.IsOpen() {
-		return 0, f.getClosedConditionError("write:")
-	}
-	return f.fBaseTransport.Write(buf)
-}
-
 // Flush sends the buffered bytes over NATS.
 func (f *fNatsTransport) Flush() error {
 	if !f.IsOpen() {

@@ -54,11 +54,9 @@ void main() {
     test(
         'test transport writes and flushes properly, read throws '
         'UnsupportedError', () async {
-      // Write to/flush transport before opening
+      // flush transport before opening
       var buffer = new Uint8List.fromList([1, 2, 3, 4]);
       var framedBuffer = new Uint8List.fromList([0, 0, 0, 4, 1, 2, 3, 4]);
-      expect(() => transport.writeAll(buffer),
-          throwsA(new isInstanceOf<TTransportError>()));
       expect(transport.flush, throwsA(new isInstanceOf<TTransportError>()));
 
       // Open the transport

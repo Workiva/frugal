@@ -353,9 +353,6 @@ public class TNatsServiceTransport extends TTransport {
 
     @Override
     public void write(byte[] bytes, int off, int len) throws TTransportException {
-        if (!isOpen()) {
-            throw getClosedConditionException(conn, "write:");
-        }
         if (writeBuffer.remaining() < len) {
             int size = len + TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE - writeBuffer.remaining();
             writeBuffer.clear();

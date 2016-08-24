@@ -28,3 +28,18 @@ class FTransport(TTransportBase, object):
 
     def closed(self):
         pass
+
+
+class FSynchronousTransport(TTransportBase, object):
+    """FSynchronousTransport is a Thrift TTransport for services which makes
+    synchronous requests.
+    """
+
+    def set_timeout(self, timeout):
+        """Set the request timeout.
+
+        Args:
+            timeout: request timeout in milliseconds.
+        """
+        pass
+

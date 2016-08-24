@@ -367,42 +367,6 @@ func TestNatsScopeCloseSubscriberError(t *testing.T) {
 	assert.Error(t, tr.Close())
 }
 
-// Ensures Write returns an error if the transport is not open.
-func TestNatsScopeWriteNotOpen(t *testing.T) {
-	s := runServer(nil)
-	defer s.Shutdown()
-	conn, err := nats.Connect(fmt.Sprintf("nats://localhost:%d", defaultOptions.Port))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer conn.Close()
-	tr := NewNatsFScopeTransport(conn)
-
-	n, err := tr.Write(make([]byte, 10))
-	assert.Equal(t, 0, n)
-	trErr := err.(thrift.TTransportException)
-	assert.Equal(t, thrift.NOT_OPEN, trErr.TypeId())
-}
-
-// Ensures Write returns an error if the transport is not open because NATS
-// disconnected.
-func TestNatsScopeWriteNatsClosed(t *testing.T) {
-	s := runServer(nil)
-	defer s.Shutdown()
-	conn, err := nats.Connect(fmt.Sprintf("nats://localhost:%d", defaultOptions.Port))
-	if err != nil {
-		t.Fatal(err)
-	}
-	tr := NewNatsFScopeTransport(conn)
-	assert.Nil(t, tr.Open())
-	conn.Close()
-
-	n, err := tr.Write(make([]byte, 10))
-	assert.Equal(t, 0, n)
-	trErr := err.(thrift.TTransportException)
-	assert.Equal(t, thrift.NOT_OPEN, trErr.TypeId())
-}
-
 // Ensures Write returns an ErrTooLarge if the written frame exceeds 1MB.
 func TestNatsScopeWriteTooLarge(t *testing.T) {
 	s := runServer(nil)

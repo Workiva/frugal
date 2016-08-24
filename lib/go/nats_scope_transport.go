@@ -221,10 +221,6 @@ func (n *fNatsScopeTransport) DiscardFrame() {
 // Write bytes to publish. If buffered bytes exceeds 1MB, ErrTooLarge is
 // returned.
 func (n *fNatsScopeTransport) Write(p []byte) (int, error) {
-	if !n.IsOpen() {
-		return 0, n.getClosedConditionError("write:")
-	}
-
 	// Include 4 bytes for frame size.
 	if len(p)+n.writeBuffer.Len()+4 > natsMaxMessageSize {
 		n.writeBuffer.Reset() // Clear any existing bytes.

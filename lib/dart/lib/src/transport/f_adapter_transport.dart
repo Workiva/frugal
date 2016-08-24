@@ -37,9 +37,6 @@ class FAdapterTransport extends FTransport {
 
   @override
   void write(Uint8List buffer, int offset, int length) {
-    if (!isOpen) {
-      throw new TTransportError(TTransportErrorType.NOT_OPEN);
-    }
     _framedTransport.write(buffer, offset, length);
   }
 

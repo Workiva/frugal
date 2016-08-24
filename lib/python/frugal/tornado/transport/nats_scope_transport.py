@@ -42,9 +42,7 @@ class FNatsScopeTransport(FScopeTransport):
             FException: if the instance is a subscriber
         """
         if self._pull:
-            ex = FException("Subscriber cannot lock topic.")
-            logger.exception(ex)
-            raise ex
+            raise FException("Subscriber cannot lock topic.")
 
         self._topic_lock.acquire()
         self._subject = topic
@@ -56,9 +54,7 @@ class FNatsScopeTransport(FScopeTransport):
             FException: if the instance is a subscriber
         """
         if self._pull:
-            ex = FException("Subscriber cannot unlock topic.")
-            logger.exception(ex)
-            raise ex
+            raise FException("Subscriber cannot unlock topic.")
 
         self._subject = ""
         self._topic_lock.release()
@@ -89,16 +85,12 @@ class FNatsScopeTransport(FScopeTransport):
             TTransportException: if NOT_OPEN or ALREADY_OPEN
         """
         if not self._nats_client.is_connected():
-            ex = TTransportException(TTransportException.NOT_OPEN,
-                                     "Nats not connected!")
-            logger.exception(ex)
-            raise ex
+            raise TTransportException(TTransportException.NOT_OPEN,
+                                      "Nats not connected!")
 
         if (yield self.isOpen()):
-            ex = TTransportException(TTransportException.ALREADY_OPEN,
-                                     "Nats is already open!")
-            logger.exception(ex)
-            raise ex
+            raise TTransportException(TTransportException.ALREADY_OPEN,
+                                      "Nats is already open!")
 
         # If _pull is False the transport belongs to a publisher.  Allocate a
         # write buffer, mark open and short circuit
@@ -109,9 +101,7 @@ class FNatsScopeTransport(FScopeTransport):
                 return
 
             if not self._subject:
-                ex = TTransportException(message="Subject cannot be empty.")
-                logger.exception(ex)
-                raise ex
+                raise TTransportException(message="Subject cannot be empty.")
 
         def on_message(msg):
             callback(TMemoryBuffer(msg.data[4:]))
@@ -143,11 +133,8 @@ class FNatsScopeTransport(FScopeTransport):
         self._is_open = False
 
     def read(self, sz):
-        ex = NotImplementedError("Don't call this.")
-        logger.exception(ex)
-        raise ex
+        raise NotImplementedError("Don't call this.")
 
-    @gen.coroutine
     def write(self, buff):
         """Write takes a bytearray and attempts to write it to an underlying
         BytesIO instance.  It will raise an exception if NATS is not connected
@@ -159,17 +146,11 @@ class FNatsScopeTransport(FScopeTransport):
             TTransportException: if NATS not connected
             FMessageSizeException: if writing to the buffer exceeds 1MB length
         """
-        if not (yield self.isOpen()):
-            ex = TTransportException(TTransportException.NOT_OPEN,
-                                     "Nats not connected!")
-            logger.exception(ex)
-            raise ex
 
         size = len(buff) + len(self._write_buffer.getvalue())
 
         if size > MAX_MESSAGE_SIZE:
             ex = FMessageSizeException("Message exceeds NATS max message size")
-            logger.exception(ex)
             raise ex
 
         self._write_buffer.write(buff)
@@ -177,10 +158,8 @@ class FNatsScopeTransport(FScopeTransport):
     @gen.coroutine
     def flush(self):
         if not (yield self.isOpen()):
-            ex = TTransportException(TTransportException.NOT_OPEN,
-                                     "Nats not connected!")
-            logger.exception(ex)
-            raise ex
+            raise TTransportException(TTransportException.NOT_OPEN,
+                                      "Nats not connected!")
 
         frame = self._write_buffer.getvalue()
         frame_length = struct.pack('!I', len(frame))

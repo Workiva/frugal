@@ -111,16 +111,12 @@ class TNatsServiceTransport(TTornadoTransportBase):
             TTransportException
         """
         if not self._nats_client.is_connected():
-            ex = TTransportException(TTransportException.NOT_OPEN,
-                                     "NATS not connected.")
-            logger.error(ex.message)
-            raise ex
+            raise TTransportException(TTransportException.NOT_OPEN,
+                                      "NATS not connected.")
 
         elif (yield self.isOpen()):
-            ex = TTransportException(TTransportException.ALREADY_OPEN,
-                                     "NATS transport already open")
-            logger.error(ex.message)
-            raise ex
+            raise TTransportException(TTransportException.ALREADY_OPEN,
+                                      "NATS transport already open")
 
         with (yield self._open_lock.acquire()):
             if self._connection_subject:
@@ -135,7 +131,7 @@ class TNatsServiceTransport(TTornadoTransportBase):
             if hasattr(self, '_heartbeat_interval'):
                 yield self._setup_heartbeat()
             self._is_open = True
-            logger.info("frugal: transport open.")
+            logger.debug("frugal: transport open.")
 
     @gen.coroutine
     def _on_message_callback(self, msg):
@@ -162,9 +158,7 @@ class TNatsServiceTransport(TTornadoTransportBase):
         subjects = msg.data.split()
         if len(subjects) != 3:
             logger.error("Bad Frugal handshake")
-            ex = TTransportException("Invalid connect message.")
-            logger.exception(ex)
-            raise ex
+            raise TTransportException("Invalid connect message.")
 
         self._heartbeat_listen = subjects[0]
         self._heartbeat_reply = subjects[1]

@@ -25,11 +25,9 @@ class _Headers(object):
         Returns:
             bytearray containing binary headers
         """
-        size = 0
-
-        for key, value in headers.iteritems():
-            size = size + 8 + len(key) + len(value)
-
+        utf8_headers = [(key.encode('utf8'), val.encode('utf8'))
+                        for (key, val) in headers.items()]
+        size = sum([8 + len(key) + len(val) for (key, val) in utf8_headers])
         buff = bytearray(size + 5)
 
         pack_into(_UCHAR, buff, 0, _V0)
@@ -37,19 +35,20 @@ class _Headers(object):
 
         offset = 5
 
-        for key, value in headers.iteritems():
-            key_length = len(key)
-            pack_into(_UINT, buff, offset, key_length)
+        for key, value in utf8_headers:
+            key_len = len(key)
+            pack_into(_UINT, buff, offset, key_len)
             offset += 4
 
-            pack_into('>{0}s'.format(str(key_length)), buff, offset, key)
-            offset += len(key)
+            pack_into('>{0}s'.format(str(key_len)), buff, offset, key)
+            offset += key_len
 
-            pack_into(_UINT, buff, offset, len(value))
+            val_len = len(value)
+            pack_into(_UINT, buff, offset, val_len)
             offset += 4
 
-            pack_into('>{0}s'.format(str(len(value))), buff, offset, value)
-            offset += len(value)
+            pack_into('>{0}s'.format(str(val_len)), buff, offset, value)
+            offset += val_len
 
         return buff
 
@@ -131,7 +130,7 @@ class _Headers(object):
             val = unpack_from('>{0}s'.format(val_size),
                               buff[i:i + val_size])[0]
             i += val_size
-            parsed_headers[name] = val
+            parsed_headers[name.decode('utf8')] = val.decode('utf8')
 
         return parsed_headers
 

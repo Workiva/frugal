@@ -26,4 +26,26 @@ public class ProtocolUtils {
         System.arraycopy(strBytes, 0, buff, offset, s.length());
     }
 
+    /**
+     * Encodes a string using UTF-8.
+     *
+     * @param s The string to encode.
+     * @return The bytes representing the string.
+     */
+    public static byte[] encodeString(String s) {
+        return s.getBytes(Charset.forName("UTF-8"));
+    }
+
+    /**
+     * Writes the bytes corresponding to a UTF-8 encoded string into a buffer,
+     * starting at a certain offset.
+     *
+     * @param strBytes The bytes to write.
+     * @param buff The buffer to write into.
+     * @param offset The position in buff to start writing at.
+     */
+    public static void writeStringBytes(byte[] strBytes, byte[] buff, int offset) {
+        System.arraycopy(strBytes, 0, buff, offset, strBytes.length);
+    }
+
 }

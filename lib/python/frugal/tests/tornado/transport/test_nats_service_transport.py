@@ -62,23 +62,13 @@ class TestTNatsServiceTransport(AsyncTestCase):
         f = concurrent.Future()
         f.set_result("handshake response 1234")
 
-    @gen_test
-    def test_write_throws_not_open_exception(self):
-        self.transport._is_open = False
-
-        with self.assertRaises(TTransportException) as cm:
-            yield self.transport.write('')
-
-        self.assertEqual("Transport not open!", cm.exception.message)
-
-    @gen_test
     def test_write_adds_to_write_buffer(self):
         b = bytearray('test')
 
         self.mock_nats_client.is_connected.return_value = True
         self.transport._is_open = True
 
-        yield self.transport.write(b)
+        self.transport.write(b)
 
         self.assertEquals(b, self.transport._wbuf.getvalue())
 
