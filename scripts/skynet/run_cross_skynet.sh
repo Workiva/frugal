@@ -37,8 +37,26 @@ fi
 
 cd $FRUGAL_HOME/test/integration/dart/test_client
 pub get
+
+# Try pub get and ignore failures - it will fail on any release
 cd $FRUGAL_HOME/test/integration/dart/gen-dart/frugal_test
-pub get
+if pub get ; then
+    echo 'pub get returned no error'
+else
+    echo 'Pub get returned an error we ignored'
+fi
+
+# get frugal version to use with manually placing package in pub-cache
+frugal_version=$(frugal --version | awk '{print $3}')
+
+# we need to manually install our package to match with the version of frugal
+# so delete existing package (if above pub get succeeded) and override with the
+# current version if not
+rm -rf  ~/.pub-cache/hosted/pub.workiva.org/frugal-${frugal_version}/
+mkdir -p ~/.pub-cache/hosted/pub.workiva.org/frugal-${frugal_version}/
+cp -r $FRUGAL_HOME/lib/dart/* ~/.pub-cache/hosted/pub.workiva.org/frugal-${frugal_version}/
+pub get --offline
+
 
 # RM and Generate Java Code
 cd $FRUGAL_HOME
@@ -49,11 +67,13 @@ else
     frugal --gen java -r --out='test/integration/java/frugal-integration-test/gen-java' test/integration/frugalTest.frugal
 fi
 
-# Build java tests using smithy java library
+# Build and install java frugal library
 cd $FRUGAL_HOME/lib/java
-cp $SKYNET_APPLICATION_FRUGAL_ARTIFACTORY $FRUGAL_HOME/test/integration/java/frugal-integration-test/frugal.jar
+mvn clean verify
+mv target/frugal-*.jar $FRUGAL_HOME/test/integration/java/frugal-integration-test/frugal.jar
 cd $FRUGAL_HOME/test/integration/java/frugal-integration-test
 mvn clean install:install-file -Dfile=frugal.jar -U
+# Compile java tests
 mvn clean compile -U
 
 

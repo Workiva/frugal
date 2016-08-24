@@ -32,10 +32,6 @@ test-reports:
 # TODO: change test/integration/test.py line 100 when this configuration is no longer needed
 name: cross
 
-requires:
-  Workiva/frugal:
-    - artifactory
-
 run:
   when-branch-name-is:
     - .+
@@ -60,11 +56,6 @@ artifacts:
 size: large
 
 name: cross-gen_with_thrift
-
-requires:
-  Workiva/frugal:
-    - artifactory
-
 
 run:
   when-branch-name-is:
