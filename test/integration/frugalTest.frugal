@@ -1,10 +1,9 @@
 // Unabashedly "borrowing" this file from Thrift for parity testing
 
-// namespace java frugal.test
-// namespace py FrugalTest
+namespace java frugal.test
+namespace py frugal_test
 namespace go frugaltest
 namespace dart frugal_test
-namespace * frugal.test
 
 /**
  * Docstring!

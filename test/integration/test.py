@@ -50,6 +50,7 @@ def run_cross_tests(server_match, client_match, jobs, retry_count, regex):
     with open(path_join(TEST_DIR, CONFIG_FILE), 'r') as fp:
         j = json.load(fp)
     tests = crossrunner.collect_cross_tests(j, server_match, client_match, regex)
+
     if not tests:
         print('No test found that matches the criteria', file=sys.stderr)
         print('  servers: %s' % server_match, file=sys.stderr)
@@ -76,8 +77,6 @@ def main(argv):
     parser.add_argument('--client', default='', nargs='*',
                         help='list of clients to test')
     parser.add_argument('-R', '--regex', help='test name pattern to run')
-    parser.add_argument('-r', '--retry-count', type=int,
-                        default=0, help='maximum retry on failure')
 
     g = parser.add_argument_group(title='Advanced')
     g.add_argument('-v', '--verbose', action='store_const',
@@ -95,9 +94,11 @@ def main(argv):
     '''
     TODO: Change this back to
     options.jobs = int(multiprocessing.cpu_count()) - 1
-    once the "cross" skynet configuration is no longer needed
+    once the "cross:gen_with_thrift" skynet configuration is no longer needed
     '''
+    # options.jobs = int(multiprocessing.cpu_count()) - 1
     options.jobs = int(multiprocessing.cpu_count()) / 2 - 1
+    options.retry_count = 0
 
     res = run_cross_tests(server_match, client_match, options.jobs, options.retry_count, options.regex)
     return 0 if res else 1

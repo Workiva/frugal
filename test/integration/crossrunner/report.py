@@ -266,8 +266,8 @@ class SummaryReporter(TestReporter):
             '# then browse:\n',
             '# \thttp://localhost:%d/%s/\n' % (8001, self._testdir_rel),
             'Full log for each test is here:\n',
-            '\ttest/log/client_server_protocol_transport_client.log\n',
-            '\ttest/log/client_server_protocol_transport_server.log\n',
+            '\ttest/integration/log/client_server_protocol_transport_client.log\n',
+            '\ttest/integration/log/client_server_protocol_transport_server.log\n',
             '%d failed of %d tests in total.\n' % (fail_count, len(self._tests)),
         ])
         self._print_exec_time()
@@ -317,7 +317,11 @@ class SummaryReporter(TestReporter):
                     fp.write('TEST: [%s]\n' % test.name)
                     add_prog_log(fp, test, test.server.kind)
                     add_prog_log(fp, test, test.client.kind)
-                    fp.write('**********************************************************************\n\n')
+                    fp.write('********************************************************************************************************************************************\n')
+                    fp.write('********************************************************************************************************************************************\n')
+                    fp.write('********************************************************************************************************************************************\n')
+                    fp.write('********************************************************************************************************************************************\n')
+                    fp.write('********************************************************************************************************************************************\n\n')
             print('%s are logged to %s/%s/%s' % (title.capitalize(), self._testdir_rel, LOG_DIR, filename))
 
     def end(self):

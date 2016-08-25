@@ -257,15 +257,13 @@ func (p *printingHandler) TestMapMap(ctx *frugal.FContext, hello int32) (r map[i
 // Parameters:
 //  - Argument
 func (p *printingHandler) TestInsanity(ctx *frugal.FContext, argument *Insanity) (r map[UserId]map[Numberz]*Insanity, err error) {
-	fmt.Printf("testInsanity()\n")
+	fmt.Printf("testInsanity(%v)\n", argument)
 	r = make(map[UserId]map[Numberz]*Insanity)
 	r[1] = map[Numberz]*Insanity{
 		2: argument,
 		3: argument,
 	}
-	r[2] = map[Numberz]*Insanity{
-		6: NewInsanity(),
-	}
+	r[2] = map[Numberz]*Insanity{}
 	return
 }
 

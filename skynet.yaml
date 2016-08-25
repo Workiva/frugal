@@ -6,8 +6,8 @@ run:
 
 contact: messaging@workiva.com
 
-# Link to image definition: https://github.com/Workiva/skynet-images/tree/ea53c331b4b7dddc1f617588d901f64f6050764a
-image: "drydock.workiva.org/workiva/skynet-images:51355"
+# Five Horsemen
+image: "drydock.workiva.org/workiva/skynet-images:64123"
 
 also-run:
   Workiva/messaging-sdk:go-tests:
@@ -19,6 +19,7 @@ env:
   - GORACE="halt_on_errors=1"
 
 scripts:
+
   - ./scripts/skynet/run_go_integration_tests_skynet.sh
 
 timeout: moderate
@@ -38,8 +39,8 @@ run:
 
 contact: messaging@workiva.com
 
-# https://github.com/Workiva/skynet-images/tree/ea53c331b4b7dddc1f617588d901f64f6050764a
-image: "drydock.workiva.org/workiva/skynet-images:51355"
+# Five Horesmen
+image: "drydock.workiva.org/workiva/skynet-images:64123"
 
 
 scripts:
@@ -53,8 +54,6 @@ artifacts:
 
 ---
 
-size: large
-
 name: cross-gen_with_thrift
 
 run:
@@ -63,8 +62,8 @@ run:
 
 contact: messaging@workiva.com
 
-# https://github.com/Workiva/skynet-images/tree/ea53c331b4b7dddc1f617588d901f64f6050764a
-image: "drydock.workiva.org/workiva/skynet-images:51355"
+# Five Horsemen
+image: "drydock.workiva.org/workiva/skynet-images:64123"
 
 scripts:
   - ./scripts/skynet/run_cross_skynet.sh -gen_with_thrift

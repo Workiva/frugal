@@ -21,20 +21,11 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:collection/collection.dart';
-import 'package:http/http.dart' as http;
 import 'package:thrift/thrift.dart';
-import 'package:thrift/thrift_console.dart';
 import 'package:frugal_test/frugal_test.dart';
 import 'package:frugal/frugal.dart';
-
-
-const TEST_BASETYPES = 1; // 0000 0001
-const TEST_STRUCTS = 2; // 0000 0010
-const TEST_CONTAINERS = 4; // 0000 0100
-const TEST_EXCEPTIONS = 8; // 0000 1000
-const TEST_UNKNOWN = 64; // 0100 0000 (Failed to prepare environment etc.)
-const TEST_TIMEOUT = 128; // 1000 0000
-const TEST_NOTUSED = 48; // 0011 0000 (reserved bits)
+import 'package:w_transport/w_transport.dart' as wt;
+import 'package:w_transport/w_transport_vm.dart' show configureWTransportForVM;
 
 typedef Future FutureFunction();
 
@@ -52,7 +43,7 @@ class TTestError extends Error {
 
   TTestError(this.actual, this.expected);
 
-  String toString() => '$actual != $expected';
+  String toString() => '\n\nUNEXPECTED ERROR \n$actual != \n$expected\n\n';
 }
 
 List<TTest> _tests;
@@ -61,10 +52,11 @@ bool verbose;
 FContext ctx;
 
 main(List<String> args) async {
+  configureWTransportForVM();
   ArgResults results = _parseArgs(args);
 
   if (results == null) {
-    exit(TEST_UNKNOWN);
+    exit(1);
   }
 
   verbose = results['verbose'] == true;
@@ -79,13 +71,12 @@ main(List<String> args) async {
     if (e is Error) {
       stdout.writeln('${e.stackTrace}');
     }
-    exit(TEST_UNKNOWN);
+    exit(1);
   });
 
   // run tests
-  _tests = _createTests();
-
   int result = 0;
+  _tests = _createTests();
 
   for (TTest test in _tests) {
     if (verbose) stdout.write('${test.name}... ');
@@ -93,7 +84,7 @@ main(List<String> args) async {
       await test.func();
       if (verbose) stdout.writeln('success!');
     } catch (e) {
-      if (verbose) stdout.writeln('$e');
+      stdout.writeln(e.toString());
       result = result | test.errorCode;
     }
   }
@@ -106,12 +97,11 @@ ArgResults _parseArgs(List<String> args) {
   parser.addOption('host', defaultsTo: 'localhost', help: 'The server host');
   parser.addOption('port', defaultsTo: '9090', help: 'The port to connect to');
   parser.addOption('transport',
-      defaultsTo: 'buffered',
-      allowed: ['buffered', 'framed', 'http'],
+      defaultsTo: 'http',
+      allowed: ['http'],
       help: 'The transport name',
       allowedHelp: {
-        'buffered': 'TBufferedTransport',
-        'framed': 'TFramedTransport'
+        'http': 'http transport'
       });
   parser.addOption('protocol',
       defaultsTo: 'binary',
@@ -150,24 +140,19 @@ TProtocolFactory getProtocolFactory(String protocolType) {
 
 Future _initTestClient(
     {String host, int port, String transportType, String protocolType}) async {
-  TTransport transport;
 
-  if (transportType == 'http') {
-    var httpClient = new http.IOClient();
-    var uri = Uri.parse('http://$host:$port');
-    var config = new THttpConfig(uri, {});
-    transport = new THttpClientTransport(httpClient, config);
-  } else {
-    var socket = await Socket.connect(host, port);
-    transport = new TClientSocketTransport(new TTcpSocket(socket));
-  }
-
-  FProtocolFactory fProtocolFactory = new FProtocolFactory(getProtocolFactory(protocolType));
-  FTransport fTransport = new FMultiplexedTransport(transport);
-
+  FProtocolFactory fProtocolFactory = null;
+  FTransport fTransport = null;
   ctx = new FContext();
-  client = new FFrugalTestClient(fTransport, fProtocolFactory);
+
+//  Nats is not available without the SDK in dart, so HTTP is the only transport we can test
+  var uri = Uri.parse('http://$host:$port');
+  var config = new FHttpConfig(uri, {});
+  fTransport = new FHttpClientTransport(new wt.Client(), config);
   await fTransport.open();
+
+  fProtocolFactory = new FProtocolFactory(getProtocolFactory(protocolType));
+  client = new FFrugalTestClient(fTransport, fProtocolFactory);
 }
 
 List<TTest> _createTests() {
@@ -179,13 +164,13 @@ List<TTest> _createTests() {
     ..i32_thing = -3
     ..i64_thing = -5;
 
-  tests.add(new TTest(TEST_BASETYPES, 'testVoid', () async {
+  tests.add(new TTest(1, 'testVoid', () async {
     stdout.write("testVoid()");
     await client.testVoid(ctx);
     stdout.write(" = void \n");
   }));
 
-  tests.add(new TTest(TEST_BASETYPES, 'testString', () async {
+  tests.add(new TTest(1, 'testString', () async {
     var input = 'Test';
     stdout.write("testString(${input})");
     var result = await client.testString(ctx, input);
@@ -193,7 +178,7 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_BASETYPES, 'testBool', () async {
+  tests.add(new TTest(1, 'testBool', () async {
     var input = true;
     stdout.write("testBool(${input})");
     var result = await client.testBool(ctx, input);
@@ -201,7 +186,7 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_BASETYPES, 'testByte', () async {
+  tests.add(new TTest(1, 'testByte', () async {
     var input = 64;
     stdout.write("testByte(${input})");
     var result = await client.testByte(ctx, input);
@@ -209,7 +194,7 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_BASETYPES, 'testI32', () async {
+  tests.add(new TTest(1, 'testI32', () async {
     var input = 2147483647;
     stdout.write("testI32(${input})");
     var result = await client.testI32(ctx, input);
@@ -217,7 +202,7 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_BASETYPES, 'testI64', () async {
+  tests.add(new TTest(1, 'testI64', () async {
     var input = 9223372036854775807;
     stdout.write("testI64(${input})");
     var result = await client.testI64(ctx, input);
@@ -225,7 +210,7 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_BASETYPES, 'testDouble', () async {
+  tests.add(new TTest(1, 'testDouble', () async {
     var input = 3.1415926;
     stdout.write("testDouble(${input})");
     var result = await client.testDouble(ctx, input);
@@ -233,7 +218,7 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_BASETYPES, 'testBinary', () async {
+  tests.add(new TTest(1, 'testBinary', () async {
     var utf8Codec = const Utf8Codec();
     var input = utf8Codec.encode('foo');
     stdout.write("testBinary(${input})");
@@ -243,14 +228,14 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_CONTAINERS, 'testStruct', () async {
+  tests.add(new TTest(1, 'testStruct', () async {
     stdout.write("testStruct()");
     var result = await client.testStruct(ctx, xtruct);
     if ('$result' != '$xtruct') throw new TTestError(result, xtruct);
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_CONTAINERS, 'testNest', () async {
+  tests.add(new TTest(1, 'testNest', () async {
     var input = new Xtruct2()
       ..byte_thing = 1
       ..struct_thing = xtruct
@@ -262,7 +247,7 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_CONTAINERS, 'testMap', () async {
+  tests.add(new TTest(1, 'testMap', () async {
     Map<int, int> input = {1: -10, 2: -9, 3: -8, 4: -7, 5: -6};
 
     stdout.write("testMap(${input})");
@@ -272,7 +257,7 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_CONTAINERS, 'testSet', () async {
+  tests.add(new TTest(1, 'testSet', () async {
     var input = new Set.from([-2, -1, 0, 1, 2]);
     stdout.write("testSet(${input})");
     var result = await client.testSet(ctx, input);
@@ -281,7 +266,7 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_CONTAINERS, 'testList', () async {
+  tests.add(new TTest(1, 'testList', () async {
     var input = [-2, -1, 0, 1, 2];
     stdout.write("testList(${input})");
     var result = await client.testList(ctx, input);
@@ -290,7 +275,7 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_CONTAINERS, 'testEnum', () async {
+  tests.add(new TTest(1, 'testEnum', () async {
     await _testEnum(Numberz.ONE);
     await _testEnum(Numberz.TWO);
     await _testEnum(Numberz.THREE);
@@ -298,15 +283,16 @@ List<TTest> _createTests() {
     await _testEnum(Numberz.EIGHT);
   }));
 
-  tests.add(new TTest(TEST_BASETYPES, 'testTypedef', () async {
-    var input = 309858235082523;
-    stdout.write("testTypedef(${input})");
-    var result = await client.testTypedef(ctx, input);
-    if (result != input) throw new TTestError(result, input);
-    stdout.write(" = ${result} \n");
-  }));
+  // Python does not support typedefs
+//  tests.add(new TTest(1, 'testTypedef', () async {
+//    var input = 309858235082523;
+//    stdout.write("testTypedef(${input})");
+//    var result = await client.testTypedef(ctx, input);
+//    if (result != input) throw new TTestError(result, input);
+//    stdout.write(" = ${result} \n");
+//  }));
 
-  tests.add(new TTest(TEST_CONTAINERS, 'testMapMap', () async {
+  tests.add(new TTest(1, 'testMapMap', () async {
     stdout.write("testMapMap(ctx, 1)");
     Map<int, Map<int, int>> result = await client.testMapMap(ctx, 1);
     if (result.isEmpty || result[result.keys.first].isEmpty) {
@@ -315,20 +301,20 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_CONTAINERS, 'testInsanity', () async {
+  tests.add(new TTest(1, 'testInsanity', () async {
     var input = new Insanity();
     input.userMap = {Numberz.FIVE: 5000};
     input.xtructs = [xtruct];
 
     stdout.write("testInsanity(${input})");
     Map<int, Map<int, Insanity>> result = await client.testInsanity(ctx, input);
-    if (result.isEmpty || result[result.keys.first].isEmpty) {
-      throw new TTestError(result, 'Map<int, Map<int, Insanity>>');
+    if (result.isEmpty || result[1].isEmpty) {
+      throw new TTestError(result, input);
     }
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_CONTAINERS, 'testMulti', () async {
+  tests.add(new TTest(1, 'testMulti', () async {
     var input = new Xtruct()
       ..string_thing = 'Hello2'
       ..byte_thing = 123
@@ -342,7 +328,7 @@ List<TTest> _createTests() {
     stdout.write(" = ${result} \n");
   }));
 
-  tests.add(new TTest(TEST_EXCEPTIONS, 'testException', () async {
+  tests.add(new TTest(1, 'testException', () async {
     stdout.write("testException(Xception)");
     try {
       await client.testException(ctx, 'Xception');
@@ -354,7 +340,7 @@ List<TTest> _createTests() {
     throw new TTestError(null, 'Xception');
   }));
 
-  tests.add(new TTest(TEST_EXCEPTIONS, 'testMultiException', () async {
+  tests.add(new TTest(1, 'testMultiException', () async {
     stdout.write("testMultiException(Xception2, foo)");
     try {
       await client.testMultiException(ctx, 'Xception2', 'foo');

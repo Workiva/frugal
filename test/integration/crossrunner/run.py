@@ -142,6 +142,9 @@ def run_test(testdir, logdir, test_dict, max_retry, async=True):
             try:
                 if sock4.connect_ex(('127.0.0.1', port)) == 0 \
                         or sock6.connect_ex(('::1', port)) == 0:
+                    # There is a brief delay between the healthcheck starting and the actual server being available
+                    # TODO: Make client/server interactions more intelligent so this isn't necessary
+                    time.sleep(.2)
                     return True
                 if proc.poll() is not None:
                     logger.warn('server process is exited')
