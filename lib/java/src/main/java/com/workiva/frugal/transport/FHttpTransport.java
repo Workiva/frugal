@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 
 /**
@@ -135,7 +136,13 @@ public class FHttpTransport extends FTransport {
         }
         byte[] data = getFramedWriteBytes();
         resetWriteBuffer();
-        byte[] response = makeRequest(data);
+        byte[] response;
+        try {
+            response = makeRequest(data);
+        } catch (IOException e) {
+            throw new TTransportException("Error making HTTP request: " + Arrays.toString(e.getStackTrace()));
+
+        }
 
         // All responses should be framed with 4 bytes
         if (response.length < 4) {
@@ -159,7 +166,7 @@ public class FHttpTransport extends FTransport {
         }
     }
 
-    private byte[] makeRequest(byte[] requestPayload) throws TTransportException {
+    private byte[] makeRequest(byte[] requestPayload) throws TTransportException, IOException {
         // Encode request payload
         String encoded = Base64.encodeBase64String(requestPayload);
         StringEntity requestEntity = new StringEntity(encoded, ContentType.create("application/x-frugal", "utf-8"));
@@ -174,42 +181,28 @@ public class FHttpTransport extends FTransport {
         request.setEntity(requestEntity);
 
         // Make request
-        CloseableHttpResponse response;
+        CloseableHttpResponse response = httpClient.execute(request);
+        String responseBody = "";
         try {
-            response = httpClient.execute(request);
-        } catch (IOException e) {
-            throw new TTransportException("http request failed: " + e.getMessage());
-        }
-
-        try {
-            // Response too large
+            // Check status code errors
             int status = response.getStatusLine().getStatusCode();
             if (status == HttpStatus.SC_REQUEST_TOO_LONG) {
                 throw new FMessageSizeException(FTransport.RESPONSE_TOO_LARGE,
                         "response was too large for the transport");
             }
+            if (status >= 300) {
+                throw new TTransportException("Error: " + response.getStatusLine().toString());
+            }
 
-            // Decode body
-            String responseBody = "";
             HttpEntity responseEntity = response.getEntity();
             if (responseEntity != null) {
                 responseBody = EntityUtils.toString(responseEntity, "utf-8");
             }
-            // Check bad status code
-            if (status >= 300) {
-                throw new TTransportException("response errored with code " + status + " and message " + responseBody);
-            }
-            // Decode and return response body
-            return Base64.decodeBase64(responseBody);
-
-        } catch (IOException e) {
-            throw new TTransportException("could not decode response body: " + e.getMessage());
+            EntityUtils.consume(responseEntity);
         } finally {
-            try {
-                response.close();
-            } catch (IOException e) {
-                LOGGER.warn("could not close server response: " + e.getMessage());
-            }
+            response.close();
         }
+
+        return Base64.decodeBase64(responseBody);
     }
 }

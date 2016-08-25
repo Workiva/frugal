@@ -13,7 +13,10 @@ import org.apache.thrift.TEnum;
 public enum ItsAnEnum implements org.apache.thrift.TEnum {
 	FIRST(2),
 	SECOND(3),
-	THIRD(4);
+	THIRD(4),
+	fourth(5),
+	Fifth(6),
+	sIxItH(7);
 
 	private final int value;
 
@@ -33,6 +36,12 @@ public enum ItsAnEnum implements org.apache.thrift.TEnum {
 				return SECOND;
 			case 4:
 				return THIRD;
+			case 5:
+				return fourth;
+			case 6:
+				return Fifth;
+			case 7:
+				return sIxItH;
 			default:
 				return null;
 		}

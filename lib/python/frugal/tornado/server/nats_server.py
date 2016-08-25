@@ -35,7 +35,7 @@ class FNatsTornadoServer(FServer):
     @deprecated
     def __init__(self,
                  nats_client,
-                 subject,
+                 subjects,
                  max_missed_heartbeats,
                  processor_factory,
                  transport_factory,
@@ -54,7 +54,8 @@ class FNatsTornadoServer(FServer):
             protocol_factory: FProtocolFactory
         """
         self._nats_client = nats_client
-        self._subject = subject
+        self._subjects = [subjects] if isinstance(subjects, basestring) \
+            else subjects
         self._heartbeat_subject = new_inbox()
         self._heartbeat_interval = heartbeat_interval
         self._max_missed_heartbeats = max_missed_heartbeats
@@ -65,19 +66,22 @@ class FNatsTornadoServer(FServer):
         self._clients_lock = Lock()
         self._clients = {}
         self._stateless_server = FStatelessNatsTornadoServer(
-            nats_client, subject, processor_factory.get_processor(None),
+            nats_client, "", processor_factory.get_processor(None),
             protocol_factory)
+        self._sids = []
 
     @gen.coroutine
     def serve(self):
         """Subscribe to provided subject and listen on "rpc" queue."""
         logger.debug("Starting Frugal NATS Server...")
 
-        self._sid = yield self._nats_client.subscribe(
-            self._subject,
-            _QUEUE,
-            self._on_message_callback
-        )
+        self._sids = [
+            (yield self._nats_client.subscribe(
+                subject,
+                _QUEUE,
+                self._on_message_callback
+            )) for subject in self._subjects
+        ]
 
         if self._heartbeat_interval > 0:
             self._heartbeater = ioloop.PeriodicCallback(
@@ -94,6 +98,9 @@ class FNatsTornadoServer(FServer):
             for _, client in self._clients.iteritems():
                 yield client.kill()
             self._clients.clear()
+
+        for sid in self._sids:
+            yield self._nats_client.unsubscribe(sid)
 
         if self._heartbeater.is_running():
             self._heartbeater.stop()

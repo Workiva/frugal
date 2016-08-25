@@ -35,17 +35,26 @@ class ItsAnEnum:
     FIRST = 2
     SECOND = 3
     THIRD = 4
+    fourth = 5
+    Fifth = 6
+    sIxItH = 7
 
     _VALUES_TO_NAMES = {
         2: "FIRST",
         3: "SECOND",
         4: "THIRD",
+        5: "fourth",
+        6: "Fifth",
+        7: "sIxItH",
     }
 
     _NAMES_TO_VALUES = {
         "FIRST": 2,
         "SECOND": 3,
         "THIRD": 4,
+        "fourth": 5,
+        "Fifth": 6,
+        "sIxItH": 7,
     }
 
 class TestBase:
