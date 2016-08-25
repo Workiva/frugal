@@ -15,6 +15,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 
+import static com.workiva.frugal.transport.FNatsTransport.NATS_MAX_MESSAGE_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
@@ -99,7 +100,7 @@ public class FNatsTransportTest {
         when(conn.subscribe(any(String.class), any(MessageHandler.class))).thenReturn(sub);
         transport.open();
 
-        transport.write(new byte[TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE + 1]);
+        transport.write(new byte[NATS_MAX_MESSAGE_SIZE + 1]);
     }
 
     @Test

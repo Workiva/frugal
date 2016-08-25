@@ -1,9 +1,7 @@
 package common
 
 import (
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/Workiva/frugal/lib/go"
@@ -16,7 +14,6 @@ type printingHandler struct{}
 
 // Prints "testVoid()" and returns nothing.
 func (p *printingHandler) TestVoid(ctx *frugal.FContext) (err error) {
-	fmt.Println("testVoid()")
 	return nil
 }
 
@@ -27,7 +24,6 @@ func (p *printingHandler) TestVoid(ctx *frugal.FContext) (err error) {
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestString(ctx *frugal.FContext, thing string) (r string, err error) {
-	fmt.Printf("testString(\"%s\")\n", thing)
 	return thing, nil
 }
 
@@ -38,7 +34,6 @@ func (p *printingHandler) TestString(ctx *frugal.FContext, thing string) (r stri
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestBool(ctx *frugal.FContext, thing bool) (r bool, err error) {
-	fmt.Printf("testBool(%t)\n", thing)
 	return thing, nil
 }
 
@@ -49,7 +44,6 @@ func (p *printingHandler) TestBool(ctx *frugal.FContext, thing bool) (r bool, er
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestByte(ctx *frugal.FContext, thing int8) (r int8, err error) {
-	fmt.Printf("testByte(%d)\n", thing)
 	return thing, nil
 }
 
@@ -60,7 +54,6 @@ func (p *printingHandler) TestByte(ctx *frugal.FContext, thing int8) (r int8, er
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestI32(ctx *frugal.FContext, thing int32) (r int32, err error) {
-	fmt.Printf("testI32(%d)\n", thing)
 	return thing, nil
 }
 
@@ -71,7 +64,6 @@ func (p *printingHandler) TestI32(ctx *frugal.FContext, thing int32) (r int32, e
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestI64(ctx *frugal.FContext, thing int64) (r int64, err error) {
-	fmt.Printf("testI64(%d)\n", thing)
 	return thing, nil
 }
 
@@ -82,7 +74,6 @@ func (p *printingHandler) TestI64(ctx *frugal.FContext, thing int64) (r int64, e
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestDouble(ctx *frugal.FContext, thing float64) (r float64, err error) {
-	fmt.Printf("testDouble(%f)\n", thing)
 	return thing, nil
 }
 
@@ -93,7 +84,6 @@ func (p *printingHandler) TestDouble(ctx *frugal.FContext, thing float64) (r flo
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestBinary(ctx *frugal.FContext, thing []byte) (r []byte, err error) {
-	fmt.Printf("testBinary(%s)\n", hex.EncodeToString(thing))
 	return thing, nil
 }
 
@@ -104,7 +94,6 @@ func (p *printingHandler) TestBinary(ctx *frugal.FContext, thing []byte) (r []by
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestStruct(ctx *frugal.FContext, thing *Xtruct) (r *Xtruct, err error) {
-	fmt.Printf("testStruct({\"%s\", %d, %d, %d})\n", thing.StringThing, thing.ByteThing, thing.I32Thing, thing.I64Thing)
 	return thing, err
 }
 
@@ -115,8 +104,6 @@ func (p *printingHandler) TestStruct(ctx *frugal.FContext, thing *Xtruct) (r *Xt
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestNest(ctx *frugal.FContext, nest *Xtruct2) (r *Xtruct2, err error) {
-	thing := nest.StructThing
-	fmt.Printf("testNest({%d, {\"%s\", %d, %d, %d}, %d})\n", nest.ByteThing, thing.StringThing, thing.ByteThing, thing.I32Thing, thing.I64Thing, nest.I32Thing)
 	return nest, nil
 }
 
@@ -128,17 +115,6 @@ func (p *printingHandler) TestNest(ctx *frugal.FContext, nest *Xtruct2) (r *Xtru
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestMap(ctx *frugal.FContext, thing map[int32]int32) (r map[int32]int32, err error) {
-	fmt.Printf("testMap({")
-	first := true
-	for k, v := range thing {
-		if first {
-			first = false
-		} else {
-			fmt.Printf(", ")
-		}
-		fmt.Printf("%d => %d", k, v)
-	}
-	fmt.Printf("})\n")
 	return thing, nil
 }
 
@@ -150,17 +126,6 @@ func (p *printingHandler) TestMap(ctx *frugal.FContext, thing map[int32]int32) (
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestStringMap(ctx *frugal.FContext, thing map[string]string) (r map[string]string, err error) {
-	fmt.Printf("testStringMap({")
-	first := true
-	for k, v := range thing {
-		if first {
-			first = false
-		} else {
-			fmt.Printf(", ")
-		}
-		fmt.Printf("%s => %s", k, v)
-	}
-	fmt.Printf("})\n")
 	return thing, nil
 }
 
@@ -172,17 +137,6 @@ func (p *printingHandler) TestStringMap(ctx *frugal.FContext, thing map[string]s
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestSet(ctx *frugal.FContext, thing map[int32]bool) (r map[int32]bool, err error) {
-	fmt.Printf("testSet({")
-	first := true
-	for k := range thing {
-		if first {
-			first = false
-		} else {
-			fmt.Printf(", ")
-		}
-		fmt.Printf("%d", k)
-	}
-	fmt.Printf("})\n")
 	return thing, nil
 }
 
@@ -194,14 +148,6 @@ func (p *printingHandler) TestSet(ctx *frugal.FContext, thing map[int32]bool) (r
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestList(ctx *frugal.FContext, thing []int32) (r []int32, err error) {
-	fmt.Printf("testList({")
-	for i, v := range thing {
-		if i != 0 {
-			fmt.Printf(", ")
-		}
-		fmt.Printf("%d", v)
-	}
-	fmt.Printf("})\n")
 	return thing, nil
 }
 
@@ -212,7 +158,6 @@ func (p *printingHandler) TestList(ctx *frugal.FContext, thing []int32) (r []int
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestEnum(ctx *frugal.FContext, thing Numberz) (r Numberz, err error) {
-	fmt.Printf("testEnum(%d)\n", thing)
 	return thing, nil
 }
 
@@ -223,7 +168,6 @@ func (p *printingHandler) TestEnum(ctx *frugal.FContext, thing Numberz) (r Numbe
 // Parameters:
 //  - Thing
 func (p *printingHandler) TestTypedef(ctx *frugal.FContext, thing UserId) (r UserId, err error) {
-	fmt.Printf("testTypedef(%d)\n", thing)
 	return thing, nil
 }
 
@@ -235,8 +179,6 @@ func (p *printingHandler) TestTypedef(ctx *frugal.FContext, thing UserId) (r Use
 // Parameters:
 //  - Hello
 func (p *printingHandler) TestMapMap(ctx *frugal.FContext, hello int32) (r map[int32]map[int32]int32, err error) {
-	fmt.Printf("testMapMap(%d)\n", hello)
-
 	r = map[int32]map[int32]int32{
 		-4: {-4: -4, -3: -3, -2: -2, -1: -1},
 		4:  {4: 4, 3: 3, 2: 2, 1: 1},
@@ -257,15 +199,12 @@ func (p *printingHandler) TestMapMap(ctx *frugal.FContext, hello int32) (r map[i
 // Parameters:
 //  - Argument
 func (p *printingHandler) TestInsanity(ctx *frugal.FContext, argument *Insanity) (r map[UserId]map[Numberz]*Insanity, err error) {
-	fmt.Printf("testInsanity()\n")
 	r = make(map[UserId]map[Numberz]*Insanity)
 	r[1] = map[Numberz]*Insanity{
 		2: argument,
 		3: argument,
 	}
-	r[2] = map[Numberz]*Insanity{
-		6: NewInsanity(),
-	}
+	r[2] = map[Numberz]*Insanity{}
 	return
 }
 
@@ -287,7 +226,6 @@ func (p *printingHandler) TestInsanity(ctx *frugal.FContext, argument *Insanity)
 //  - Arg4
 //  - Arg5
 func (p *printingHandler) TestMulti(ctx *frugal.FContext, arg0 int8, arg1 int32, arg2 int64, arg3 map[int16]string, arg4 Numberz, arg5 UserId) (r *Xtruct, err error) {
-	fmt.Printf("testMulti()\n")
 	r = NewXtruct()
 
 	r.StringThing = "Hello2"
@@ -306,7 +244,6 @@ func (p *printingHandler) TestMulti(ctx *frugal.FContext, arg0 int8, arg1 int32,
 // Parameters:
 //  - Arg
 func (p *printingHandler) TestException(ctx *frugal.FContext, arg string) (err error) {
-	fmt.Printf("testException(%s)\n", arg)
 	switch arg {
 	case "Xception":
 		e := NewXception()
@@ -314,7 +251,6 @@ func (p *printingHandler) TestException(ctx *frugal.FContext, arg string) (err e
 		e.Message = arg
 		return e
 	case "TException":
-		fmt.Println(errors.New("Just TException"))
 		return errors.New("Just TException")
 	}
 	return
@@ -331,7 +267,6 @@ func (p *printingHandler) TestException(ctx *frugal.FContext, arg string) (err e
 //  - Arg0
 //  - Arg1
 func (p *printingHandler) TestMultiException(ctx *frugal.FContext, arg0 string, arg1 string) (r *Xtruct, err error) {
-	fmt.Printf("testMultiException(%s, %s)\n", arg0, arg1)
 	switch arg0 {
 
 	case "Xception":
@@ -360,8 +295,6 @@ func (p *printingHandler) TestMultiException(ctx *frugal.FContext, arg0 string, 
 // Parameters:
 //  - SecondsToSleep
 func (p *printingHandler) TestOneway(ctx *frugal.FContext, secondsToSleep int32) (err error) {
-	fmt.Printf("testOneway(%d): Sleeping...\n", secondsToSleep)
 	time.Sleep(time.Second * time.Duration(secondsToSleep))
-	fmt.Printf("testOneway(%d): done sleeping!\n", secondsToSleep)
 	return
 }

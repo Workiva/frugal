@@ -340,16 +340,15 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 	contents += fmt.Sprintf("type %s int64\n\n", eName)
 	contents += "const (\n"
 	for _, field := range enum.Values {
-		contents += fmt.Sprintf("\t%s_%s %s = %d\n", eName, title(field.Name), eName, field.Value)
+		contents += fmt.Sprintf("\t%s_%s %s = %d\n", eName, field.Name, eName, field.Value)
 	}
 	contents += ")\n\n"
 
 	contents += fmt.Sprintf("func (p %s) String() string {\n", eName)
 	contents += "\tswitch p {\n"
 	for _, field := range enum.Values {
-		fName := title(field.Name)
-		contents += fmt.Sprintf("\tcase %s_%s:\n", eName, fName)
-		contents += fmt.Sprintf("\t\treturn \"%s\"\n", fName)
+		contents += fmt.Sprintf("\tcase %s_%s:\n", eName, field.Name)
+		contents += fmt.Sprintf("\t\treturn \"%s\"\n", field.Name)
 	}
 	contents += "\t}\n"
 	contents += "\treturn \"<UNSET>\"\n"
@@ -358,9 +357,8 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 	contents += fmt.Sprintf("func %sFromString(s string) (%s, error) {\n", eName, eName)
 	contents += "\tswitch s {\n"
 	for _, field := range enum.Values {
-		fName := title(field.Name)
-		contents += fmt.Sprintf("\tcase \"%s\":\n", fName)
-		contents += fmt.Sprintf("\t\treturn %s_%s, nil\n", eName, fName)
+		contents += fmt.Sprintf("\tcase \"%s\":\n", field.Name)
+		contents += fmt.Sprintf("\t\treturn %s_%s, nil\n", eName, field.Name)
 	}
 	contents += "\t}\n"
 	contents += fmt.Sprintf("\treturn %s(0), fmt.Errorf(\"not a valid %s string\")\n", eName, eName)

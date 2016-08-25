@@ -1,7 +1,6 @@
 package com.workiva.frugal.protocol;
 
 import com.workiva.frugal.exception.FException;
-import com.workiva.frugal.internal.Headers;
 import org.apache.thrift.TException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,7 +35,7 @@ public class FClientRegistryTest {
      * Returns a mock message frame.
      */
     private byte[] mockFrame(FContext context) throws TException, UnsupportedEncodingException {
-        byte[] headers = Headers.encode(context.getRequestHeaders());
+        byte[] headers = HeaderUtils.encode(context.getRequestHeaders());
         byte[] message = "hello world".getBytes("UTF-8");
         byte[] frame = new byte[headers.length + message.length];
         System.arraycopy(headers, 0, frame, 0, headers.length);
@@ -180,7 +179,7 @@ public class FClientRegistryTest {
      * <p>
      * Note:
      * This test may unfairly synchronize consumers by pulling work from the same queue.
-     * However, a shared-queue is indicative of real-world use (see {@link com.workiva.frugal.transport.FMuxTransport}).
+     * However, a shared-queue is indicative of real-world use.
      */
     @Test
     public void testRegistryIsThreadsafe() throws TException {

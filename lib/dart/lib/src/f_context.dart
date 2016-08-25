@@ -37,7 +37,10 @@ class FContext {
     if (correlationId == "") {
       correlationId = _generateCorrelationId();
     }
-    _requestHeaders = {_cid: correlationId, _opid: "0",};
+    _requestHeaders = {
+      _cid: correlationId,
+      _opid: "0",
+    };
     _responseHeaders = {};
   }
 

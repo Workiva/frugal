@@ -1,35 +1,3 @@
-name: go-integration-tests
-
-run:
-  when-branch-name-is:
-    - .+
-
-contact: messaging@workiva.com
-
-# Link to image definition: https://github.com/Workiva/skynet-images/tree/ea53c331b4b7dddc1f617588d901f64f6050764a
-image: "drydock.workiva.org/workiva/skynet-images:51355"
-
-also-run:
-  Workiva/messaging-sdk:go-tests:
-    on-pull-request: true
-  Workiva/messaging-sdk:java-tests:
-    on-pull-request: true
-
-env:
-  - GORACE="halt_on_errors=1"
-
-scripts:
-  - ./scripts/skynet/run_go_integration_tests_skynet.sh
-
-timeout: moderate
-
-test-reports:
-  - /testing/reports
-
-
----
-
-# TODO: change test/integration/test.py line 100 when this configuration is no longer needed
 name: cross
 
 run:
@@ -38,13 +6,11 @@ run:
 
 contact: messaging@workiva.com
 
-# https://github.com/Workiva/skynet-images/tree/ea53c331b4b7dddc1f617588d901f64f6050764a
-image: "drydock.workiva.org/workiva/skynet-images:51355"
-
+# https://github.com/Workiva/messaging-docker-images/commit/6561ce2b439cf8081838d879fdfc5d301a14c6cb
+image: drydock.workiva.org/workiva/messaging-docker-images:69150
 
 scripts:
   - ./scripts/skynet/run_cross_skynet.sh
-
 
 timeout: long
 
@@ -52,8 +18,6 @@ artifacts:
   - /testing/artifacts
 
 ---
-
-size: large
 
 name: cross-gen_with_thrift
 
@@ -63,8 +27,8 @@ run:
 
 contact: messaging@workiva.com
 
-# https://github.com/Workiva/skynet-images/tree/ea53c331b4b7dddc1f617588d901f64f6050764a
-image: "drydock.workiva.org/workiva/skynet-images:51355"
+# https://github.com/Workiva/messaging-docker-images/commit/6561ce2b439cf8081838d879fdfc5d301a14c6cb
+image: drydock.workiva.org/workiva/messaging-docker-images:69150
 
 scripts:
   - ./scripts/skynet/run_cross_skynet.sh -gen_with_thrift

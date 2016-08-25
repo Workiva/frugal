@@ -20,9 +20,11 @@ import java.io.IOException;
  */
 public class FNatsTransport extends FTransport {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(FNatsTransport.class);
+
     private static final int FRAME_BUFFER_SIZE = 64;
     public static final int NATS_MAX_MESSAGE_SIZE = 1024 * 1024;
-    private static final Logger LOGGER = LoggerFactory.getLogger(FNatsTransport.class);
+    public static final String FRUGAL_PREFIX = "frugal.";
 
     private final Connection conn;
     private final String subject;
@@ -167,7 +169,7 @@ public class FNatsTransport extends FTransport {
         }
     }
 
-    private static TTransportException getClosedConditionException(Connection conn, String prefix) {
+    protected static TTransportException getClosedConditionException(Connection conn, String prefix) {
         if (conn.getState() != Constants.ConnState.CONNECTED) {
             return new TTransportException(TTransportException.NOT_OPEN,
                     String.format("%s NATS client not connected (has status %s)", prefix, conn.getState().name()));

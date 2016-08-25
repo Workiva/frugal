@@ -148,7 +148,7 @@ func (a *AsyncIOGenerator) generateClient(service *parser.Service) string {
 func (a *AsyncIOGenerator) generateClientMethod(method *parser.Method) string {
 	contents := ""
 	contents += a.generateMethodSignature(method)
-	contents += tabtab + fmt.Sprintf("await self._methods['%s']([ctx%s])\n\n",
+	contents += tabtab + fmt.Sprintf("return await self._methods['%s']([ctx%s])\n\n",
 		method.Name, a.generateClientArgs(method.Arguments))
 
 	if method.Oneway {

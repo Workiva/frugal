@@ -58,17 +58,22 @@ class TestFNatsTornadoServer(AsyncTestCase):
 
         yield self.server.serve()
 
-        self.assertEquals(123, self.server._sid)
+        self.assertEquals([123], self.server._sids)
 
     @gen_test
     def test_stop(self):
         mock_heartbeater = mock.Mock()
         mock_heartbeater.is_running.return_value = True
         self.server._heartbeater = mock_heartbeater
+        self.server._sids = [123]
+        f = concurrent.Future()
+        f.set_result(None)
+        self.mock_nats_client.unsubscribe.return_value = f
 
         yield self.server.stop()
 
         mock_heartbeater.stop.assert_called_with()
+        self.mock_nats_client.unsubscribe.assert_called_once_with(123)
 
     def test_set_and_get_high_watermark(self):
         self.server.set_high_watermark(1234)

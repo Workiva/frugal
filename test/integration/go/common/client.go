@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 
+	"net/http"
+
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/Workiva/frugal/example/go/gen-go/event"
 	"github.com/Workiva/frugal/lib/go"
@@ -24,9 +26,8 @@ func StartClient(
 	transport string,
 	protocol string,
 	pubSub chan bool,
-	sent chan bool) (client *frugaltest.FFrugalTestClient, err error) {
-
-	hostPort := fmt.Sprintf("%s:%d", host, port)
+	sent chan bool,
+	clientMiddlewareCalled chan bool) (client *frugaltest.FFrugalTestClient, err error) {
 
 	var protocolFactory thrift.TProtocolFactory
 	switch protocol {
@@ -41,36 +42,10 @@ func StartClient(
 	default:
 		return nil, fmt.Errorf("Invalid protocol specified %s", protocol)
 	}
-	if debugClientProtocol {
-		protocolFactory = thrift.NewTDebugProtocolFactory(protocolFactory, "client:")
-	}
 
-	var trans thrift.TTransport
-	trans, err = thrift.NewTSocket(hostPort)
-	if err != nil {
-		return nil, err
-	}
-	switch transport {
-	case "http":
-		trans, err = thrift.NewTHttpClient(fmt.Sprintf("http://%s/service", hostPort))
-		if err != nil {
-			return nil, err
-		}
-	case "framed":
-		trans = thrift.NewTFramedTransport(trans)
-	case "buffered":
-		trans = thrift.NewTBufferedTransport(trans, 8192)
-	case "":
-	default:
-		return nil, fmt.Errorf("Invalid transport specified %s", transport)
-	}
+	fProtocolFactory := frugal.NewFProtocolFactory(protocolFactory)
 
-	fTransportFactory := frugal.NewFMuxTransportFactory(2)
-	fTransport := fTransportFactory.GetTransport(trans)
-
-	if err := fTransport.Open(); err != nil {
-		log.Fatal(err)
-	}
+	conn := getNatsConn()
 
 	/*
 		Pub/Sub Test
@@ -80,7 +55,6 @@ func StartClient(
 	go func() {
 		<-pubSub
 
-		conn, err := getNatsConn()
 		if err != nil {
 			panic(err)
 		}
@@ -98,12 +72,12 @@ func StartClient(
 		subscriber := event.NewEventsSubscriber(provider)
 		// TODO: Document SubscribeEventCreated "user" cannot contain spaces
 		_, err = subscriber.SubscribeEventCreated(fmt.Sprintf("%d-response", port), func(ctx *frugal.FContext, e *event.Event) {
-			fmt.Printf("Response received %v\n", e)
+			fmt.Printf(" Response received %v\n", e)
 			close(resp)
 		})
 		ctx := frugal.NewFContext("Call")
 		event := &event.Event{Message: "Sending call"}
-		fmt.Println("Publishing...")
+		fmt.Print("Publishing... ")
 		if err := publisher.PublishEventCreated(ctx, fmt.Sprintf("%d-call", port), event); err != nil {
 			panic(err)
 		}
@@ -117,8 +91,30 @@ func StartClient(
 		close(sent)
 	}()
 
-	fProtocolFactory := frugal.NewFProtocolFactory(protocolFactory)
+	// RPC client
+	var trans frugal.FTransport
+	switch transport {
+	case "stateless", "stateless-stateful":
+		trans = frugal.NewFNatsTransport(conn, fmt.Sprintf("%d", port), "")
+	case "http":
+		trans = frugal.NewHttpFTransportBuilder(&http.Client{}, fmt.Sprintf("http://localhost:%d", port)).Build()
+	case "stateful": // @Deprecated TODO: Remove in 2.0
+		fTransportFactory := frugal.NewFMuxTransportFactory(2)
+		natsTransport := frugal.NewNatsServiceTTransport(
+			conn,
+			fmt.Sprintf("%d", port),
+			time.Second*10,
+			5,
+		)
+		trans = fTransportFactory.GetTransport(natsTransport)
+	default:
+		return nil, fmt.Errorf("Invalid transport specified %s", transport)
+	}
 
-	client = frugaltest.NewFFrugalTestClient(fTransport, fProtocolFactory)
+	if err := trans.Open(); err != nil {
+		return nil, fmt.Errorf("Error opening transport %s", err)
+	}
+
+	client = frugaltest.NewFFrugalTestClient(trans, fProtocolFactory, clientLoggingMiddleware(clientMiddlewareCalled))
 	return
 }

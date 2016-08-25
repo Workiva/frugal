@@ -24,11 +24,6 @@ mv $THRIFT $ROOT/bin/thrift
 chmod 0755 $ROOT/bin/thrift
 export PATH=$PATH:$ROOT/bin
 
-# JAVA
-# Compile library code
-cd $ROOT/lib/java && mvn checkstyle:check && mvn clean verify
-mv target/frugal-*.jar $ROOT
-
 # GO
 # Compile library code
 cd $ROOT/lib/go
@@ -36,6 +31,18 @@ godep restore
 go build
 # Run the tests
 go test -race
+
+# Run the generator tests
+cd $ROOT
+godep restore
+go build -o frugal
+go test -race ./test
+rm -rf ./test/out
+
+# JAVA
+# Compile library code
+cd $ROOT/lib/java && mvn checkstyle:check && mvn clean verify -DskipITs
+mv target/frugal-*.jar $ROOT
 
 # DART
 # Wrap up package for pub
@@ -71,9 +78,3 @@ make install
 mv dist/frugal-*.tar.gz $ROOT
 deactivate
 
-# Run the generator tests
-cd $ROOT
-godep restore
-go build -o frugal
-go test -race ./test
-rm -rf ./test/out

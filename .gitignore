@@ -4,6 +4,7 @@ target/
 *.iml
 .idea
 *.pyc
+py3env
 
 
 # Do not commit the following directories created by pub.

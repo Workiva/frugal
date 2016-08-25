@@ -36,8 +36,8 @@ public class FBaseProcessor implements FProcessor {
             try {
                 processor.process(ctx, iprot, oprot);
             } catch (Exception e) {
-                LOGGER.warn("Error processing request with correlationID "
-                        + ctx.getCorrelationId() + ": " + e.getMessage());
+                LOGGER.warn("User handler code threw unhandled exception on request with correlation id "
+                        + ctx.getCorrelationId(), e);
                 throw e;
             }
             return;

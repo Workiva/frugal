@@ -94,7 +94,10 @@ struct TestingDefaults {
 enum ItsAnEnum {
     FIRST = 2,
     SECOND,
-    THIRD
+    THIRD,
+    fourth,
+    Fifth,
+    sIxItH,
 }
 
 typedef string t1_string;

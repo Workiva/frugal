@@ -4,7 +4,6 @@ import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.transport.FBoundedMemoryBuffer;
 import com.workiva.frugal.transport.FTransport;
-import com.workiva.frugal.transport.TNatsServiceTransport;
 import com.workiva.frugal.util.BlockingRejectedExecutionHandler;
 import com.workiva.frugal.util.ProtocolUtils;
 import io.nats.client.Connection;
@@ -24,6 +23,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import static com.workiva.frugal.transport.FNatsTransport.NATS_MAX_MESSAGE_SIZE;
 
 /**
  * An implementation of FServer which uses NATS as the underlying transport.
@@ -286,7 +287,7 @@ public class FStatelessNatsServer implements FServer {
             byte[] frame = Arrays.copyOfRange(frameBytes, 4, frameBytes.length);
             TTransport input = new TMemoryInputTransport(frame);
             // Buffer 1MB - 4 bytes since frame size is copied directly.
-            FBoundedMemoryBuffer output = new FBoundedMemoryBuffer(TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE - 4);
+            FBoundedMemoryBuffer output = new FBoundedMemoryBuffer(NATS_MAX_MESSAGE_SIZE - 4);
             try {
                 processor.process(inputProtoFactory.getProtocol(input), outputProtoFactory.getProtocol(output));
             } catch (TException e) {

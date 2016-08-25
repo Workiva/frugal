@@ -16,6 +16,6 @@ setup(
     extras_require={
         'tornado': ["nats-client==0.2.4"],
         'asyncio': ["asyncio-nats-client==0.3.1", "aiohttp==0.22.3"],
-        'gae': ["webapp2====2.5.2"],
+        'gae': ["webapp2==2.5.2"],
     }
 )

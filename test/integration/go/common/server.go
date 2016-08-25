@@ -1,8 +1,9 @@
 package common
 
 import (
-	"flag"
 	"fmt"
+	"net/http"
+	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/Workiva/frugal/example/go/gen-go/event"
@@ -10,22 +11,12 @@ import (
 	"github.com/Workiva/frugal/test/integration/go/gen/frugaltest"
 )
 
-var (
-	debugServerProtocol bool
-)
-
-func init() {
-	flag.BoolVar(&debugServerProtocol, "debug_server_protocol", false, "turn server protocol trace on")
-}
-
 func StartServer(
 	host string,
 	port int64,
 	transport string,
 	protocol string,
-	handler frugaltest.FFrugalTest) (srv *frugal.FSimpleServer, err error) {
-
-	hostPort := fmt.Sprintf("%s:%d", host, port)
+	handler frugaltest.FFrugalTest) {
 
 	var protocolFactory thrift.TProtocolFactory
 	switch protocol {
@@ -36,39 +27,18 @@ func StartServer(
 	case "binary":
 		protocolFactory = thrift.NewTBinaryProtocolFactoryDefault()
 	default:
-		return nil, fmt.Errorf("Invalid protocol specified %s", protocol)
+		panic(fmt.Errorf("Invalid protocol specified %s", protocol))
 	}
 
-	if debugServerProtocol {
-		protocolFactory = thrift.NewTDebugProtocolFactory(protocolFactory, "server:")
-	}
-
-	var serverTransport thrift.TServerTransport
-	serverTransport, err = thrift.NewTServerSocket(hostPort)
-	if err != nil {
-		return nil, err
-	}
-
-	fTransportFactory := frugal.NewFMuxTransportFactory(2)
-	processor := frugaltest.NewFFrugalTestProcessor(handler)
-	server := frugal.NewFSimpleServerFactory5(
-		frugal.NewFProcessorFactory(processor),
-		serverTransport,
-		fTransportFactory,
-		frugal.NewFProtocolFactory(protocolFactory))
-
-	fmt.Println("Starting the Go server on port %d", port)
-	go server.Serve()
+	conn := getNatsConn()
+	var err error
 
 	/*
 		Subscriber for Pub/Sub tests
 		Subscribe to events, publish response upon receipt
 	*/
 	go func() {
-		conn, err := getNatsConn()
-		if err != nil {
-			panic(err)
-		}
+
 		factory := frugal.NewFNatsScopeTransportFactory(conn)
 		provider := frugal.NewFScopeProvider(factory, frugal.NewFProtocolFactory(protocolFactory))
 		subscriber := event.NewEventsSubscriber(provider)
@@ -93,5 +63,60 @@ func StartServer(
 		}
 	}()
 
-	return server, nil
+	hostPort := fmt.Sprintf("%s:%d", host, port)
+
+	/*
+		Server for RPC tests
+		Server handler is defined in printing_handler.go
+	*/
+	processor := frugaltest.NewFFrugalTestProcessor(handler, serverLoggingMiddleware())
+	var server frugal.FServer
+	switch transport {
+	case "stateless":
+		builder := frugal.NewFNatsServerBuilder(
+			conn,
+			processor,
+			frugal.NewFProtocolFactory(protocolFactory),
+			fmt.Sprintf("%d", port))
+		server = builder.Build()
+		// Start http server
+		// Healthcheck used in the cross language runner to check for server availability
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+		go http.ListenAndServe(hostPort, nil)
+	case "http":
+		http.HandleFunc("/",
+			frugal.NewFrugalHandlerFunc(processor,
+				frugal.NewFProtocolFactory(protocolFactory),
+				frugal.NewFProtocolFactory(protocolFactory)))
+		server = &httpServer{hostPort: hostPort}
+	case "stateful", "stateless-stateful": // @Deprecated TODO: Remove in 2.0
+		fTransportFactory := frugal.NewFMuxTransportFactory(2)
+		server = frugal.NewFNatsServer(
+			conn,
+			fmt.Sprintf("%d", port),
+			time.Minute,
+			processor,
+			fTransportFactory,
+			frugal.NewFProtocolFactory(protocolFactory),
+		)
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+		go http.ListenAndServe(hostPort, nil)
+	}
+	fmt.Println("Starting %s server...", transport)
+	server.Serve()
+}
+
+type httpServer struct {
+	hostPort string
+}
+
+func (h *httpServer) Serve() error {
+	return http.ListenAndServe(h.hostPort, http.DefaultServeMux)
+}
+
+func (h *httpServer) Stop() error {
+	return nil
+}
+
+func (h *httpServer) SetHighWatermark(_ time.Duration) {
 }
