@@ -44,6 +44,7 @@ public class FHttpRequestHandlerTest {
 
     @Test
     public void testRequestTooLongIfExceedsSizeLimit() throws IOException, HttpException {
+        // given
         FProcessor processor = mock(FBaseProcessor.class);
         FProtocolFactory protocolFactory = mock(FProtocolFactory.class);
         FHttpRequestHandler requestHandler = FHttpRequestHandler
@@ -52,14 +53,17 @@ public class FHttpRequestHandlerTest {
 
         doReturn(new ByteArrayEntity("Hello World".getBytes())).when(mockRequest).getEntity();
 
+        // when
         requestHandler.handle(mockRequest, mockResponse, mockContext);
 
+        // then
         verify(mockResponse).setStatusCode(413);
         verify(mockResponse).setReasonPhrase("PAYLOAD TOO LARGE");
     }
 
     @Test
     public void testForbiddenIfResponseExceedsSizeLimit() throws IOException, HttpException {
+        // given
         FProcessor processor = mock(FBaseProcessor.class);
         FProtocolFactory protocolFactory = mock(FProtocolFactory.class);
         FHttpRequestHandler requestHandler = FHttpRequestHandler
@@ -70,14 +74,17 @@ public class FHttpRequestHandlerTest {
         doReturn(new BasicHeader(HttpHeaders.X_FRUGAL_PAYLOAD_LIMIT_HEADER, "1"))
                 .when(mockRequest).getFirstHeader(HttpHeaders.X_FRUGAL_PAYLOAD_LIMIT_HEADER);
 
+        // when
         requestHandler.handle(mockRequest, mockResponse, mockContext);
 
+        // then
         verify(mockResponse).setStatusCode(403);
         verify(mockResponse).setReasonPhrase("FORBIDDEN");
     }
 
     @Test
     public void testSuccessResponse() throws IOException, HttpException {
+        // given
         FProcessor processor = mock(FBaseProcessor.class);
         FProtocolFactory protocolFactory = mock(FProtocolFactory.class);
         FHttpRequestHandler requestHandler = FHttpRequestHandler
@@ -86,8 +93,10 @@ public class FHttpRequestHandlerTest {
         doReturn(new ByteArrayEntity("Hello World".getBytes()))
                 .when(mockRequest).getEntity();
 
+        // when
         requestHandler.handle(mockRequest, mockResponse, mockContext);
 
+        // then
         verify(mockResponse).setStatusCode(200);
         verify(mockResponse).setReasonPhrase("OK");
         verify(mockResponse).setHeader(HttpHeaders.ACCEPT_HEADER, HttpHeaders.APPLICATION_X_FRUGAL_HEADER);
