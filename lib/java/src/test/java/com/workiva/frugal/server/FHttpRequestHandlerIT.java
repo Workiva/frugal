@@ -29,6 +29,7 @@ import java.net.SocketTimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 /**
@@ -124,14 +125,18 @@ public class FHttpRequestHandlerIT {
         FProtocolFactory protocolFactory = new FProtocolFactory(new TBinaryProtocol.Factory());
         FStore.Client storeClient = new FStore.Client(transport, protocolFactory);
 
-        IntStream.range(1, 1000).parallel().forEach(i -> {
-            try {
-                storeClient.buyAlbum(new FContext("corr-id-1"), "ASIN-1290AIUBOA89", "ACCOUNT-12345");
-                storeClient.enterAlbumGiveaway(new FContext("corr-id-2"), "kevin@workiva.com", "Kevin");
-            } catch (Exception e) {
-                fail(e.getMessage());
-            }
-        });
+        Album album = storeClient.buyAlbum(new FContext("corr-id-1"), "ASIN-1290AIUBOA89", "ACCOUNT-12345");
+        assertEquals(album.getASIN(), "ASIN-1290AIUBOA89");
+        assertEquals(album.getDuration(), 1200, 0.01);
+        Track track = album.getTracks().get(0);
+        assertEquals(track.getTitle(), "Comme des enfants");
+        assertEquals(track.getArtist(), "Coeur de pirate");
+        assertEquals(track.getPublisher(), "Grosse Boîte");
+        assertEquals(track.getComposer(), "Béatrice Martin");
+        assertEquals(track.getDuration(), 169, 0.01);
+        assertEquals(track.getPro(), PerfRightsOrg.ASCAP);
+
+        storeClient.enterAlbumGiveaway(new FContext("corr-id-2"), "kevin@workiva.com", "Kevin");
 
         httpClient.close();
         transport.close();
