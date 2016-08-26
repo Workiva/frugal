@@ -100,7 +100,8 @@ public class FHttpRequestHandlerTest {
         verify(mockResponse).setStatusCode(200);
         verify(mockResponse).setReasonPhrase("OK");
         verify(mockResponse).setHeader(HttpHeaders.ACCEPT_HEADER, HttpHeaders.APPLICATION_X_FRUGAL_HEADER);
-        verify(mockResponse).setHeader(HttpHeaders.CONTENT_TRANSFER_ENCODING_HEADER, HttpHeaders.CONTENT_TRANSFER_ENCODING);
+        verify(mockResponse).setHeader(HttpHeaders.CONTENT_TRANSFER_ENCODING_HEADER,
+                                       HttpHeaders.CONTENT_TRANSFER_ENCODING);
     }
 }
 
