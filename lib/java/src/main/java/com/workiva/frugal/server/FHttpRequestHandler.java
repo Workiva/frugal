@@ -2,7 +2,7 @@ package com.workiva.frugal.server;
 
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocolFactory;
-import com.workiva.frugal.protocol.Headers;
+import com.workiva.frugal.protocol.HttpHeaders;
 import com.workiva.frugal.util.ProtocolUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.Header;
@@ -118,7 +118,7 @@ public class FHttpRequestHandler implements HttpRequestHandler {
             }
 
             // Respond with error if response too large
-            Header payloadLimit = request.getFirstHeader(Headers.X_FRUGAL_PAYLOAD_LIMIT_HEADER);
+            Header payloadLimit = request.getFirstHeader(HttpHeaders.X_FRUGAL_PAYLOAD_LIMIT_HEADER);
             if (payloadLimit != null) {
                 Integer limit = Integer.parseInt(payloadLimit.getValue());
                 if (output.getArray().length > limit) {
@@ -137,11 +137,11 @@ public class FHttpRequestHandler implements HttpRequestHandler {
             // Populate HTTP response.
             response.setStatusCode(HttpStatus.SC_OK);
             response.setReasonPhrase("OK");
-            response.setHeader(Headers.ACCEPT_HEADER, Headers.APPLICATION_X_FRUGAL_HEADER);
-            response.setHeader(Headers.CONTENT_TRANSFER_ENCODING_HEADER, Headers.CONTENT_TRANSFER_ENCODING);
+            response.setHeader(HttpHeaders.ACCEPT_HEADER, HttpHeaders.APPLICATION_X_FRUGAL_HEADER);
+            response.setHeader(HttpHeaders.CONTENT_TRANSFER_ENCODING_HEADER, HttpHeaders.CONTENT_TRANSFER_ENCODING);
             response.setEntity(new StringEntity(Base64.encodeBase64String(outBytes),
-                                                ContentType.create(Headers.APPLICATION_X_FRUGAL_HEADER,
-                                                                   Headers.CONTENT_TYPE)));
+                                                ContentType.create(HttpHeaders.APPLICATION_X_FRUGAL_HEADER,
+                                                                   HttpHeaders.CONTENT_TYPE)));
         }
     }
 

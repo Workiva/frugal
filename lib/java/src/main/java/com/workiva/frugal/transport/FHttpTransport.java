@@ -2,7 +2,7 @@ package com.workiva.frugal.transport;
 
 import com.workiva.frugal.exception.FMessageSizeException;
 
-import com.workiva.frugal.protocol.Headers;
+import com.workiva.frugal.protocol.HttpHeaders;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -172,14 +172,14 @@ public class FHttpTransport extends FTransport {
         String encoded = Base64.encodeBase64String(requestPayload);
         StringEntity requestEntity = new StringEntity(
                 encoded,
-                ContentType.create(Headers.APPLICATION_X_FRUGAL_HEADER, Headers.CONTENT_TYPE));
+                ContentType.create(HttpHeaders.APPLICATION_X_FRUGAL_HEADER, HttpHeaders.CONTENT_TYPE));
 
         // Set headers and payload
         HttpPost request = new HttpPost(url);
-        request.setHeader(Headers.ACCEPT_HEADER, Headers.APPLICATION_X_FRUGAL_HEADER);
-        request.setHeader(Headers.CONTENT_TRANSFER_ENCODING_HEADER, Headers.CONTENT_TRANSFER_ENCODING);
+        request.setHeader(HttpHeaders.ACCEPT_HEADER, HttpHeaders.APPLICATION_X_FRUGAL_HEADER);
+        request.setHeader(HttpHeaders.CONTENT_TRANSFER_ENCODING_HEADER, HttpHeaders.CONTENT_TRANSFER_ENCODING);
         if (responseSizeLimit > 0) {
-            request.setHeader(Headers.X_FRUGAL_PAYLOAD_LIMIT_HEADER, Integer.toString(responseSizeLimit));
+            request.setHeader(HttpHeaders.X_FRUGAL_PAYLOAD_LIMIT_HEADER, Integer.toString(responseSizeLimit));
         }
         request.setEntity(requestEntity);
 

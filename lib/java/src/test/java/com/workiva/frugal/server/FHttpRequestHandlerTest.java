@@ -3,7 +3,7 @@ package com.workiva.frugal.server;
 import com.workiva.frugal.processor.FBaseProcessor;
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocolFactory;
-import com.workiva.frugal.protocol.Headers;
+import com.workiva.frugal.protocol.HttpHeaders;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
@@ -67,8 +67,8 @@ public class FHttpRequestHandlerTest {
 
         doReturn(new ByteArrayEntity("Hello World".getBytes()))
                 .when(mockRequest).getEntity();
-        doReturn(new BasicHeader(Headers.X_FRUGAL_PAYLOAD_LIMIT_HEADER, "1"))
-                .when(mockRequest).getFirstHeader(Headers.X_FRUGAL_PAYLOAD_LIMIT_HEADER);
+        doReturn(new BasicHeader(HttpHeaders.X_FRUGAL_PAYLOAD_LIMIT_HEADER, "1"))
+                .when(mockRequest).getFirstHeader(HttpHeaders.X_FRUGAL_PAYLOAD_LIMIT_HEADER);
 
         requestHandler.handle(mockRequest, mockResponse, mockContext);
 
@@ -90,8 +90,8 @@ public class FHttpRequestHandlerTest {
 
         verify(mockResponse).setStatusCode(200);
         verify(mockResponse).setReasonPhrase("OK");
-        verify(mockResponse).setHeader(Headers.ACCEPT_HEADER, Headers.APPLICATION_X_FRUGAL_HEADER);
-        verify(mockResponse).setHeader(Headers.CONTENT_TRANSFER_ENCODING_HEADER, Headers.CONTENT_TRANSFER_ENCODING);
+        verify(mockResponse).setHeader(HttpHeaders.ACCEPT_HEADER, HttpHeaders.APPLICATION_X_FRUGAL_HEADER);
+        verify(mockResponse).setHeader(HttpHeaders.CONTENT_TRANSFER_ENCODING_HEADER, HttpHeaders.CONTENT_TRANSFER_ENCODING);
     }
 }
 
