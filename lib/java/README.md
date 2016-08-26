@@ -5,11 +5,13 @@ Java library for [Frugal](https://github.com/Workiva/frugal).
 ## Running Tests
 
 Maven is configured to compile a Frugal IDL for use in integration tests.
-To write integration tests, you need to add
-`target/generated-test-sources/frugal` as a source folder to your project.
+In your IDE, you will need to add `target/generated-test-sources/frugal`
+as a source folder to your project.
 
 Integration tests are run during the mvn `integration-test` phase (after
-packaging). To run all unit tests and integration tests.
+packaging).
+
+To run all unit tests and integration tests.
 
 ```bash
 mvn verify
