@@ -118,7 +118,7 @@ public class FHttpRequestHandlerIT {
     }
 
     @Test
-    public void testParallelClients() throws TException, InterruptedException, IOException {
+    public void testClientServerCall() throws TException, InterruptedException, IOException {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         FHttpTransport transport = new FHttpTransport.Builder(httpClient, "http://localhost:8080").build();
         FProtocolFactory protocolFactory = new FProtocolFactory(new TBinaryProtocol.Factory());
