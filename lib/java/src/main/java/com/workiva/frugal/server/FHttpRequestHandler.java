@@ -2,6 +2,7 @@ package com.workiva.frugal.server;
 
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocolFactory;
+import com.workiva.frugal.protocol.Headers;
 import com.workiva.frugal.util.ProtocolUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.Header;
@@ -11,10 +12,8 @@ import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.ProtocolVersion;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicStatusLine;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 import org.apache.http.util.EntityUtils;
@@ -101,8 +100,8 @@ public class FHttpRequestHandler implements HttpRequestHandler {
             // Return error if size is greater than limit
             if ((requestSizeLimit > 0) && (inBytes.length > requestSizeLimit)) {
                 // Exit with correct status
-                response.setStatusLine(new BasicStatusLine(new ProtocolVersion("HTTP", 1, 1),
-                        HttpStatus.SC_REQUEST_TOO_LONG, "PAYLOAD TOO LARGE"));
+                response.setStatusCode(HttpStatus.SC_REQUEST_TOO_LONG);
+                response.setReasonPhrase("PAYLOAD TOO LARGE");
                 return;
             }
 
@@ -113,19 +112,19 @@ public class FHttpRequestHandler implements HttpRequestHandler {
                 processor.process(inputProtoFactory.getProtocol(input), outputProtoFactory.getProtocol(output));
             } catch (TException e) {
                 // Exit with correct status
-                response.setStatusLine(new BasicStatusLine(new ProtocolVersion("HTTP", 1, 1),
-                        HttpStatus.SC_BAD_REQUEST, "BAD REQUEST"));
+                response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+                response.setReasonPhrase("BAD REQUEST");
                 return;
             }
 
             // Respond with error if response too large
-            Header payloadLimit = request.getFirstHeader("X-Frugal-Payload-Limit");
+            Header payloadLimit = request.getFirstHeader(Headers.X_FRUGAL_PAYLOAD_LIMIT_HEADER);
             if (payloadLimit != null) {
                 Integer limit = Integer.parseInt(payloadLimit.getValue());
-                if (output.length() > limit) {
+                if (output.getArray().length > limit) {
                     // Exit with correct status
-                    response.setStatusLine(new BasicStatusLine(new ProtocolVersion("HTTP", 1, 1),
-                            HttpStatus.SC_FORBIDDEN, "FORBIDDEN"));
+                    response.setStatusCode(HttpStatus.SC_FORBIDDEN);
+                    response.setReasonPhrase("FORBIDDEN");
                     return;
                 }
             }
@@ -136,11 +135,13 @@ public class FHttpRequestHandler implements HttpRequestHandler {
             System.arraycopy(output.getArray(), 0, outBytes, 4, output.length());
 
             // Populate HTTP response.
-            response.setStatusLine(new BasicStatusLine(new ProtocolVersion("HTTP", 1, 1), 200, "OK"));
-            response.setHeader("accept", "application/x-frugal");
-            response.setHeader("content-transfer-encoding", "base64");
+            response.setStatusCode(HttpStatus.SC_OK);
+            response.setReasonPhrase("OK");
+            response.setHeader(Headers.ACCEPT_HEADER, Headers.APPLICATION_X_FRUGAL_HEADER);
+            response.setHeader(Headers.CONTENT_TRANSFER_ENCODING_HEADER, Headers.CONTENT_TRANSFER_ENCODING);
             response.setEntity(new StringEntity(Base64.encodeBase64String(outBytes),
-                                                ContentType.create("application/x-frugal", "utf-8")));
+                                                ContentType.create(Headers.APPLICATION_X_FRUGAL_HEADER,
+                                                                   Headers.CONTENT_TYPE)));
         }
     }
 

@@ -1,4 +1,4 @@
-package com.workiva.frugal.internal;
+package com.workiva.frugal.protocol;
 
 import com.workiva.frugal.exception.FProtocolException;
 import com.workiva.frugal.util.Pair;
@@ -16,9 +16,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This is an internal-only class. Don't use it!
+ * Utilities for parsing protocol headers.
  */
-public class Headers {
+class HeaderUtils {
     // Version 0
     private static final byte V0 = 0x00;
 

@@ -1,7 +1,6 @@
 package com.workiva.frugal.protocol;
 
 import com.workiva.frugal.exception.FException;
-import com.workiva.frugal.internal.Headers;
 import com.workiva.frugal.util.Pair;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TMemoryInputTransport;
@@ -68,7 +67,7 @@ public class FClientRegistry implements FRegistry {
      */
     public void execute(byte[] frame) throws TException {
         Map<String, String> headers;
-        headers = Headers.decodeFromFrame(frame);
+        headers = HeaderUtils.decodeFromFrame(frame);
 
         long opId;
         try {
