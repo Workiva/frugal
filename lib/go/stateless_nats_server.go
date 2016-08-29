@@ -3,7 +3,6 @@ package frugal
 import (
 	"bytes"
 	"encoding/binary"
-	"sync"
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
@@ -11,6 +10,13 @@ import (
 )
 
 const defaultWorkQueueLen = 64
+const defaultWatermark = 5 * time.Second
+
+type frameWrapper struct {
+	frameBytes []byte
+	timestamp  time.Time
+	reply      string
+}
 
 // FNatsServerBuilder configures and builds "stateless" nats servers instances.
 type FNatsServerBuilder struct {
@@ -69,161 +75,17 @@ func (f *FNatsServerBuilder) WithHighWatermark(highWatermark time.Duration) *FNa
 
 // Build a new configured NATS FServer.
 func (f *FNatsServerBuilder) Build() FServer {
-	// TODO: With 2.0, this should return fNatsServer instance
-	return NewFNatsServerWithStatelessConfig(
-		f.conn,
-		[]string{f.subject},
-		f.workerCount,
-		f.queueLen,
-		1*time.Minute,
-		defaultMaxMissedHeartbeats,
-		NewFProcessorFactory(f.processor),
-		NewAdapterTransportFactory(),
-		f.inputProtoFactory,
-	)
-
-}
-
-// FStatelessNatsServerBuilder configures and builds FStatelessNatsServer
-// instances.
-// DEPRECATED - Use FNatsServerBuilder
-// TODO: Remove this with 2.0
-type FStatelessNatsServerBuilder struct {
-	*FNatsServerBuilder
-}
-
-// NewFStatelessNatsServerBuilder creates a builder which configures and builds
-// FStatelessNatsServer instances.
-// DEPRECATED - Use NewFNatsServerBuilder
-// TODO: Remove this with 2.0
-func NewFStatelessNatsServerBuilder(conn *nats.Conn, processor FProcessor,
-	protoFactory *FProtocolFactory, subject string) *FStatelessNatsServerBuilder {
-	return &FStatelessNatsServerBuilder{
-		&FNatsServerBuilder{
-			conn:               conn,
-			processor:          processor,
-			inputProtoFactory:  protoFactory,
-			outputProtoFactory: protoFactory,
-			subject:            subject,
-			workerCount:        1,
-			queueLen:           defaultWorkQueueLen,
-			highWatermark:      defaultWatermark,
-		},
-	}
-}
-
-// WithQueueGroup adds a NATS queue group to receive requests on.
-// DEPRECATED - Use FNatsServerBuilder
-// TODO: Remove this with 2.0
-func (f *FStatelessNatsServerBuilder) WithQueueGroup(queue string) *FStatelessNatsServerBuilder {
-	f.queue = queue
-	return f
-}
-
-// WithWorkerCount controls the number of goroutines used to process requests.
-// DEPRECATED - Use FNatsServerBuilder
-// TODO: Remove this with 2.0
-func (f *FStatelessNatsServerBuilder) WithWorkerCount(workerCount uint) *FStatelessNatsServerBuilder {
-	f.workerCount = workerCount
-	return f
-}
-
-// WithQueueLength controls the length of the work queue used to buffer
-// requests.
-// DEPRECATED - Use FNatsServerBuilder
-// TODO: Remove this with 2.0
-func (f *FStatelessNatsServerBuilder) WithQueueLength(queueLength uint) *FStatelessNatsServerBuilder {
-	f.queueLen = queueLength
-	return f
-}
-
-// WithHighWatermark controls the time duration requests wait in queue before
-// triggering slow consumer logic.
-// DEPRECATED - Use FNatsServerBuilder
-// TODO: Remove this with 2.0
-func (f *FStatelessNatsServerBuilder) WithHighWatermark(highWatermark time.Duration) *FStatelessNatsServerBuilder {
-	f.highWatermark = highWatermark
-	return f
-}
-
-// Build a new configured FStatelessNatsServer.
-// DEPRECATED - Use FNatsServerBuilder
-// TODO: Remove this with 2.0
-func (f *FStatelessNatsServerBuilder) Build() *FStatelessNatsServer {
-	return &FStatelessNatsServer{
-		&fNatsServer{
-			conn:               f.conn,
-			processor:          f.processor,
-			inputProtoFactory:  f.inputProtoFactory,
-			outputProtoFactory: f.outputProtoFactory,
-			subject:            f.subject,
-			queue:              f.queue,
-			workerCount:        f.workerCount,
-			workC:              make(chan *frameWrapper, f.queueLen),
-			quit:               make(chan struct{}),
-			highWatermark:      f.highWatermark,
-		},
-	}
-}
-
-// FStatelessNatsServer implements FServer by using NATS as the underlying
-// transport. Clients must connect with the transport created by
-// NewStatelessNatsTTransport.
-// DEPRECATED - Use FNatsServerBuilder
-// TODO: Remove this with 2.0
-type FStatelessNatsServer struct {
-	*fNatsServer
-}
-
-// NewFStatelessNatsServer creates a new FStatelessNatsServer which receives
-// requests on the given subject and queue. Pass an empty string for the queue
-// to not join a queue group. The worker count controls how many goroutines to
-// use to process requests. This uses a default request queue length of 64. If
-// the queue fills up, newly received requests will block to be placed on the
-// queue. Configurable load-shedding logic may be triggered if requests wait
-// for too long. Clients must connect with the transport created by
-// NewStatelessNatsTTransport.
-// DEPRECATED: Use NewFNatsServerBuilder.
-// TODO: Remove this with 2.0
-func NewFStatelessNatsServer(
-	conn *nats.Conn,
-	processor FProcessor,
-	inputProtoFactory, outputProtoFactory *FProtocolFactory,
-	subject, queue string,
-	workerCount uint) FServer {
-
-	return NewFStatelessNatsServerWithQueueLen(conn, processor, inputProtoFactory,
-		outputProtoFactory, subject, queue, workerCount, defaultWorkQueueLen)
-}
-
-// NewFStatelessNatsServerWithQueueLen creates a new FStatelessNatsServer which
-// receives requests on the given subject and queue. Pass an empty string for
-// the queue to not join a queue group. The worker count controls how many
-// goroutines to use to process requests. The queue length controls how large
-// the request queue is. Clients must connect with the transport created by
-// NewStatelessNatsTTransport.
-// DEPRECATED: Use NewFNatsServerBuilder.
-// TODO: Remove this with 2.0
-func NewFStatelessNatsServerWithQueueLen(
-	conn *nats.Conn,
-	processor FProcessor,
-	inputProtoFactory, outputProtoFactory *FProtocolFactory,
-	subject, queue string,
-	workerCount, requestQueueLen uint) FServer {
-
-	return &FStatelessNatsServer{
-		&fNatsServer{
-			conn:               conn,
-			processor:          processor,
-			subject:            subject,
-			queue:              queue,
-			workerCount:        workerCount,
-			inputProtoFactory:  inputProtoFactory,
-			outputProtoFactory: outputProtoFactory,
-			workC:              make(chan *frameWrapper, requestQueueLen),
-			quit:               make(chan struct{}),
-			highWatermark:      defaultWatermark,
-		},
+	return &fNatsServer{
+		conn: f.conn,
+		processor: f.processor,
+		inputProtoFactory: f.inputProtoFactory,
+		outputProtoFactory: f.outputProtoFactory,
+		subject: f.subject,
+		queue: f.queue,
+		workerCount: f.workerCount,
+		workC: make(chan *frameWrapper, f.queueLen),
+		quit: make(chan struct{}),
+		highWatermark: f.highWatermark,
 	}
 }
 
@@ -239,7 +101,6 @@ type fNatsServer struct {
 	workerCount        uint
 	workC              chan *frameWrapper
 	quit               chan struct{}
-	waterMu            sync.RWMutex
 	highWatermark      time.Duration
 }
 
@@ -269,17 +130,6 @@ func (f *fNatsServer) Stop() error {
 	return nil
 }
 
-// SetHighWatermark sets the maximum amount of time a frame is allowed to await
-// processing before triggering server overload logic. For now, this just
-// consists of logging a warning. If not set, default is 5 seconds.
-// DEPRECATED
-// TODO: Remove this with 2.0
-func (f *fNatsServer) SetHighWatermark(watermark time.Duration) {
-	f.waterMu.Lock()
-	f.highWatermark = watermark
-	f.waterMu.Unlock()
-}
-
 // handler is invoked when a request is received. The request is placed on the
 // work channel which is processed by a worker goroutine.
 func (f *fNatsServer) handler(msg *nats.Msg) {
@@ -303,11 +153,9 @@ func (f *fNatsServer) worker() {
 			return
 		case frame := <-f.workC:
 			dur := time.Since(frame.timestamp)
-			f.waterMu.RLock()
 			if dur > f.highWatermark {
 				logger().Warnf("frugal: frame spent %+v in the transport buffer, your consumer might be backed up", dur)
 			}
-			f.waterMu.RUnlock()
 			if err := f.processFrame(frame.frameBytes, frame.reply); err != nil {
 				logger().Errorf("frugal: error processing frame: %s", err.Error())
 			}

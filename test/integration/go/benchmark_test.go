@@ -67,7 +67,7 @@ func benchmarkBasic(b *testing.B, protoFactory thrift.TProtocolFactory, numMiddl
 	if err != nil {
 		b.Fatal(err)
 	}
-	server := frugal.NewFSimpleServerFactory5(
+	server := frugal.NewFSimpleServerFactory4(
 		frugal.NewFProcessorFactory(processor),
 		serverTr,
 		frugal.NewFMuxTransportFactory(2),

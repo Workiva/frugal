@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"sync"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 )
@@ -154,37 +153,6 @@ func (h *HttpFTransportBuilder) Build() FTransport {
 	}
 }
 
-// NewHttpTTransport returns a new Thrift TTransport which uses the
-// HTTP as the underlying transport. This TTransport is stateless in that
-// there is no connection maintained between the client and server. A request
-// is simply an http request and a response is an http response. This assumes
-// requests/responses fit within a single http request.
-// DEPRECATED - Use HttpFTransportBuilder to create an FTransport directly.
-// TODO: Remove this with 2.0
-func NewHttpTTransport(client *http.Client, url string) thrift.TTransport {
-	return NewHttpTTransportWithLimits(client, url, 0, 0)
-}
-
-// NewHttpTTransportWithLimits returns a new Thrift TTransport which uses the
-// HTTP as the underlying transport. This TTransport is stateless in that
-// there is no connection maintained between the client and server. A request
-// is simply an http request and a response is an http response. This assumes
-// requests/responses fit within a single http request. The size limits for
-// request/response data may be set with requestSizeLimit and
-// responseSizeLimit, respectively. Setting to 0 implies no limit.
-// DEPRECATED - Use HttpFTransportBuilder to create an FTransport directly.
-// TODO: Remove this with 2.0
-func NewHttpTTransportWithLimits(client *http.Client, url string,
-	requestSizeLimit uint, responseSizeLimit uint) thrift.TTransport {
-	return &httpFTransport{
-		fBaseTransport:    newFBaseTransportForTTransport(requestSizeLimit, frameBufferSize),
-		client:            client,
-		url:               url,
-		responseSizeLimit: responseSizeLimit,
-		isTTransport:      true,
-	}
-}
-
 // httpFTransport implements thrift.TTransport. This is a "stateless"
 // transport in the sense that this transport is not persistently connected to
 // a single server. A request is simply an http request and a response is an
@@ -196,57 +164,29 @@ type httpFTransport struct {
 	url               string
 	responseSizeLimit uint
 	isOpen            bool
-
-	// TODO: Remove with 2.0
-	isTTransport bool
-	mu           sync.RWMutex
 }
 
-// Open initializes the close channel and sets the open flag to true.
+// Open initializes the transport for use.
 func (h *httpFTransport) Open() error {
-	// TODO: Open can be a no-op with 2.0
-	h.mu.Lock()
-	h.isOpen = true
-	h.fBaseTransport.Open()
-	h.mu.Unlock()
+	// no-op
 	return nil
 }
 
+// IsOpen returns true if the transport is open for use.
 func (h *httpFTransport) IsOpen() bool {
-	// TODO: Remove locking with 2.0
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	// TODO: This should always return true with 2.0
-	return h.isOpen
+	// it's always open
+	return true
 }
 
-// Close closes the close channel and sets the open flag to false.
+// Close closes the transport.
 func (h *httpFTransport) Close() error {
-	// TODO: This should be a no-op with 2.0
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	if !h.isOpen {
-		return nil
-	}
-	h.isOpen = false
-	h.fBaseTransport.Close(nil)
+	// no-op
 	return nil
 }
 
-// Read up to len(buf) bytes into buf.
-// TODO: This should just return an error with 2.0
+// Read should not be called, it will return an error
 func (h *httpFTransport) Read(buf []byte) (int, error) {
-	if !h.isTTransport {
-		return 0, errors.New("Cannot read on FTransport")
-	}
-
-	// TODO: Remove all read logic with 2.0
-	if !h.IsOpen() {
-		return 0, h.getClosedConditionError("read:")
-	}
-	return h.fBaseTransport.Read(buf)
+	return 0, errors.New("Cannot read on FTransport")
 }
 
 // Flush sends the buffered bytes over HTTP.
@@ -260,10 +200,6 @@ func (h *httpFTransport) Flush() error {
 	}
 
 	h.ResetWriteBuffer()
-	// TODO: Remove this check in 2.0
-	if !h.isTTransport {
-		data = prependFrameSize(data)
-	}
 
 	// Make the HTTP request
 	response, err := h.makeRequest(data)
@@ -285,15 +221,6 @@ func (h *httpFTransport) Flush() error {
 				errors.New("frugal: missing data"))
 		}
 		// it's a one-way, drop it
-		return nil
-	}
-
-	// TODO: Remove this with 2.0
-	if h.isTTransport {
-		select {
-		case h.frameBuffer <- response:
-		case <-h.ClosedChannel():
-		}
 		return nil
 	}
 

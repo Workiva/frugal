@@ -53,7 +53,7 @@ func testBasic(t *testing.T, protoFactory thrift.TProtocolFactory, fTransportFac
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := frugal.NewFSimpleServerFactory5(
+	server := frugal.NewFSimpleServerFactory4(
 		frugal.NewFProcessorFactory(processor),
 		serverTr,
 		frugal.NewFMuxTransportFactory(2),
