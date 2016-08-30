@@ -3,8 +3,8 @@ package integration
 import (
 	"testing"
 
-	"github.com/Workiva/frugal/example/go/gen-go/event"
 	"github.com/Workiva/frugal/lib/go"
+	"github.com/Workiva/frugal/test/go/gen-go/event"
 	"github.com/nats-io/nats"
 	"github.com/stretchr/testify/assert"
 )

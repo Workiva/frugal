@@ -8,7 +8,7 @@ export FRUGAL_HOME=$GOPATH/src/github.com/Workiva/frugal
 # Remove and regenerate go test code
 cd $FRUGAL_HOME/test
 rm -rf go/gen-go
-frugal --gen go:package_prefix=github.com/Workiva/frugal/example/go/gen-go/ -r --out='go/gen-go' event.frugal
+frugal --gen go:package_prefix=github.com/Workiva/frugal/test/go/gen-go/ -r --out='go/gen-go' event.frugal
 
 
 echo "Running go integration tests"

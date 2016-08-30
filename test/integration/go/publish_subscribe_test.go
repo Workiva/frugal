@@ -7,8 +7,8 @@ import (
 	"github.com/nats-io/nats"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
-	"github.com/Workiva/frugal/example/go/gen-go/event"
 	"github.com/Workiva/frugal/lib/go"
+	"github.com/Workiva/frugal/test/go/gen-go/event"
 )
 
 func TestPublishSubscribe(t *testing.T) {
