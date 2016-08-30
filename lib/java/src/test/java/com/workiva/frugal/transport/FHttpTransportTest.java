@@ -118,7 +118,7 @@ public class FHttpTransportTest {
         transport.flush();
     }
 
-    @Test(expected = FMessageSizeException.class)
+    @Test(expected = TTransportException.class)
     public void testFlush_responseTooLarge() throws TTransportException, IOException {
         int responseSizeLimit = 1024 * 4;
         transport = new FHttpTransport.Builder(client, url).withResponseSizeLimit(responseSizeLimit).build();
