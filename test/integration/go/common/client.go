@@ -65,7 +65,7 @@ func StartClient(
 		return nil, fmt.Errorf("Invalid transport specified %s", transport)
 	}
 
-	fTransportFactory := frugal.NewFMuxTransportFactory(2)
+	fTransportFactory := frugal.NewAdapterTransportFactory()
 	fTransport := fTransportFactory.GetTransport(trans)
 
 	if err := fTransport.Open(); err != nil {

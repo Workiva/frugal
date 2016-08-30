@@ -49,7 +49,7 @@ func StartServer(
 		return nil, err
 	}
 
-	fTransportFactory := frugal.NewFMuxTransportFactory(2)
+	fTransportFactory := frugal.NewAdapterTransportFactory()
 	processor := frugaltest.NewFFrugalTestProcessor(handler)
 	server := frugal.NewFSimpleServerFactory4(
 		frugal.NewFProcessorFactory(processor),
