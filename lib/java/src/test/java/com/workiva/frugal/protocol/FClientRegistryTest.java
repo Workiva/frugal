@@ -180,7 +180,7 @@ public class FClientRegistryTest {
      * <p>
      * Note:
      * This test may unfairly synchronize consumers by pulling work from the same queue.
-     * However, a shared-queue is indicative of real-world use (see {@link com.workiva.frugal.transport.FMuxTransport}).
+     * However, a shared-queue is indicative of real-world use.
      */
     @Test
     public void testRegistryIsThreadsafe() throws TException {
