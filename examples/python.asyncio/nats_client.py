@@ -1,3 +1,4 @@
+import os
 import logging
 import sys
 import asyncio
@@ -13,7 +14,7 @@ from frugal.aio.transport import (
     FNatsScopeTransportFactory,
 )
 
-sys.path.append('gen-py.asyncio')
+sys.path.append(os.path.join(os.path.dirname(__file__), "gen-py.asyncio"))
 from v1.music.f_Store import Client as FStoreClient  # noqa
 from v1.music.ttypes import Album  # noqa
 
@@ -57,7 +58,7 @@ async def main():
                                 middleware=logging_middleware)
 
     album = await store_client.buyAlbum(FContext(),
-                                        uuid.uuid4(),
+                                        str(uuid.uuid4()),
                                         "ACT-12345")
 
     root.info("Bought an album %s\n", album)

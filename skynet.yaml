@@ -6,8 +6,8 @@ run:
 
 contact: messaging@workiva.com
 
-# Link to image definition: https://github.com/Workiva/skynet-images/tree/ea53c331b4b7dddc1f617588d901f64f6050764a
-image: "drydock.workiva.org/workiva/skynet-images:51355"
+# https://github.com/Workiva/messaging-docker-images/commit/6561ce2b439cf8081838d879fdfc5d301a14c6cb
+image: drydock.workiva.org/workiva/messaging-docker-images:69150
 
 also-run:
   Workiva/messaging-sdk:go-tests:
@@ -19,6 +19,7 @@ env:
   - GORACE="halt_on_errors=1"
 
 scripts:
+
   - ./scripts/skynet/run_go_integration_tests_skynet.sh
 
 timeout: moderate
@@ -38,8 +39,8 @@ run:
 
 contact: messaging@workiva.com
 
-# https://github.com/Workiva/skynet-images/tree/ea53c331b4b7dddc1f617588d901f64f6050764a
-image: "drydock.workiva.org/workiva/skynet-images:51355"
+# https://github.com/Workiva/messaging-docker-images/commit/6561ce2b439cf8081838d879fdfc5d301a14c6cb
+image: drydock.workiva.org/workiva/messaging-docker-images:69150
 
 
 scripts:
@@ -53,8 +54,6 @@ artifacts:
 
 ---
 
-size: large
-
 name: cross-gen_with_thrift
 
 run:
@@ -63,8 +62,9 @@ run:
 
 contact: messaging@workiva.com
 
-# https://github.com/Workiva/skynet-images/tree/ea53c331b4b7dddc1f617588d901f64f6050764a
-image: "drydock.workiva.org/workiva/skynet-images:51355"
+# https://github.com/Workiva/messaging-docker-images/commit/6561ce2b439cf8081838d879fdfc5d301a14c6cb
+image: drydock.workiva.org/workiva/messaging-docker-images:69150
+
 
 scripts:
   - ./scripts/skynet/run_cross_skynet.sh -gen_with_thrift

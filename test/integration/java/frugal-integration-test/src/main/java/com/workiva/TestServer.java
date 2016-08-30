@@ -19,11 +19,12 @@
 
 package com.workiva;
 
-import com.workiva.frugal.processor.FProcessorFactory;
 import com.workiva.frugal.protocol.FContext;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.provider.FScopeProvider;
-import com.workiva.frugal.server.FSimpleServer;
+import com.workiva.frugal.server.FNatsServer;
+import com.workiva.frugal.server.FServer;
+import com.workiva.frugal.server.FStatelessNatsServer;
 import com.workiva.frugal.transport.FMuxTransport;
 import com.workiva.frugal.transport.FNatsScopeTransport;
 import com.workiva.frugal.transport.FScopeTransportFactory;
@@ -34,11 +35,8 @@ import io.nats.client.ConnectionFactory;
 import io.nats.client.Constants;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TProtocolFactory;
-import org.apache.thrift.transport.TServerSocket;
-import org.apache.thrift.transport.TServerTransport;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
@@ -49,9 +47,8 @@ public class TestServer {
     public static void main(String [] args) {
         try {
             // default testing parameters, overwritten in Python runner
-            String host = "localhost";
             int port = 9090;
-            String transport_type = "buffered";
+            String transport_type = "stateless";
             String protocol_type = "binary";
 
             try {
@@ -69,7 +66,7 @@ public class TestServer {
                         System.out.println("  --help\t\t\tProduce help message");
                         System.out.println("  --port=arg (=" + port + ")\tPort number to connect");
                         System.out.println("  --protocol=arg (=" + protocol_type + ")\tProtocol: binary, json, compact");
-                        System.out.println("  --transport=arg (=" + transport_type + ")\tTransport: buffered, framed");
+                        System.out.println("  --transport=arg (=" + transport_type + ")\tTransport: stateless, stateful, stateless-stateful");
                         System.exit(0);
                     }
                 }
@@ -78,42 +75,56 @@ public class TestServer {
                 System.exit(1);
             }
 
+            TProtocolFactory protocolFactory = utils.whichProtocolFactory(protocol_type);
+            FProtocolFactory fProtocolFactory = new FProtocolFactory(protocolFactory);
+
+            ConnectionFactory cf = new ConnectionFactory("nats://localhost:4222");
+            Connection conn = cf.createConnection();
+
             List<String> validTransports = new ArrayList<>();
-            validTransports.add("buffered");
-            validTransports.add("framed");
-            validTransports.add("http");
+            validTransports.add("stateless");
+            validTransports.add("stateful");
+            validTransports.add("stateless-stateful");
 
             if (!validTransports.contains(transport_type)) {
                 throw new Exception("Unknown transport type! " + transport_type);
             }
 
-            InetSocketAddress address = new InetSocketAddress(host, port);
-            TServerTransport serverTransport = new TServerSocket(address);
-            switch (transport_type) {
-                case "buffered":
-                    break;
-                case "framed":
-                    break;
-            }
-
-            TProtocolFactory protocolFactory = utils.whichProtocolFactory(protocol_type);
-
-            FTransportFactory fTransportFactory = new FMuxTransport.Factory(2);
-            FFrugalTest.Iface handler = new TestServerHandler();
-            FFrugalTest.Processor processor = new FFrugalTest.Processor(handler);
-            FProtocolFactory fProtocolFactory = new FProtocolFactory(protocolFactory);
-
-            FSimpleServer server = new FSimpleServer(
-                    new FProcessorFactory(processor),
-                    serverTransport,
-                    fTransportFactory,
-                    fProtocolFactory
-            );
-
             // Start pub/sub in a separate thread
             new Subscriber(fProtocolFactory, port).run();
 
-            System.out.println("Starting the Java server on port " + port + "...");
+            FFrugalTest.Iface handler = new TestServerHandler();
+            FFrugalTest.Processor processor = new FFrugalTest.Processor(handler);
+            FServer server = null;
+            switch (transport_type) {
+                case "stateless":
+                    server = new FStatelessNatsServer.Builder(
+                            conn,
+                            processor,
+                            fProtocolFactory,
+                            Integer.toString(port)).build();
+                    break;
+                case "stateful":
+                case "stateless-stateful":
+                    FTransportFactory fTransportFactory = new FMuxTransport.Factory(2);
+                    server = new FNatsServer(
+                            conn,
+                            Integer.toString(port),
+                            10000,
+                            processor,
+                            fTransportFactory,
+                            fProtocolFactory);
+                    break;
+            }
+
+            // Start a healthcheck server for the cross language tests
+            try {
+                HealthCheck healthcheck = new HealthCheck(port);
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+
+            System.out.println("Starting " + transport_type + " server...");
             server.serve();
 
         } catch (Exception x) {
@@ -251,7 +262,6 @@ public class TestServer {
             mp1.put(Numberz.findByValue(3), argument);
 
             Map<Numberz, Insanity> mp2 = new HashMap<>();
-            mp2.put(Numberz.findByValue(6), new Insanity());
 
             Map<Long, Map<Numberz, Insanity>> returnInsanity = new HashMap<>();
             returnInsanity.put((long) 1, mp1);

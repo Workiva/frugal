@@ -12,7 +12,7 @@ from frugal.tornado.transport.nats_scope_transport import MAX_MESSAGE_SIZE
 logger = logging.getLogger(__name__)
 
 
-# TODO: Rename this to FNatsNatsTornadoServer with 2.0
+# TODO: Rename this to FNatsTornadoServer with 2.0
 class FStatelessNatsTornadoServer(FServer):
     """An implementation of FServer which uses NATS as the underlying transport.
     Clients must connect with the FNatsTransport"""

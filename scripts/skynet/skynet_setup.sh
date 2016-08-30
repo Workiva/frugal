@@ -4,7 +4,7 @@ set -exo pipefail
 
 # Install thrift
 wget -O $GOPATH/bin/thrift https://github.com/stevenosborne-wf/thrift/releases/download/0.9.3-wk-3/thrift-0.9.3-wk-3-linux-amd64
-chmod 0755 $GOPATH/bin/thrift		
+chmod 0755 $GOPATH/bin/thrift
 
 # Move godeps to gopath for both library and binary
 cp -r /testing/Godeps/_workspace/* $GOPATH/

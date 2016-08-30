@@ -6,6 +6,12 @@ import org.apache.thrift.transport.TTransportException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -75,10 +81,17 @@ public class BaseFTransportMonitorTest {
     public void testCleanClose() throws InterruptedException {
         FTransport transport = new MockFTransport();
         FTransportMonitor monitor = mock(FTransportMonitor.class);
+        CountDownLatch latch = new CountDownLatch(1);
+        Mockito.doAnswer(new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) {
+                latch.countDown();
+                return null;
+            }
+        }).when(monitor).onClosedCleanly();
         transport.setMonitor(monitor);
 
         transport.close();
-        Thread.sleep(50);
+        latch.await(1, TimeUnit.SECONDS);
 
         verify(monitor).onClosedCleanly();
     }
@@ -91,11 +104,17 @@ public class BaseFTransportMonitorTest {
         MockFTransport transport = new MockFTransport();
         FTransportMonitor monitor = mock(FTransportMonitor.class);
         Exception cause = new Exception("error");
-        when(monitor.onClosedUncleanly(cause)).thenReturn((long) -1);
+        CountDownLatch latch = new CountDownLatch(1);
+        when(monitor.onClosedUncleanly(cause)).thenAnswer(new Answer<Long>() {
+            public Long answer(InvocationOnMock invocation) {
+                latch.countDown();
+                return -1L;
+            }
+        });
         transport.setMonitor(monitor);
 
         transport.close(cause);
-        Thread.sleep(10);
+        latch.await(1, TimeUnit.SECONDS);
 
         verify(monitor).onClosedUncleanly(cause);
     }
@@ -108,11 +127,23 @@ public class BaseFTransportMonitorTest {
         MockFTransport transport = new MockFTransport();
         FTransportMonitor monitor = mock(FTransportMonitor.class);
         Exception cause = new Exception("error");
-        when(monitor.onClosedUncleanly(cause)).thenReturn((long) 0);
+        CountDownLatch latch = new CountDownLatch(2);
+        when(monitor.onClosedUncleanly(cause)).thenAnswer(new Answer<Long>() {
+            public Long answer(InvocationOnMock invocation) {
+                latch.countDown();
+                return 0L;
+            }
+        });
+        Mockito.doAnswer(new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) {
+                latch.countDown();
+                return null;
+            }
+        }).when(monitor).onReopenSucceeded();
         transport.setMonitor(monitor);
 
         transport.close(cause);
-        Thread.sleep(10);
+        latch.await(1, TimeUnit.SECONDS);
 
         verify(monitor).onClosedUncleanly(cause);
         verify(monitor).onReopenSucceeded();
@@ -126,12 +157,29 @@ public class BaseFTransportMonitorTest {
         MockFTransport transport = new MockFTransport(1);
         FTransportMonitor monitor = mock(FTransportMonitor.class);
         Exception cause = new Exception("error");
-        when(monitor.onClosedUncleanly(cause)).thenReturn((long) 1);
-        when(monitor.onReopenFailed(1, 1)).thenReturn((long) 2);
+        CountDownLatch latch = new CountDownLatch(3);
+        when(monitor.onClosedUncleanly(cause)).thenAnswer(new Answer<Long>() {
+            public Long answer(InvocationOnMock invocation) {
+                latch.countDown();
+                return 1L;
+            }
+        });
+        when(monitor.onReopenFailed(1, 1)).thenAnswer(new Answer<Long>() {
+            public Long answer(InvocationOnMock invocation) {
+                latch.countDown();
+                return 2L;
+            }
+        });
+        Mockito.doAnswer(new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) {
+                latch.countDown();
+                return null;
+            }
+        }).when(monitor).onReopenSucceeded();
         transport.setMonitor(monitor);
 
         transport.close(cause);
-        Thread.sleep(15);
+        latch.await(1, TimeUnit.SECONDS);
 
         verify(monitor).onClosedUncleanly(cause);
         verify(monitor).onReopenFailed(1, 1);
@@ -146,12 +194,23 @@ public class BaseFTransportMonitorTest {
         MockFTransport transport = new MockFTransport(1);
         FTransportMonitor monitor = mock(FTransportMonitor.class);
         Exception cause = new Exception("error");
-        when(monitor.onClosedUncleanly(cause)).thenReturn((long) 1);
-        when(monitor.onReopenFailed(1, 1)).thenReturn((long) -1);
+        CountDownLatch latch = new CountDownLatch(2);
+        when(monitor.onClosedUncleanly(cause)).thenAnswer(new Answer<Long>() {
+            public Long answer(InvocationOnMock invocation) {
+                latch.countDown();
+                return 1L;
+            }
+        });
+        when(monitor.onReopenFailed(1, 1)).thenAnswer(new Answer<Long>() {
+            public Long answer(InvocationOnMock invocation) {
+                latch.countDown();
+                return -1L;
+            }
+        });
         transport.setMonitor(monitor);
 
         transport.close(cause);
-        Thread.sleep(10);
+        latch.await(1, TimeUnit.SECONDS);
 
         verify(monitor).onClosedUncleanly(cause);
         verify(monitor).onReopenFailed(1, 1);

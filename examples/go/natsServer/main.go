@@ -28,7 +28,7 @@ func main() {
 	handler := &StoreHandler{}
 	processor := music.NewFStoreProcessor(handler)
 
-	// Start the server. using the configured processor, and protocol
+	// Start the server using the configured processor, and protocol
 	server := frugal.NewFNatsServerBuilder(conn, processor, fProtocolFactory, "music-service").Build()
 	fmt.Println("Starting the nats server... on ", "music-service")
 	server.Serve()
