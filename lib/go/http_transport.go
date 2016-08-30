@@ -27,7 +27,7 @@ var newEncoder = func(buf *bytes.Buffer) io.WriteCloser {
 	return base64.NewEncoder(base64.StdEncoding, buf)
 }
 
-// NewFrugalHandlerFunc is a function that create a ready to use Frugal handler
+// NewFrugalHandlerFunc is a function that creates a ready to use Frugal handler
 // function.
 func NewFrugalHandlerFunc(processor FProcessor, inPfactory, outPfactory *FProtocolFactory) http.HandlerFunc {
 
@@ -153,7 +153,7 @@ func (h *HttpFTransportBuilder) Build() FTransport {
 	}
 }
 
-// httpFTransport implements thrift.TTransport. This is a "stateless"
+// httpFTransport implements FTransport. This is a "stateless"
 // transport in the sense that this transport is not persistently connected to
 // a single server. A request is simply an http request and a response is an
 // http response. This assumes requests/responses fit within a single http
@@ -200,6 +200,7 @@ func (h *httpFTransport) Flush() error {
 	}
 
 	h.ResetWriteBuffer()
+	data = prependFrameSize(data)
 
 	// Make the HTTP request
 	response, err := h.makeRequest(data)

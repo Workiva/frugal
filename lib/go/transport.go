@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 )
@@ -73,8 +72,7 @@ type FScopeTransport interface {
 // TTransport and exposes some additional methods. An FTransport typically has
 // an FRegistry, so it provides methods for setting the FRegistry and
 // registering and unregistering an FAsyncCallback to an FContext. It also
-// allows a way for setting an FTransportMonitor and a high-water mark provided
-// by an FServer.
+// allows a way for setting an FTransportMonitor.
 //
 // FTransport wraps a TTransport, meaning all existing TTransport
 // implementations will work in Frugal. However, all FTransports must used a
@@ -127,7 +125,6 @@ func (f *fBaseTransport) Open() {
 
 // Close the close channels
 func (f *fBaseTransport) Close(cause error) {
-
 	select {
 	case f.closed <- cause:
 	default:
@@ -169,11 +166,6 @@ func (f *fBaseTransport) ResetWriteBuffer() {
 // Execute a frugal frame (NOTE: this frame must include the frame size).
 func (f *fBaseTransport) ExecuteFrame(frame []byte) error {
 	return f.registry.Execute(frame[4:])
-}
-
-// This is a no-op for fBaseTransport
-func (f *fBaseTransport) SetHighWatermark(watermark time.Duration) {
-	return
 }
 
 // SetRegistry sets the Registry on the FTransport.

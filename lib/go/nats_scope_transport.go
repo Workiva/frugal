@@ -20,8 +20,6 @@ type FNatsScopeTransportFactory struct {
 	queue string
 }
 
-// TODO builder
-
 // NewFNatsScopeTransportFactory creates an FNatsScopeTransportFactory using
 // the provided NATS connection. Subscribers using this transport will not use
 // a queue.

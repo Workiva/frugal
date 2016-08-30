@@ -31,12 +31,10 @@ func NewFNatsTransport(conn *nats.Conn, subject, inbox string) FTransport {
 	}
 }
 
-// fNatsTransport implements FTransport and, until the next major release,
-// thrift.TTransport that may be wrapped with fMuxTransport (DEPRECATED). This
-// is a "stateless" transport in the sense that there is no connection with a
-// server. A request is simply published to a subject and responses are
-// received on another subject. This assumes requests/responses fit within a
-// single NATS message.
+// fNatsTransport implements FTransport. This is a "stateless" transport in the
+// sense that there is no connection with a server. A request is simply
+// published to a subject and responses are received on another subject.
+// This assumes requests/responses fit within a single NATS message.
 type fNatsTransport struct {
 	*fBaseTransport
 	conn    *nats.Conn
@@ -63,6 +61,7 @@ func (f *fNatsTransport) Open() error {
 	}
 	f.sub = sub
 
+	f.fBaseTransport.Open()
 	return nil
 }
 
@@ -89,7 +88,6 @@ func (f *fNatsTransport) Close() error {
 	f.sub = nil
 
 	f.fBaseTransport.Close(nil)
-
 	return nil
 }
 
@@ -109,6 +107,7 @@ func (f *fNatsTransport) Flush() error {
 	}
 
 	f.ResetWriteBuffer()
+	data = prependFrameSize(data)
 
 	err := f.conn.PublishRequest(f.subject, f.inbox, data)
 	return thrift.NewTTransportExceptionFromError(err)
