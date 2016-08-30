@@ -1,3 +1,0 @@
-thrift==0.9.3
-nats-client==0.2.4
-frugal
