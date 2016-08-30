@@ -26,7 +26,7 @@ export PATH=$PATH:$ROOT/bin
 
 # JAVA
 # Compile library code
-cd $ROOT/lib/java && mvn checkstyle:check && mvn clean verify
+cd $ROOT/lib/java && mvn clean verify
 mv target/frugal-*.jar $ROOT
 
 # GO
