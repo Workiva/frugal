@@ -136,7 +136,6 @@ func (f *fBaseTransport) Close(cause error) {
 	close(f.closed)
 }
 
-
 // Read should not be called, it will return an error
 func (f *fBaseTransport) Read(buf []byte) (int, error) {
 	return 0, errors.New("don't call read")

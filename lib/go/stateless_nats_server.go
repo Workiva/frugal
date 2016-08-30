@@ -76,16 +76,16 @@ func (f *FNatsServerBuilder) WithHighWatermark(highWatermark time.Duration) *FNa
 // Build a new configured NATS FServer.
 func (f *FNatsServerBuilder) Build() FServer {
 	return &fNatsServer{
-		conn: f.conn,
-		processor: f.processor,
-		inputProtoFactory: f.inputProtoFactory,
+		conn:               f.conn,
+		processor:          f.processor,
+		inputProtoFactory:  f.inputProtoFactory,
 		outputProtoFactory: f.outputProtoFactory,
-		subject: f.subject,
-		queue: f.queue,
-		workerCount: f.workerCount,
-		workC: make(chan *frameWrapper, f.queueLen),
-		quit: make(chan struct{}),
-		highWatermark: f.highWatermark,
+		subject:            f.subject,
+		queue:              f.queue,
+		workerCount:        f.workerCount,
+		workC:              make(chan *frameWrapper, f.queueLen),
+		quit:               make(chan struct{}),
+		highWatermark:      f.highWatermark,
 	}
 }
 

@@ -1,7 +1,5 @@
 package frugal
 
-import "time"
-
 // FServer is Frugal's equivalent of Thrift's TServer. It's used to run a Frugal
 // RPC service by executing an FProcessor on client connections.
 type FServer interface {
