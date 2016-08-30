@@ -17,7 +17,7 @@ func TestLargeMessage(t *testing.T) {
 		"TJSONProtocolFactory":          thrift.NewTJSONProtocolFactory(),
 		"TBinaryProtocolFactoryDefault": thrift.NewTBinaryProtocolFactoryDefault(),
 	}
-	ftransportFactory := frugal.NewFMuxTransportFactory(5)
+	ftransportFactory := frugal.NewAdapterTransportFactory()
 
 	natsOptions := nats.DefaultOptions
 	natsOptions.Servers = []string{nats.DefaultURL}

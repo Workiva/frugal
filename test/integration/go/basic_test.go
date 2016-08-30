@@ -35,7 +35,7 @@ func TestBasic(t *testing.T) {
 		thrift.NewTJSONProtocolFactory(),
 		thrift.NewTBinaryProtocolFactoryDefault(),
 	}
-	fTransportFactory := frugal.NewFMuxTransportFactory(2)
+	fTransportFactory := frugal.NewAdapterTransportFactory()
 
 	startPort := 4536
 	for _, protoFactory := range protoFactories {
@@ -56,7 +56,7 @@ func testBasic(t *testing.T, protoFactory thrift.TProtocolFactory, fTransportFac
 	server := frugal.NewFSimpleServerFactory4(
 		frugal.NewFProcessorFactory(processor),
 		serverTr,
-		frugal.NewFMuxTransportFactory(2),
+		frugal.NewAdapterTransportFactory(),
 		frugal.NewFProtocolFactory(protoFactory),
 	)
 
