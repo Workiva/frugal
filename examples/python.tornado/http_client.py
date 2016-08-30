@@ -31,7 +31,7 @@ def main():
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
 
     # Create an HTTP transport using the connected client
-    transport = FHttpTransport("http://localhost:8080")
+    transport = FHttpTransport("http://localhost:8080/frugal")
     yield transport.open()
 
     # Using the configured transport and protocol, create a client

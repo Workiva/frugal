@@ -70,7 +70,7 @@ def main():
 
     # Create a new music store server using the processor,
     # The sever will listen on the configured URL
-    server = FHttpServer(processor, ('', 8080), prot_factory)
+    server = FHttpServer(processor, ('/frugal', 8080), prot_factory)
     server.serve()
 
 

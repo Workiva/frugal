@@ -60,5 +60,5 @@ if __name__ == '__main__':
 
     store_handler = new_http_handler(processor, prot_factory)
     app = web.Application()
-    app.router.add_route("*", "/", store_handler)
+    app.router.add_route("*", "/frugal", store_handler)
     web.run_app(app)

@@ -68,7 +68,7 @@ if __name__ == "__main__":
     # Create a new music store server using the a tornado handler
     # and our configured processor and protocol
     application = tornado.web.Application([
-        (r"/",
+        (r"/frugal",
             FTornadoHttpHandler,
             dict(processor=processor, protocol_factory=prot_factory))
     ])
