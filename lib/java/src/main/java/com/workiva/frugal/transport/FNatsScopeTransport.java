@@ -20,6 +20,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.workiva.frugal.transport.FNatsTransport.FRUGAL_PREFIX;
+import static com.workiva.frugal.transport.FNatsTransport.NATS_MAX_MESSAGE_SIZE;
+import static com.workiva.frugal.transport.FNatsTransport.getClosedConditionException;
+
 /**
  * FNatsScopeTransport implements FScopeTransport by using NATS as the pub/sub message broker. Messages are limited to
  * 1MB in size.
@@ -141,7 +145,7 @@ public class FNatsScopeTransport extends FScopeTransport {
         }
 
         if (!pull) {
-            writeBuffer = ByteBuffer.allocate(TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE);
+            writeBuffer = ByteBuffer.allocate(NATS_MAX_MESSAGE_SIZE);
             isOpen = true;
             return;
         }
@@ -225,11 +229,11 @@ public class FNatsScopeTransport extends FScopeTransport {
     public void write(byte[] bytes, int off, int len) throws TTransportException {
         // Include 4 bytes for frame size.
         if (writeBuffer.remaining() < len + 4) {
-            int size = 4 + len + TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE - writeBuffer.remaining();
+            int size = 4 + len + NATS_MAX_MESSAGE_SIZE - writeBuffer.remaining();
             writeBuffer.clear();
             throw new FMessageSizeException(
                     String.format("Message exceeds %d bytes, was %d bytes",
-                            TNatsServiceTransport.NATS_MAX_MESSAGE_SIZE, size));
+                            NATS_MAX_MESSAGE_SIZE, size));
         }
         writeBuffer.put(bytes, off, len);
     }
@@ -237,7 +241,7 @@ public class FNatsScopeTransport extends FScopeTransport {
     @Override
     public void flush() throws TTransportException {
         if (!isOpen()) {
-            throw TNatsServiceTransport.getClosedConditionException(conn, "flush:");
+            throw getClosedConditionException(conn, "flush:");
         }
         byte[] data = new byte[writeBuffer.position()];
         writeBuffer.flip();
@@ -257,7 +261,7 @@ public class FNatsScopeTransport extends FScopeTransport {
     }
 
     private String getFormattedSubject() {
-        return TNatsServiceTransport.FRUGAL_PREFIX + this.subject;
+        return FRUGAL_PREFIX + this.subject;
     }
 
 }
