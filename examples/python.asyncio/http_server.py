@@ -1,19 +1,18 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-import logging
 import os
+import logging
 import sys
-import uuid
+
+from aiohttp import web
 
 from thrift.protocol import TBinaryProtocol
-
 from frugal.protocol import FProtocolFactory
-from frugal.server.http_server import FHttpServer
+from frugal.aio.server.http_handler import new_http_handler
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "gen-py"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "gen-py.asyncio"))
 from v1.music.f_Store import Processor as FStoreProcessor  # noqa
 from v1.music.f_Store import Iface  # noqa
-from v1.music.ttypes import Album, Track, PerfRightsOrg  # noqa
+from v1.music.ttypes import Album, Track  # noqa
 
 
 root = logging.getLogger()
@@ -38,15 +37,8 @@ class StoreHandler(Iface):
         Return an album; always buy the same one.
         """
         album = Album()
-        album.ASIN = str(uuid.uuid4())
+        album.ASIN = ASIN
         album.duration = 12000
-        album.tracks = [Track(title="Comme des enfants",
-                              artist="Coeur de pirate",
-                              publisher="Grosse Boîte",
-                              composer="Béatrice Martin",
-                              duration=169,
-                              pro=PerfRightsOrg.ASCAP)]
-
         return album
 
     def enterAlbumGiveaway(self, ctx, email, name):
@@ -56,9 +48,7 @@ class StoreHandler(Iface):
         return True
 
 
-def main():
-    logging.info("Starting...")
-
+if __name__ == '__main__':
     # Declare the protocol stack used for serialization.
     # Protocol stacks must match between clients and servers.
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
@@ -68,11 +58,7 @@ def main():
     # Results from the handler are returned back to the client.
     processor = FStoreProcessor(StoreHandler())
 
-    # Create a new music store server using the processor,
-    # The sever will listen on the configured URL
-    server = FHttpServer(processor, ('/frugal', 8080), prot_factory)
-    server.serve()
-
-
-if __name__ == '__main__':
-    main()
+    store_handler = new_http_handler(processor, prot_factory)
+    app = web.Application()
+    app.router.add_route("*", "/frugal", store_handler)
+    web.run_app(app)

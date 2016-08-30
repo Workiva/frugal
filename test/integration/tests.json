@@ -4,7 +4,6 @@
     "client": {
       "timeout": 15,
       "transports": [
-        "buffered",
         "http"
       ],
       "sockets": [
@@ -25,19 +24,22 @@
   {
     "name": "go",
     "server": {
-      "delay": 5,
+      "delay": 8,
       "command": [
         "testserver"
       ]
     },
     "client": {
-      "timeout": 6,
+      "timeout": 8,
       "command": [
         "testclient"
       ]
     },
     "transports": [
-      "buffered"
+      "stateless",
+      "stateful",
+      "stateless-stateful",
+      "http"
     ],
     "sockets": [
       "ip"
@@ -63,7 +65,14 @@
         "\"-Dexec.mainClass=com.workiva.TestClient\""
       ],
       "extra_args": [
-        "-f=\"java/frugal-integration-test/pom.xml\""
+        "-f=\"java/frugal-integration-test/pom.xml\"",
+        "-Djava.security.egd=file:///dev/urandom"
+      ],
+      "transports": [
+        "stateless",
+        "stateful",
+        "stateless-stateful",
+        "http"
       ]
     },
     "server": {
@@ -72,19 +81,55 @@
         "\"-Dexec.mainClass=com.workiva.TestServer\""
       ],
       "extra_args": [
-        "-f=\"java/frugal-integration-test/pom.xml\""
+        "-f=\"java/frugal-integration-test/pom.xml\"",
+        "-Djava.security.egd=file:///dev/urandom"
+      ],
+      "transports": [
+        "stateless",
+        "stateful",
+        "stateless-stateful"
+      ]
+    },
+    "sockets": [
+      "ip"
+    ],
+    "protocols": [
+      "binary",
+      "compact",
+      "json"
+    ]
+  },
+  {
+    "name": "python:tornado",
+    "client": {
+      "timeout": 7,
+      "command": [
+        "python",
+        "-u",
+        "client.py"
+      ]
+    },
+    "server": {
+      "delay": 7,
+      "command": [
+        "python",
+        "server.py"
       ]
     },
     "transports": [
-      "buffered",
-      "framed"
+      "stateless",
+      "stateful",
+      "stateless-stateful",
+      "http"
     ],
     "sockets": [
       "ip"
     ],
     "protocols": [
       "binary",
-      "compact"
-    ]
+      "compact",
+      "json"
+    ],
+    "workdir": "python"
   }
 ]

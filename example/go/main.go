@@ -123,7 +123,7 @@ func runClient(conn *nats.Conn, protocolFactory *frugal.FProtocolFactory, port s
 	return handleClient(event.NewFFooClient(httpT, protocolFactory))
 }
 
-// Sever handler
+// Server handler
 type FooHandler struct {
 }
 

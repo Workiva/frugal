@@ -19,6 +19,7 @@ env:
   - GORACE="halt_on_errors=1"
 
 scripts:
+
   - ./scripts/skynet/run_go_integration_tests_skynet.sh
 
 timeout: moderate
@@ -41,6 +42,7 @@ contact: messaging@workiva.com
 # https://github.com/Workiva/messaging-docker-images/commit/6561ce2b439cf8081838d879fdfc5d301a14c6cb
 image: drydock.workiva.org/workiva/messaging-docker-images:69150
 
+
 scripts:
   - ./scripts/skynet/run_cross_skynet.sh
 
@@ -51,8 +53,6 @@ artifacts:
   - /testing/artifacts
 
 ---
-
-size: large
 
 name: cross-gen_with_thrift
 

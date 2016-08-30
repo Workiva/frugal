@@ -3,6 +3,7 @@ package frugal
 import (
 	"fmt"
 	"reflect"
+	"unicode"
 )
 
 type (
@@ -71,9 +72,21 @@ func (m *Method) Invoke(args Arguments) Results {
 // only be called by generated code.
 func NewMethod(proxiedHandler, method interface{}, methodName string, middleware []ServiceMiddleware) *Method {
 	reflectHandler := reflect.ValueOf(proxiedHandler)
-	reflectMethod, ok := reflectHandler.Type().MethodByName(methodName)
-	if !ok {
-		panic(fmt.Sprintf("frugal: no such method %s on type %s", methodName, proxiedHandler))
+	var reflectMethod reflect.Method
+	// As of go1.7, reflect.MethodByName no longer returns unexported methods
+	// (https://golang.org/doc/go1.7). To avoid exporting generated internal
+	// methods, construct a reflect.Method ourselves.
+	if unicode.IsLower(rune(methodName[0])) {
+		reflectMethod = reflect.Method{
+			Name: methodName,
+			Type: reflect.TypeOf(method),
+		}
+	} else {
+		method, ok := reflectHandler.Type().MethodByName(methodName)
+		if !ok {
+			panic(fmt.Sprintf("frugal: no such method %s on type %s", methodName, reflectHandler))
+		}
+		reflectMethod = method
 	}
 	return &Method{
 		handler:       composeMiddleware(reflect.ValueOf(method), middleware),

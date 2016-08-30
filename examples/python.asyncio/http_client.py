@@ -1,18 +1,15 @@
 import os
 import logging
 import sys
+import uuid
 import asyncio
 
-from nats.aio.client import Client as NatsClient
 from thrift.protocol import TBinaryProtocol
 from thrift.transport.TTransport import TTransportException
 from frugal.context import FContext
 from frugal.protocol import FProtocolFactory
 from frugal.provider import FScopeProvider
-from frugal.aio.transport import (
-    FNatsTransport,
-    FNatsScopeTransportFactory,
-)
+from frugal.aio.transport import FHttpTransport
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "gen-py.asyncio"))
 from v1.music.f_Store import Client as FStoreClient  # noqa
@@ -35,26 +32,12 @@ async def main():
     # Protocol stacks must match between clients and servers.
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
 
-    # Open a NATS connection to send requests
-    nats_client = NatsClient()
-    options = {
-        "verbose": True,
-        "servers": ["nats://127.0.0.1:4222"]
-    }
-    await nats_client.connect(**options)
-
-    # Create a nats transport using the connected client
-    # The transport sends data on the music-service NATS topic
-    nats_transport = FNatsTransport(nats_client, "music-service")
-    try:
-        await nats_transport.open()
-    except TTransportException as ex:
-        root.error(ex)
-        return
+    # Create an HTTP to query the configured server URL
+    transport = FHttpTransport("http://localhost:8080/frugal")
 
     # Using the configured transport and protocol, create a client
     # to talk to the music store service.
-    store_client = FStoreClient(nats_transport, prot_factory,
+    store_client = FStoreClient(transport, prot_factory,
                                 middleware=logging_middleware)
 
     album = await store_client.buyAlbum(FContext(),
@@ -63,12 +46,11 @@ async def main():
 
     root.info("Bought an album %s\n", album)
 
-    await store_client.EnterAlbumGiveaway(FContext(),
+    await store_client.enterAlbumGiveaway(FContext(),
                                           "kevin@workiva.com",
                                           "Kevin")
 
-    await nats_transport.close()
-    await nats_client.close()
+    await transport.close()
 
 
 def logging_middleware(next):

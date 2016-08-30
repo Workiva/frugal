@@ -1,16 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import logging
-import os
 import sys
 import uuid
 
+import tornado
 from thrift.protocol import TBinaryProtocol
-
 from frugal.protocol import FProtocolFactory
-from frugal.server.http_server import FHttpServer
+from frugal.tornado.server.http_handler import FTornadoHttpHandler
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "gen-py"))
+sys.path.append('gen-py.tornado')
 from v1.music.f_Store import Processor as FStoreProcessor  # noqa
 from v1.music.f_Store import Iface  # noqa
 from v1.music.ttypes import Album, Track, PerfRightsOrg  # noqa
@@ -56,9 +55,7 @@ class StoreHandler(Iface):
         return True
 
 
-def main():
-    logging.info("Starting...")
-
+if __name__ == "__main__":
     # Declare the protocol stack used for serialization.
     # Protocol stacks must match between clients and servers.
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
@@ -68,11 +65,12 @@ def main():
     # Results from the handler are returned back to the client.
     processor = FStoreProcessor(StoreHandler())
 
-    # Create a new music store server using the processor,
-    # The sever will listen on the configured URL
-    server = FHttpServer(processor, ('/frugal', 8080), prot_factory)
-    server.serve()
-
-
-if __name__ == '__main__':
-    main()
+    # Create a new music store server using the a tornado handler
+    # and our configured processor and protocol
+    application = tornado.web.Application([
+        (r"/frugal",
+            FTornadoHttpHandler,
+            dict(processor=processor, protocol_factory=prot_factory))
+    ])
+    application.listen(8080)
+    tornado.ioloop.IOLoop.current().start()

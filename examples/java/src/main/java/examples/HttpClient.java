@@ -22,7 +22,7 @@ public class HttpClient {
         CloseableHttpClient httpClient = HttpClients.createDefault();
 
         // Create the HTTP transport using the client
-        FHttpTransport transport = new FHttpTransport.Builder(httpClient, "http://localhost:8080").build();
+        FHttpTransport transport = new FHttpTransport.Builder(httpClient, "http://localhost:8080/frugal").build();
 
         // Specify the protocol used for serializing requests.
         // Servers must use the same protocol stack

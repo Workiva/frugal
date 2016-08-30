@@ -2,25 +2,19 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
-	"github.com/nats-io/nats"
 
 	"github.com/Workiva/frugal/examples/go/gen-go/v1/music"
 	"github.com/Workiva/frugal/lib/go"
 )
 
+// Run an HTTP server
 func main() {
 	// Set the protocol used for serialization.
 	// The protocol stack must match between client and server
 	fProtocolFactory := frugal.NewFProtocolFactory(thrift.NewTBinaryProtocolFactoryDefault())
-
-	// Setup a NATS connection (using default options)
-	natsOptions := nats.DefaultOptions
-	conn, err := natsOptions.Connect()
-	if err != nil {
-		panic(err)
-	}
 
 	// Create a handler. Each incoming request at the processor is sent to
 	// the handler. Responses from the handler are returned back to the
@@ -29,9 +23,11 @@ func main() {
 	processor := music.NewFStoreProcessor(handler)
 
 	// Start the server using the configured processor, and protocol
-	server := frugal.NewFNatsServerBuilder(conn, processor, fProtocolFactory, "music-service").Build()
-	fmt.Println("Starting the nats server... on ", "music-service")
-	server.Serve()
+	http.HandleFunc("/frugal", frugal.NewFrugalHandlerFunc(processor, fProtocolFactory, fProtocolFactory))
+	func() {
+		fmt.Println("Starting the http server...")
+		http.ListenAndServe(":8080", http.DefaultServeMux)
+	}()
 }
 
 // StoreHandler handles all incoming requests to the server.
