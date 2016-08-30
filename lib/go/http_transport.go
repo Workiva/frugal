@@ -112,18 +112,18 @@ func NewFrugalHandlerFunc(processor FProcessor, inPfactory, outPfactory *FProtoc
 	}
 }
 
-// HttpFTransportBuilder configures and builds HTTP FTransport instances.
-type HttpFTransportBuilder struct {
+// FHttpTransportBuilder configures and builds HTTP FTransport instances.
+type FHttpTransportBuilder struct {
 	client            *http.Client
 	url               string
 	requestSizeLimit  uint
 	responseSizeLimit uint
 }
 
-// NewHttpFTransportBuilder creates a builder which configures and builds HTTP
+// NewFHttpTransportBuilder creates a builder which configures and builds HTTP
 // FTransport instances.
-func NewHttpFTransportBuilder(client *http.Client, url string) *HttpFTransportBuilder {
-	return &HttpFTransportBuilder{
+func NewFHttpTransportBuilder(client *http.Client, url string) *FHttpTransportBuilder {
+	return &FHttpTransportBuilder{
 		client: client,
 		url:    url,
 	}
@@ -131,21 +131,21 @@ func NewHttpFTransportBuilder(client *http.Client, url string) *HttpFTransportBu
 
 // WithRequestSizeLimit adds a request size limit. If set to 0 (the default),
 // there is no size limit on requests.
-func (h *HttpFTransportBuilder) WithRequestSizeLimit(requestSizeLimit uint) *HttpFTransportBuilder {
+func (h *FHttpTransportBuilder) WithRequestSizeLimit(requestSizeLimit uint) *FHttpTransportBuilder {
 	h.requestSizeLimit = requestSizeLimit
 	return h
 }
 
 // WithResponseSizeLimit adds a response size limit. If set to 0 (the default),
 // there is no size limit on responses.
-func (h *HttpFTransportBuilder) WithResponseSizeLimit(responseSizeLimit uint) *HttpFTransportBuilder {
+func (h *FHttpTransportBuilder) WithResponseSizeLimit(responseSizeLimit uint) *FHttpTransportBuilder {
 	h.responseSizeLimit = responseSizeLimit
 	return h
 }
 
 // Build a new configured HTTP FTransport.
-func (h *HttpFTransportBuilder) Build() FTransport {
-	return &httpFTransport{
+func (h *FHttpTransportBuilder) Build() FTransport {
+	return &fHttpTransport{
 		fBaseTransport:    newFBaseTransport(h.requestSizeLimit),
 		client:            h.client,
 		url:               h.url,
@@ -153,12 +153,12 @@ func (h *HttpFTransportBuilder) Build() FTransport {
 	}
 }
 
-// httpFTransport implements FTransport. This is a "stateless"
+// fHttpTransport implements FTransport. This is a "stateless"
 // transport in the sense that this transport is not persistently connected to
 // a single server. A request is simply an http request and a response is an
 // http response. This assumes requests/responses fit within a single http
 // request.
-type httpFTransport struct {
+type fHttpTransport struct {
 	*fBaseTransport
 	client            *http.Client
 	url               string
@@ -167,30 +167,30 @@ type httpFTransport struct {
 }
 
 // Open initializes the transport for use.
-func (h *httpFTransport) Open() error {
+func (h *fHttpTransport) Open() error {
 	// no-op
 	return nil
 }
 
 // IsOpen returns true if the transport is open for use.
-func (h *httpFTransport) IsOpen() bool {
+func (h *fHttpTransport) IsOpen() bool {
 	// it's always open
 	return true
 }
 
 // Close closes the transport.
-func (h *httpFTransport) Close() error {
+func (h *fHttpTransport) Close() error {
 	// no-op
 	return nil
 }
 
 // Read should not be called, it will return an error
-func (h *httpFTransport) Read(buf []byte) (int, error) {
+func (h *fHttpTransport) Read(buf []byte) (int, error) {
 	return 0, errors.New("Cannot read on FTransport")
 }
 
 // Flush sends the buffered bytes over HTTP.
-func (h *httpFTransport) Flush() error {
+func (h *fHttpTransport) Flush() error {
 	if !h.IsOpen() {
 		return h.getClosedConditionError("flush:")
 	}
@@ -228,11 +228,11 @@ func (h *httpFTransport) Flush() error {
 	return thrift.NewTTransportExceptionFromError(h.fBaseTransport.ExecuteFrame(response))
 }
 
-// This is a no-op for httpFTransport
-func (h *httpFTransport) SetMonitor(monitor FTransportMonitor) {
+// This is a no-op for fHttpTransport
+func (h *fHttpTransport) SetMonitor(monitor FTransportMonitor) {
 }
 
-func (h *httpFTransport) makeRequest(requestPayload []byte) ([]byte, error) {
+func (h *fHttpTransport) makeRequest(requestPayload []byte) ([]byte, error) {
 	// Encode request payload
 	encoded := new(bytes.Buffer)
 	encoder := newEncoder(encoded)
@@ -294,7 +294,7 @@ func (h *httpFTransport) makeRequest(requestPayload []byte) ([]byte, error) {
 
 }
 
-func (h *httpFTransport) getClosedConditionError(prefix string) error {
+func (h *fHttpTransport) getClosedConditionError(prefix string) error {
 	return thrift.NewTTransportException(thrift.NOT_OPEN,
 		fmt.Sprintf("%s HTTP TTransport not open", prefix))
 }
