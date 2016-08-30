@@ -5,8 +5,8 @@ set -eo pipefail
 ./scripts/skynet/skynet_setup.sh
 export FRUGAL_HOME=$GOPATH/src/github.com/Workiva/frugal
 
-# Remove and regenerate go example code
-cd $FRUGAL_HOME/example
+# Remove and regenerate go test code
+cd $FRUGAL_HOME/test
 rm -rf go/gen-go
 frugal --gen go:package_prefix=github.com/Workiva/frugal/example/go/gen-go/ -r --out='go/gen-go' event.frugal
 
