@@ -189,10 +189,6 @@ public class FHttpTransport extends FTransport {
         try {
             // Check status code errors
             int status = response.getStatusLine().getStatusCode();
-            if (status == HttpStatus.SC_REQUEST_TOO_LONG) {
-                throw new FMessageSizeException(FTransport.RESPONSE_TOO_LARGE,
-                        "response was too large for the transport");
-            }
             if (status >= 300) {
                 throw new TTransportException("Error: " + response.getStatusLine().toString());
             }
