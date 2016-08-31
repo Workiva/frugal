@@ -90,14 +90,7 @@ def main(argv):
     server_match = list(chain(*[x.split(',') for x in options.server]))
     client_match = list(chain(*[x.split(',') for x in options.client]))
 
-
-    '''
-    TODO: Change this back to
     options.jobs = int(multiprocessing.cpu_count()) - 1
-    once the "cross:gen_with_thrift" skynet configuration is no longer needed
-    '''
-    # options.jobs = int(multiprocessing.cpu_count()) - 1
-    options.jobs = int(multiprocessing.cpu_count()) / 2 - 1
     options.retry_count = 0
 
     res = run_cross_tests(server_match, client_match, options.jobs, options.retry_count, options.regex)

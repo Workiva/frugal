@@ -1,15 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"flag"
-	"fmt"
 	"log"
 	"reflect"
-	"time"
-
 	"strconv"
-
-	"bytes"
+	"time"
 
 	"github.com/Workiva/frugal/lib/go"
 	"github.com/Workiva/frugal/test/integration/go/common"
@@ -25,12 +22,19 @@ func main() {
 	flag.Parse()
 	pubSub := make(chan bool)
 	sent := make(chan bool)
-	client, err := common.StartClient(*host, *port, *transport, *protocol, pubSub, sent)
+	clientMiddlewareCalled := make(chan bool, 1)
+	client, err := common.StartClient(*host, *port, *transport, *protocol, pubSub, sent, clientMiddlewareCalled)
 	if err != nil {
 		log.Fatal("Unable to start client: ", err)
 	}
 
 	callEverything(client)
+
+	select {
+	case <-clientMiddlewareCalled:
+	default:
+		log.Fatal("Client middleware not invoked")
+	}
 
 	close(pubSub)
 	<-sent
@@ -54,13 +58,10 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	ctx := frugal.NewFContext("")
 	ctx.SetTimeout(5 * time.Second)
 	var err error
-	fmt.Printf("TestVoid()")
 	if err = client.TestVoid(ctx); err != nil {
 		log.Fatal("Unexpected error in TestVoid() call: ", err)
 	}
-	fmt.Printf(" = void\n")
 
-	fmt.Printf("TestString(\"thing\")")
 	thing, err := client.TestString(ctx, "thing")
 	if err != nil {
 		log.Fatal("Unexpected error in TestString() call: ", err)
@@ -68,9 +69,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if thing != "thing" {
 		log.Fatalf("Unexpected TestString() result, expected 'thing' got '%s' ", thing)
 	}
-	fmt.Printf(" = %v \n", thing)
 
-	fmt.Printf("TestBool(true)")
 	bl, err := client.TestBool(ctx, true)
 	if err != nil {
 		log.Fatal("Unexpected error in TestBool() call: ", err)
@@ -78,8 +77,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if !bl {
 		log.Fatalf("Unexpected TestBool() result expected true, got %f ", bl)
 	}
-	fmt.Printf(" = %v \n", bl)
-	fmt.Printf("TestBool(false)")
+
 	bl, err = client.TestBool(ctx, false)
 	if err != nil {
 		log.Fatal("Unexpected error in TestBool() call: ", err)
@@ -87,9 +85,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if bl {
 		log.Fatalf("Unexpected TestBool() result expected false, got %f ", bl)
 	}
-	fmt.Printf(" = %v \n", bl)
 
-	fmt.Print("TestByte(42)")
 	b, err := client.TestByte(ctx, 42)
 	if err != nil {
 		log.Fatal("Unexpected error in TestByte() call: ", err)
@@ -97,9 +93,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if b != 42 {
 		log.Fatalf("Unexpected TestByte() result expected 42, got %d ", b)
 	}
-	fmt.Printf(" = %v \n", b)
 
-	fmt.Printf("TestI32(4242)")
 	i32, err := client.TestI32(ctx, 4242)
 	if err != nil {
 		log.Fatal("Unexpected error in TestI32() call: ", err)
@@ -107,9 +101,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if i32 != 4242 {
 		log.Fatalf("Unexpected TestI32() result expected 4242, got %d ", i32)
 	}
-	fmt.Printf(" = %v \n", i32)
 
-	fmt.Print("TestI64(424242)")
 	i64, err := client.TestI64(ctx, 424242)
 	if err != nil {
 		log.Fatal("Unexpected error in TestI64() call: ", err)
@@ -117,9 +109,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if i64 != 424242 {
 		log.Fatalf("Unexpected TestI64() result expected 424242, got %d ", i64)
 	}
-	fmt.Printf(" = %v \n", i64)
 
-	fmt.Printf("TestDouble(42.42)")
 	d, err := client.TestDouble(ctx, 42.42)
 	if err != nil {
 		log.Fatal("Unexpected error in TestDouble() call: ", err)
@@ -127,13 +117,11 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if d != 42.42 {
 		log.Fatalf("Unexpected TestDouble() result expected 42.42, got %f ", d)
 	}
-	fmt.Printf(" = %v \n", d)
 
 	// This currently needs to be tested with a number divisible by 4 due to a json serialization issue between go and java
 	// https://github.com/Workiva/frugal/issues/412
 	// Using 400 for now, will change back to 42 (101010) once the Thrift fix is implemented
 	// TODO: Change back to 42
-	fmt.Printf("TestBinary(400)")
 	binary, err := client.TestBinary(ctx, []byte(strconv.Itoa(400)))
 	if err != nil {
 		log.Fatal("Unexpected error in TestBinary call: ", err)
@@ -147,7 +135,6 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	xs.ByteThing = 42
 	xs.I32Thing = 4242
 	xs.I64Thing = 424242
-	fmt.Printf("TestStruct(%v)", xs)
 	xsret, err := client.TestStruct(ctx, xs)
 	if err != nil {
 		log.Fatal("Unexpected error in TestStruct() call: ", err)
@@ -155,11 +142,9 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if *xs != *xsret {
 		log.Fatalf("Unexpected TestStruct() result expected %#v, got %#v ", xs, xsret)
 	}
-	fmt.Printf(" = %v \n", xsret)
 
 	x2 := frugaltest.NewXtruct2()
 	x2.StructThing = xs
-	fmt.Printf("TestNest(%v)", x2)
 	x2ret, err := client.TestNest(ctx, x2)
 	if err != nil {
 		log.Fatal("Unexpected error in TestNest() call: ", err)
@@ -167,10 +152,8 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if !reflect.DeepEqual(x2, x2ret) {
 		log.Fatalf("Unexpected TestNest() result expected %#v, got %#v ", x2, x2ret)
 	}
-	fmt.Printf(" = %v \n", x2ret)
 
 	m := map[int32]int32{1: 2, 3: 4, 5: 42}
-	fmt.Printf("TestMap(%v)", m)
 	mret, err := client.TestMap(ctx, m)
 	if err != nil {
 		log.Fatal("Unexpected error in TestMap() call: ", err)
@@ -178,10 +161,8 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if !reflect.DeepEqual(m, mret) {
 		log.Fatalf("Unexpected TestMap() result expected %#v, got %#v ", m, mret)
 	}
-	fmt.Printf(" = %v \n", bl)
 
 	sm := map[string]string{"a": "2", "b": "blah", "some": "thing"}
-	fmt.Printf("TestStringMap(%v)", sm)
 	smret, err := client.TestStringMap(ctx, sm)
 	if err != nil {
 		log.Fatal("Unexpected error in TestStringMap() call: ", err)
@@ -189,10 +170,8 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if !reflect.DeepEqual(sm, smret) {
 		log.Fatalf("Unexpected TestStringMap() result expected %#v, got %#v ", sm, smret)
 	}
-	fmt.Printf(" = %v \n", smret)
 
 	s := map[int32]bool{1: true, 2: true, 42: true}
-	fmt.Printf("TestSet(%v)", s)
 	sret, err := client.TestSet(ctx, s)
 	if err != nil {
 		log.Fatal("Unexpected error in TestSet() call: ", err)
@@ -200,10 +179,8 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if !reflect.DeepEqual(s, sret) {
 		log.Fatalf("Unexpected TestSet() result expected %#v, got %#v ", s, sret)
 	}
-	fmt.Printf(" = %v \n", sret)
 
 	l := []int32{1, 2, 42}
-	fmt.Printf("TestList(%v)", l)
 	lret, err := client.TestList(ctx, l)
 	if err != nil {
 		log.Fatal("Unexpected error in TestList() call: ", err)
@@ -211,9 +188,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if !reflect.DeepEqual(l, lret) {
 		log.Fatalf("Unexpected TestSet() result expected %#v, got %#v ", l, lret)
 	}
-	fmt.Printf(" = %v \n", lret)
 
-	fmt.Printf("TestEnum(%v)", frugaltest.Numberz_TWO)
 	eret, err := client.TestEnum(ctx, frugaltest.Numberz_TWO)
 	if err != nil {
 		log.Fatal("Unexpected error in TestEnum() call: ", err)
@@ -221,9 +196,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if eret != frugaltest.Numberz_TWO {
 		log.Fatalf("Unexpected TestEnum() result expected %#v, got %#v ", frugaltest.Numberz_TWO, eret)
 	}
-	fmt.Printf(" = %v \n", eret)
 
-	fmt.Printf("TestTypedef(%v)", frugaltest.UserId(42))
 	tret, err := client.TestTypedef(ctx, frugaltest.UserId(42))
 	if err != nil {
 		log.Fatal("Unexpected error in TestTypedef() call: ", err)
@@ -231,9 +204,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if tret != frugaltest.UserId(42) {
 		log.Fatalf("Unexpected TestTypedef() result expected %#v, got %#v ", frugaltest.UserId(42), tret)
 	}
-	fmt.Printf(" = %v \n", tret)
 
-	fmt.Printf("TestMapMap(42)")
 	mapmap, err := client.TestMapMap(ctx, 42)
 	if err != nil {
 		log.Fatal("Unexpected error in TestMapMap() call: ", err)
@@ -241,7 +212,6 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if !reflect.DeepEqual(mapmap, rmapmap) {
 		log.Fatalf("Unexpected TestMapMap() result expected %#v, got %#v ", rmapmap, mapmap)
 	}
-	fmt.Printf(" = %v \n", mapmap)
 
 	crazy := frugaltest.NewInsanity()
 	crazy.UserMap = map[frugaltest.Numberz]frugaltest.UserId{
@@ -262,7 +232,6 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		truck1,
 		truck2,
 	}
-	fmt.Printf("TestInsanity(%v)", crazy)
 	insanity, err := client.TestInsanity(ctx, crazy)
 	if err != nil {
 		log.Fatal("Unexpected error in TestInsanity() call: ", err)
@@ -277,9 +246,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 			crazy,
 			insanity[1][3])
 	}
-	fmt.Printf(" = %v \n", insanity)
 
-	fmt.Printf("TestMulti()")
 	xxsret, err := client.TestMulti(ctx, 42, 4242, 424242, map[int16]string{1: "blah", 2: "thing"}, frugaltest.Numberz_EIGHT, frugaltest.UserId(24))
 	if err != nil {
 		log.Fatal("Unexpected error in TestMulti() call: ", err)
@@ -287,9 +254,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if !reflect.DeepEqual(xxs, xxsret) {
 		log.Fatalf("Unexpected TestMulti() result expected %#v, got %#v ", xxs, xxsret)
 	}
-	fmt.Printf(" = %v \n", xxsret)
 
-	fmt.Printf("TestException(\"Xception\")")
 	err = client.TestException(ctx, "Xception")
 	if err == nil {
 		log.Fatal("Expecting exception in TestException() call")
@@ -297,7 +262,6 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if !reflect.DeepEqual(err, xcept) {
 		log.Fatalf("Unexpected TestException() result expected %#v, got %#v ", xcept, err)
 	}
-	fmt.Printf(" = %v \n", err)
 
 	// TODO: Need to handle the test case where an untyped exception is thrown. Handle reopening the transport after frugal freaks out.
 	// err = client.TestException(ctx, "TException") // This is closing the transport
@@ -306,7 +270,6 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	// 	log.Fatalf("Unexpected TestException() result expected ApplicationError, got %#v ", err)
 	// }
 
-	fmt.Printf("TestMultiException(\"Xception\", \"ignoreme\")")
 	ign, err := client.TestMultiException(ctx, "Xception", "ignoreme")
 	if ign != nil || err == nil {
 		log.Fatal("Expecting exception in TestMultiException() call")
@@ -314,9 +277,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if !reflect.DeepEqual(err, &frugaltest.Xception{ErrorCode: 1001, Message: "This is an Xception"}) {
 		log.Fatalf("Unexpected TestMultiException() %#v ", err)
 	}
-	fmt.Printf(" = %v \n", &frugaltest.Xception{ErrorCode: 1001, Message: "This is an Xception"})
 
-	fmt.Printf("TestMultiException(\"Xception2\", \"ignoreme\")")
 	ign, err = client.TestMultiException(ctx, "Xception2", "ignoreme")
 	if ign != nil || err == nil {
 		log.Fatal("Expecting exception in TestMultiException() call")
@@ -325,19 +286,9 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	if !reflect.DeepEqual(err, expecting) {
 		log.Fatalf("Unexpected TestMultiException() %#v ", err)
 	}
-	fmt.Printf(" = %v \n", expecting)
 
-	fmt.Printf("TestOneWay()")
 	err = client.TestOneway(ctx, 1)
 	if err != nil {
 		log.Fatal("Unexpected error in TestOneway() call: ", err)
 	}
-	fmt.Printf(" - no error returned \n")
-
-	//Make sure the connection still alive
-	fmt.Printf("TestVoid()")
-	if err = client.TestVoid(ctx); err != nil {
-		log.Fatal("Unexpected error in TestVoid() call: ", err)
-	}
-	fmt.Printf(" = void\n")
 }

@@ -9,8 +9,10 @@ import (
 	"github.com/nats-io/nats"
 )
 
-const defaultWorkQueueLen = 64
-const defaultWatermark = 5 * time.Second
+const (
+	defaultWorkQueueLen = 64
+	defaultWatermark = 5 * time.Second
+)
 
 type frameWrapper struct {
 	frameBytes []byte

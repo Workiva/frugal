@@ -8,8 +8,10 @@ import (
 	"github.com/nats-io/nats"
 )
 
-const natsMaxMessageSize = 1024 * 1024
-const frugalPrefix = "frugal."
+const (
+	natsMaxMessageSize = 1024 * 1024
+	frugalPrefix = "frugal."
+)
 
 // NewFNatsTransport returns a new FTransport which uses the NATS messaging
 // system as the underlying transport. This FTransport is stateless in that

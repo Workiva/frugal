@@ -69,7 +69,7 @@ func StartServer(
 		Server for RPC tests
 		Server handler is defined in printing_handler.go
 	*/
-	processor := frugaltest.NewFFrugalTestProcessor(handler)
+	processor := frugaltest.NewFFrugalTestProcessor(handler, serverLoggingMiddleware())
 	var server frugal.FServer
 	switch transport {
 	case "stateless":
