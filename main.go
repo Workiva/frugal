@@ -57,11 +57,6 @@ func main() {
 			Destination: &delim,
 		},
 		cli.BoolFlag{
-			Name:        "retain-intermediate",
-			Usage:       "retain generated intermediate thrift files",
-			Destination: &retainIntermediate,
-		},
-		cli.BoolFlag{
 			Name:        "recurse, r",
 			Usage:       "generate included files",
 			Destination: &recurse,

@@ -64,29 +64,6 @@ func Compile(options Options) error {
 	return err
 }
 
-// warnGenWithoutFrugal prints a warning if generating code with thrift
-// when a gen_with_frugal option exists
-// TODO: Remove this once gen_with frugal is no longer experimental
-// and is the default.
-func warnGenWithoutFrugal(genWithFrugal bool) {
-	if globals.GenWithFrugalWarn {
-		return
-	}
-	if genWithFrugal {
-		globals.PrintWarning(
-			"Generating Thrift code with Frugal. If you encounter problems, file a " +
-				"GitHub issue and generate your\ncode with \"gen_with_frugal=false\" to " +
-				"use the Thrift compiler instead.")
-	} else {
-		globals.PrintWarning(
-			"Consider using the \"gen_with_frugal\" language option " +
-				"to have Frugal generate code in place of Thrift.\nThis is an " +
-				"experimental feature. Please file a GitHub issue if you encounter " +
-				"problems.")
-	}
-	globals.GenWithFrugalWarn = true
-}
-
 // compile parses the Frugal or Thrift IDL and generates code for it, returning
 // an error if something failed.
 func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
@@ -127,9 +104,6 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 	var g generator.ProgramGenerator
 	switch lang {
 	case "dart":
-		// TODO: Remove this once gen_with_frugal is no longer experimental
-		// and is the default
-		warnGenWithoutFrugal(genWithFrugal)
 		g = generator.NewProgramGenerator(dartlang.NewGenerator(options, genWithFrugal), false)
 	case "go":
 		// Make sure the package prefix ends with a "/"
@@ -139,19 +113,10 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 			}
 		}
 
-		// TODO: Remove this once gen_with frugal is no longer experimental
-		// and is the default.
-		warnGenWithoutFrugal(genWithFrugal)
 		g = generator.NewProgramGenerator(golang.NewGenerator(options), false)
 	case "java":
-		// TODO: Remove this once gen_with frugal is no longer experimental
-		// and is the default.
-		warnGenWithoutFrugal(genWithFrugal)
 		g = generator.NewProgramGenerator(java.NewGenerator(options), true)
 	case "py":
-		// TODO: Remove this once gen_with frugal is no longer experimental
-		// and is the default.
-		warnGenWithoutFrugal(genWithFrugal)
 		g = generator.NewProgramGenerator(python.NewGenerator(options), true)
 	default:
 		return nil, fmt.Errorf("Invalid gen value %s", gen)
@@ -200,7 +165,7 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 	if !genWithFrugal {
 		// Generate Thrift code.
 		logv(fmt.Sprintf("Generating \"%s\" Thrift code for %s", lang, file))
-		if err := generateThrift(frugal, dir, file, out, removeGenWithFrugalOption(gen)); err != nil {
+		if err := generateThrift(frugal, dir, file, out, gen); err != nil {
 			return nil, err
 		}
 	}
@@ -244,33 +209,6 @@ func cleanGenParam(gen string) (lang string, options map[string]string, err erro
 		}
 	}
 	return
-}
-
-// removeGenWithFrugalOption removes the gen_with_frugal language option from
-// the gen string, if present, so that it doesn't cause issues with the Thrift
-// compiler when set to false.
-// TODO: Remove this once the Thrift compiler is no longer used.
-func removeGenWithFrugalOption(gen string) string {
-	if !strings.Contains(gen, ":") {
-		return gen
-	}
-	s := strings.Split(gen, ":")
-	lang := s[0]
-	optionsStr := s[1]
-	options := strings.Split(optionsStr, ",")
-	cleaned := ""
-	prefix := ""
-	for _, option := range options {
-		if !strings.HasPrefix(option, "gen_with_frugal") {
-			cleaned += prefix + option
-			prefix = ","
-		}
-	}
-
-	if cleaned == "" {
-		return lang
-	}
-	return fmt.Sprintf("%s:%s", lang, cleaned)
 }
 
 // logv prints the message if in verbose mode.

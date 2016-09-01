@@ -16,3 +16,7 @@ dependencies:
       name: thrift
       url: https://pub.workiva.org
     version: ^0.0.6
+
+dependency_overrides:
+  frugal:
+    path: ../../../../lib/dart

@@ -1143,8 +1143,6 @@ func (g *Generator) generateServer(service *parser.Service) string {
 }
 
 func (g *Generator) exposeServiceModule(path string, service *parser.Service) error {
-	// Expose service in __init__.py.
-	// TODO: Generate __init__.py ourselves once Thrift is removed.
 	initFile := fmt.Sprintf("%s%s__init__.py", path, string(os.PathSeparator))
 	init, err := ioutil.ReadFile(initFile)
 	if err != nil {
