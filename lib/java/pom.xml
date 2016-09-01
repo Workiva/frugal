@@ -203,7 +203,7 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>target/generated-test-sources/frugal</source>
+                                <source>target/generated-test-sources/generated/frugal</source>
                             </sources>
                         </configuration>
                     </execution>

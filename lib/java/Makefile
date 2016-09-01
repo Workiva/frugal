@@ -9,4 +9,4 @@ endif
 generate-java:
 	@-rm -rf target
 	find $(IDL_DIR) -type f -name '*.frugal' \
-		-exec $(FRUGAL_PATH) -out target/generated-test-sources/frugal/ --gen java {} \;
+		-exec $(FRUGAL_PATH) -out target/generated-test-sources/generated/frugal/ --gen java {} \;

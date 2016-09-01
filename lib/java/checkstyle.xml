@@ -38,6 +38,10 @@ page at http://checkstyle.sourceforge.net/config.html -->
   <!-- Allow use of comment to suppress checkstyle -->
   <module name="SuppressionCommentFilter"/>
 
+  <module name="SuppressionFilter">
+    <property name="file" value="suppressions.xml"/>
+  </module>
+
   <!-- All Java AST specific tests live under TreeWalker module. -->
   <module name="TreeWalker">
 
