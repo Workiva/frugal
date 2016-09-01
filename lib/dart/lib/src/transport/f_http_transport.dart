@@ -9,8 +9,8 @@ class FHttpClientTransport extends FTransport {
   final wt.Client client;
   final FHttpConfig config;
 
-  FHttpClientTransport(this.client, config) :
-        super(capacity: config.requestSizeLimit),
+  FHttpClientTransport(this.client, config)
+      : super(capacity: config.requestSizeLimit),
         this.config = config;
 
   @override
