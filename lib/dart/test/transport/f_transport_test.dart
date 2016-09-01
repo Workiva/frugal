@@ -69,7 +69,17 @@ void callback(TTransport transport) {
   return;
 }
 
-class FTransportImpl extends FTransport {}
+class FTransportImpl extends FTransport {
+  // Default implementations of non-implemented methods
+
+  @override
+  Future flush() => new Future.value();
+
+  @override
+  Future open() => new Future.value();
+
+  bool get isOpen => false;
+}
 
 class MockFRegistry extends FRegistry {
   List<Uint8List> data;

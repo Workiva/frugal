@@ -6,11 +6,12 @@ class FHttpClientTransport extends FTransport {
   static const int REQUEST_ENTITY_TOO_LARGE = 413;
 
   final Logger log = new Logger('FHttpTransport');
-  final List<int> _writeBuffer = [];
   final wt.Client client;
   final FHttpConfig config;
 
-  FHttpClientTransport(this.client, this.config) {}
+  FHttpClientTransport(this.client, config) :
+        super(capacity: config.requestSizeLimit),
+        this.config = config;
 
   @override
   bool get isOpen => true;
@@ -20,24 +21,6 @@ class FHttpClientTransport extends FTransport {
 
   @override
   Future close() => new Future.value();
-
-  @override
-  void write(Uint8List buffer, int offset, int length) {
-    if (buffer == null) {
-      throw new ArgumentError.notNull('buffer');
-    }
-
-    if (offset + length > buffer.length) {
-      throw new ArgumentError('The range exceeds the buffer length');
-    }
-
-    if (config.requestSizeLimit > 0 &&
-        length + _writeBuffer.length > config.requestSizeLimit) {
-      throw new FMessageSizeError.request();
-    }
-
-    _writeBuffer.addAll(buffer.sublist(offset, offset + length));
-  }
 
   Future _flushData(Uint8List bytes) async {
     // Encode request payload
@@ -95,10 +78,10 @@ class FHttpClientTransport extends FTransport {
     // otherwise other writes could get into the buffer before this one is sent.
 
     // Frame the request body per frugal spec
-    Uint8List bytes = new Uint8List(4 + _writeBuffer.length);
-    bytes.buffer.asByteData().setUint32(0, _writeBuffer.length);
-    bytes.setAll(4, _writeBuffer);
-    _writeBuffer.clear();
+    Uint8List bytes = new Uint8List(4 + writeBuffer.length);
+    bytes.buffer.asByteData().setUint32(0, writeBuffer.length);
+    bytes.setAll(4, writeBuffer);
+    clearWriteBuffer();
 
     return _flushData(bytes);
   }

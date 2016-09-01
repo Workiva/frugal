@@ -63,11 +63,7 @@ class _TFramedTransport extends TTransport {
   @override
   Future open() async {
     _reset(isOpen: true);
-    // TODO: With 2.0, don't check socket state before
-    // calling through to socket open.
-    if (socket.isClosed) {
-      await socket.open();
-    }
+    await socket.open();
     _messageSub = socket.onMessage.listen(messageHandler);
   }
 
@@ -77,11 +73,7 @@ class _TFramedTransport extends TTransport {
   @override
   Future close() async {
     _reset(isOpen: false);
-    // TODO: With 2.0, don't check socket state before
-    // calling through to socket close.
-    if (socket.isOpen) {
-      await socket.close();
-    }
+    await socket.close();
   }
 
   /// Direct reading is not allowed. To consume read data listen
