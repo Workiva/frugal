@@ -24,7 +24,6 @@ mv $THRIFT $ROOT/bin/thrift
 chmod 0755 $ROOT/bin/thrift
 export PATH=$PATH:$ROOT/bin
 
-
 # GO
 # Compile library code
 cd $ROOT/lib/go

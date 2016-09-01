@@ -157,6 +157,18 @@
                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
                     <includeResources>false</includeResources>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>checkstyle</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <failOnViolation>true</failOnViolation>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>exec-maven-plugin</artifactId>

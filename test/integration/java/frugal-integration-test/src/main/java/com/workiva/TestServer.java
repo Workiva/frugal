@@ -22,10 +22,8 @@ package com.workiva;
 import com.workiva.frugal.protocol.FContext;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.provider.FScopeProvider;
-import com.workiva.frugal.server.FNatsServer;
 import com.workiva.frugal.server.FServer;
 import com.workiva.frugal.server.FStatelessNatsServer;
-import com.workiva.frugal.transport.FMuxTransport;
 import com.workiva.frugal.transport.FNatsScopeTransport;
 import com.workiva.frugal.transport.FScopeTransportFactory;
 import com.workiva.frugal.transport.FTransportFactory;
@@ -103,17 +101,6 @@ public class TestServer {
                             processor,
                             fProtocolFactory,
                             Integer.toString(port)).build();
-                    break;
-                case "stateful":
-                case "stateless-stateful":
-                    FTransportFactory fTransportFactory = new FMuxTransport.Factory(2);
-                    server = new FNatsServer(
-                            conn,
-                            Integer.toString(port),
-                            10000,
-                            processor,
-                            fTransportFactory,
-                            fProtocolFactory);
                     break;
             }
 

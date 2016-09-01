@@ -26,7 +26,8 @@ func StartClient(
 	transport string,
 	protocol string,
 	pubSub chan bool,
-	sent chan bool) (client *frugaltest.FFrugalTestClient, err error) {
+	sent chan bool,
+	clientMiddlewareCalled chan bool) (client *frugaltest.FFrugalTestClient, err error) {
 
 	var protocolFactory thrift.TProtocolFactory
 	switch protocol {
@@ -113,6 +114,7 @@ func StartClient(
 	if err := trans.Open(); err != nil {
 		return nil, fmt.Errorf("Error opening transport %s", err)
 	}
-	client = frugaltest.NewFFrugalTestClient(trans, fProtocolFactory)
+
+	client = frugaltest.NewFFrugalTestClient(trans, fProtocolFactory, clientLoggingMiddleware(clientMiddlewareCalled))
 	return
 }

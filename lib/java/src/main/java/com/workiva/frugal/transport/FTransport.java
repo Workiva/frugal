@@ -41,9 +41,6 @@ public abstract class FTransport extends TTransport {
     private final int writeBufferSize;
     private final ByteArrayOutputStream writeBuffer;
 
-    // TODO: Remove with 2.0
-    // Closed callback
-    private volatile FClosedCallback fClosedCallback;
     // Read buffer
     protected final BlockingQueue<byte[]> frameBuffer;
     protected static final byte[] FRAME_BUFFER_CLOSED = new byte[0];
@@ -244,17 +241,6 @@ public abstract class FTransport extends TTransport {
      * Set the closed callback for the FTransport.
      *
      * @param closedCallback
-     * @deprecated use {@link #setClosedCallback(FTransportClosedCallback)} instead.
-     */
-    @Deprecated
-    public synchronized void setClosedCallback(FClosedCallback closedCallback) {
-        this.fClosedCallback = closedCallback;
-    }
-
-    /**
-     * Set the closed callback for the FTransport.
-     *
-     * @param closedCallback
      */
     public synchronized void setClosedCallback(FTransportClosedCallback closedCallback) {
         this.closedCallback = closedCallback;
@@ -355,10 +341,6 @@ public abstract class FTransport extends TTransport {
     }
 
     protected synchronized void signalClose(final Exception cause) {
-        // TODO: Remove deprecated callback in future release.
-        if (fClosedCallback != null) {
-            fClosedCallback.onClose();
-        }
         if (closedCallback != null) {
             closedCallback.onClose(cause);
         }

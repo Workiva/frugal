@@ -1,6 +1,12 @@
 package common
 
-import "github.com/nats-io/nats"
+import (
+	"fmt"
+	"reflect"
+
+	"github.com/nats-io/nats"
+	"github.com/Workiva/frugal/lib/go"
+)
 
 func getNatsConn() *nats.Conn {
 	addr := nats.DefaultURL
@@ -13,4 +19,29 @@ func getNatsConn() *nats.Conn {
 	}
 
 	return conn
+}
+
+func clientLoggingMiddleware(called chan<- bool) frugal.ServiceMiddleware {
+	return func(next frugal.InvocationHandler) frugal.InvocationHandler {
+		return func(service reflect.Value, method reflect.Method, args frugal.Arguments) frugal.Results {
+			select {
+			case called <- true:
+			default:
+			}
+			fmt.Printf("%v(%v) = ", method.Name, args[1:])
+			ret := next(service, method, args)
+			fmt.Printf("%v\n", ret[:1])
+			return ret
+		}
+	}
+}
+
+func serverLoggingMiddleware() frugal.ServiceMiddleware {
+	return func(next frugal.InvocationHandler) frugal.InvocationHandler {
+		return func(service reflect.Value, method reflect.Method, args frugal.Arguments) frugal.Results {
+			fmt.Printf("%v(%v) \n", method.Name, args[1:])
+			ret := next(service, method, args)
+			return ret
+		}
+	}
 }

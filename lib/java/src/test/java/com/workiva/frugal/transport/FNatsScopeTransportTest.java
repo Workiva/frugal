@@ -15,6 +15,7 @@ import org.mockito.Matchers;
 
 import java.util.concurrent.ArrayBlockingQueue;
 
+import static com.workiva.frugal.transport.FNatsTransport.FRUGAL_PREFIX;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -33,7 +34,7 @@ public class FNatsScopeTransportTest {
     private FNatsScopeTransport transport;
     private Connection conn;
     private String topic = "topic";
-    private String formattedSubject = TNatsServiceTransport.FRUGAL_PREFIX + topic;
+    private String formattedSubject = FRUGAL_PREFIX + topic;
     private AsyncSubscription mockSub;
 
 
