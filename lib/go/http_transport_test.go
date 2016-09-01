@@ -279,7 +279,7 @@ func TestHttpTransportLifecycle(t *testing.T) {
 	}))
 
 	// Instantiate http transport
-	transport := NewHttpFTransportBuilder(&http.Client{}, ts.URL).Build()
+	transport := NewFHttpTransportBuilder(&http.Client{}, ts.URL).Build()
 	frameC := make(chan []byte, 1)
 	flushErr := fmt.Errorf("foo")
 	registry := &mockRegistry{
@@ -327,7 +327,7 @@ func TestHttpTransportOneway(t *testing.T) {
 	}))
 
 	// Instantiate http transpor
-	transport := NewHttpFTransportBuilder(&http.Client{}, ts.URL).Build()
+	transport := NewFHttpTransportBuilder(&http.Client{}, ts.URL).Build()
 	frameC := make(chan []byte, 1)
 	flushErr := fmt.Errorf("foo")
 	registry := &mockRegistry{
@@ -372,7 +372,7 @@ func TestHttpTransportBadRequest(t *testing.T) {
 	}))
 
 	// Instantiate and open http transport
-	transport := NewHttpFTransportBuilder(&http.Client{}, ts.URL).Build()
+	transport := NewFHttpTransportBuilder(&http.Client{}, ts.URL).Build()
 	assert.Nil(transport.Open())
 
 	// Write request
@@ -404,7 +404,7 @@ func TestHttpTransportBadResponseData(t *testing.T) {
 	}))
 
 	// Instantiate and open http transport
-	transport := NewHttpFTransportBuilder(&http.Client{}, ts.URL).Build()
+	transport := NewFHttpTransportBuilder(&http.Client{}, ts.URL).Build()
 	assert.Nil(transport.Open())
 
 	// Write request
@@ -436,7 +436,7 @@ func TestHttpTransportRequestTooLarge(t *testing.T) {
 	}))
 
 	// Instantiate and open http transport
-	transport := NewHttpFTransportBuilder(&http.Client{}, ts.URL).WithRequestSizeLimit(10).Build()
+	transport := NewFHttpTransportBuilder(&http.Client{}, ts.URL).WithRequestSizeLimit(10).Build()
 	assert.Nil(transport.Open())
 
 	// Write request
@@ -466,7 +466,7 @@ func TestHttpTransportResponseTooLarge(t *testing.T) {
 	}))
 
 	// Instantiate and open http transport
-	transport := NewHttpFTransportBuilder(&http.Client{}, ts.URL).WithResponseSizeLimit(10).Build()
+	transport := NewFHttpTransportBuilder(&http.Client{}, ts.URL).WithResponseSizeLimit(10).Build()
 	assert.Nil(transport.Open())
 
 	// Write request
@@ -499,7 +499,7 @@ func TestHttpTransportResponseNotEnoughData(t *testing.T) {
 	}))
 
 	// Instantiate and open http transport
-	transport := NewHttpFTransportBuilder(&http.Client{}, ts.URL).Build()
+	transport := NewFHttpTransportBuilder(&http.Client{}, ts.URL).Build()
 	assert.Nil(transport.Open())
 
 	// Write request
@@ -533,7 +533,7 @@ func TestHttpTransportResponseMissingFrameData(t *testing.T) {
 	}))
 
 	// Instantiate and open http transport
-	transport := NewHttpFTransportBuilder(&http.Client{}, ts.URL).Build()
+	transport := NewFHttpTransportBuilder(&http.Client{}, ts.URL).Build()
 	assert.Nil(transport.Open())
 
 	// Write request
@@ -560,7 +560,7 @@ func TestHttpTransportBadURL(t *testing.T) {
 	requestBytes := []byte("Hello from the other side")
 
 	// Instantiate and open http transport
-	transport := NewHttpFTransportBuilder(&http.Client{}, "nobody/home").Build()
+	transport := NewFHttpTransportBuilder(&http.Client{}, "nobody/home").Build()
 	assert.Nil(transport.Open())
 
 	// Write request
@@ -581,95 +581,7 @@ func TestHttpTransportBadURL(t *testing.T) {
 
 // Ensures Read throws an error whenever called.
 func TestHttpTransportRead(t *testing.T) {
-	transport := NewHttpFTransportBuilder(&http.Client{}, "").Build()
+	transport := NewFHttpTransportBuilder(&http.Client{}, "").Build()
 	_, err := transport.Read(make([]byte, 0))
 	assert.Error(t, err)
-}
-
-// TESTS FOR DEPRECATED HttpTTransport
-
-// Ensures the transport opens, writes, reads, flushes, closes as expected
-func TestHttpTTransportLifecycle(t *testing.T) {
-	assert := assert.New(t)
-
-	// Setup test data
-	requestBytes := []byte("Hello from the other side")
-	responseBytes := []byte("I must've called a thousand times")
-	f := make([]byte, 4)
-	binary.BigEndian.PutUint32(f, uint32(len(responseBytes)))
-	framedResponse := append(f, responseBytes...)
-
-	// Setup test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(r.Header.Get(contentTypeHeader), frugalContentType)
-		assert.Equal(r.Header.Get(contentTransferEncodingHeader), base64Encoding)
-		assert.Equal(r.Header.Get(acceptHeader), frugalContentType)
-
-		respStr := base64.StdEncoding.EncodeToString(framedResponse)
-		w.Write([]byte(respStr))
-	}))
-
-	// Instantiate and open http transport
-	transport := NewHttpTTransport(&http.Client{}, ts.URL)
-	assert.Nil(transport.Open())
-
-	// Flush before actually writing - make sure everything is fine
-	assert.Nil(transport.Flush())
-
-	// Write request
-	n, err := transport.Write(requestBytes)
-	assert.Equal(len(requestBytes), n)
-	assert.Nil(err)
-
-	// Flush
-	assert.Nil(transport.Flush())
-
-	// Read response
-	actualResp := make([]byte, len(framedResponse))
-	n, err = transport.Read(actualResp)
-	assert.Equal(len(framedResponse), n)
-	assert.Nil(err)
-	assert.Equal(framedResponse, actualResp)
-
-	// Close
-	assert.Nil(transport.Close())
-}
-
-// Ensures the transport handles one-way functions correctly
-func TestHttpTTransportOneway(t *testing.T) {
-	assert := assert.New(t)
-
-	// Setup test data
-	requestBytes := []byte("Hello from the other side")
-	framedResponse := make([]byte, 4)
-
-	// Setup test server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		respStr := base64.StdEncoding.EncodeToString(framedResponse)
-		w.Write([]byte(respStr))
-	}))
-
-	// Instantiate and open http transport
-	transport := NewHttpTTransport(&http.Client{}, ts.URL)
-	assert.Nil(transport.Open())
-
-	// Write request
-	n, err := transport.Write(requestBytes)
-	assert.Equal(len(requestBytes), n)
-	assert.Nil(err)
-
-	// Flush
-	assert.Nil(transport.Flush())
-
-	// Trigger a delayed closed to unblock read
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		// Close
-		assert.Nil(transport.Close())
-	}()
-
-	// Read response
-	n, err = transport.Read([]byte{})
-	assert.Equal(0, n)
-	assert.Equal(thrift.NewTTransportExceptionFromError(io.EOF), err)
 }

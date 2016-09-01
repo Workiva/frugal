@@ -33,15 +33,15 @@ func (m *mockFProcessorFactory) AssertExpectations(t *testing.T) {
 func TestSimpleServer(t *testing.T) {
 	mockFProcessorFactory := new(mockFProcessorFactory)
 	protoFactory := thrift.NewTJSONProtocolFactory()
-	fTransportFactory := NewFMuxTransportFactory(1)
+	fTransportFactory := NewAdapterTransportFactory()
 	serverTr, err := thrift.NewTServerSocket(simpleServerAddr)
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := NewFSimpleServerFactory5(
+	server := NewFSimpleServerFactory4(
 		mockFProcessorFactory,
 		serverTr,
-		NewFMuxTransportFactory(2),
+		NewAdapterTransportFactory(),
 		NewFProtocolFactory(protoFactory),
 	)
 

@@ -277,8 +277,8 @@ func TestAddHeadersToFrameBadFrameSize(t *testing.T) {
 func TestMarshalUnmarshalHeadersUTF8(t *testing.T) {
 	assert := assert.New(t)
 	marshaler := v0Marshaler
-	headers := map[string]string {
-		"Đ¥ÑØ": "δάüΓ",
+	headers := map[string]string{
+		"Đ¥ÑØ":           "δάüΓ",
 		"good\u00F1ight": "moo\u00F1",
 	}
 	encodedHeaders := marshaler.marshalHeaders(headers)

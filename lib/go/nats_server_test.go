@@ -21,28 +21,26 @@ func TestFStatelessNatsServer(t *testing.T) {
 	}
 	processor := &processor{t}
 	protoFactory := NewFProtocolFactory(thrift.NewTBinaryProtocolFactoryDefault())
-	server := NewFStatelessNatsServerBuilder(conn, processor, protoFactory, "foo").WithQueueGroup("queue").Build()
+	server := NewFNatsServerBuilder(conn, processor, protoFactory, "foo").WithQueueGroup("queue").Build()
 	go func() {
 		assert.Nil(t, server.Serve())
 	}()
 	time.Sleep(10 * time.Millisecond)
 	defer server.Stop()
 
-	tr := NewStatelessNatsTTransport(conn, "foo", "bar")
+	tr := NewFNatsTransport(conn, "foo", "bar")
+	r := &mockFRegistry{}
+	r.On("Execute", []byte{0, 0, 0, 3, 102, 111, 111}).Return(nil)
+	tr.SetRegistry(r)
+
 	assert.Nil(t, tr.Open())
 
 	// Send a request.
 	_, err = tr.Write([]byte("xxxxhello"))
 	assert.Nil(t, err)
 	assert.Nil(t, tr.Flush())
-
-	// Get the response.
-	buff := make([]byte, 100)
-	n, err := tr.Read(buff)
-	assert.Nil(t, err)
-
-	// Server should send back "foo" in binary protocol.
-	assert.Equal(t, []byte{0x0, 0x0, 0x0, 0x7, 0x0, 0x0, 0x0, 0x3, 0x66, 0x6f, 0x6f}, buff[0:n])
+	time.Sleep(50 * time.Millisecond)
+	r.AssertExpectations(t)
 }
 
 type processor struct {
@@ -50,7 +48,7 @@ type processor struct {
 }
 
 func (p *processor) Process(in, out *FProtocol) error {
-	assert.Equal(p.t, "hello", string(in.Transport().(*thrift.TMemoryBuffer).Bytes()))
+	assert.Equal(p.t, "xxxxhello", string(in.Transport().(*thrift.TMemoryBuffer).Bytes()))
 	out.WriteString("foo")
 	return nil
 }

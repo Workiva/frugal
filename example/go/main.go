@@ -114,7 +114,7 @@ func runClient(conn *nats.Conn, protocolFactory *frugal.FProtocolFactory, port s
 		return err
 	}
 
-	httpT := frugal.NewHttpFTransportBuilder(&http.Client{}, fmt.Sprintf("http://localhost:%s/frugal", port)).Build()
+	httpT := frugal.NewFHttpTransportBuilder(&http.Client{}, fmt.Sprintf("http://localhost:%s/frugal", port)).Build()
 	defer httpT.Close()
 	if err := httpT.Open(); err != nil {
 		return err
