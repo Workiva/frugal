@@ -137,21 +137,17 @@ func NewProgramGenerator(generator LanguageGenerator, splitPublisherSubscriber b
 }
 
 // Generate the Frugal in the given directory.
-func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string, genWithFrugal bool) error {
+func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string) error {
 	o.SetFrugal(frugal)
-	if genWithFrugal {
-		o.SetupGenerator(outputDir)
-	}
+	o.SetupGenerator(outputDir)
 
 	if err := o.GenerateDependencies(outputDir); err != nil {
 		return err
 	}
 
-	if genWithFrugal {
-		// generate thrift
-		if err := o.generateThrift(frugal, outputDir); err != nil {
-			return err
-		}
+	// generate thrift
+	if err := o.generateThrift(frugal, outputDir); err != nil {
+		return err
 	}
 
 	// generate frugal
@@ -159,10 +155,7 @@ func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string, gen
 		return err
 	}
 
-	if genWithFrugal {
-		return o.TeardownGenerator()
-	}
-	return nil
+	return o.TeardownGenerator()
 }
 
 func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir string) error {
