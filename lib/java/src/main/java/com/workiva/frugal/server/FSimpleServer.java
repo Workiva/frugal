@@ -36,7 +36,7 @@ public class FSimpleServer implements FServer {
     }
 
     /**
-     * Create a new FSimpleServer
+     * Create a new FSimpleServer.
      *
      * @param fProcessor Processor for incoming requests.
      * @param fServerTransport Server transport listening to requests.
