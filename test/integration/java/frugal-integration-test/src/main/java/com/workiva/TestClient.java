@@ -1,40 +1,38 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-
 package com.workiva;
 
 import com.workiva.frugal.protocol.FContext;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.provider.FScopeProvider;
-import com.workiva.frugal.transport.*;
-import frugal.test.*;
+import com.workiva.frugal.transport.FHttpTransport;
+import com.workiva.frugal.transport.FNatsScopeTransport;
+import com.workiva.frugal.transport.FNatsTransport;
+import com.workiva.frugal.transport.FScopeTransportFactory;
+import com.workiva.frugal.transport.FTransport;
+import frugal.test.Event;
+import frugal.test.EventsPublisher;
+import frugal.test.EventsSubscriber;
+import frugal.test.FFrugalTest;
+import frugal.test.Insanity;
+import frugal.test.Numberz;
+import frugal.test.Xception;
+import frugal.test.Xception2;
+import frugal.test.Xtruct;
+import frugal.test.Xtruct2;
 import io.nats.client.Connection;
 import io.nats.client.ConnectionFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.protocol.TProtocolFactory;
-import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;

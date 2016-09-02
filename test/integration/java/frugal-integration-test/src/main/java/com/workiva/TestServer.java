@@ -1,33 +1,22 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-
 package com.workiva;
 
 import com.workiva.frugal.protocol.FContext;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.provider.FScopeProvider;
-import com.workiva.frugal.server.FServer;
 import com.workiva.frugal.server.FNatsServer;
+import com.workiva.frugal.server.FServer;
 import com.workiva.frugal.transport.FNatsScopeTransport;
 import com.workiva.frugal.transport.FScopeTransportFactory;
-import com.workiva.frugal.transport.FTransportFactory;
-import frugal.test.*;
+import frugal.test.Event;
+import frugal.test.EventsPublisher;
+import frugal.test.EventsSubscriber;
+import frugal.test.FFrugalTest;
+import frugal.test.Insanity;
+import frugal.test.Numberz;
+import frugal.test.Xception;
+import frugal.test.Xception2;
+import frugal.test.Xtruct;
+import frugal.test.Xtruct2;
 import io.nats.client.Connection;
 import io.nats.client.ConnectionFactory;
 import io.nats.client.Constants;
@@ -36,13 +25,17 @@ import org.apache.thrift.protocol.TProtocolFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
 
 public class TestServer {
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         try {
             // default testing parameters, overwritten in Python runner
             int port = 9090;
@@ -121,7 +114,7 @@ public class TestServer {
 
     private static class TestServerHandler implements FFrugalTest.Iface {
 
-//      Each RPC handler "test___" accepts a value of type ___ and returns the same value (where applicable).
+        //      Each RPC handler "test___" accepts a value of type ___ and returns the same value (where applicable).
 //      The client then asserts that the returned value is equal to the value sent.
         @Override
         public void testVoid(FContext ctx) throws TException {
@@ -223,16 +216,16 @@ public class TestServer {
             System.out.format("testMapMap(%s, %d)\n", ctx, hello);
 
             Map<Integer, Integer> mp1 = new HashMap<>();
-            mp1.put(-4,-4);
-            mp1.put(-3,-3);
-            mp1.put(-2,-2);
-            mp1.put(-1,-1);
+            mp1.put(-4, -4);
+            mp1.put(-3, -3);
+            mp1.put(-2, -2);
+            mp1.put(-1, -1);
 
             Map<Integer, Integer> mp2 = new HashMap<>();
-            mp2.put(4,4);
-            mp2.put(3,3);
-            mp2.put(2,2);
-            mp2.put(1,1);
+            mp2.put(4, 4);
+            mp2.put(3, 3);
+            mp2.put(2, 2);
+            mp2.put(1, 1);
 
             Map<Integer, Map<Integer, Integer>> rMapMap = new HashMap<>();
             rMapMap.put(-4, mp1);
@@ -337,13 +330,13 @@ public class TestServer {
                 FScopeProvider provider = new FScopeProvider(factory, protocolFactory);
                 EventsSubscriber subscriber = new EventsSubscriber(provider);
                 try {
-                    subscriber.subscribeEventCreated(Integer.toString(port)+"-call", (context, event) -> {
+                    subscriber.subscribeEventCreated(Integer.toString(port) + "-call", (context, event) -> {
                         System.out.format("received " + context + " : " + event);
                         EventsPublisher publisher = new EventsPublisher(provider);
                         try {
                             publisher.open();
                             event = new Event(1, "received call");
-                            publisher.publishEventCreated(new FContext("Call"), Integer.toString(port)+"-response", event);
+                            publisher.publishEventCreated(new FContext("Call"), Integer.toString(port) + "-response", event);
 
                         } catch (TException e) {
                             System.out.println("Error opening publisher to respond" + e.getMessage());
