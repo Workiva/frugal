@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.workiva</groupId>
     <artifactId>frugal-integration-test</artifactId>
@@ -20,6 +21,8 @@
             <groupId>com.workiva</groupId>
             <artifactId>frugal</artifactId>
             <version>1.16.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/resources/frugal.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -91,10 +94,12 @@
                 <executions>
                     <execution>
                         <phase>generate-sources</phase>
-                        <goals><goal>add-source</goal></goals>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
                         <configuration>
                             <sources>
-                                <source>gen-java</source>
+                                <source>target/generated-sources</source>
                             </sources>
                         </configuration>
                     </execution>
