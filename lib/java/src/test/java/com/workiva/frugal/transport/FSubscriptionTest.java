@@ -23,7 +23,7 @@ public class FSubscriptionTest {
     @Before
     public void setUp() throws Exception {
         mockTransport = mock(FScopeTransport.class);
-        subscription = new FSubscription(topic, mockTransport);
+        subscription = FSubscription.of(topic, mockTransport);
     }
 
     @Test
