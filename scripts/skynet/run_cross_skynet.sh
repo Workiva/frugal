@@ -5,6 +5,7 @@ set -exo pipefail
 ./scripts/skynet/skynet_setup.sh
 
 export FRUGAL_HOME=$GOPATH/src/github.com/Workiva/frugal
+export IDL_FILE=${FRUGAL_HOME}/test/integration/frugalTest.frugal
 cd ${FRUGAL_HOME}
 
 # Remove any leftover log files (necessary for skynet-cli)
@@ -26,18 +27,19 @@ rm -rf test/integration/dart/gen-dart/*
 # clean any existing Java builds
 cd ${FRUGAL_HOME}/lib/java && mvn clean
 cd ${FRUGAL_HOME}/test/integration/java/frugal-integration-test && mvn clean
+cd ${FRUGAL_HOME}
 
 # Generate code
 if [ "$gen_with_thrift" = true ]; then
-    frugal --gen go:package_prefix=github.com/Workiva/frugal/,gen_with_frugal=false -r --out='test/integration/go/gen' test/integration/frugalTest.frugal
-    frugal --gen java:gen_with_frugal=false -r --out='test/integration/java/frugal-integration-test/target/generated-sources/' test/integration/frugalTest.frugal
-    frugal --gen py:tornado,gen_with_frugal=false -r --out='test/integration/python/gen_py_tornado' test/integration/frugalTest.frugal
-    frugal --gen dart:gen_with_frugal=false -r --out='test/integration/dart/gen-dart' test/integration/frugalTest.frugal
+    frugal --gen go:package_prefix=github.com/Workiva/frugal/,gen_with_frugal=false -r --out='test/integration/go/gen' ${IDL_FILE}
+    frugal --gen java:gen_with_frugal=false -r --out='test/integration/java/frugal-integration-test/target/generated-sources/' ${IDL_FILE}
+    frugal --gen py:tornado,gen_with_frugal=false -r --out='test/integration/python/gen_py_tornado' ${IDL_FILE}
+    frugal --gen dart:gen_with_frugal=false -r --out='test/integration/dart/gen-dart' ${IDL_FILE}
 else
-    frugal --gen go:package_prefix=github.com/Workiva/frugal/ -r --out='test/integration/go/gen' test/integration/frugalTest.frugal
-    frugal --gen java -r --out='test/integration/java/frugal-integration-test/target/generated-sources' test/integration/frugalTest.frugal
-    frugal --gen py:tornado -r --out='test/integration/python/gen_py_tornado' test/integration/frugalTest.frugal
-    frugal --gen dart -r --out='test/integration/dart/gen-dart' test/integration/frugalTest.frugal
+    frugal --gen go:package_prefix=github.com/Workiva/frugal/ -r --out='test/integration/go/gen' ${IDL_FILE}
+    frugal --gen java -r --out='test/integration/java/frugal-integration-test/target/generated-sources' ${IDL_FILE}
+    frugal --gen py:tornado -r --out='test/integration/python/gen_py_tornado' ${IDL_FILE}
+    frugal --gen dart -r --out='test/integration/dart/gen-dart' ${IDL_FILE}
 fi
 
 # Create Go binaries
