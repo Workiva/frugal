@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/Workiva/frugal/compiler/generator"
@@ -71,7 +70,6 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		gen    = globals.Gen
 		out    = globals.Out
 		dryRun = globals.DryRun
-		dir    = filepath.Dir(file)
 	)
 
 	if frugal, ok := globals.CompiledFiles[file]; ok {
@@ -90,21 +88,11 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		return nil, err
 	}
 
-	// Gen with Frugal by default.
-	genWithFrugal := true
-	if genWithFrugalStr, ok := options["gen_with_frugal"]; ok {
-		if gen, err := strconv.ParseBool(genWithFrugalStr); err != nil {
-			return nil, fmt.Errorf("Invalid value '%s' for gen_with_frugal", genWithFrugalStr)
-		} else {
-			genWithFrugal = gen
-		}
-	}
-
 	// Resolve Frugal generator.
 	var g generator.ProgramGenerator
 	switch lang {
 	case "dart":
-		g = generator.NewProgramGenerator(dartlang.NewGenerator(options, genWithFrugal), false)
+		g = generator.NewProgramGenerator(dartlang.NewGenerator(options), false)
 	case "go":
 		// Make sure the package prefix ends with a "/"
 		if package_prefix, ok := options["package_prefix"]; ok {
@@ -138,47 +126,54 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		return nil, err
 	}
 
-	if genWithFrugal {
-		// If not using frugal, add parsed includes here
-		// preserve what thrift does to keep ordering in the file
-		for _, include := range frugal.Thrift.Includes {
-			generateInclude(frugal, include)
-		}
-	}
-
-	if !genWithFrugal && !isThrift {
-		// Generate intermediate Thrift IDL for Frugal. If this is already a
-		// .thrift file, do not generate an intermediate IDL.
-		logv(fmt.Sprintf("Generating intermediate Thrift file %s",
-			filepath.Join(dir, fmt.Sprintf("%s.thrift", frugal.Name))))
-		idlFile, err := generateThriftIDL(dir, frugal)
-		if err != nil {
-			return nil, err
-		}
-		file = idlFile
+	// If not using frugal, add parsed includes here
+	// preserve what thrift does to keep ordering in the file
+	for _, include := range frugal.Thrift.Includes {
+		generateInclude(frugal, include)
 	}
 
 	if dryRun || !generate {
 		return frugal, nil
 	}
 
-	if !genWithFrugal {
-		// Generate Thrift code.
-		logv(fmt.Sprintf("Generating \"%s\" Thrift code for %s", lang, file))
-		if err := generateThrift(frugal, dir, file, out, gen); err != nil {
-			return nil, err
-		}
-	}
-
 	// Generate Frugal code.
 	logv(fmt.Sprintf("Generating \"%s\" Frugal code for %s", lang, frugal.File))
-	return frugal, g.Generate(frugal, fullOut, genWithFrugal)
+	return frugal, g.Generate(frugal, fullOut)
 }
 
 // exists determines if the file at the given path exists.
 func exists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func generateInclude(frugal *parser.Frugal, incl *parser.Include) (string, error) {
+	contents := ""
+	// Recurse on includes
+	include := incl.Value
+	if !strings.HasSuffix(include, ".thrift") && !strings.HasSuffix(include, ".frugal") {
+		return "", fmt.Errorf("Bad include name: %s", include)
+	}
+
+	file := filepath.Join(frugal.Dir, include)
+	parsed, err := compile(file, strings.HasSuffix(include, ".thrift"), globals.Recurse)
+	if err != nil {
+		return "", fmt.Errorf("Include %s: %s", file, err)
+	}
+
+	// Lop off extension (.frugal or .thrift)
+	includeBase := include[:len(include)-7]
+
+	// Lop off path
+	includeName := filepath.Base(includeBase)
+
+	frugal.ParsedIncludes[includeName] = parsed
+
+	// Replace .frugal with .thrift
+	include = includeBase + ".thrift"
+	contents += fmt.Sprintf("include \"%s\"\n", include)
+	contents += "\n"
+	return contents, nil
 }
 
 // cleanGenParam processes a string that includes an optional trailing

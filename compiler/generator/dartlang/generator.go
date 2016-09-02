@@ -36,12 +36,11 @@ const (
 type Generator struct {
 	*generator.BaseGenerator
 	outputDir     string
-	genWithFrugal bool
 }
 
 // NewGenerator creates a new Dart LanguageGenerator.
-func NewGenerator(options map[string]string, genWithFrugal bool) generator.LanguageGenerator {
-	return &Generator{&generator.BaseGenerator{Options: options}, "", genWithFrugal}
+func NewGenerator(options map[string]string) generator.LanguageGenerator {
+	return &Generator{&generator.BaseGenerator{Options: options}, ""}
 }
 
 func (g *Generator) getLibraryName() string {
@@ -1161,11 +1160,7 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 
 	// Import thrift package for method args
 	servSnake := toFileName(s.Name)
-	if g.genWithFrugal {
-		imports += fmt.Sprintf("import 'f_%s_structs.dart' as t_%s_file;\n", servSnake, servSnake)
-	} else {
-		imports += fmt.Sprintf("import '%s.dart' as t_%s_file;\n", servSnake, servSnake)
-	}
+	imports += fmt.Sprintf("import 'f_%s_structs.dart' as t_%s_file;\n", servSnake, servSnake)
 
 	_, err := file.WriteString(imports)
 	return err

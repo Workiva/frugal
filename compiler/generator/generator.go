@@ -73,7 +73,7 @@ func ValidateOption(lang, option string) bool {
 // produced by the parser.
 type ProgramGenerator interface {
 	// Generate the Frugal in the given directory.
-	Generate(frugal *parser.Frugal, outputDir string, genWithFrugal bool) error
+	Generate(frugal *parser.Frugal, outputDir string) error
 
 	// GetOutputDir returns the full output directory for generated code.
 	GetOutputDir(dir string, f *parser.Frugal) string
