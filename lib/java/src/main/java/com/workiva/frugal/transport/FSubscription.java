@@ -11,7 +11,8 @@ public final class FSubscription {
     private final String topic;
     private final FScopeTransport transport;
 
-    private FSubscription(String topic, FScopeTransport transport) {
+    // TODO: Have compiled code call .of() constructor.
+    public FSubscription(String topic, FScopeTransport transport) {
         this.topic = topic;
         this.transport = transport;
     }
