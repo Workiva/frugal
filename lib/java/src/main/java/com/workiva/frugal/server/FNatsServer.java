@@ -3,11 +3,9 @@ package com.workiva.frugal.server;
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.transport.FBoundedMemoryBuffer;
-import com.workiva.frugal.transport.FTransport;
 import com.workiva.frugal.util.BlockingRejectedExecutionHandler;
 import com.workiva.frugal.util.ProtocolUtils;
 import io.nats.client.Connection;
-import io.nats.client.Message;
 import io.nats.client.MessageHandler;
 import io.nats.client.Subscription;
 import org.apache.thrift.TException;
@@ -33,7 +31,8 @@ import static com.workiva.frugal.transport.FNatsTransport.NATS_MAX_MESSAGE_SIZE;
 public class FNatsServer implements FServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FNatsServer.class);
-    private static final int DEFAULT_WORK_QUEUE_LEN = 64;
+    public static final int DEFAULT_WORK_QUEUE_LEN = 64;
+    public static final int DEFAULT_WATERMARK = 5000;
 
     private final Connection conn;
     private final FProcessor processor;
@@ -41,7 +40,7 @@ public class FNatsServer implements FServer {
     private final FProtocolFactory outputProtoFactory;
     private final String subject;
     private final String queue;
-    private long highWatermark = FTransport.DEFAULT_WATERMARK;
+    private final long highWatermark;
 
     private final CountDownLatch shutdownSignal = new CountDownLatch(1);
     private final ExecutorService executorService;
@@ -54,20 +53,23 @@ public class FNatsServer implements FServer {
      * too long based on the high watermark, the server will log that it is backed up. Clients must connect with the
      * FNatsTransport.
      *
-     * @param conn         NATS connection
-     * @param processor    FProcessor used to process requests
-     * @param protoFactory FProtocolFactory used for input and output protocols
-     * @param subject      NATS subject to receive requests on
-     * @param queue        NATS queue group to receive requests on
+     * @param conn            NATS connection
+     * @param processor       FProcessor used to process requests
+     * @param protoFactory    FProtocolFactory used for input and output protocols
+     * @param subject         NATS subject to receive requests on
+     * @param queue           NATS queue group to receive requests on
+     * @param highWatermark   Milliseconds when high watermark logic is triggered
+     * @param executorService Custom executor service for processing messages
      */
     private FNatsServer(Connection conn, FProcessor processor, FProtocolFactory protoFactory,
-                        String subject, String queue, ExecutorService executorService) {
+                        String subject, String queue, long highWatermark, ExecutorService executorService) {
         this.conn = conn;
         this.processor = processor;
         this.inputProtoFactory = protoFactory;
         this.outputProtoFactory = protoFactory;
         this.subject = subject;
         this.queue = queue;
+        this.highWatermark = highWatermark;
         this.executorService = executorService;
     }
 
@@ -84,7 +86,7 @@ public class FNatsServer implements FServer {
         private String queue = "";
         private int workerCount = 1;
         private int queueLength = DEFAULT_WORK_QUEUE_LEN;
-        private long highWatermark = FTransport.DEFAULT_WATERMARK;
+        private long highWatermark = DEFAULT_WATERMARK;
         private ExecutorService executorService;
 
         /**
@@ -184,13 +186,17 @@ public class FNatsServer implements FServer {
                         new BlockingRejectedExecutionHandler());
             }
             FNatsServer server =
-                    new FNatsServer(conn, processor, protoFactory, subject, queue, executorService);
-            server.setHighWatermark(highWatermark);
+                    new FNatsServer(conn, processor, protoFactory, subject, queue, highWatermark, executorService);
             return server;
         }
 
     }
 
+    /**
+     * Starts the server by subscribing to messages on the configured NATS subject.
+     *
+     * @throws TException
+     */
     @Override
     public void serve() throws TException {
         Subscription sub = conn.subscribe(subject, queue, newRequestHandler());
@@ -208,6 +214,11 @@ public class FNatsServer implements FServer {
         }
     }
 
+    /**
+     * Stops the server by shutting down the executor service processing tasks.
+     *
+     * @throws TException
+     */
     @Override
     public void stop() throws TException {
         // Attempt to perform an orderly shutdown of the worker pool by trying to complete any in-flight requests.
@@ -226,21 +237,19 @@ public class FNatsServer implements FServer {
     }
 
     /**
-     * Creates a new MessageHandler which is invoked when a request is received.
+     * Creates a new NATS MessageHandler which is invoked when a request is received.
      */
     protected MessageHandler newRequestHandler() {
-        return new MessageHandler() {
-            @Override
-            public void onMessage(Message message) {
-                String reply = message.getReplyTo();
-                if (reply == null || reply.isEmpty()) {
-                    LOGGER.warn("Discarding invalid NATS request (no reply)");
-                    return;
-                }
-
-                executorService.submit(new Request(message.getData(), System.currentTimeMillis(), message.getReplyTo(),
-                        getHighWatermark(), inputProtoFactory, outputProtoFactory, processor, conn));
+        return message -> {
+            String reply = message.getReplyTo();
+            if (reply == null || reply.isEmpty()) {
+                LOGGER.warn("Discarding invalid NATS request (no reply)");
+                return;
             }
+
+            executorService.submit(
+                    new Request(message.getData(), System.currentTimeMillis(), message.getReplyTo(),
+                        highWatermark, inputProtoFactory, outputProtoFactory, processor, conn));
         };
     }
 
@@ -259,8 +268,8 @@ public class FNatsServer implements FServer {
         final Connection conn;
 
         Request(byte[] frameBytes, long timestamp, String reply, long highWatermark,
-                       FProtocolFactory inputProtoFactory, FProtocolFactory outputProtoFactory,
-                       FProcessor processor, Connection conn) {
+                FProtocolFactory inputProtoFactory, FProtocolFactory outputProtoFactory,
+                FProcessor processor, Connection conn) {
             this.frameBytes = frameBytes;
             this.timestamp = timestamp;
             this.reply = reply;
@@ -333,14 +342,4 @@ public class FNatsServer implements FServer {
     ExecutorService getExecutorService() {
         return executorService;
     }
-
-    @Override
-    public void setHighWatermark(long watermark) {
-        highWatermark = watermark;
-    }
-
-    private long getHighWatermark() {
-        return highWatermark;
-    }
-
 }

@@ -30,16 +30,4 @@ public interface FServer {
      * @throws TException
      */
     void stop() throws TException;
-
-    /**
-     * Sets the maximum amount of time a frame is allowed to await processing
-     * before triggering transport overload logic.
-     *
-     * @param watermark the watermark time in milliseconds.
-     *
-     * @deprecated This will be a constructor implementation detail for
-     * servers which buffer client requests.
-     */
-    @Deprecated
-    void setHighWatermark(long watermark);
 }
