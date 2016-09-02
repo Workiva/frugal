@@ -16,11 +16,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 /**
- * FTransport is Frugal's equivalent of Thrift's TTransport. FTransport extends
+ * FTransport is Frugal's equivalent of Thrift's TTransport.
+ * <p>
+ * FTransport extends
  * TTransport and exposes some additional methods. An FTransport has an FRegistry,
  * so it provides methods for setting the FRegistry and registering and unregistering
  * an FAsyncCallback to an FContext.
@@ -41,22 +41,12 @@ public abstract class FTransport extends TTransport {
     private final int writeBufferSize;
     private final ByteArrayOutputStream writeBuffer;
 
-    // Read buffer
-    protected final BlockingQueue<byte[]> frameBuffer;
-    protected static final byte[] FRAME_BUFFER_CLOSED = new byte[0];
-    private byte[] currentFrame = new byte[0];
-    private int currentFramePos;
-    // Watermark
-    public static final long DEFAULT_WATERMARK = 5 * 1000;
-    protected long highWatermark = DEFAULT_WATERMARK;
-
     /**
      * Default constructor for FTransport with no inherent read/write capabilities.
      */
     protected FTransport() {
         this.writeBufferSize = 0;
         this.writeBuffer = null;
-        this.frameBuffer = null;
     }
 
     /**
@@ -75,20 +65,6 @@ public abstract class FTransport extends TTransport {
             this.writeBufferSize = writeBufferSize;
             this.writeBuffer = new ByteArrayOutputStream(writeBufferSize);
         }
-        this.frameBuffer = null;
-    }
-
-    /**
-     * Construct an FTransport which supports reads.
-     *
-     * @deprecated Construct callback-based transports instead
-     * TODO: Remove with 2.0
-     */
-    @Deprecated
-    FTransport(int requestBufferSize, int frameBufferSize) {
-        this.writeBufferSize = requestBufferSize;
-        this.writeBuffer = new ByteArrayOutputStream(requestBufferSize);
-        this.frameBuffer = new ArrayBlockingQueue<>(frameBufferSize);
     }
 
     @Override
@@ -115,15 +91,6 @@ public abstract class FTransport extends TTransport {
      * @param cause Exception if not a clean close (null otherwise)
      */
     protected synchronized void close(final Exception cause) {
-        // TODO: Remove all read logic with 2.0
-        if (frameBuffer != null) {
-            try {
-                frameBuffer.put(FRAME_BUFFER_CLOSED);
-            } catch (InterruptedException e) {
-                LOGGER.warn("could not close frame buffer: " + e.getMessage());
-            }
-        }
-
         if (registry != null) {
             registry.close();
         }
@@ -132,40 +99,17 @@ public abstract class FTransport extends TTransport {
     }
 
     /**
-     * With callback-based FTransports (i.e. all transports with the release of 2.0),
-     * this will throw an UnsupportedOperationException.
-     *
+     * FTransports do not support read.
+     * This will throw an UnsupportedOperationException when called.
+     * <p>
      * Reads up to len bytes into the buffer.
      *
+     * @throws UnsupportedOperationException
      * @throws TTransportException
-     *
-     * TODO: Remove all read logic with 2.0
      */
     @Override
     public int read(byte[] bytes, int off, int len) throws TTransportException {
-        if (frameBuffer == null) {
-            throw new UnsupportedOperationException("Do not call read directly on FTransport");
-        }
-
-        // TODO: Remove this with 2.0
-        if (!isOpen()) {
-            throw new TTransportException(TTransportException.END_OF_FILE);
-        }
-        if (currentFramePos == currentFrame.length) {
-            try {
-                currentFrame = frameBuffer.take();
-                currentFramePos = 0;
-            } catch (InterruptedException e) {
-                throw new TTransportException(TTransportException.END_OF_FILE, e.getMessage());
-            }
-        }
-        if (currentFrame == FRAME_BUFFER_CLOSED) {
-            throw new TTransportException(TTransportException.END_OF_FILE);
-        }
-        int size = Math.min(len, currentFrame.length);
-        System.arraycopy(currentFrame, currentFramePos, bytes, off, size);
-        currentFramePos += size;
-        return size;
+        throw new UnsupportedOperationException("FTransports do not support read. Provide a callback instead.");
     }
 
     /**
@@ -177,7 +121,7 @@ public abstract class FTransport extends TTransport {
     @Override
     public void write(byte[] bytes, int off, int len) throws TTransportException {
         if (writeBuffer == null) {
-            throw new UnsupportedOperationException("No write buffer set on FTranspprt");
+            throw new UnsupportedOperationException("No write buffer set on FTransport.");
         }
 
         if (writeBufferSize > 0 && writeBuffer.size() + len > writeBufferSize) {
@@ -197,9 +141,8 @@ public abstract class FTransport extends TTransport {
      */
     public synchronized void setRegistry(FRegistry registry) {
         if (registry == null) {
-            throw new IllegalArgumentException("registry cannot by null");
+            throw new IllegalArgumentException("Registry cannot be null.");
         }
-        // TODO: With 2.0, consider throwing a RuntimeException.
         // Currently, the generated code sets the registry for each
         // extending service for a particular base service.
         if (this.registry != null) {
@@ -257,48 +200,13 @@ public abstract class FTransport extends TTransport {
     }
 
     /**
-     * Sets the maximum amount of time a frame is allowed to await processing
-     * before triggering transport overload logic.
-     *
-     * @param watermark the watermark time in milliseconds.
-     *
-     * @deprecated - Implementing may use a watermark as a constructor option.
-     * TODO: Remove this with 2.0
-     */
-    @Deprecated
-    public synchronized void setHighWatermark(long watermark) {
-        this.highWatermark = watermark;
-    }
-
-    @Deprecated
-    protected synchronized long getHighWatermark() {
-        return highWatermark;
-    }
-
-    /**
      * Queries whether there is write data.
      */
     protected boolean hasWriteData() {
         if (writeBuffer == null) {
-            throw new UnsupportedOperationException("No write buffer set on FTranspprt");
+            throw new UnsupportedOperationException("No write buffer set on FTransport");
         }
         return writeBuffer.size() > 0;
-    }
-
-    /**
-     * Get the write bytes.
-     *
-     * @return write bytes
-     *
-     * @deprecated - Get the framed bytes
-     * TODO: Remove this with 2.0
-     */
-    @Deprecated
-    protected byte[] getWriteBytes() {
-        if (writeBuffer == null) {
-            throw new UnsupportedOperationException("No write buffer set on FTranspprt");
-        }
-        return writeBuffer.toByteArray();
     }
 
     /**
@@ -308,7 +216,7 @@ public abstract class FTransport extends TTransport {
      */
     protected byte[] getFramedWriteBytes() {
         if (writeBuffer == null) {
-            throw new UnsupportedOperationException("No write buffer set on FTranspprt");
+            throw new UnsupportedOperationException("No write buffer set on FTransport");
         }
         int numBytes = writeBuffer.size();
         byte[] data = new byte[numBytes + 4];
@@ -322,7 +230,7 @@ public abstract class FTransport extends TTransport {
      */
     protected void resetWriteBuffer() {
         if (writeBuffer == null) {
-            throw new UnsupportedOperationException("No write buffer set on FTranspprt");
+            throw new UnsupportedOperationException("No write buffer set on FTransport");
         }
         writeBuffer.reset();
     }
@@ -345,9 +253,7 @@ public abstract class FTransport extends TTransport {
             closedCallback.onClose(cause);
         }
         if (monitor != null) {
-            new Thread(() -> {
-                monitor.onClose(cause);
-            }, "transport-monitor").start();
+            new Thread(() -> monitor.onClose(cause), "transport-monitor").start();
         }
     }
 
