@@ -77,6 +77,7 @@ pub get --offline
 
 # Build and install java frugal library
 cd ${FRUGAL_HOME}/lib/java
+mvn verify -U -q
 mv -f target/frugal-*.jar ${FRUGAL_HOME}/test/integration/java/frugal-integration-test/src/main/resources/frugal.jar
 
 # Build Java tests
