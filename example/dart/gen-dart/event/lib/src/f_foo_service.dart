@@ -77,9 +77,7 @@ class FFooClient extends t_base.FBaseFooClient implements FFoo {
         writeLock.unlock();
       }
 
-      return await controller.stream.first.timeout(ctx.timeout, onTimeout: () {
-        throw new frugal.FTimeoutException();
-      });
+      return await controller.stream.first.timeout(ctx.timeout);
     } finally {
       closeSubscription.cancel();
       _transport.unregister(ctx);
