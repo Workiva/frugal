@@ -71,8 +71,11 @@ func (m *Method) Invoke(args Arguments) Results {
 // ProxiedHandler must be a struct and method must be a function. This should
 // only be called by generated code.
 func NewMethod(proxiedHandler, method interface{}, methodName string, middleware []ServiceMiddleware) *Method {
-	reflectHandler := reflect.ValueOf(proxiedHandler)
-	var reflectMethod reflect.Method
+	var (
+		reflectHandler     = reflect.ValueOf(proxiedHandler)
+		reflectMethodValue = reflect.ValueOf(method)
+		reflectMethod      reflect.Method
+	)
 	// As of go1.7, reflect.MethodByName no longer returns unexported methods
 	// (https://golang.org/doc/go1.7). To avoid exporting generated internal
 	// methods, construct a reflect.Method ourselves.
@@ -80,6 +83,7 @@ func NewMethod(proxiedHandler, method interface{}, methodName string, middleware
 		reflectMethod = reflect.Method{
 			Name: methodName,
 			Type: reflect.TypeOf(method),
+			Func: reflectMethodValue,
 		}
 	} else {
 		method, ok := reflectHandler.Type().MethodByName(methodName)
@@ -89,7 +93,7 @@ func NewMethod(proxiedHandler, method interface{}, methodName string, middleware
 		reflectMethod = method
 	}
 	return &Method{
-		handler:       composeMiddleware(reflect.ValueOf(method), middleware),
+		handler:       composeMiddleware(reflectMethodValue, middleware),
 		proxiedStruct: reflectHandler,
 		proxiedMethod: reflectMethod,
 	}

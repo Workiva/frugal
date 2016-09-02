@@ -10,7 +10,7 @@ from frugal.aio.server import FNatsServer
 class TestFNatsServer(utils.AsyncIOTestCase):
     def setUp(self):
         super().setUp()
-        self.subject = 'foo'
+        self.subjects = ['foo', 'bar']
         self.mock_nats_client = mock.Mock()
         self.mock_processor = mock.Mock()
         self.mock_transport_factory = mock.Mock()
@@ -18,32 +18,46 @@ class TestFNatsServer(utils.AsyncIOTestCase):
 
         self.server = FNatsServer(
             self.mock_nats_client,
-            self.subject,
+            self.subjects,
             self.mock_processor,
             self.mock_prot_factory
         )
 
     @utils.async_runner
     async def test_serve(self):
-        future = asyncio.Future()
-        future.set_result(235)
-        self.mock_nats_client.subscribe.return_value = future
+        future1 = asyncio.Future()
+        future1.set_result(235)
+        future2 = asyncio.Future()
+        future2.set_result(694)
+        self.mock_nats_client.subscribe.side_effect = [future1, future2]
         await self.server.serve()
-        self.assertEqual(235, self.server._sub_id)
-        self.mock_nats_client.subscribe.assert_called_once_with(
-            self.subject,
-            queue='',
-            cb=self.server._on_message_callback
-        )
+        self.assertEqual([235, 694], self.server._sub_ids)
+        self.mock_nats_client.subscribe.assert_has_calls([
+            mock.call(
+                self.subjects[0],
+                queue='',
+                cb=self.server._on_message_callback
+            ),
+            mock.call(
+                self.subjects[1],
+                queue='',
+                cb=self.server._on_message_callback
+            )
+        ])
 
     @utils.async_runner
     async def test_stop(self):
-        self.server._sub_id = 235
-        future = asyncio.Future()
-        future.set_result(None)
-        self.mock_nats_client.unsubscribe.return_value = future
+        self.server._sub_ids = [235, 694]
+        future1 = asyncio.Future()
+        future1.set_result(None)
+        future2 = asyncio.Future()
+        future2.set_result(None)
+        self.mock_nats_client.unsubscribe.side_effect = [future1, future2]
         await self.server.stop()
-        self.mock_nats_client.unsubscribe.assert_called_once_with(235)
+        self.mock_nats_client.unsubscribe.assert_has_calls([
+            mock.call(235),
+            mock.call(694),
+        ])
 
     @utils.async_runner
     async def test_on_message_callback_no_reply(self):
