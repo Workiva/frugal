@@ -583,8 +583,8 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 		contents += fmt.Sprintf(ind+"%s%s = %s()\n", prefix, field.Name, g.qualifiedTypeName(underlyingType))
 		contents += fmt.Sprintf(ind+"%s%s.read(iprot)\n", prefix, field.Name)
 	} else if parser.IsThriftContainer(underlyingType) {
-		sizeElem := getElem()
-		valElem := getElem()
+		sizeElem := g.GetElem()
+		valElem := g.GetElem()
 		valField := parser.FieldFromType(underlyingType.ValueType, valElem)
 
 		switch underlyingType.Name {
@@ -606,7 +606,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 			contents += fmt.Sprintf(ind+"%s%s = {}\n", prefix, field.Name)
 			contents += fmt.Sprintf(ind+"(_, _, %s) = iprot.readMapBegin()\n", sizeElem)
 			contents += fmt.Sprintf(ind+"for _ in range(%s):\n", sizeElem)
-			keyElem := getElem()
+			keyElem := g.GetElem()
 			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
 			contents += g.generateReadFieldRec(keyField, false, ind+tab)
 			contents += g.generateReadFieldRec(valField, false, ind+tab)
@@ -648,7 +648,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 	} else if g.Frugal.IsStruct(underlyingType) {
 		contents += fmt.Sprintf(ind+"%s%s.write(oprot)\n", prefix, field.Name)
 	} else if parser.IsThriftContainer(underlyingType) {
-		valElem := getElem()
+		valElem := g.GetElem()
 		valField := parser.FieldFromType(underlyingType.ValueType, valElem)
 		valTType := g.getTType(underlyingType.ValueType)
 
@@ -664,7 +664,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 			contents += g.generateWriteFieldRec(valField, false, ind+tab)
 			contents += ind + "oprot.writeSetEnd()\n"
 		case "map":
-			keyElem := getElem()
+			keyElem := g.GetElem()
 			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
 			keyTType := g.getTType(underlyingType.KeyType)
 			contents += fmt.Sprintf(ind+"oprot.writeMapBegin(%s, %s, len(%s%s))\n", keyTType, valTType, prefix, field.Name)
@@ -1369,15 +1369,6 @@ func (g *Generator) getTType(t *parser.Type) string {
 		}
 	}
 	return "TType." + ttype
-}
-
-var elemNum int
-
-// getElem returns a unique identifier name
-func getElem() string {
-	s := fmt.Sprintf("_elem%d", elemNum)
-	elemNum++
-	return s
 }
 
 func getAsyncOpt(options map[string]string) concurrencyModel {

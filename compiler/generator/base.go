@@ -20,6 +20,7 @@ func LowercaseFirstLetter(s string) string {
 type BaseGenerator struct {
 	Options map[string]string
 	Frugal  *parser.Frugal
+	elemNum int
 }
 
 // CreateFile creates a new file using the given configuration.
@@ -66,4 +67,10 @@ func (b *BaseGenerator) GenerateBlockComment(comment []string, indent string) st
 // SetFrugal sets the Frugal parse tree for this generator.
 func (b *BaseGenerator) SetFrugal(f *parser.Frugal) {
 	b.Frugal = f
+}
+
+func (b *BaseGenerator) GetElem() string {
+	s := fmt.Sprintf("elem%d", b.elemNum)
+	b.elemNum++
+	return s
 }

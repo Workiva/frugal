@@ -29,7 +29,7 @@ func TestValidGo(t *testing.T) {
 func TestValidGoWithAsync(t *testing.T) {
 	options := compiler.Options{
 		File:  validFile,
-		Gen:   "go:package_prefix=github.com/Workiva/frugal/test/out/",
+		Gen:   "go:package_prefix=github.com/Workiva/frugal/test/out/,async",
 		Out:   outputDir,
 		Delim: delim,
 	}

@@ -40,7 +40,10 @@ type Generator struct {
 
 // NewGenerator creates a new Dart LanguageGenerator.
 func NewGenerator(options map[string]string) generator.LanguageGenerator {
-	return &Generator{&generator.BaseGenerator{Options: options}, ""}
+	return &Generator{
+		BaseGenerator: &generator.BaseGenerator{Options: options},
+		outputDir: "",
+	}
 }
 
 func (g *Generator) getLibraryName() string {
@@ -831,11 +834,11 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 		contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"%s%s = new %s();\n", prefix, fName, dartType)
 		contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"%s.read(iprot);\n", fName)
 	} else if parser.IsThriftContainer(underlyingType) {
-		containerElem := getElem()
-		valElem := getElem()
+		containerElem := g.GetElem()
+		valElem := g.GetElem()
 		valField := parser.FieldFromType(underlyingType.ValueType, valElem)
 		valContents := g.generateReadFieldRec(valField, false, ind+tab)
-		counterElem := getElem()
+		counterElem := g.GetElem()
 		dartType := g.getDartTypeFromThriftType(underlyingType)
 
 		switch underlyingType.Name {
@@ -861,7 +864,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"%s%s = new %s();\n", prefix, fName, dartType)
 			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"for(int %s = 0; %s < %s.length; ++%s) {\n",
 				counterElem, counterElem, containerElem, counterElem)
-			keyElem := getElem()
+			keyElem := g.GetElem()
 			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
 			contents += g.generateReadFieldRec(keyField, false, ind+tab)
 			contents += valContents
@@ -955,7 +958,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 
 		switch underlyingType.Name {
 		case "list":
-			valElem := getElem()
+			valElem := g.GetElem()
 			valField := parser.FieldFromType(underlyingType.ValueType, valElem)
 			contents += fmt.Sprintf(tabtab+ind+"oprot.writeListBegin(new TList(%s, %s.length));\n", valEnumType, fName)
 			contents += fmt.Sprintf(tabtab+ind+"for(var %s in %s) {\n", valElem, fName)
@@ -963,7 +966,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 			contents += tabtab + ind + "}\n"
 			contents += tabtab + ind + "oprot.writeListEnd();\n"
 		case "set":
-			valElem := getElem()
+			valElem := g.GetElem()
 			valField := parser.FieldFromType(underlyingType.ValueType, valElem)
 			contents += fmt.Sprintf(tabtab+ind+"oprot.writeSetBegin(new TSet(%s, %s.length));\n", valEnumType, fName)
 			contents += fmt.Sprintf(tabtab+ind+"for(var %s in %s) {\n", valElem, fName)
@@ -972,7 +975,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 			contents += tabtab + ind + "oprot.writeSetEnd();\n"
 		case "map":
 			keyEnumType := g.getEnumFromThriftType(underlyingType.KeyType)
-			keyElem := getElem()
+			keyElem := g.GetElem()
 			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
 			valField := parser.FieldFromType(underlyingType.ValueType, fmt.Sprintf("%s[%s]", fName, keyElem))
 			contents += fmt.Sprintf(tabtab+ind+"oprot.writeMapBegin(new TMap(%s, %s, %s.length));\n", keyEnumType, valEnumType, fName)
@@ -1806,13 +1809,4 @@ func toFieldName(name string) string {
 	runes := []rune(name)
 	runes[0] = unicode.ToLower(runes[0])
 	return string(runes)
-}
-
-var elemNum int
-
-// getElem returns a unique identifier name
-func getElem() string {
-	s := fmt.Sprintf("elem%d", elemNum)
-	elemNum++
-	return s
 }

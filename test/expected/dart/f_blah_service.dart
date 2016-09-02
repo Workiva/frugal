@@ -13,7 +13,7 @@ import 'package:excepts/excepts.dart' as t_excepts;
 import 'package:validStructs/validStructs.dart' as t_validStructs;
 import 'package:ValidTypes/ValidTypes.dart' as t_ValidTypes;
 import 'package:valid/valid.dart' as t_valid;
-import 'blah.dart' as t_blah_file;
+import 'f_blah_structs.dart' as t_blah_file;
 
 
 abstract class FBlah {
