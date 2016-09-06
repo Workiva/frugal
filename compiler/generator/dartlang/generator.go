@@ -1525,9 +1525,10 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 
 	contents += "\n"
 
-	// TODO 2.0.0: Dart TimeoutException should be wrapped in an FTimeoutException.
-	// This should happen in a major release since it's an API change.
-	contents += tabtabtab + "return await controller.stream.first.timeout(ctx.timeout);\n"
+	contents += tabtabtab + "return await controller.stream.first.timeout(ctx.timeout, onTimeout: () {\n"
+	contents += fmt.Sprintf(tabtabtabtab+"throw new frugal.FTimeoutError.withMessage(\"%s.%s timed out after ${ctx.timeout}\");\n",
+		service.Name, method.Name)
+	contents += tabtabtab + "});\n"
 	contents += tabtab + "} finally {\n"
 	contents += tabtabtab + "closeSubscription.cancel();\n"
 	contents += tabtabtab + "_transport.unregister(ctx);\n"
