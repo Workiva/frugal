@@ -78,7 +78,9 @@ class FBlahClient implements FBlah {
         writeLock.unlock();
       }
 
-      return await controller.stream.first.timeout(ctx.timeout);
+      return await controller.stream.first.timeout(ctx.timeout, onTimeout: () {
+        throw new frugal.FTimeoutError.withMessage("Blah.ping timed out after ${ctx.timeout}");
+      });
     } finally {
       closeSubscription.cancel();
       _transport.unregister(ctx);
@@ -142,7 +144,9 @@ class FBlahClient implements FBlah {
         writeLock.unlock();
       }
 
-      return await controller.stream.first.timeout(ctx.timeout);
+      return await controller.stream.first.timeout(ctx.timeout, onTimeout: () {
+        throw new frugal.FTimeoutError.withMessage("Blah.bleh timed out after ${ctx.timeout}");
+      });
     } finally {
       closeSubscription.cancel();
       _transport.unregister(ctx);
@@ -217,7 +221,9 @@ class FBlahClient implements FBlah {
         writeLock.unlock();
       }
 
-      return await controller.stream.first.timeout(ctx.timeout);
+      return await controller.stream.first.timeout(ctx.timeout, onTimeout: () {
+        throw new frugal.FTimeoutError.withMessage("Blah.getThing timed out after ${ctx.timeout}");
+      });
     } finally {
       closeSubscription.cancel();
       _transport.unregister(ctx);
@@ -284,7 +290,9 @@ class FBlahClient implements FBlah {
         writeLock.unlock();
       }
 
-      return await controller.stream.first.timeout(ctx.timeout);
+      return await controller.stream.first.timeout(ctx.timeout, onTimeout: () {
+        throw new frugal.FTimeoutError.withMessage("Blah.getMyInt timed out after ${ctx.timeout}");
+      });
     } finally {
       closeSubscription.cancel();
       _transport.unregister(ctx);
