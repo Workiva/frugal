@@ -126,8 +126,6 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		return nil, err
 	}
 
-	// If not using frugal, add parsed includes here
-	// preserve what thrift does to keep ordering in the file
 	for _, include := range frugal.Thrift.Includes {
 		generateInclude(frugal, include)
 	}
