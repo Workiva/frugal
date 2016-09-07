@@ -1,7 +1,6 @@
 package com.workiva.frugal.server;
 
 import com.workiva.frugal.processor.FProcessor;
-import com.workiva.frugal.processor.FProcessorFactory;
 import com.workiva.frugal.protocol.FProtocol;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.protocol.FServerRegistry;
@@ -13,6 +12,8 @@ import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Simple multi-threaded server.
  */
@@ -20,33 +21,68 @@ public class FSimpleServer implements FServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FSimpleServer.class);
 
-    private FProcessorFactory fProcessorFactory;
-    private TServerTransport tServerTransport;
-    private FTransportFactory fTransportFactory;
-    private FProtocolFactory fProtocolFactory;
-    private volatile boolean stopped;
-    private long highWatermark = FTransport.DEFAULT_WATERMARK;
+    private final FProcessor fProcessor;
+    private final TServerTransport tServerTransport;
+    private final FTransportFactory fTransportFactory;
+    private final FProtocolFactory fProtocolFactory;
+    private final AtomicBoolean isStopped = new AtomicBoolean(false);
 
-
-    public FSimpleServer(FProcessorFactory fProcessorFactory, TServerTransport fServerTransport,
-                         FTransportFactory fTransportFactory, FProtocolFactory fProtocolFactory) {
-        this.fProcessorFactory = fProcessorFactory;
+    private FSimpleServer(FProcessor fProcessor, TServerTransport fServerTransport,
+                          FTransportFactory fTransportFactory, FProtocolFactory fProtocolFactory) {
+        this.fProcessor = fProcessor;
         this.tServerTransport = fServerTransport;
         this.fTransportFactory = fTransportFactory;
         this.fProtocolFactory = fProtocolFactory;
     }
 
     /**
-     * Do not call this directly.
-     * TODO 2.0.0: make private in a major release.
+     * Create a new FSimpleServer.
+     *
+     * @param fProcessor Processor for incoming requests.
+     * @param fServerTransport Server transport listening to requests.
+     * @param fTransportFactory Factory for creating transports
+     * @param fProtocolFactory Protocol factory
+     *
+     * @return FSimpleServer
      */
-    public void acceptLoop() throws TException {
-        while (!stopped) {
+    public static FSimpleServer of(FProcessor fProcessor, TServerTransport fServerTransport,
+                                   FTransportFactory fTransportFactory, FProtocolFactory fProtocolFactory) {
+        return new FSimpleServer(fProcessor, fServerTransport, fTransportFactory, fProtocolFactory);
+    }
+
+    /**
+     * Starts the server by listening on the server transport and starting
+     * an accept loop.
+     *
+     * @throws TException
+     */
+    @Override
+    public void serve() throws TException {
+        tServerTransport.listen();
+        acceptLoop();
+    }
+
+    /**
+     * Stops the server by interrupting the server transport.
+     *
+     * @throws TException
+     */
+    @Override
+    public void stop() throws TException {
+        isStopped.set(true);
+        tServerTransport.interrupt();
+    }
+
+    /**
+     * Loop while accepting incoming data on the configured transport.
+     */
+    void acceptLoop() throws TException {
+        while (!isStopped.get()) {
             TTransport client;
             try {
                 client = tServerTransport.accept();
             } catch (TException e) {
-                if (stopped) {
+                if (isStopped.get()) {
                     return;
                 }
                 throw e;
@@ -61,38 +97,13 @@ public class FSimpleServer implements FServer {
         }
     }
 
-    protected void accept(TTransport client) throws TException {
-        FProcessor processor = fProcessorFactory.getProcessor(client);
+    /**
+     * Open the transport and set the server callback registry.
+     */
+    void accept(TTransport client) throws TException {
         FTransport transport = fTransportFactory.getTransport(client);
         FProtocol protocol = fProtocolFactory.getProtocol(transport);
-        transport.setRegistry(new FServerRegistry(processor, fProtocolFactory, protocol));
-        transport.setHighWatermark(getHighWatermark());
+        transport.setRegistry(new FServerRegistry(fProcessor, fProtocolFactory, protocol));
         transport.open();
     }
-
-    public void serve() throws TException {
-        tServerTransport.listen();
-        acceptLoop();
-    }
-
-    public void stop() throws TException {
-        stopped = true;
-        tServerTransport.interrupt();
-    }
-
-    /**
-     * Sets the maximum amount of time a frame is allowed to await processing
-     * before triggering transport overload logic. For now, this just
-     * consists of logging a warning. If not set, the default is 5 seconds.
-     *
-     * @param watermark the watermark time in milliseconds.
-     */
-    public synchronized void setHighWatermark(long watermark) {
-        this.highWatermark = watermark;
-    }
-
-    private synchronized long getHighWatermark() {
-        return highWatermark;
-    }
-
 }
