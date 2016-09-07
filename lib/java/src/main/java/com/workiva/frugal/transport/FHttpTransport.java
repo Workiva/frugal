@@ -203,7 +203,7 @@ public class FHttpTransport extends FTransport {
             return Base64.decodeBase64(responseBody);
 
         } catch (IOException e) {
-            throw new TTransportException("could not decode response body: " + e.getMessage());
+            throw new TTransportException("could not decodeFromFrame response body: " + e.getMessage());
         } finally {
             try {
                 response.close();

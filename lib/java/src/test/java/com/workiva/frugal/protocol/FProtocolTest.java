@@ -1,6 +1,5 @@
 package com.workiva.frugal.protocol;
 
-import com.workiva.frugal.internal.Headers;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TTransport;
 import org.junit.Before;
@@ -38,7 +37,7 @@ public class FProtocolTest {
 
         protocol.writeRequestHeader(context);
 
-        verify(transport).write(Headers.encode(context.getRequestHeaders()));
+        verify(transport).write(HeaderUtils.encode(context.getRequestHeaders()));
     }
 
 }

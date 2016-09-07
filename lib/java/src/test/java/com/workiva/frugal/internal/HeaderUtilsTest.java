@@ -1,6 +1,7 @@
 package com.workiva.frugal.internal;
 
 import com.workiva.frugal.exception.FProtocolException;
+import com.workiva.frugal.protocol.HeaderUtils;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
@@ -16,10 +17,10 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link Headers}.
+ * Tests for {@link HeaderUtils}.
  */
 @RunWith(JUnit4.class)
-public class HeadersTest {
+public class HeaderUtilsTest {
 
     private static final Map<String, String> HEADERS;
 
@@ -41,7 +42,7 @@ public class HeadersTest {
     public void testReadOutOfTransport() throws TException {
         TTransport transport = new TMemoryInputTransport(LIST);
 
-        Map<String, String> decodedHeaders = Headers.read(transport);
+        Map<String, String> decodedHeaders = HeaderUtils.read(transport);
         assertEquals(HEADERS, decodedHeaders);
     }
 
@@ -51,7 +52,7 @@ public class HeadersTest {
 
         thrown.expect(TException.class);
         thrown.expectMessage("unsupported header version 1");
-        Headers.read(transport);
+        HeaderUtils.read(transport);
     }
 
     @Test
@@ -62,35 +63,35 @@ public class HeadersTest {
         // CHECKSTYLE:OFF
         thrown.expectMessage("Cannot read. Remote side has closed. Tried to read 4 bytes, but only got 2 bytes. (This is often indicative of an internal error on the server side. Please check your server logs.");
         // CHECKSTYLE:ON
-        Headers.read(transport);
+        HeaderUtils.read(transport);
     }
 
     @Test
     public void testDecodeFromFrame() throws TException {
-        Map<String, String> decodedHeaders = Headers.decodeFromFrame(LIST);
+        Map<String, String> decodedHeaders = HeaderUtils.decodeFromFrame(LIST);
         assertEquals(HEADERS, decodedHeaders);
     }
 
     @Test
     public void testEncodeDecode() throws TException {
-        byte[] encodedHeaders = Headers.encode(HEADERS);
-        Map<String, String> decodedHeaders = Headers.decodeFromFrame(encodedHeaders);
+        byte[] encodedHeaders = HeaderUtils.encode(HEADERS);
+        Map<String, String> decodedHeaders = HeaderUtils.decodeFromFrame(encodedHeaders);
         assertEquals(HEADERS, decodedHeaders);
     }
 
     @Test
     public void testEncodeDecodeNull() throws TException {
         Map<String, String> empty = new HashMap<>();
-        byte[] encodedHeaders = Headers.encode(null);
-        Map<String, String> decodedHeaders = Headers.decodeFromFrame(encodedHeaders);
+        byte[] encodedHeaders = HeaderUtils.encode(null);
+        Map<String, String> decodedHeaders = HeaderUtils.decodeFromFrame(encodedHeaders);
         assertEquals(empty, decodedHeaders);
     }
 
     @Test
     public void testEncodeDecodeEmpty() throws TException {
         Map<String, String> empty = new HashMap<>();
-        byte[] encodedHeaders = Headers.encode(empty);
-        Map<String, String> decodedHeaders = Headers.decodeFromFrame(encodedHeaders);
+        byte[] encodedHeaders = HeaderUtils.encode(empty);
+        Map<String, String> decodedHeaders = HeaderUtils.decodeFromFrame(encodedHeaders);
         assertEquals(empty, decodedHeaders);
     }
 
@@ -99,8 +100,8 @@ public class HeadersTest {
         Map<String, String> headers = new HashMap<>();
         headers.put("Đ¥ÑØ", "δάüΓ");
         headers.put("good\u00F1ight", "moo\u00F1");
-        byte[] encodedHeaders = Headers.encode(headers);
-        Map<String, String> decodedHeaders = Headers.decodeFromFrame(encodedHeaders);
+        byte[] encodedHeaders = HeaderUtils.encode(headers);
+        Map<String, String> decodedHeaders = HeaderUtils.decodeFromFrame(encodedHeaders);
         assertEquals(headers, decodedHeaders);
     }
 
@@ -108,14 +109,14 @@ public class HeadersTest {
     public void testDecodeHeadersFromFrameThrowsFExceptionForBadFrame() throws TException {
         thrown.expect(FProtocolException.class);
         thrown.expectMessage("invalid frame size 3");
-        Headers.decodeFromFrame(new byte[3]);
+        HeaderUtils.decodeFromFrame(new byte[3]);
     }
 
     @Test
     public void testDecodeHeadersFromFrameThrowsFExceptionForUnsupportedVersion() throws TException {
         thrown.expect(FProtocolException.class);
         thrown.expectMessage("unsupported header version 1");
-        Headers.decodeFromFrame(new byte[]{1, 0, 0, 0, 0});
+        HeaderUtils.decodeFromFrame(new byte[]{1, 0, 0, 0, 0});
     }
 
 }

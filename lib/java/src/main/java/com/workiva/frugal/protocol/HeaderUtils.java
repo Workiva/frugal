@@ -1,4 +1,4 @@
-package com.workiva.frugal.internal;
+package com.workiva.frugal.protocol;
 
 import com.workiva.frugal.exception.FProtocolException;
 import com.workiva.frugal.util.Pair;
@@ -16,12 +16,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This is an internal-only class. Don't use it!
+ * Functions for encoding and decoding Frugal HeaderUtils.
  */
-public class Headers {
-    // Version 0
-    private static final byte V0 = 0x00;
+public class HeaderUtils {
 
+    // Version 0
+    public static final byte V0 = 0x00;
+
+    /**
+     * Encode a map of headers into a byte sequence.
+     *
+     * @param headers headers to encode
+     * @return headers encoded as a byte sequence.
+     *
+     * @throws TException if error encoding headers
+     */
     public static byte[] encode(Map<String, String> headers) throws TException {
         int size = 0;
         if (headers == null) {
@@ -65,6 +74,14 @@ public class Headers {
         return buff;
     }
 
+    /**
+     * Read headers in a transport buffer.
+     *
+     * @param transport a transport buffering header information
+     * @return headers as key-value pairs
+     *
+     * @throws TException if error reading headers
+     */
     public static Map<String, String> read(TTransport transport) throws TException {
         byte[] buff = new byte[5];
 
@@ -85,17 +102,25 @@ public class Headers {
         return readPairs(buff, 0, size);
     }
 
-    public static Map<String, String> decodeFromFrame(byte[] frame) throws TException {
-        if (frame.length < 5) {
-            throw new FProtocolException(FProtocolException.INVALID_DATA, "invalid frame size " + frame.length);
+    /**
+     * Decodes header information from a byte sequence.
+     *
+     * @param bytes a sequence of framed bytes
+     * @return
+     *
+     * @throws TException if invalid data
+     */
+    public static Map<String, String> decodeFromFrame(byte[] bytes) throws TException {
+        if (bytes.length < 5) {
+            throw new FProtocolException(FProtocolException.INVALID_DATA, "invalid frame size " + bytes.length);
         }
 
         // Support more versions when available
-        if (frame[0] != V0) {
-            throw new FProtocolException(FProtocolException.BAD_VERSION, "unsupported header version " + frame[0]);
+        if (bytes[0] != V0) {
+            throw new FProtocolException(FProtocolException.BAD_VERSION, "unsupported header version " + bytes[0]);
         }
 
-        return readPairs(frame, 5, ProtocolUtils.readInt(frame, 1) + 5);
+        return readPairs(bytes, 5, ProtocolUtils.readInt(bytes, 1) + 5);
     }
 
     private static Map<String, String> readPairs(byte[] buff, int start, int end) throws TException {

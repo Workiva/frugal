@@ -7,6 +7,14 @@ import java.nio.charset.Charset;
  */
 public class ProtocolUtils {
 
+    /**
+     * Read an integer from the buffer starting at an offset.
+     *
+     * @param buff buffer of bytes to read from
+     * @param offset starting point to read from
+     *
+     * @return int read from buffer
+     */
     public static int readInt(byte[] buff, int offset) {
         return ((buff[offset] & 0xff) << 24) |
                 ((buff[offset + 1] & 0xff) << 16) |
@@ -14,6 +22,13 @@ public class ProtocolUtils {
                 (buff[offset + 3] & 0xff);
     }
 
+    /**
+     * Writes an integer into a buffer starting at a certain offset.
+     *
+     * @param i The int to write.
+     * @param buff The buffer to write into.
+     * @param offset The position in buff to start writing at.
+     */
     public static void writeInt(int i, byte[] buff, int offset) {
         buff[offset] = (byte) (0xff & (i >> 24));
         buff[offset + 1] = (byte) (0xff & (i >> 16));
@@ -21,6 +36,13 @@ public class ProtocolUtils {
         buff[offset + 3] = (byte) (0xff & (i));
     }
 
+    /**
+     * Writes a string into a buffer, starting at a certain offset.
+     *
+     * @param s The String to write.
+     * @param buff The buffer to write into.
+     * @param offset The position in buff to start writing at.
+     */
     public static void writeString(String s, byte[] buff, int offset) {
         byte[] strBytes = Charset.forName("UTF-8").encode(s).array();
         System.arraycopy(strBytes, 0, buff, offset, s.length());
