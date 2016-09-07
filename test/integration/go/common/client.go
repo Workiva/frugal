@@ -94,19 +94,10 @@ func StartClient(
 	// RPC client
 	var trans frugal.FTransport
 	switch transport {
-	case "stateless", "stateless-stateful":
+	case "stateless":
 		trans = frugal.NewFNatsTransport(conn, fmt.Sprintf("%d", port), "")
 	case "http":
-		trans = frugal.NewHttpFTransportBuilder(&http.Client{}, fmt.Sprintf("http://localhost:%d", port)).Build()
-	case "stateful": // @Deprecated TODO: Remove in 2.0
-		fTransportFactory := frugal.NewFMuxTransportFactory(2)
-		natsTransport := frugal.NewNatsServiceTTransport(
-			conn,
-			fmt.Sprintf("%d", port),
-			time.Second*10,
-			5,
-		)
-		trans = fTransportFactory.GetTransport(natsTransport)
+		trans = frugal.NewFHttpTransportBuilder(&http.Client{}, fmt.Sprintf("http://localhost:%d", port)).Build()
 	default:
 		return nil, fmt.Errorf("Invalid transport specified %s", transport)
 	}

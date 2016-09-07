@@ -30,12 +30,3 @@ func (s *FSubscription) Unsubscribe() error {
 func (s *FSubscription) Topic() string {
 	return s.topic
 }
-
-// Error returns a channel which is signaled when something went wrong with the
-// subscription. If an error is returned on this channel, the Subscription has
-// been closed.
-//
-// DEPRECATED. TODO 2.0.0: Remove in a future release.
-func (s *FSubscription) Error() <-chan error {
-	return s.errorC
-}

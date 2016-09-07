@@ -67,10 +67,10 @@ func benchmarkBasic(b *testing.B, protoFactory thrift.TProtocolFactory, numMiddl
 	if err != nil {
 		b.Fatal(err)
 	}
-	server := frugal.NewFSimpleServerFactory5(
+	server := frugal.NewFSimpleServerFactory4(
 		frugal.NewFProcessorFactory(processor),
 		serverTr,
-		frugal.NewFMuxTransportFactory(2),
+		frugal.NewAdapterTransportFactory(),
 		frugal.NewFProtocolFactory(protoFactory),
 	)
 
@@ -89,7 +89,7 @@ func benchmarkBasic(b *testing.B, protoFactory thrift.TProtocolFactory, numMiddl
 	if err != nil {
 		b.Fatal(err)
 	}
-	fTransportFactory := frugal.NewFMuxTransportFactory(2)
+	fTransportFactory := frugal.NewAdapterTransportFactory()
 	fTransport := fTransportFactory.GetTransport(transport)
 	defer fTransport.Close()
 	if err := fTransport.Open(); err != nil {

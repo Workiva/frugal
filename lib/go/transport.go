@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"io"
-	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 )
@@ -74,8 +72,7 @@ type FScopeTransport interface {
 // TTransport and exposes some additional methods. An FTransport typically has
 // an FRegistry, so it provides methods for setting the FRegistry and
 // registering and unregistering an FAsyncCallback to an FContext. It also
-// allows a way for setting an FTransportMonitor and a high-water mark provided
-// by an FServer.
+// allows a way for setting an FTransportMonitor.
 //
 // FTransport wraps a TTransport, meaning all existing TTransport
 // implementations will work in Frugal. However, all FTransports must used a
@@ -102,13 +99,6 @@ type FTransport interface {
 	// Closed channel receives the cause of an FTransport close (nil if clean
 	// close).
 	Closed() <-chan error
-
-	// SetHighWatermark sets the maximum amount of time a frame is allowed to
-	// await processing before triggering transport overload logic.
-	// DEPRECATED - This will be a constructor implementation detail for
-	// transports which buffer response data.
-	// TODO: Remove this with 2.0
-	SetHighWatermark(watermark time.Duration)
 }
 
 // FTransportFactory produces FTransports by wrapping a provided TTransport.
@@ -121,11 +111,6 @@ type fBaseTransport struct {
 	writeBuffer      bytes.Buffer
 	registry         FRegistry
 	closed           chan error
-
-	// TODO: Remove these with 2.0
-	frameBuffer  chan []byte
-	currentFrame []byte
-	closeChan    chan struct{}
 }
 
 // Initialize a new fBaseTransport
@@ -133,57 +118,24 @@ func newFBaseTransport(requestSizeLimit uint) *fBaseTransport {
 	return &fBaseTransport{requestSizeLimit: requestSizeLimit}
 }
 
-// Intialize a new fBaseTransprot for use with legacy TTransports
-// TODO: Remove with 2.0
-func newFBaseTransportForTTransport(requestSizeLimit, frameBufferSize uint) *fBaseTransport {
-	return &fBaseTransport{
-		requestSizeLimit: requestSizeLimit,
-		frameBuffer:      make(chan []byte, frameBufferSize),
-	}
-}
-
 // Intialize the close channels
 func (f *fBaseTransport) Open() {
 	f.closed = make(chan error, 1)
-
-	// TODO: Remove this with 2.0
-	f.closeChan = make(chan struct{})
 }
 
 // Close the close channels
 func (f *fBaseTransport) Close(cause error) {
-
 	select {
 	case f.closed <- cause:
 	default:
 		logger().Warnf("frugal: unable to put close error '%s' on fBaseTransport closed channel", cause)
 	}
 	close(f.closed)
-
-	// TODO: Remove this with 2.0
-	close(f.closeChan)
 }
 
-// Return the struct close channel
-// TODO: Remove with 2.0
-func (f *fBaseTransport) ClosedChannel() <-chan struct{} {
-	return f.closeChan
-}
-
-// Read up to len(buf) bytes into buf.
-// TODO: Remove all read logic with 2.0
+// Read should not be called, it will return an error
 func (f *fBaseTransport) Read(buf []byte) (int, error) {
-	if len(f.currentFrame) == 0 {
-		select {
-		case frame := <-f.frameBuffer:
-			f.currentFrame = frame
-		case <-f.closeChan:
-			return 0, thrift.NewTTransportExceptionFromError(io.EOF)
-		}
-	}
-	num := copy(buf, f.currentFrame)
-	f.currentFrame = f.currentFrame[num:]
-	return num, nil
+	return 0, errors.New("don't call read")
 }
 
 // Write the bytes to a buffer. Returns ErrTooLarge if the buffer exceeds the
@@ -214,11 +166,6 @@ func (f *fBaseTransport) ResetWriteBuffer() {
 // Execute a frugal frame (NOTE: this frame must include the frame size).
 func (f *fBaseTransport) ExecuteFrame(frame []byte) error {
 	return f.registry.Execute(frame[4:])
-}
-
-// This is a no-op for fBaseTransport
-func (f *fBaseTransport) SetHighWatermark(watermark time.Duration) {
-	return
 }
 
 // SetRegistry sets the Registry on the FTransport.
