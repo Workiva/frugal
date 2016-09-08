@@ -20,19 +20,22 @@ fi
 # rm any existing generated code (necessary for skynet-cli)
 rm -rf test/integration/go/gen/*
 rm -rf test/integration/java/frugal-integration-test/gen-java/*
-rm -rf test/integration/python/gen_py_tornado/*
+rm -rf test/integration/python/tornado/gen_py_tornado/*
+rm -rf test/integration/python/ascynio/gen_py_asyncio/*
 rm -rf test/integration/dart/gen-dart/*
 
 # Generate code
 if [ "$gen_with_thrift" = true ]; then
     frugal --gen go:package_prefix=github.com/Workiva/frugal/,gen_with_frugal=false -r --out='test/integration/go/gen' test/integration/frugalTest.frugal
     frugal --gen java:gen_with_frugal=false -r --out='test/integration/java/frugal-integration-test/gen-java' test/integration/frugalTest.frugal
-    frugal --gen py:tornado,gen_with_frugal=false -r --out='test/integration/python/gen_py_tornado' test/integration/frugalTest.frugal
+    frugal --gen py:tornado,gen_with_frugal=false -r --out='test/integration/python/tornado/gen_py_tornado' test/integration/frugalTest.frugal
+    frugal --gen py:asyncio,gen_with_frugal=false -r --out='test/integration/python/asyncio/gen_py_asyncio' test/integration/frugalTest.frugal
     frugal --gen dart:gen_with_frugal=false -r --out='test/integration/dart/gen-dart' test/integration/frugalTest.frugal
 else
     frugal --gen go:package_prefix=github.com/Workiva/frugal/ -r --out='test/integration/go/gen' test/integration/frugalTest.frugal
     frugal --gen java -r --out='test/integration/java/frugal-integration-test/gen-java' test/integration/frugalTest.frugal
-    frugal --gen py:tornado -r --out='test/integration/python/gen_py_tornado' test/integration/frugalTest.frugal
+    frugal --gen py:tornado -r --out='test/integration/python/tornado/gen_py_tornado' test/integration/frugalTest.frugal
+    frugal --gen py:asyncio -r --out='test/integration/python/asyncio/gen_py_asyncio' test/integration/frugalTest.frugal
     frugal --gen dart -r --out='test/integration/dart/gen-dart' test/integration/frugalTest.frugal
 fi
 
@@ -45,6 +48,10 @@ godep go build -o test/integration/go/bin/testserver test/integration/go/src/bin
 cd ${FRUGAL_HOME}/lib/python
 pip install -e ".[tornado]"
 pip install -r requirements_dev_tornado.txt
+
+# Asyncio
+python3.5 /usr/bin/pip3 install -e ".[asyncio]"
+python3.5 /usr/bin/pip3 install -q -r requirements_dev_asyncio.txt
 
 # Dart Dependencies
 cd $FRUGAL_HOME/test/integration/dart/test_client

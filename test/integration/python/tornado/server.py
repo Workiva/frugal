@@ -5,6 +5,7 @@ import logging
 import sys
 import thread
 
+sys.path.append('..')
 sys.path.append('gen_py_tornado')
 
 
@@ -25,7 +26,7 @@ from frugal.tornado.transport import (
     TNatsServiceTransport,
 )
 
-from FrugalTestHandler import FrugalTestHandler
+from common.FrugalTestHandler import FrugalTestHandler
 
 from nats.io.client import Client as NATS
 from thrift.protocol import TBinaryProtocol, TCompactProtocol, TJSONProtocol
@@ -128,6 +129,7 @@ def healthcheck(port):
     health_handler = SimpleHTTPServer.SimpleHTTPRequestHandler
     healthcheck = SocketServer.TCPServer(("", int(port)), health_handler)
     healthcheck.serve_forever()
+
 
 if __name__ == '__main__':
     io_loop = ioloop.IOLoop.instance()

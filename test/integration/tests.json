@@ -100,7 +100,7 @@
     ]
   },
   {
-    "name": "python:tornado",
+    "name": "py:tornado",
     "client": {
       "timeout": 7,
       "command": [
@@ -130,6 +130,31 @@
       "compact",
       "json"
     ],
-    "workdir": "python"
+    "workdir": "python/tornado"
+  },
+  {
+    "name": "py:asyncio",
+    "client": {
+      "timeout": 7,
+      "command": [
+        "python3.5",
+        "-u",
+        "client.py"
+      ]
+    },
+    "transports": [
+      "stateless",
+      "http"
+    ],
+    "sockets": [
+      "ip"
+    ],
+    "protocols": [
+      "binary",
+      "compact",
+      "json"
+    ],
+    "workdir": "python/asyncio"
+
   }
 ]
