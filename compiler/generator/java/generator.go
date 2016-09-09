@@ -350,7 +350,7 @@ func (g *Generator) generateConstantValueRec(t *parser.Type, value interface{}) 
 	} else if g.Frugal.IsEnum(underlyingType) {
 		return "", g.generateEnumConstFromValue(underlyingType, int(value.(int64)))
 	}
-	elem := getElem()
+	elem := g.GetElem()
 	preamble := g.generateConstantValueWrapper(elem, t, value, true, false)
 	return preamble, elem
 
@@ -1905,8 +1905,8 @@ func (g *Generator) generateCopyConstructorField(field *parser.Field, otherField
 		contents := ""
 		valueType := g.getJavaTypeFromThriftType(underlyingType.ValueType)
 		containerValType := containerType(valueType)
-		otherValElem := getElem()
-		thisValElem := getElem()
+		otherValElem := g.GetElem()
+		thisValElem := g.GetElem()
 		thisValField := parser.FieldFromType(underlyingType.ValueType, thisValElem)
 
 		switch underlyingType.Name {
@@ -1934,7 +1934,7 @@ func (g *Generator) generateCopyConstructorField(field *parser.Field, otherField
 				contents += fmt.Sprintf(ind+"%s%s = new HashMap<%s,%s>(%s);\n",
 					declPrefix, field.Name, containerKeyType, containerValType, otherFieldName)
 			} else {
-				thisKeyElem := getElem()
+				thisKeyElem := g.GetElem()
 				thisKeyField := parser.FieldFromType(underlyingType.KeyType, thisKeyElem)
 
 				contents += fmt.Sprintf(ind+"%s%s = new HashMap<%s,%s>(%s.size());\n",
@@ -2046,11 +2046,11 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, succin
 		contents += fmt.Sprintf(ind+"%s%s = new %s();\n", declPrefix, field.Name, javaType)
 		contents += fmt.Sprintf(ind+"%s%s.read(iprot);\n", accessPrefix, field.Name)
 	} else if parser.IsThriftContainer(underlyingType) {
-		containerElem := getElem()
-		counterElem := getElem()
+		containerElem := g.GetElem()
+		counterElem := g.GetElem()
 
 		valType := containerType(g.getJavaTypeFromThriftType(underlyingType.ValueType))
-		valElem := getElem()
+		valElem := g.GetElem()
 		valField := parser.FieldFromType(underlyingType.ValueType, valElem)
 		valContents := g.generateReadFieldRec(valField, false, succinct, containerTypes, ind+tab)
 		valTType := g.getTType(underlyingType.ValueType)
@@ -2098,7 +2098,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, succin
 			keyType := containerType(g.getJavaTypeFromThriftType(underlyingType.KeyType))
 			contents += fmt.Sprintf(ind+"%s%s = new HashMap<%s,%s>(2*%s.size);\n", declPrefix, field.Name, keyType, valType, containerElem)
 			contents += fmt.Sprintf(ind+"for (int %s = 0; %s < %s.size; ++%s) {\n", counterElem, counterElem, containerElem, counterElem)
-			keyElem := getElem()
+			keyElem := g.GetElem()
 			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
 			contents += g.generateReadFieldRec(keyField, false, succinct, containerTypes, ind+tab)
 			contents += valContents
@@ -2155,7 +2155,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, succi
 	} else if g.Frugal.IsStruct(underlyingType) {
 		contents += fmt.Sprintf(ind+"%s%s.write(oprot);\n", accessPrefix, field.Name)
 	} else if parser.IsThriftContainer(underlyingType) {
-		iterElem := getElem()
+		iterElem := g.GetElem()
 		valJavaType := g.getJavaTypeFromThriftType(underlyingType.ValueType)
 		valTType := g.getTType(underlyingType.ValueType)
 
@@ -3222,13 +3222,4 @@ func (g *Generator) generatedAnnotation() string {
 func (g *Generator) generateAsync() bool {
 	_, ok := g.Options["async"]
 	return ok
-}
-
-var elemNum int
-
-// getElem returns a unique identifier name
-func getElem() string {
-	s := fmt.Sprintf("elem%d", elemNum)
-	elemNum++
-	return s
 }

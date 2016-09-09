@@ -18,7 +18,7 @@ func TestValidJava(t *testing.T) {
 
 	options := compiler.Options{
 		File:  validFile,
-		Gen:   "java:gen_with_frugal=false",
+		Gen:   "java",
 		Out:   outputDir,
 		Delim: delim,
 	}
@@ -47,7 +47,7 @@ func TestValidJavaWithAsync(t *testing.T) {
 
 	options := compiler.Options{
 		File:  validFile,
-		Gen:   "java:async,gen_with_frugal=false",
+		Gen:   "java:async",
 		Out:   outputDir,
 		Delim: delim,
 	}
@@ -69,7 +69,7 @@ func TestValidJavaFrugalCompiler(t *testing.T) {
 
 	options := compiler.Options{
 		File:    frugalGenFile,
-		Gen:     "java:gen_with_frugal=true",
+		Gen:     "java",
 		Out:     outputDir,
 		Delim:   delim,
 		Recurse: true,

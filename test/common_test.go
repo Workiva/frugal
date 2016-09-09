@@ -16,10 +16,6 @@ const (
 	frugalGenFile           = "idl/variety.frugal"
 )
 
-var (
-	languages = []string{"go", "dart", "java"}
-)
-
 func compareFiles(t *testing.T, expectedPath, generatedPath string) {
 	expected, err := os.Open(expectedPath)
 	if err != nil {

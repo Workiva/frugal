@@ -10,7 +10,7 @@ import (
 func TestValidPython(t *testing.T) {
 	options := compiler.Options{
 		File:  validFile,
-		Gen:   "py:gen_with_frugal=false",
+		Gen:   "py",
 		Out:   outputDir,
 		Delim: delim,
 	}
@@ -61,7 +61,7 @@ func TestValidPythonAsyncio(t *testing.T) {
 func TestValidPythonTornado(t *testing.T) {
 	options := compiler.Options{
 		File:  validFile,
-		Gen:   "py:tornado,gen_with_frugal=false",
+		Gen:   "py:tornado",
 		Out:   outputDir,
 		Delim: delim,
 	}

@@ -16,24 +16,3 @@ timeout: long
 
 artifacts:
   - /testing/artifacts
-
----
-
-name: cross-gen_with_thrift
-
-run:
-  when-branch-name-is:
-    - .+
-
-contact: messaging@workiva.com
-
-# https://github.com/Workiva/messaging-docker-images/commit/6561ce2b439cf8081838d879fdfc5d301a14c6cb
-image: drydock.workiva.org/workiva/messaging-docker-images:69150
-
-scripts:
-  - ./scripts/skynet/run_cross_skynet.sh -gen_with_thrift
-
-timeout: long
-
-artifacts:
-  - /testing/artifacts

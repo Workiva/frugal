@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/Workiva/frugal/compiler/generator"
@@ -64,29 +63,6 @@ func Compile(options Options) error {
 	return err
 }
 
-// warnGenWithoutFrugal prints a warning if generating code with thrift
-// when a gen_with_frugal option exists
-// TODO: Remove this once gen_with frugal is no longer experimental
-// and is the default.
-func warnGenWithoutFrugal(genWithFrugal bool) {
-	if globals.GenWithFrugalWarn {
-		return
-	}
-	if genWithFrugal {
-		globals.PrintWarning(
-			"Generating Thrift code with Frugal. If you encounter problems, file a " +
-				"GitHub issue and generate your\ncode with \"gen_with_frugal=false\" to " +
-				"use the Thrift compiler instead.")
-	} else {
-		globals.PrintWarning(
-			"Consider using the \"gen_with_frugal\" language option " +
-				"to have Frugal generate code in place of Thrift.\nThis is an " +
-				"experimental feature. Please file a GitHub issue if you encounter " +
-				"problems.")
-	}
-	globals.GenWithFrugalWarn = true
-}
-
 // compile parses the Frugal or Thrift IDL and generates code for it, returning
 // an error if something failed.
 func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
@@ -94,7 +70,6 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		gen    = globals.Gen
 		out    = globals.Out
 		dryRun = globals.DryRun
-		dir    = filepath.Dir(file)
 	)
 
 	if frugal, ok := globals.CompiledFiles[file]; ok {
@@ -113,24 +88,11 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		return nil, err
 	}
 
-	// Gen with Frugal by default.
-	genWithFrugal := true
-	if genWithFrugalStr, ok := options["gen_with_frugal"]; ok {
-		if gen, err := strconv.ParseBool(genWithFrugalStr); err != nil {
-			return nil, fmt.Errorf("Invalid value '%s' for gen_with_frugal", genWithFrugalStr)
-		} else {
-			genWithFrugal = gen
-		}
-	}
-
 	// Resolve Frugal generator.
 	var g generator.ProgramGenerator
 	switch lang {
 	case "dart":
-		// TODO: Remove this once gen_with_frugal is no longer experimental
-		// and is the default
-		warnGenWithoutFrugal(genWithFrugal)
-		g = generator.NewProgramGenerator(dartlang.NewGenerator(options, genWithFrugal), false)
+		g = generator.NewProgramGenerator(dartlang.NewGenerator(options), false)
 	case "go":
 		// Make sure the package prefix ends with a "/"
 		if package_prefix, ok := options["package_prefix"]; ok {
@@ -139,19 +101,10 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 			}
 		}
 
-		// TODO: Remove this once gen_with frugal is no longer experimental
-		// and is the default.
-		warnGenWithoutFrugal(genWithFrugal)
 		g = generator.NewProgramGenerator(golang.NewGenerator(options), false)
 	case "java":
-		// TODO: Remove this once gen_with frugal is no longer experimental
-		// and is the default.
-		warnGenWithoutFrugal(genWithFrugal)
 		g = generator.NewProgramGenerator(java.NewGenerator(options), true)
 	case "py":
-		// TODO: Remove this once gen_with frugal is no longer experimental
-		// and is the default.
-		warnGenWithoutFrugal(genWithFrugal)
 		g = generator.NewProgramGenerator(python.NewGenerator(options), true)
 	default:
 		return nil, fmt.Errorf("Invalid gen value %s", gen)
@@ -173,47 +126,52 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		return nil, err
 	}
 
-	if genWithFrugal {
-		// If not using frugal, add parsed includes here
-		// preserve what thrift does to keep ordering in the file
-		for _, include := range frugal.Thrift.Includes {
-			generateInclude(frugal, include)
-		}
-	}
-
-	if !genWithFrugal && !isThrift {
-		// Generate intermediate Thrift IDL for Frugal. If this is already a
-		// .thrift file, do not generate an intermediate IDL.
-		logv(fmt.Sprintf("Generating intermediate Thrift file %s",
-			filepath.Join(dir, fmt.Sprintf("%s.thrift", frugal.Name))))
-		idlFile, err := generateThriftIDL(dir, frugal)
-		if err != nil {
-			return nil, err
-		}
-		file = idlFile
+	for _, include := range frugal.Thrift.Includes {
+		generateInclude(frugal, include)
 	}
 
 	if dryRun || !generate {
 		return frugal, nil
 	}
 
-	if !genWithFrugal {
-		// Generate Thrift code.
-		logv(fmt.Sprintf("Generating \"%s\" Thrift code for %s", lang, file))
-		if err := generateThrift(frugal, dir, file, out, removeGenWithFrugalOption(gen)); err != nil {
-			return nil, err
-		}
-	}
-
 	// Generate Frugal code.
 	logv(fmt.Sprintf("Generating \"%s\" Frugal code for %s", lang, frugal.File))
-	return frugal, g.Generate(frugal, fullOut, genWithFrugal)
+	return frugal, g.Generate(frugal, fullOut)
 }
 
 // exists determines if the file at the given path exists.
 func exists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func generateInclude(frugal *parser.Frugal, incl *parser.Include) (string, error) {
+	contents := ""
+	// Recurse on includes
+	include := incl.Value
+	if !strings.HasSuffix(include, ".thrift") && !strings.HasSuffix(include, ".frugal") {
+		return "", fmt.Errorf("Bad include name: %s", include)
+	}
+
+	file := filepath.Join(frugal.Dir, include)
+	parsed, err := compile(file, strings.HasSuffix(include, ".thrift"), globals.Recurse)
+	if err != nil {
+		return "", fmt.Errorf("Include %s: %s", file, err)
+	}
+
+	// Lop off extension (.frugal or .thrift)
+	includeBase := include[:len(include)-7]
+
+	// Lop off path
+	includeName := filepath.Base(includeBase)
+
+	frugal.ParsedIncludes[includeName] = parsed
+
+	// Replace .frugal with .thrift
+	include = includeBase + ".thrift"
+	contents += fmt.Sprintf("include \"%s\"\n", include)
+	contents += "\n"
+	return contents, nil
 }
 
 // cleanGenParam processes a string that includes an optional trailing
@@ -244,33 +202,6 @@ func cleanGenParam(gen string) (lang string, options map[string]string, err erro
 		}
 	}
 	return
-}
-
-// removeGenWithFrugalOption removes the gen_with_frugal language option from
-// the gen string, if present, so that it doesn't cause issues with the Thrift
-// compiler when set to false.
-// TODO: Remove this once the Thrift compiler is no longer used.
-func removeGenWithFrugalOption(gen string) string {
-	if !strings.Contains(gen, ":") {
-		return gen
-	}
-	s := strings.Split(gen, ":")
-	lang := s[0]
-	optionsStr := s[1]
-	options := strings.Split(optionsStr, ",")
-	cleaned := ""
-	prefix := ""
-	for _, option := range options {
-		if !strings.HasPrefix(option, "gen_with_frugal") {
-			cleaned += prefix + option
-			prefix = ","
-		}
-	}
-
-	if cleaned == "" {
-		return lang
-	}
-	return fmt.Sprintf("%s:%s", lang, cleaned)
 }
 
 // logv prints the message if in verbose mode.

@@ -40,7 +40,6 @@ var Languages = LanguageOptions{
 		"thrift_import":   "Override Thrift package import path (default: git.apache.org/thrift.git/lib/go/thrift)",
 		"frugal_import":   "Override Frugal package import path (default: github.com/Workiva/frugal/lib/go)",
 		"package_prefix":  "Package prefix for generated files",
-		"gen_with_frugal": "[true|false] Whether to generate thrift files with frugal (experimental, true by default)",
 		"async":           "Generate async client code using channels",
 	},
 	"java": Options{
@@ -48,17 +47,14 @@ var Languages = LanguageOptions{
 			"undated: suppress the date at @Generated annotations, " +
 			"suppress: suppress @Generated annotations entirely",
 		"async":           "Generate async client code using futures",
-		"gen_with_frugal": "[true|false] Whether to generate thrift files with frugal (experimental, true by default)",
 	},
 	"dart": Options{
 		"library_prefix": "Generate code that can be used within an existing library. " +
 			"Use a dot-separated string, e.g. \"my_parent_lib.src.gen\"",
-		"gen_with_frugal": "[true|false] Whether to generate thrift files with frugal (experimental, true by default)",
 	},
 	"py": Options{
 		"tornado":         "Generate code for use with Tornado (compatible with Python 2.7)",
 		"asyncio":         "Generate code for use with asyncio (compatible with Python 3.5 or above)",
-		"gen_with_frugal": "[true|false] Whether to generate thrift files with frugal (experimental, true by default). Will not work for asyncio if false",
 	},
 }
 
@@ -77,7 +73,7 @@ func ValidateOption(lang, option string) bool {
 // produced by the parser.
 type ProgramGenerator interface {
 	// Generate the Frugal in the given directory.
-	Generate(frugal *parser.Frugal, outputDir string, genWithFrugal bool) error
+	Generate(frugal *parser.Frugal, outputDir string) error
 
 	// GetOutputDir returns the full output directory for generated code.
 	GetOutputDir(dir string, f *parser.Frugal) string
@@ -141,21 +137,17 @@ func NewProgramGenerator(generator LanguageGenerator, splitPublisherSubscriber b
 }
 
 // Generate the Frugal in the given directory.
-func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string, genWithFrugal bool) error {
+func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string) error {
 	o.SetFrugal(frugal)
-	if genWithFrugal {
-		o.SetupGenerator(outputDir)
-	}
+	o.SetupGenerator(outputDir)
 
 	if err := o.GenerateDependencies(outputDir); err != nil {
 		return err
 	}
 
-	if genWithFrugal {
-		// generate thrift
-		if err := o.generateThrift(frugal, outputDir); err != nil {
-			return err
-		}
+	// generate thrift
+	if err := o.generateThrift(frugal, outputDir); err != nil {
+		return err
 	}
 
 	// generate frugal
@@ -163,10 +155,7 @@ func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string, gen
 		return err
 	}
 
-	if genWithFrugal {
-		return o.TeardownGenerator()
-	}
-	return nil
+	return o.TeardownGenerator()
 }
 
 func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir string) error {

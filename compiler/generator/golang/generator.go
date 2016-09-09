@@ -810,7 +810,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			contents += "\tfor i := 0; i < size; i++ {\n"
 			// TODO 2.0 don't use the underlying type for the value type of the list
 			underlyingValueType := g.Frugal.UnderlyingType(underlyingType.ValueType)
-			valElem := getElem()
+			valElem := g.GetElem()
 			valField := parser.FieldFromType(underlyingValueType, valElem)
 			valContents := g.generateReadFieldRec(valField, false)
 			contents += valContents
@@ -833,7 +833,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			contents += "\tfor i := 0; i < size; i++ {\n"
 			// TODO 2.0 don't use the underlying type for the value type of the set
 			underlyingValueType := g.Frugal.UnderlyingType(underlyingType.ValueType)
-			valElem := getElem()
+			valElem := g.GetElem()
 			valField := parser.FieldFromType(underlyingValueType, valElem)
 			valContents := g.generateReadFieldRec(valField, false)
 			contents += valContents
@@ -854,11 +854,11 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 				contents += fmt.Sprintf("\t%s%s %s &temp\n", prefix, fName, eq)
 			}
 			contents += "\tfor i := 0; i < size; i++ {\n"
-			keyElem := getElem()
+			keyElem := g.GetElem()
 			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
 			contents += g.generateReadFieldRec(keyField, false)
 			// TODO 2.0 use the valContents for all the collections
-			valElem := getElem()
+			valElem := g.GetElem()
 			valField := parser.FieldFromType(underlyingType.ValueType, valElem)
 			valContents := g.generateReadFieldRec(valField, false)
 			contents += valContents
@@ -2258,15 +2258,6 @@ func startsWithInitialism(s string) string {
 		}
 	}
 	return initialism
-}
-
-var elemNum int
-
-// getElem returns a unique identifier name
-func getElem() string {
-	s := fmt.Sprintf("elem%d", elemNum)
-	elemNum++
-	return s
 }
 
 // commonInitialisms, taken from
