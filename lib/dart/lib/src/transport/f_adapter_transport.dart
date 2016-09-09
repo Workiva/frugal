@@ -29,12 +29,6 @@ class FAdapterTransport extends FTransport {
   @override
   Future close() => closeWithException(null);
 
-  // TODO: Remove this override with 2.0
-  @override
-  int read(Uint8List buffer, int offset, int length) {
-    throw new UnsupportedError("Cannot call read on FTransport");
-  }
-
   @override
   void write(Uint8List buffer, int offset, int length) {
     _framedTransport.write(buffer, offset, length);

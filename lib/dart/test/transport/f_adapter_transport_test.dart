@@ -91,7 +91,6 @@ void main() {
       expect(transport.isOpen, equals(true));
 
       // Kill the socket with an error
-      when(socket.isOpen).thenReturn(false);
       var err = new StateError('');
       var closeCompleter = new Completer();
       transport.onClose.listen((e) {
@@ -106,7 +105,6 @@ void main() {
       errorStream.add(err);
       var timeout = new Duration(seconds: 1);
       expect(await closeCompleter.future.timeout(timeout), equals(err));
-      verify(socket.isOpen).called(1);
       expect(await monitorCompleter.future.timeout(timeout), equals(err));
       expect(transport.isOpen, equals(false));
 
@@ -138,7 +136,6 @@ void main() {
       });
 
       // Make sure socket gets closed
-      when(socket.isOpen).thenReturn(true);
       when(socket.open()).thenReturn(new Future.value());
       messageStream.add(new Uint8List.fromList([0, 0, 0, 4, 1, 2, 3, 4]));
       var timeout = new Duration(seconds: 1);
@@ -147,7 +144,6 @@ void main() {
 
       // Make sure the transport was closed with the correct error
       expect(await closeCompleter.future.timeout(timeout), equals(err));
-      verify(socket.isOpen).called(1);
       expect(transport.isOpen, equals(false));
     });
   });
