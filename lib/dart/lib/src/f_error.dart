@@ -22,3 +22,9 @@ class FMessageSizeError extends TTransportError {
       : super(FTransport.RESPONSE_TOO_LARGE,
             "response was too large for the transport");
 }
+
+class FTimeoutError extends FError {
+  FTimeoutError() : super();
+
+  FTimeoutError.withMessage(String message) : super.withMessage(message);
+}

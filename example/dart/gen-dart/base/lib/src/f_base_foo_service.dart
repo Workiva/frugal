@@ -63,7 +63,9 @@ class FBaseFooClient implements FBaseFoo {
         writeLock.unlock();
       }
 
-      return await controller.stream.first.timeout(ctx.timeout);
+      return await controller.stream.first.timeout(ctx.timeout, onTimeout: () {
+        throw new frugal.FTimeoutError.withMessage("BaseFoo.basePing timed out after ${ctx.timeout}");
+      });
     } finally {
       closeSubscription.cancel();
       _transport.unregister(ctx);

@@ -77,7 +77,9 @@ class FFooClient extends t_base.FBaseFooClient implements FFoo {
         writeLock.unlock();
       }
 
-      return await controller.stream.first.timeout(ctx.timeout);
+      return await controller.stream.first.timeout(ctx.timeout, onTimeout: () {
+        throw new frugal.FTimeoutError.withMessage("Foo.ping timed out after ${ctx.timeout}");
+      });
     } finally {
       closeSubscription.cancel();
       _transport.unregister(ctx);
@@ -141,7 +143,9 @@ class FFooClient extends t_base.FBaseFooClient implements FFoo {
         writeLock.unlock();
       }
 
-      return await controller.stream.first.timeout(ctx.timeout);
+      return await controller.stream.first.timeout(ctx.timeout, onTimeout: () {
+        throw new frugal.FTimeoutError.withMessage("Foo.blah timed out after ${ctx.timeout}");
+      });
     } finally {
       closeSubscription.cancel();
       _transport.unregister(ctx);
