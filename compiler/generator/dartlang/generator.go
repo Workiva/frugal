@@ -379,64 +379,15 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 	// If the value being referenced is of type Identifier, it's referencing
 	// another constant. Need to recurse to get that value.
 	identifier, ok := value.(parser.Identifier)
-	// TODO this is essentially the same as the go generator, but I'm not
-	// sure the best way to consolidate, especially with possibly different
-	// generators to come. Maybe a post parse step to differentiate identifiers
-	// somehow? Or extract a method to a super class?
 	if ok {
-		name := string(identifier)
-
-		// split based on '.', if present, it should be from an include
-		pieces := strings.Split(name, ".")
-		if len(pieces) == 1 {
-			// From this file
-			for _, constant := range g.Frugal.Thrift.Constants {
-				if name == constant.Name {
-					return g.generateConstantValue(t, constant.Value, ind)
-				}
-			}
-		} else if len(pieces) == 2 {
-			// Either from an include, or part of an enum
-			for _, enum := range g.Frugal.Thrift.Enums {
-				if pieces[0] == enum.Name {
-					for _, value := range enum.Values {
-						if pieces[1] == value.Name {
-							return fmt.Sprintf("%v", value.Value)
-						}
-					}
-					panic(fmt.Sprintf("referenced value '%s' of enum '%s' doesn't exist", pieces[1], pieces[0]))
-				}
-			}
-
-			// If not part of an enum , it's from an include
-			include, ok := g.Frugal.ParsedIncludes[pieces[0]]
-			if !ok {
-				panic(fmt.Sprintf("referenced include '%s' in constant '%s' not present", pieces[0], name))
-			}
-			for _, constant := range include.Thrift.Constants {
-				if pieces[1] == constant.Name {
-					return g.generateConstantValue(t, constant.Value, ind)
-				}
-			}
-		} else if len(pieces) == 3 {
-			// enum from an include
-			include, ok := g.Frugal.ParsedIncludes[pieces[0]]
-			if !ok {
-				panic(fmt.Sprintf("referenced include '%s' in constant '%s' not present", pieces[0], name))
-			}
-			for _, enum := range include.Thrift.Enums {
-				if pieces[1] == enum.Name {
-					for _, value := range enum.Values {
-						if pieces[2] == value.Name {
-							return fmt.Sprintf("%v", value.Value)
-						}
-					}
-					panic(fmt.Sprintf("referenced value '%s' of enum '%s' doesn't exist", pieces[1], pieces[0]))
-				}
-			}
+		switch value := g.Frugal.ValueFromIdentifier(identifier).(type) {
+		case *parser.Constant:
+			return g.generateConstantValue(t, value.Value, ind)
+		case *parser.EnumValue:
+			return fmt.Sprintf("%d", value.Value)
+		default:
+			panic("shit")
 		}
-
-		panic("referenced constant doesn't exist: " + name)
 	}
 
 	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {
