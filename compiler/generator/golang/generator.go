@@ -194,7 +194,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 	if ok {
 		switch value := g.Frugal.ValueFromIdentifier(identifier).(type) {
 		case *parser.Constant:
-			return g.generateConstantValue(t, value.Value)
+			return value.Name
 		case *parser.EnumValue:
 			return fmt.Sprintf("%d", value.Value)
 		default:

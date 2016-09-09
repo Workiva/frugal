@@ -283,7 +283,7 @@ func (g *Generator) generateConstantValueRec(t *parser.Type, value interface{}) 
 	if ok {
 		switch value := g.Frugal.ValueFromIdentifier(identifier).(type) {
 		case *parser.Constant:
-			return g.generateConstantValueRec(t, value.Value)
+			return "", value.Name
 		case *parser.EnumValue:
 			// TODO make this more efficient?
 			return "", g.generateEnumConstFromValue(t, value.Value)

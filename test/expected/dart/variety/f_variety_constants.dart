@@ -11,9 +11,9 @@ import 'package:actual_base/actual_base.dart' as t_actual_base;
 import 'dart:convert' show UTF8;
 
 class VarietyConstants {
-  static final int redef_const = 582;
+  static final int redef_const = const_i32_from_base;
   static final int DEFAULT_ID = -1;
-  static final int other_default = -1;
+  static final int other_default = DEFAULT_ID;
   static final int thirtyfour = 34;
   static final Map<String, String> MAPCONSTANT = {
     "hello": "world",

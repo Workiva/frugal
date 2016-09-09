@@ -21,7 +21,7 @@ var _ = bytes.Equal
 var _ = actual_base.GoUnusedProtection__
 var GoUnusedProtection__ int
 
-const RedefConst = 582
+const RedefConst = const_i32_from_base
 
 var DEFAULT_ID ID
 
@@ -55,7 +55,7 @@ const EvilString2 = "th'ing\"ad\"f"
 
 func init() {
 	DEFAULT_ID = -1
-	OtherDefault = -1
+	OtherDefault = DEFAULT_ID
 	MAPCONSTANT = map[string]string{
 		"hello":     "world",
 		"goodnight": "moon",
@@ -345,7 +345,7 @@ type Event struct {
 
 func NewEvent() *Event {
 	return &Event{
-		ID: -1,
+		ID: DEFAULT_ID,
 	}
 }
 
@@ -488,7 +488,7 @@ type TestingDefaults struct {
 
 func NewTestingDefaults() *TestingDefaults {
 	return &TestingDefaults{
-		ID2:    -1,
+		ID2:    DEFAULT_ID,
 		ID:     -2,
 		Thing:  "a constant",
 		Thing2: "another constant",
@@ -499,8 +499,8 @@ func NewTestingDefaults() *TestingDefaults {
 			4,
 			5,
 		},
-		ID3:       -1,
-		BinField4: []byte("hello"),
+		ID3:       other_default,
+		BinField4: bin_const,
 		List4: []int32{
 			1,
 			2,
@@ -512,7 +512,7 @@ func NewTestingDefaults() *TestingDefaults {
 	}
 }
 
-var TestingDefaults_ID2_DEFAULT ID = -1
+var TestingDefaults_ID2_DEFAULT ID = DEFAULT_ID
 
 func (p *TestingDefaults) IsSetID2() bool {
 	return p.ID2 != TestingDefaults_ID2_DEFAULT
@@ -523,7 +523,7 @@ func (p *TestingDefaults) GetID2() ID {
 }
 
 var TestingDefaults_Ev1_DEFAULT *Event = &Event{
-	ID:      -1,
+	ID:      DEFAULT_ID,
 	Message: "a message",
 }
 
@@ -598,7 +598,7 @@ func (p *TestingDefaults) GetBinField3() []byte {
 	return p.BinField3
 }
 
-var TestingDefaults_BinField4_DEFAULT []byte = []byte("hello")
+var TestingDefaults_BinField4_DEFAULT []byte = bin_const
 
 func (p *TestingDefaults) IsSetBinField4() bool {
 	return !bytes.Equal(p.BinField4, TestingDefaults_BinField4_DEFAULT)

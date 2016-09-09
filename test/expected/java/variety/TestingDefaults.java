@@ -246,10 +246,10 @@ public class TestingDefaults implements org.apache.thrift.TBase<TestingDefaults,
 	}
 
 	public TestingDefaults() {
-		this.ID2 = -1L;
+		this.ID2 = DEFAULT_ID;
 
 		this.ev1 = new Event();
-		this.ev1.setID(-1L);
+		this.ev1.setID(DEFAULT_ID);
 		this.ev1.setMessage("a message");
 
 		this.ev2 = new Event();
@@ -269,9 +269,9 @@ public class TestingDefaults implements org.apache.thrift.TBase<TestingDefaults,
 		this.listfield.add(4);
 		this.listfield.add(5);
 
-		this.ID3 = -1L;
+		this.ID3 = other_default;
 
-		this.bin_field4 = java.nio.ByteBuffer.wrap("hello".getBytes());
+		this.bin_field4 = bin_const;
 
 		this.list2 = new ArrayList<Integer>();
 		this.list2.add(1);
@@ -401,10 +401,10 @@ public class TestingDefaults implements org.apache.thrift.TBase<TestingDefaults,
 
 	@Override
 	public void clear() {
-		this.ID2 = -1L;
+		this.ID2 = DEFAULT_ID;
 
 		this.ev1 = new Event();
-		this.ev1.setID(-1L);
+		this.ev1.setID(DEFAULT_ID);
 		this.ev1.setMessage("a message");
 
 		this.ev2 = new Event();
@@ -424,7 +424,7 @@ public class TestingDefaults implements org.apache.thrift.TBase<TestingDefaults,
 		this.listfield.add(4);
 		this.listfield.add(5);
 
-		this.ID3 = -1L;
+		this.ID3 = other_default;
 
 		this.bin_field = null;
 
@@ -432,7 +432,7 @@ public class TestingDefaults implements org.apache.thrift.TBase<TestingDefaults,
 
 		this.bin_field3 = null;
 
-		this.bin_field4 = java.nio.ByteBuffer.wrap("hello".getBytes());
+		this.bin_field4 = bin_const;
 
 		this.list2 = new ArrayList<Integer>();
 		this.list2.add(1);

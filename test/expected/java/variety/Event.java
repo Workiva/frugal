@@ -141,7 +141,7 @@ public class Event implements org.apache.thrift.TBase<Event, Event._Fields>, jav
 	}
 
 	public Event() {
-		this.ID = -1L;
+		this.ID = DEFAULT_ID;
 
 	}
 
@@ -171,7 +171,7 @@ public class Event implements org.apache.thrift.TBase<Event, Event._Fields>, jav
 
 	@Override
 	public void clear() {
-		this.ID = -1L;
+		this.ID = DEFAULT_ID;
 
 		this.Message = null;
 
