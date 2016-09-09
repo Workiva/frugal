@@ -386,7 +386,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 		case *parser.EnumValue:
 			return fmt.Sprintf("%d", value.Value)
 		default:
-			panic("shit")
+			panic(fmt.Sprintf("unexpected value: %v", value))
 		}
 	}
 

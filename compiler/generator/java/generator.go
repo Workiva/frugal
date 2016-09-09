@@ -288,7 +288,7 @@ func (g *Generator) generateConstantValueRec(t *parser.Type, value interface{}) 
 			// TODO make this more efficient?
 			return "", g.generateEnumConstFromValue(t, value.Value)
 		default:
-			panic("shit")
+			panic(fmt.Sprintf("unexpected value: %v", value))
 		}
 	}
 
