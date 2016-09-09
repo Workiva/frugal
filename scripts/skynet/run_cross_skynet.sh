@@ -36,47 +36,9 @@ else
     frugal --gen dart -r --out='test/integration/dart/gen-dart' test/integration/frugalTest.frugal
 fi
 
-# Create Go binaries
-rm -rf test/integration/go/bin/*
-godep go build -o test/integration/go/bin/testclient test/integration/go/src/bin/testclient/main.go
-godep go build -o test/integration/go/bin/testserver test/integration/go/src/bin/testserver/main.go
+# Set everything up in parallel (code generation is fast enough to not require in parallel)
+go run scripts/skynet/cross/CrossSetup.go
 
-# Python Dependencies
-cd ${FRUGAL_HOME}/lib/python
-pip install -e ".[tornado]"
-pip install -r requirements_dev_tornado.txt
-
-# Dart Dependencies
-cd $FRUGAL_HOME/test/integration/dart/test_client
-pub get
-
-# Try pub get and ignore failures - it will fail on any release
-cd $FRUGAL_HOME/test/integration/dart/gen-dart/frugal_test
-if pub get ; then
-    echo 'pub get returned no error'
-else
-    echo 'Pub get returned an error we ignored'
-fi
-
-# get frugal version to use with manually placing package in pub-cache
-frugal_version=$(frugal --version | awk '{print $3}')
-
-# we need to manually install our package to match with the version of frugal
-# so delete existing package (if above pub get succeeded) and override with the
-# current version if not
-rm -rf  ~/.pub-cache/hosted/pub.workiva.org/frugal-${frugal_version}/
-mkdir -p ~/.pub-cache/hosted/pub.workiva.org/frugal-${frugal_version}/
-cp -r $FRUGAL_HOME/lib/dart/* ~/.pub-cache/hosted/pub.workiva.org/frugal-${frugal_version}/
-pub get --offline
-
-# Build and install java frugal library
-cd ${FRUGAL_HOME}/lib/java
-mvn clean verify -q
-mv target/frugal-*.jar ${FRUGAL_HOME}/test/integration/java/frugal-integration-test/frugal.jar
-cd ${FRUGAL_HOME}/test/integration/java/frugal-integration-test
-mvn clean install:install-file -Dfile=frugal.jar -U -q
-# Compile java tests
-mvn clean compile -U -q
 
 # Run cross tests - want to report any failures, so don't allow command to exit
 # without cleaning up
