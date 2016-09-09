@@ -7,9 +7,9 @@
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException
 from .ttypes import *
 
-redef_const = 582
+redef_const = const_i32_from_base
 DEFAULT_ID = -1
-other_default = -1
+other_default = DEFAULT_ID
 thirtyfour = 34
 MAPCONSTANT = {
     "hello": "world",

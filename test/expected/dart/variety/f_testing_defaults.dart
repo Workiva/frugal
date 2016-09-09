@@ -73,9 +73,9 @@ class TestingDefaults implements TBase {
   bool __isset_base_status = false;
 
   TestingDefaults() {
-    this.iD2 = -1;
+    this.iD2 = DEFAULT_ID;
     this.ev1 = new t_variety.Event()
-      ..iD = -1
+      ..iD = DEFAULT_ID
       ..message = "a message";
     this.ev2 = new t_variety.Event()
       ..iD = 5
@@ -90,8 +90,8 @@ class TestingDefaults implements TBase {
       4,
       5,
     ];
-    this.iD3 = -1;
-    this.bin_field4 = new Uint8List.fromList(UTF8.encode('hello'));
+    this.iD3 = other_default;
+    this.bin_field4 = bin_const;
     this.list2 = [
       1,
       3,

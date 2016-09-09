@@ -119,7 +119,7 @@ class Event:
      - ID: ID is a unique identifier for an event.
      - Message: Message contains the event payload.
     """
-    _DEFAULT_ID_MARKER = -1
+    _DEFAULT_ID_MARKER = DEFAULT_ID
     def __init__(self, ID=_DEFAULT_ID_MARKER, Message=None):
         self.ID = ID
         self.Message = Message
@@ -200,15 +200,15 @@ class TestingDefaults:
      - status
      - base_status
     """
-    _DEFAULT_ID2_MARKER = -1
+    _DEFAULT_ID2_MARKER = DEFAULT_ID
     _DEFAULT_ev1_MARKER = object()
     _DEFAULT_ev2_MARKER = object()
     _DEFAULT_ID_MARKER = -2
     _DEFAULT_thing_MARKER = "a constant"
     _DEFAULT_thing2_MARKER = "another constant"
     _DEFAULT_listfield_MARKER = object()
-    _DEFAULT_ID3_MARKER = -1
-    _DEFAULT_bin_field4_MARKER = "hello"
+    _DEFAULT_ID3_MARKER = other_default
+    _DEFAULT_bin_field4_MARKER = bin_const
     _DEFAULT_list2_MARKER = object()
     _DEFAULT_list4_MARKER = object()
     _DEFAULT_a_map_MARKER = object()
@@ -218,7 +218,7 @@ class TestingDefaults:
         self.ID2 = ID2
         if ev1 is self._DEFAULT_ev1_MARKER:
             ev1 = Event(**{
-                "ID": -1,
+                "ID": DEFAULT_ID,
                 "Message": "a message",
             })
         self.ev1 = ev1
