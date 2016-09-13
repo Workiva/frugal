@@ -16,6 +16,7 @@ import 'package:valid/valid.dart' as t_valid;
 import 'blah.dart' as t_blah_file;
 
 
+/// This is a service docstring.
 abstract class FBlah {
 
   /// Use this to ping the server.
@@ -29,6 +30,7 @@ abstract class FBlah {
   Future<int> getMyInt(frugal.FContext ctx);
 }
 
+/// This is a service docstring.
 class FBlahClient implements FBlah {
   Map<String, frugal.FMethod> _methods;
 

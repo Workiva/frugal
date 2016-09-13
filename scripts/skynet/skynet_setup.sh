@@ -6,9 +6,9 @@ set -exo pipefail
 cp -r /testing/Godeps/_workspace/* $GOPATH/
 cp -r /testing/lib/go/Godeps/_workspace/* $GOPATH/
 
-# Move frugal itself into gopath
-mkdir -p $GOPATH/src/github.com/Workiva
-cp -r /testing $GOPATH/src/github.com/Workiva/frugal
+# Symlink frugal to gopath - this allows skynet-cli editing for interactive/directmount
+ln -s /testing/ /go/src/github.com/Workiva/frugal
+
 cd $GOPATH/src/github.com/Workiva/frugal
 
 # Install frugal

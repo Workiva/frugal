@@ -47,3 +47,6 @@ false_constant = False
 const_hc = 2
 evil_string = "thin'g\" \""
 evil_string2 = "th'ing\"ad\"f"
+const_lower = TestLowercase(**{
+    "lowercaseInt": 2,
+})

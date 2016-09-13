@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import SimpleHTTPServer
 import SocketServer
 import argparse
@@ -128,6 +130,7 @@ def healthcheck(port):
     health_handler = SimpleHTTPServer.SimpleHTTPRequestHandler
     healthcheck = SocketServer.TCPServer(("", int(port)), health_handler)
     healthcheck.serve_forever()
+
 
 if __name__ == '__main__':
     io_loop = ioloop.IOLoop.instance()

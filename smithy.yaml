@@ -6,8 +6,16 @@ runner_image: drydock.workiva.org/workiva/messaging-docker-images:71060
 
 script:
     - ./scripts/smithy.sh
-    - tar -czf goLib.tar.gz ./lib/go
-    - export PATH=$PATH:./bin && ./frugal --gen dart -r --out='test/integration/dart/gen-dart' test/integration/frugalTest.frugal
+    # Print out all the test logs as their own section in the smithy report view
+    - cat $SMITHY_ROOT/test_results/smithy_dart.sh_out.txt
+    - cat $SMITHY_ROOT/test_results/smithy_go.sh_out.txt
+    - cat $SMITHY_ROOT/test_results/smithy_generator.sh_out.txt
+    - cat $SMITHY_ROOT/test_results/smithy_python.sh_out.txt
+    - cat $SMITHY_ROOT/test_results/smithy_java.sh_out.txt
+
+env:
+    - FRUGAL_HOME=/smithy-builder/builds/Workiva/frugal/cache/GO/src/github.com/Workiva/frugal # $GOPATH/src/github.com/Workiva/frugal
+    - SMITHY_ROOT=/smithy-builder/builds/Workiva/frugal/workspace
 
 artifacts:
     artifactory:
@@ -20,3 +28,5 @@ artifacts:
         - frugal.pub.tgz
     pypi:
         - frugal-*.tar.gz
+    test_results:
+        - test_results/*

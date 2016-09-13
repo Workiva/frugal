@@ -1,5 +1,7 @@
 name: cross
 
+size: large
+
 run:
   when-branch-name-is:
     - .+

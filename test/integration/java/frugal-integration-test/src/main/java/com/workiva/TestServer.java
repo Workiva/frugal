@@ -19,6 +19,8 @@
 
 package com.workiva;
 
+import com.workiva.frugal.middleware.InvocationHandler;
+import com.workiva.frugal.middleware.ServiceMiddleware;
 import com.workiva.frugal.protocol.FContext;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.provider.FScopeProvider;
@@ -29,20 +31,33 @@ import com.workiva.frugal.transport.FMuxTransport;
 import com.workiva.frugal.transport.FNatsScopeTransport;
 import com.workiva.frugal.transport.FScopeTransportFactory;
 import com.workiva.frugal.transport.FTransportFactory;
-import frugal.test.*;
+import com.workiva.HealthCheck;
+import com.workiva.utils;
+import frugal.test.Event;
+import frugal.test.EventsPublisher;
+import frugal.test.EventsSubscriber;
+import frugal.test.FFrugalTest;
 import io.nats.client.Connection;
 import io.nats.client.ConnectionFactory;
 import io.nats.client.Constants;
+import main.java.com.workiva.FrugalTestHandler;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TProtocolFactory;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.*;
+import java.lang.reflect.Method;
+import java.sql.Time;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 
 public class TestServer {
+
+    public static boolean middlewareCalled = false;
 
     public static void main(String [] args) {
         try {
@@ -90,11 +105,12 @@ public class TestServer {
                 throw new Exception("Unknown transport type! " + transport_type);
             }
 
-            // Start pub/sub in a separate thread
+            // Start subscriber for pub/sub test
             new Subscriber(fProtocolFactory, port).run();
 
-            FFrugalTest.Iface handler = new TestServerHandler();
-            FFrugalTest.Processor processor = new FFrugalTest.Processor(handler);
+            FFrugalTest.Iface handler = new FrugalTestHandler();
+            CountDownLatch called = new CountDownLatch(1);
+            FFrugalTest.Processor processor = new FFrugalTest.Processor(handler, new ServerMiddleware(called));
             FServer server = null;
             switch (transport_type) {
                 case "stateless":
@@ -124,205 +140,65 @@ public class TestServer {
                 System.out.println(e.getMessage());
             }
 
-            System.out.println("Starting " + transport_type + " server...");
-            server.serve();
+            // Start server in separate thread
+            runServer serverThread = new runServer(server, transport_type);
+            serverThread.start();
+
+            // Wait for the middleware to be invoked, fail if it exceeds the longest client timeout (currently 20 sec)
+            if (called.await(20, TimeUnit.SECONDS)) {
+                System.out.println("Server middleware called successfully");
+            } else {
+                System.out.println("Server middleware not called within 20 seconds");
+                System.exit(1);
+            }
 
         } catch (Exception x) {
             x.printStackTrace();
         }
     }
 
-    private static class TestServerHandler implements FFrugalTest.Iface {
 
-//      Each RPC handler "test___" accepts a value of type ___ and returns the same value (where applicable).
-//      The client then asserts that the returned value is equal to the value sent.
-        @Override
-        public void testVoid(FContext ctx) throws TException {
-            System.out.format("testVoid(%s)\n", ctx);
+    private static class runServer extends Thread {
+        FServer server;
+        String transport_type;
+
+        runServer(FServer server, String transport_type) {
+            this.server = server;
+            this.transport_type = transport_type;
         }
 
-        @Override
-        public String testString(FContext ctx, String thing) throws TException {
-            System.out.format("testString(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public boolean testBool(FContext ctx, boolean thing) throws TException {
-            System.out.format("testBool(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public byte testByte(FContext ctx, byte thing) throws TException {
-            System.out.format("testByte(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public int testI32(FContext ctx, int thing) throws TException {
-            System.out.format("testI32(%s, %d)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public long testI64(FContext ctx, long thing) throws TException {
-            System.out.format("testI64(%s, %d)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public double testDouble(FContext ctx, double thing) throws TException {
-            System.out.format("testDouble(%s, %f)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public ByteBuffer testBinary(FContext ctx, ByteBuffer thing) throws TException {
-            System.out.format("testBinary(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public Xtruct testStruct(FContext ctx, Xtruct thing) throws TException {
-            System.out.format("testStruct(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public Xtruct2 testNest(FContext ctx, Xtruct2 thing) throws TException {
-            System.out.format("testNest(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public Map<Integer, Integer> testMap(FContext ctx, Map<Integer, Integer> thing) throws TException {
-            System.out.format("testMap(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public Map<String, String> testStringMap(FContext ctx, Map<String, String> thing) throws TException {
-            System.out.format("testStringMap(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public Set<Integer> testSet(FContext ctx, Set<Integer> thing) throws TException {
-            System.out.format("testSet(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public List<Integer> testList(FContext ctx, List<Integer> thing) throws TException {
-            System.out.format("testList(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public Numberz testEnum(FContext ctx, Numberz thing) throws TException {
-            System.out.format("testEnum(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public long testTypedef(FContext ctx, long thing) throws TException {
-            System.out.format("testTypedef(%s, %s)\n", ctx, thing);
-            return thing;
-        }
-
-        @Override
-        public Map<Integer, Map<Integer, Integer>> testMapMap(FContext ctx, int hello) throws TException {
-            System.out.format("testMapMap(%s, %d)\n", ctx, hello);
-
-            Map<Integer, Integer> mp1 = new HashMap<>();
-            mp1.put(-4,-4);
-            mp1.put(-3,-3);
-            mp1.put(-2,-2);
-            mp1.put(-1,-1);
-
-            Map<Integer, Integer> mp2 = new HashMap<>();
-            mp2.put(4,4);
-            mp2.put(3,3);
-            mp2.put(2,2);
-            mp2.put(1,1);
-
-            Map<Integer, Map<Integer, Integer>> rMapMap = new HashMap<>();
-            rMapMap.put(-4, mp1);
-            rMapMap.put(4, mp2);
-            return rMapMap;
-        }
-
-        @Override
-        public Map<Long, Map<Numberz, Insanity>> testInsanity(FContext ctx, Insanity argument) throws TException {
-            System.out.format("testInsanity(%s, %s)\n", ctx, argument);
-
-            Map<Numberz, Insanity> mp1 = new HashMap<>();
-            mp1.put(Numberz.findByValue(2), argument);
-            mp1.put(Numberz.findByValue(3), argument);
-
-            Map<Numberz, Insanity> mp2 = new HashMap<>();
-
-            Map<Long, Map<Numberz, Insanity>> returnInsanity = new HashMap<>();
-            returnInsanity.put((long) 1, mp1);
-            returnInsanity.put((long) 2, mp2);
-
-            return returnInsanity;
-        }
-
-        @Override
-        public Xtruct testMulti(FContext ctx, byte arg0, int arg1, long arg2, Map<Short, String> arg3, Numberz arg4, long arg5) throws TException {
-            System.out.format("testMulti(%s, %s, %s, %s, %s, %s\n", ctx, arg1, arg2, arg3, arg4, arg5);
-            Xtruct r = new Xtruct();
-
-            r.string_thing = "Hello2";
-            r.byte_thing = arg0;
-            r.i32_thing = arg1;
-            r.i64_thing = arg2;
-
-            return r;
-        }
-
-        @Override
-        public void testException(FContext ctx, String arg) throws TException {
-            System.out.format("testException(%s, %s)\n", ctx, arg);
-            switch (arg) {
-                case "Xception":
-                    Xception e = new Xception();
-                    e.errorCode = 1001;
-                    e.message = arg;
-                    throw e;
-                case "TException":
-                    throw new TException("Just TException");
-                default:
+        public void run() {
+            System.out.println("Starting " + transport_type + " server...");
+            try {
+                server.serve();
+            } catch (Exception e) {
+                System.out.printf("Exception starting server %s\n", e);
             }
         }
+    }
 
-        @Override
-        public Xtruct testMultiException(FContext ctx, String arg0, String arg1) throws TException {
-            System.out.format("testMultiException(%s, %s, %s)\n", ctx, arg0, arg1);
-            switch (arg0) {
-                case "Xception":
-                    Xception e = new Xception();
-                    e.errorCode = 1001;
-                    e.message = "This is an Xception";
-                    throw e;
-                case "Xception2":
-                    Xception2 e2 = new Xception2();
-                    e2.errorCode = 2002;
-                    e2.struct_thing = new Xtruct();
-                    e2.struct_thing.string_thing = "This is an Xception2";
-                    throw e2;
-                default:
-                    Xtruct r = new Xtruct();
-                    r.string_thing = arg1;
-                    return r;
-            }
+
+    private static class ServerMiddleware implements ServiceMiddleware {
+        CountDownLatch called;
+
+        ServerMiddleware(CountDownLatch called) {
+            this.called = called;
         }
 
         @Override
-        public void testOneway(FContext ctx, int secondsToSleep) throws TException {
-            System.out.format("testOneway(%s, %d)\n", ctx, secondsToSleep);
+        public <T> InvocationHandler<T> apply(T next) {
+            return new InvocationHandler<T>(next) {
+                @Override
+                public Object invoke(Method method, Object receiver, Object[] args) throws Throwable {
+                    Object[] subArgs = Arrays.copyOfRange(args, 1, args.length);
+                    System.out.printf("%s(%s)\n", method.getName(), Arrays.toString(subArgs));
+                    if (method.getName().equals("testOneway")) {
+
+                        called.countDown();
+                    }
+                    return method.invoke(receiver, args);
+                }
+            };
         }
     }
 
@@ -372,4 +248,5 @@ public class TestServer {
             }
         }
     }
+
 }

@@ -82,10 +82,11 @@ func StartClient(
 			panic(err)
 		}
 
+		timeout := time.After(time.Second * 3)
+
 		select {
-		case <-resp:
-			fmt.Println("Pub/Sub response received from server")
-		case <-time.After(2 * time.Second):
+		case <-resp:  // Response received is logged in the subscribe
+		case <-timeout:
 			log.Fatal("Pub/Sub response timed out!")
 		}
 		close(sent)

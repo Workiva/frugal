@@ -48,4 +48,6 @@ class VarietyConstants {
   static final int const_hc = 2;
   static final String evil_string = "thin'g\" \"";
   static final String evil_string2 = "th'ing\"ad\"f";
+  static final t_variety.TestLowercase const_lower = new t_variety.TestLowercase()
+    ..lowercaseInt = 2;
 }

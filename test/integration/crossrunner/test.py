@@ -61,15 +61,18 @@ class TestProgram(object):
 
         cmd = copy.copy(self._base_command)
         args = copy.copy(self._extra_args2)
+
+        # Java clients currently run in such a way that requires all args to be
+        # wrapped in " marks in order to be parsed correctly
+        if self.name == "java":
+            args.append('\"')
         args.append('--protocol=' + self.protocol)
         args.append('--transport=' + self.transport)
         args.append('--port=%d' % port)
-
         if self.name == "java":
-            args = '%s' % '"-Dexec.args=' + " ".join(args) + '"'
-            cmd.append(args)
-        else:
-            cmd.extend(args)
+            args.append('\"')
+
+        cmd.extend(args)
 
         if self._extra_args:
             cmd.extend(self._extra_args)

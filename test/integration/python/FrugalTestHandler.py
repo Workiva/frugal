@@ -121,6 +121,6 @@ class FrugalTestHandler(Iface):
 
     def testOneway(self, ctx, seconds):
         print "test_oneway({}): Sleeping...".format(seconds)
-        time.sleep(seconds)
+        time.sleep(seconds/1000)
         print "testOneway({}): done sleeping!".format(seconds)
         return

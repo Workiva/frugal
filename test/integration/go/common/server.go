@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -16,7 +17,9 @@ func StartServer(
 	port int64,
 	transport string,
 	protocol string,
-	handler frugaltest.FFrugalTest) {
+	handler frugaltest.FFrugalTest,
+	serverMiddlewareCalled chan bool,
+	pubSubResponseSent chan bool) {
 
 	var protocolFactory thrift.TProtocolFactory
 	switch protocol {
@@ -38,7 +41,6 @@ func StartServer(
 		Subscribe to events, publish response upon receipt
 	*/
 	go func() {
-
 		factory := frugal.NewFNatsScopeTransportFactory(conn)
 		provider := frugal.NewFScopeProvider(factory, frugal.NewFProtocolFactory(protocolFactory))
 		subscriber := event.NewEventsSubscriber(provider)
@@ -57,6 +59,9 @@ func StartServer(
 			if err := publisher.PublishEventCreated(ctx, fmt.Sprintf("%d-response", port), event); err != nil {
 				panic(err)
 			}
+			// Explicitly flushing the publish to ensure it is sent before the main thread exits
+			conn.Flush()
+			pubSubResponseSent <- true
 		})
 		if err != nil {
 			panic(err)
@@ -69,7 +74,7 @@ func StartServer(
 		Server for RPC tests
 		Server handler is defined in printing_handler.go
 	*/
-	processor := frugaltest.NewFFrugalTestProcessor(handler, serverLoggingMiddleware())
+	processor := frugaltest.NewFFrugalTestProcessor(handler, serverLoggingMiddleware(serverMiddlewareCalled))
 	var server frugal.FServer
 	switch transport {
 	case "stateless":
@@ -102,8 +107,10 @@ func StartServer(
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 		go http.ListenAndServe(hostPort, nil)
 	}
-	fmt.Println("Starting %s server...", transport)
-	server.Serve()
+	fmt.Println("Starting %v server...", transport)
+	if err := server.Serve(); err != nil {
+		log.Fatal("Failed to start server:", err)
+	}
 }
 
 type httpServer struct {

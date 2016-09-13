@@ -24,6 +24,9 @@ from valid.ttypes import *
 
 
 class Iface(object):
+    """
+    This is a service docstring.
+    """
 
     async def ping(self, ctx):
         """

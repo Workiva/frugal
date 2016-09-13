@@ -97,4 +97,9 @@ public class varietyConstants {
 
 		public static final String evil_string2 = "th'ing\"ad\"f";
 
+		public static final TestLowercase const_lower = new TestLowercase();
+		static {
+			const_lower.setLowercaseInt(2);
+		}
+
 }

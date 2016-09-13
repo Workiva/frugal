@@ -164,7 +164,7 @@ func (g *Generator) generateConstantValueWrapper(fieldName string, t *parser.Typ
 				if name == field.Name {
 					preamble, val := g.generateConstantValueRec(field.Type, pair.Value)
 					contents += preamble
-					contents += fmt.Sprintf(ind+"%s.set%s(%s);\n", fieldName, name, val)
+					contents += fmt.Sprintf(ind+"%s.set%s(%s);\n", fieldName, strings.Title(name), val)
 				}
 			}
 		}

@@ -21,6 +21,7 @@ var _ = thrift.ZERO
 var _ = fmt.Printf
 var _ = bytes.Equal
 
+// This is a service docstring.
 type FBlah interface {
 	// Use this to ping the server.
 	Ping(ctx *frugal.FContext) (err error)
@@ -30,6 +31,7 @@ type FBlah interface {
 	GetMyInt(ctx *frugal.FContext) (r ValidTypes.MyInt, err error)
 }
 
+// This is a service docstring.
 type FBlahClient struct {
 	transport       frugal.FTransport
 	protocolFactory *frugal.FProtocolFactory

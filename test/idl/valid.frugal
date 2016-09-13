@@ -23,6 +23,7 @@ exception InvalidOperation {
 }
 
 // This is a service. It has the same name as a scope. And that's ok.
+/**@ This is a service docstring. */
 service Blah {
     /**@ Use this to ping the server. */
     void ping(),

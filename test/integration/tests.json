@@ -51,22 +51,17 @@
     ],
     "workdir": "go/bin"
   },
-  {
+   {
     "name": "java",
-    "join_args": true,
 
-    "command": [
-      "mvn",
-      "exec:java"
-    ],
     "client": {
       "timeout": 20,
       "command": [
-        "\"-Dexec.mainClass=com.workiva.TestClient\""
-      ],
-      "extra_args": [
-        "-f=\"java/frugal-integration-test/pom.xml\"",
-        "-Djava.security.egd=file:///dev/urandom"
+        "/usr/bin/java",
+        "-Djava.security.egd=file:///dev/urandom",
+        "-cp",
+        "cross.jar",
+        "com.workiva.TestClient"
       ],
       "transports": [
         "stateless",
@@ -78,11 +73,11 @@
     "server": {
       "delay": 15,
       "command": [
-        "\"-Dexec.mainClass=com.workiva.TestServer\""
-      ],
-      "extra_args": [
-        "-f=\"java/frugal-integration-test/pom.xml\"",
-        "-Djava.security.egd=file:///dev/urandom"
+        "/usr/bin/java",
+        "-Djava.security.egd=file:///dev/urandom",
+        "-cp",
+        "cross.jar",
+        "com.workiva.TestServer"
       ],
       "transports": [
         "stateless",
@@ -97,7 +92,8 @@
       "binary",
       "compact",
       "json"
-    ]
+    ],
+    "workdir": "java/frugal-integration-test"
   },
   {
     "name": "python:tornado",

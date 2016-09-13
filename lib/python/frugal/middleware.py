@@ -1,6 +1,6 @@
 
 """
-InvocationHandler is a function whick takes the instance method being invoked
+InvocationHandler is a function which takes the instance method being invoked
 and its arguments. It processes a service method invocation on a proxy
 instance and returns the result. The return value should match the arity of the
 proxied method and have the same types. The first argument will always be the

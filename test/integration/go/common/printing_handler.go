@@ -12,172 +12,88 @@ var PrintingHandler = &printingHandler{}
 
 type printingHandler struct{}
 
-// Prints "testVoid()" and returns nothing.
+// TestVoid returns nothing
 func (p *printingHandler) TestVoid(ctx *frugal.FContext) (err error) {
 	return nil
 }
 
-// Prints 'testString("%s")' with thing as '%s'
-// @param string thing - the string to print
-// @return string - returns the string 'thing'
-//
-// Parameters:
-//  - Thing
+// TestString returns the string it was called with
 func (p *printingHandler) TestString(ctx *frugal.FContext, thing string) (r string, err error) {
 	return thing, nil
 }
 
-// Prints 'testBool("%d")' with thing as 'true' or 'false'
-// @param bool thing - the bool to print
-// @return bool - returns the bool 'thing'
-//
-// Parameters:
-//  - Thing
+// TestBool returns the bool argument it was called with
 func (p *printingHandler) TestBool(ctx *frugal.FContext, thing bool) (r bool, err error) {
 	return thing, nil
 }
 
-// Prints 'testByte("%d")' with thing as '%d'
-// @param byte thing - the byte to print
-// @return byte - returns the byte 'thing'
-//
-// Parameters:
-//  - Thing
+// TestByte returns the int8 argument it was called with
 func (p *printingHandler) TestByte(ctx *frugal.FContext, thing int8) (r int8, err error) {
 	return thing, nil
 }
 
-// Prints 'testI32("%d")' with thing as '%d'
-// @param i32 thing - the i32 to print
-// @return i32 - returns the i32 'thing'
-//
-// Parameters:
-//  - Thing
+// TestI32 returns the int32 argument it was called with
 func (p *printingHandler) TestI32(ctx *frugal.FContext, thing int32) (r int32, err error) {
 	return thing, nil
 }
 
-// Prints 'testI64("%d")' with thing as '%d'
-// @param i64 thing - the i64 to print
-// @return i64 - returns the i64 'thing'
-//
-// Parameters:
-//  - Thing
+// TestI64 returns the int64 it was called with
 func (p *printingHandler) TestI64(ctx *frugal.FContext, thing int64) (r int64, err error) {
 	return thing, nil
 }
 
-// Prints 'testDouble("%f")' with thing as '%f'
-// @param double thing - the double to print
-// @return double - returns the double 'thing'
-//
-// Parameters:
-//  - Thing
+// TestDouble returns the double it was called with
 func (p *printingHandler) TestDouble(ctx *frugal.FContext, thing float64) (r float64, err error) {
 	return thing, nil
 }
 
-// Prints 'testBinary("%s")' where '%s' is a hex-formatted string of thing's data
-// @param []byte thing - the binary to print
-// @return []byte - returns the binary 'thing'
-//
-// Parameters:
-//  - Thing
+// TestBinary returns the byte array it was called with
 func (p *printingHandler) TestBinary(ctx *frugal.FContext, thing []byte) (r []byte, err error) {
 	return thing, nil
 }
 
-// Prints 'testStruct("{%s}")' where thing has been formatted into a string of comma separated values
-// @param Xtruct thing - the Xtruct to print
-// @return Xtruct - returns the Xtruct 'thing'
-//
-// Parameters:
-//  - Thing
+// TestStruct returns the Xtruct it was called with
 func (p *printingHandler) TestStruct(ctx *frugal.FContext, thing *Xtruct) (r *Xtruct, err error) {
 	return thing, err
 }
 
-// Prints 'testNest("{%s}")' where thing has been formatted into a string of the nested struct
-// @param Xtruct2 thing - the Xtruct2 to print
-// @return Xtruct2 - returns the Xtruct2 'thing'
-//
-// Parameters:
-//  - Thing
+// TestNest returns the nested Xtruct it was called with
 func (p *printingHandler) TestNest(ctx *frugal.FContext, nest *Xtruct2) (r *Xtruct2, err error) {
 	return nest, nil
 }
 
-// Prints 'testMap("{%s")' where thing has been formatted into a string of  'key => value' pairs
-//  separated by commas and new lines
-// @param map<i32,i32> thing - the map<i32,i32> to print
-// @return map<i32,i32> - returns the map<i32,i32> 'thing'
-//
-// Parameters:
-//  - Thing
+// TestMap returns the map of int32s it was called with
 func (p *printingHandler) TestMap(ctx *frugal.FContext, thing map[int32]int32) (r map[int32]int32, err error) {
 	return thing, nil
 }
 
-// Prints 'testStringMap("{%s}")' where thing has been formatted into a string of  'key => value' pairs
-//  separated by commas and new lines
-// @param map<string,string> thing - the map<string,string> to print
-// @return map<string,string> - returns the map<string,string> 'thing'
-//
-// Parameters:
-//  - Thing
+// TestStringMap returns the map of strings it was called with
 func (p *printingHandler) TestStringMap(ctx *frugal.FContext, thing map[string]string) (r map[string]string, err error) {
 	return thing, nil
 }
 
-// Prints 'testSet("{%s}")' where thing has been formatted into a string of  values
-//  separated by commas and new lines
-// @param set<i32> thing - the set<i32> to print
-// @return set<i32> - returns the set<i32> 'thing'
-//
-// Parameters:
-//  - Thing
+// TestSet returns the map of bools it was called with
 func (p *printingHandler) TestSet(ctx *frugal.FContext, thing map[int32]bool) (r map[int32]bool, err error) {
 	return thing, nil
 }
 
-// Prints 'testList("{%s}")' where thing has been formatted into a string of  values
-//  separated by commas and new lines
-// @param list<i32> thing - the list<i32> to print
-// @return list<i32> - returns the list<i32> 'thing'
-//
-// Parameters:
-//  - Thing
+// TestList returns the int32 list it was called with
 func (p *printingHandler) TestList(ctx *frugal.FContext, thing []int32) (r []int32, err error) {
 	return thing, nil
 }
 
-// Prints 'testEnum("%d")' where thing has been formatted into it's numeric value
-// @param Numberz thing - the Numberz to print
-// @return Numberz - returns the Numberz 'thing'
-//
-// Parameters:
-//  - Thing
+// TestEnum returns the enum it was called with
 func (p *printingHandler) TestEnum(ctx *frugal.FContext, thing Numberz) (r Numberz, err error) {
 	return thing, nil
 }
 
-// Prints 'testTypedef("%d")' with thing as '%d'
-// @param UserId thing - the UserId to print
-// @return UserId - returns the UserId 'thing'
-//
-// Parameters:
-//  - Thing
+// TestTypedef returns the UserID it was called with
 func (p *printingHandler) TestTypedef(ctx *frugal.FContext, thing UserId) (r UserId, err error) {
 	return thing, nil
 }
 
-// Prints 'testMapMap("%d")' with hello as '%d'
-// @param i32 hello - the i32 to print
-// @return map<i32,map<i32,i32>> - returns a dictionary with these values:
-//   {-4 => {-4 => -4, -3 => -3, -2 => -2, -1 => -1, }, 4 => {1 => 1, 2 => 2, 3 => 3, 4 => 4, }, }
-//
-// Parameters:
-//  - Hello
+// TestMapMap takes an int32 and returns a dictionary with these values:
+// {-4 => {-4 => -4, -3 => -3, -2 => -2, -1 => -1, }, 4 => {1 => 1, 2 => 2, 3 => 3, 4 => 4, }, }
 func (p *printingHandler) TestMapMap(ctx *frugal.FContext, hello int32) (r map[int32]map[int32]int32, err error) {
 	r = map[int32]map[int32]int32{
 		-4: {-4: -4, -3: -3, -2: -2, -1: -1},
@@ -186,18 +102,13 @@ func (p *printingHandler) TestMapMap(ctx *frugal.FContext, hello int32) (r map[i
 	return
 }
 
-// So you think you've got this all worked, out eh?
+// TestInsanity takes an insanity argument and returns it in a map:
 //
-// Creates a the returned map with these values and prints it out:
 //   { 1 => { 2 => argument,
 //            3 => argument,
 //          },
-//     2 => { 6 => <empty Insanity struct>, },
+//     2 => { },
 //   }
-// @return map<UserId, map<Numberz,Insanity>> - a map with the above values
-//
-// Parameters:
-//  - Argument
 func (p *printingHandler) TestInsanity(ctx *frugal.FContext, argument *Insanity) (r map[UserId]map[Numberz]*Insanity, err error) {
 	r = make(map[UserId]map[Numberz]*Insanity)
 	r[1] = map[Numberz]*Insanity{
@@ -208,7 +119,7 @@ func (p *printingHandler) TestInsanity(ctx *frugal.FContext, argument *Insanity)
 	return
 }
 
-// Prints 'testMulti()'
+// TestMulti takes several different types of arguments:
 // @param byte arg0 -
 // @param i32 arg1 -
 // @param i64 arg2 -
@@ -216,15 +127,7 @@ func (p *printingHandler) TestInsanity(ctx *frugal.FContext, argument *Insanity)
 // @param Numberz arg4 -
 // @param UserId arg5 -
 // @return Xtruct - returns an Xtruct with StringThing = "Hello2, ByteThing = arg0, I32Thing = arg1
-//    and I64Thing = arg2
-//
-// Parameters:
-//  - Arg0
-//  - Arg1
-//  - Arg2
-//  - Arg3
-//  - Arg4
-//  - Arg5
+//  and I64Thing = arg2
 func (p *printingHandler) TestMulti(ctx *frugal.FContext, arg0 int8, arg1 int32, arg2 int64, arg3 map[int16]string, arg4 Numberz, arg5 UserId) (r *Xtruct, err error) {
 	r = NewXtruct()
 
@@ -235,10 +138,10 @@ func (p *printingHandler) TestMulti(ctx *frugal.FContext, arg0 int8, arg1 int32,
 	return
 }
 
-// Print 'testException(%s)' with arg as '%s'
+// TestException
 // @param string arg - a string indication what type of exception to throw
 // if arg == "Xception" throw Xception with errorCode = 1001 and message = arg
-// elsen if arg == "TException" throw TException
+// else if arg == "TException" throw TException
 // else do not throw anything
 //
 // Parameters:
@@ -256,10 +159,10 @@ func (p *printingHandler) TestException(ctx *frugal.FContext, arg string) (err e
 	return
 }
 
-// Print 'testMultiException(%s, %s)' with arg0 as '%s' and arg1 as '%s'
+// TestMultiException
 // @param string arg - a string indication what type of exception to throw
 // if arg0 == "Xception" throw Xception with errorCode = 1001 and message = "This is an Xception"
-// elsen if arg0 == "Xception2" throw Xception2 with errorCode = 2002 and message = "This is an Xception2"
+// else if arg0 == "Xception2" throw Xception2 with errorCode = 2002 and message = "This is an Xception2"
 // else do not throw anything
 // @return Xtruct - an Xtruct with StringThing = arg1
 //
@@ -287,14 +190,8 @@ func (p *printingHandler) TestMultiException(ctx *frugal.FContext, arg0 string, 
 	}
 }
 
-// Print 'testOneway(%d): Sleeping...' with secondsToSleep as '%d'
-// sleep 'secondsToSleep'
-// Print 'testOneway(%d): done sleeping!' with secondsToSleep as '%d'
-// @param i32 secondsToSleep - the number of seconds to sleep
-//
-// Parameters:
-//  - SecondsToSleep
-func (p *printingHandler) TestOneway(ctx *frugal.FContext, secondsToSleep int32) (err error) {
-	time.Sleep(time.Second * time.Duration(secondsToSleep))
+// TestOneway takes an int32 and returns nothing
+func (p *printingHandler) TestOneway(ctx *frugal.FContext, msToSleep int32) (err error) {
+	time.Sleep(time.Millisecond * time.Duration(msToSleep))
 	return
 }

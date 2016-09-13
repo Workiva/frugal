@@ -31,6 +31,7 @@ from tornado import ioloop, gen
 
 
 response_received = False
+middleware_called = False
 
 
 @gen.coroutine
@@ -83,10 +84,10 @@ def main():
     try:
         yield transport.open()
     except TTransportException as ex:
-        root.error(ex)
+        logging.error(ex)
         raise gen.Return()
 
-    client = FrugalTestClient(transport, protocol_factory)
+    client = FrugalTestClient(transport, protocol_factory, client_middleware)
 
     ctx = FContext("test")
 
@@ -145,72 +146,56 @@ def test_rpc(client, ctx):
     return_code = 0
 
     # RPC with no type
-    print("test_void()", end="")
     yield client.testVoid(ctx)
-    print(" = void")
 
     # RPC with string
     thing = "thing"
-    print('testString("{}") = '.format(thing), end="")
     result = yield client.testString(ctx, "thing")
     if result != thing:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with boolean
     boolean = True
-    print("testBool({}) = ".format(boolean), end="")
     result = yield client.testBool(ctx, boolean)
     if result != boolean:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with byte
     byte = 42
-    print("testByte({}) = ".format(byte), end="")
     result = yield client.testByte(ctx, byte)
     if result != byte:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with i32
     i32 = 4242
-    print("testI32({}) = ".format(i32), end="")
     result = yield client.testI32(ctx, i32)
     if result != i32:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with i64
     i64 = 424242
-    print("testI64({}) = ".format(i64), end="")
     result = yield client.testI64(ctx, i64)
     if result != i64:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with double
     double = 42.42
-    print("testDouble({}) = ".format(double), end="")
     result = yield client.testDouble(ctx, double)
     if result != double:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with binary
     binary = "0b101010"
-    print("testBinary({}) = ".format(binary), end="")
     result = yield client.testBinary(ctx, binary)
     if result != binary:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # # RPC with Xtruct
     struct = Xtruct()
@@ -223,84 +208,67 @@ def test_rpc(client, ctx):
     if result != struct:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with Xtruct2
     struct2 = Xtruct2()
     struct2.struct_thing = struct
     struct2.byte_thing = 0
     struct2.i32_thing = 0
-    print("testNest({}) = ".format(struct2), end="")
     result = yield client.testNest(ctx, struct2)
     if result != struct2:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with map
     dictionary = {1: 2, 3: 4, 5: 42}
-    print("testMap({}) = ".format(dictionary), end="")
     result = yield client.testMap(ctx, dictionary)
     if result != dictionary:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with map of strings
     string_map = {"a": "2", "b": "blah", "some": "thing"}
-    print("testStringMap({}) = ".format(string_map), end="")
     result = yield client.testStringMap(ctx, string_map)
     if result != string_map:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with set
     set = {1, 2, 2, 42}
-    print("testSet({}) = ".format(set), end="")
     result = yield client.testSet(ctx, set)
-    if result != set:  # How to do this comparison?
+    if result != set:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with list
     list = [1, 2, 42]
-    print("testList({}) = ".format(list), end="")
     result = yield client.testList(ctx, list)
-    if result != list:  # How to do this comparison?
+    if result != list:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with enum
     enum = Numberz.TWO
-    print("testEnum({}) = ".format(enum), end="")
     result = yield client.testEnum(ctx, enum)
     if result != enum:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with typeDef
     type_def = 42
-    print("testTypedef({}) = ".format(type_def), end="")
     result = yield client.testTypedef(ctx,type_def)
     if result != type_def:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # # RPC with map of maps
     d = {4: 4, 3: 3, 2: 2, 1: 1}
     e = {-4: -4, -3: -3, -2: -2, -1: -1}
     mapmap = {-4: e, 4: d}
-    print("testMapMap({}) = ".format(42), end="")
     result = yield client.testMapMap(ctx, 42)
-    if result != mapmap:  # How to do this comparison?
+    if result != mapmap:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with Insanity (xtruct of xtructs)
     truck1 = Xtruct("Goodbye4", 4, 4, 4)
@@ -308,7 +276,6 @@ def test_rpc(client, ctx):
     insanity = Insanity()
     insanity.userMap = {Numberz.FIVE: 5, Numberz.EIGHT: 8}
     insanity.xtructs = [truck1, truck2]
-    print("testInsanity({}) = ".format(insanity), end="")
     result = yield client.testInsanity(ctx, insanity)
     expected_result = {1:
                      {2: Insanity(
@@ -322,7 +289,6 @@ def test_rpc(client, ctx):
     if result != expected_result:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with Multi type
     multi = Xtruct()
@@ -330,28 +296,22 @@ def test_rpc(client, ctx):
     multi.byte_thing = 42
     multi.i32_thing = 4242
     multi.i64_thing = 424242
-    print("testMulti() = ", end="")
     result = yield client.testMulti(ctx, 42, 4242, 424242, {1: "blah", 2: "thing"}, Numberz.EIGHT, 24)
     if result != multi:
         print("\nUnexpected result ", end="")
         return_code = 1
-    print(result)
 
     # RPC with Exception
     message = "Xception"
-    print("testException({}) = ".format(message), end="")
     try:
         result = yield client.testException(ctx, message)
     except Xception as exception:
-        if exception.errorCode == 1001 and exception.message == "Xception":
-            print(result)
-        else:
+        if exception.errorCode != 1001 or exception.message != "Xception":
             print("\nUnexpected result {}".format(result), end="")
             return_code = 1
 
     # RPC with MultiException
     message = "Xception2"
-    print("testMultiException({}) = ".format(message), end="")
     try:
         result = yield client.testMultiException(ctx, message, "ignoreme")
         print("\nUnexpected result {}".format(result), end="")
@@ -360,24 +320,43 @@ def test_rpc(client, ctx):
         print("\nUnexpected result {}".format(exception), end="")
         return_code = 1
     except Xception2 as exception:
-        if exception.errorCode == 2002 and exception.struct_thing.string_thing == "This is an Xception2":
-            print(exception)
-        else:
+        if exception.errorCode != 2002 or exception.struct_thing.string_thing != "This is an Xception2":
             print("\nUnexpected result {}".format(exception), end="")
             return_code = 1
 
     # oneWay RPC call (no response)
     seconds = 1
-    print("testOneway({}) = ".format(seconds), end="")
     try:
         client.testOneway(ctx, seconds)
-        print(" - no error returned")
     except Exception as e:
         print("Unexpected error in testOneway() call: {}".format(e))
         return_code = 1
 
+    global middleware_called
+    if not middleware_called:
+        print("Client middleware never invoked")
+        return_code = 1
+
     if return_code:
         exit(1)
+
+
+def client_middleware(next):
+    def handler(method, args):
+        global middleware_called
+        middleware_called = True
+        print("{}({}) = ".format(method.im_func.func_name, args[1:]), end="")
+        ret = next(method, args)
+        ret.add_done_callback(log_future)
+        return ret
+    return handler
+
+
+def log_future(future):
+    try:
+        print("{}".format(future.result()))
+    except Exception as ex:
+        print("{}".format(ex))
 
 
 if __name__ == '__main__':

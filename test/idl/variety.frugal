@@ -24,6 +24,8 @@ const map<string,string> MAPCONSTANT = {'hello':'world', 'goodnight':'moon'}
 const Event ConstEvent1 = {"ID": -2, "Message": "first one"}
 const Event ConstEvent2 = {"ID": -7, "Message": "second one"}
 
+
+
 const list<i32> NumsList = [2,4,7,1]
 const set<int> NumsSet = [1,3,8,0]
 
@@ -39,8 +41,14 @@ const HealthCondition const_hc = 2;
 const string evil_string = "thin'g\" \""
 const string evil_string2 = 'th\'ing"ad"f'
 
+const TestLowercase const_lower = {"lowercaseInt": 2}
+
 struct TestBase {
     1: base.thing base_struct,
+}
+
+struct TestLowercase {
+    1: i32 lowercaseInt,
 }
 
 enum HealthCondition {

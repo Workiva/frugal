@@ -19,11 +19,22 @@
 
 package com.workiva;
 
+import com.workiva.frugal.middleware.InvocationHandler;
+import com.workiva.frugal.middleware.ServiceMiddleware;
 import com.workiva.frugal.protocol.FContext;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.provider.FScopeProvider;
-import com.workiva.frugal.transport.*;
+import com.workiva.frugal.transport.FHttpTransport;
+import com.workiva.frugal.transport.FTransport;
+import com.workiva.frugal.transport.FTransportFactory;
+import com.workiva.frugal.transport.TNatsServiceTransport;
+import com.workiva.frugal.transport.FNatsTransport;
+import com.workiva.frugal.transport.FMuxTransport;
+import com.workiva.frugal.transport.FScopeTransportFactory;
+import com.workiva.frugal.transport.FNatsScopeTransport;
+import com.workiva.utils;
 import frugal.test.*;
+import frugal.test.Numberz;
 import io.nats.client.Connection;
 import io.nats.client.ConnectionFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -31,8 +42,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
 
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -45,10 +56,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class TestClient {
 
+    public static boolean middlewareCalled = false;
+
     public static void main(String[] args) throws Exception {
         // default testing parameters, overwritten in Python runner
         String host = "localhost";
-        Integer port = 9090;
+        int port = 9090;
         String protocol_type = "binary";
         String transport_type = "stateless";
 
@@ -121,13 +134,13 @@ public class TestClient {
 
         try {
             fTransport.open();
-        } catch (TTransportException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Failed to open fTransport: " + e.getMessage());
             System.exit(1);
         }
 
-        FFrugalTest.Client testClient = new FFrugalTest.Client(fTransport, new FProtocolFactory(protocolFactory));
+        FFrugalTest.Client testClient = new FFrugalTest.Client(fTransport, new FProtocolFactory(protocolFactory), new ClientMiddleware());
 
         Insanity insane = new Insanity();
         FContext context = new FContext("");
@@ -139,9 +152,7 @@ public class TestClient {
              */
 
             try {
-                System.out.print("testVoid()");
                 testClient.testVoid(context);
-                System.out.print(" = void\n");
             } catch (TApplicationException tax) {
                 tax.printStackTrace();
                 returnCode |= 1;
@@ -151,9 +162,7 @@ public class TestClient {
             /**
              * STRING TEST
              */
-            System.out.print("testString(\"Test\")");
             String s = testClient.testString(context, "Test");
-            System.out.print(" = \"" + s + "\"\n");
             if (!s.equals("Test")) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
@@ -162,9 +171,7 @@ public class TestClient {
             /**
              * BYTE TEST
              */
-            System.out.print("testByte(1)");
             byte i8 = testClient.testByte(context, (byte) 1);
-            System.out.print(" = " + i8 + "\n");
             if (i8 != 1) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
@@ -173,9 +180,7 @@ public class TestClient {
             /**
              * I32 TEST
              */
-            System.out.print("testI32(-1)");
             int i32 = testClient.testI32(context, -1);
-            System.out.print(" = " + i32 + "\n");
             if (i32 != -1) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
@@ -184,9 +189,7 @@ public class TestClient {
             /**
              * I64 TEST
              */
-            System.out.print("testI64(-34359738368)");
             long i64 = testClient.testI64(context, -34359738368L);
-            System.out.print(" = " + i64 + "\n");
             if (i64 != -34359738368L) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
@@ -195,9 +198,7 @@ public class TestClient {
             /**
              * DOUBLE TEST
              */
-            System.out.print("testDouble(-5.325098235)");
             double dub = testClient.testDouble(context, -5.325098235);
-            System.out.print(" = " + dub + "\n");
             if (Math.abs(dub - (-5.325098235)) > 0.001) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
@@ -207,7 +208,6 @@ public class TestClient {
              * BINARY TEST
              */
             try {
-                System.out.print("testBinary(-128...127) = ");
                 // There currently a mismatch between java and go that will cause test failures if the length of this array is not divisible by 4
                 // TODO: Use commented line in lieu of modified line once a fix is in Thrift
                 // byte[] data = new byte[]{-128, -127, -126, -125, -124, -123, -122, -121, -120, -119, -118, -117, -116, -115, -114, -113, -112, -111, -110, -109, -108, -107, -106, -105, -104, -103, -102, -101, -100, -99, -98, -97, -96, -95, -94, -93, -92, -91, -90, -89, -88, -87, -86, -85, -84, -83, -82, -81, -80, -79, -78, -77, -76, -75, -74, -73, -72, -71, -70, -69, -68, -67, -66, -65, -64, -63, -62, -61, -60, -59, -58, -57, -56, -55, -54, -53, -52, -51, -50, -49, -48, -47, -46, -45, -44, -43, -42, -41, -40, -39, -38, -37, -36, -35, -34, -33, -32, -31, -30, -29, -28, -27, -26, -25, -24, -23, -22, -21, -20, -19, -18, -17, -16, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127};
@@ -218,16 +218,7 @@ public class TestClient {
                 byte[] bytes = new byte[bin.limit() - bin.position()];
                 bin.get(bytes);
                 bin.reset();
-                System.out.print("{");
-                boolean first = true;
-                for (byte aByte : bytes) {
-                    if (first)
-                        first = false;
-                    else
-                        System.out.print(", ");
-                    System.out.print(aByte);
-                }
-                System.out.println("}");
+
                 if (!ByteBuffer.wrap(data).equals(bin)) {
                     returnCode |= 1;
                     System.out.println("*** FAILURE ***\n");
@@ -238,21 +229,16 @@ public class TestClient {
                 ex.printStackTrace(System.out);
             }
 
+
             /**
              * STRUCT TEST
              */
-            System.out.print("testStruct({\"Zero\", 1, -3, -5})");
             Xtruct out = new Xtruct();
             out.string_thing = "Zero";
             out.byte_thing = (byte) 1;
             out.i32_thing = -3;
             out.i64_thing = -5;
             Xtruct in = testClient.testStruct(context, out);
-            System.out.print(" = {" + "\"" +
-                    in.string_thing + "\"," +
-                    in.byte_thing + ", " +
-                    in.i32_thing + ", " +
-                    in.i64_thing + "}\n");
 
             if (!in.equals(out)) {
                 returnCode |= 1;
@@ -262,19 +248,13 @@ public class TestClient {
             /**
              * NESTED STRUCT TEST
              */
-            System.out.print("testNest({1, {\"Zero\", 1, -3, -5}), 5}");
             Xtruct2 out2 = new Xtruct2();
             out2.byte_thing = (short) 1;
             out2.struct_thing = out;
             out2.i32_thing = 5;
             Xtruct2 in2 = testClient.testNest(context, out2);
             in = in2.struct_thing;
-            System.out.print(" = {" + in2.byte_thing + ", {" + "\"" +
-                    in.string_thing + "\", " +
-                    in.byte_thing + ", " +
-                    in.i32_thing + ", " +
-                    in.i64_thing + "}, " +
-                    in2.i32_thing + "}\n");
+
             if (!in2.equals(out2)) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
@@ -287,29 +267,7 @@ public class TestClient {
             for (int i = 0; i < 5; ++i) {
                 mapout.put(i, i - 10);
             }
-            System.out.print("testMap({");
-            boolean first = true;
-            for (int key : mapout.keySet()) {
-                if (first) {
-                    first = false;
-                } else {
-                    System.out.print(", ");
-                }
-                System.out.print(key + " => " + mapout.get(key));
-            }
-            System.out.print("})");
             Map<Integer, Integer> mapin = testClient.testMap(context, mapout);
-            System.out.print(" = {");
-            first = true;
-            for (int key : mapin.keySet()) {
-                if (first) {
-                    first = false;
-                } else {
-                    System.out.print(", ");
-                }
-                System.out.print(key + " => " + mapout.get(key));
-            }
-            System.out.print("}\n");
 
             if (!mapout.equals(mapin)) {
                 returnCode |= 1;
@@ -324,27 +282,7 @@ public class TestClient {
                 smapout.put("a", "2");
                 smapout.put("b", "blah");
                 smapout.put("some", "thing");
-                for (String key : smapout.keySet()) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        System.out.print(", ");
-                    }
-                    System.out.print(key + " => " + smapout.get(key));
-                }
-                System.out.print("})");
                 Map<String, String> smapin = testClient.testStringMap(context, smapout);
-                System.out.print(" = {");
-                first = true;
-                for (String key : smapin.keySet()) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        System.out.print(", ");
-                    }
-                    System.out.print(key + " => " + smapout.get(key));
-                }
-                System.out.print("}\n");
                 if (!smapout.equals(smapin)) {
                     returnCode |= 1;
                     System.out.println("*** FAILURE ***\n");
@@ -362,29 +300,7 @@ public class TestClient {
             for (int i = -2; i < 3; ++i) {
                 setout.add(i);
             }
-            System.out.print("testSet({");
-            first = true;
-            for (int elem : setout) {
-                if (first) {
-                    first = false;
-                } else {
-                    System.out.print(", ");
-                }
-                System.out.print(elem);
-            }
-            System.out.print("})");
             Set<Integer> setin = testClient.testSet(context, setout);
-            System.out.print(" = {");
-            first = true;
-            for (int elem : setin) {
-                if (first) {
-                    first = false;
-                } else {
-                    System.out.print(", ");
-                }
-                System.out.print(elem);
-            }
-            System.out.print("}\n");
             if (!setout.equals(setin)) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
@@ -397,29 +313,7 @@ public class TestClient {
             for (int i = -2; i < 3; ++i) {
                 listout.add(i);
             }
-            System.out.print("testList({");
-            first = true;
-            for (int elem : listout) {
-                if (first) {
-                    first = false;
-                } else {
-                    System.out.print(", ");
-                }
-                System.out.print(elem);
-            }
-            System.out.print("})");
             List<Integer> listin = testClient.testList(context, listout);
-            System.out.print(" = {");
-            first = true;
-            for (int elem : listin) {
-                if (first) {
-                    first = false;
-                } else {
-                    System.out.print(", ");
-                }
-                System.out.print(elem);
-            }
-            System.out.print("}\n");
             if (!listout.equals(listin)) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
@@ -428,41 +322,31 @@ public class TestClient {
             /**
              * ENUM TEST
              */
-            System.out.print("testEnum(ONE)");
             Numberz ret = testClient.testEnum(context, Numberz.ONE);
-            System.out.print(" = " + ret + "\n");
             if (ret != Numberz.ONE) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
             }
 
-            System.out.print("testEnum(TWO)");
             ret = testClient.testEnum(context, Numberz.TWO);
-            System.out.print(" = " + ret + "\n");
             if (ret != Numberz.TWO) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
             }
 
-            System.out.print("testEnum(THREE)");
             ret = testClient.testEnum(context, Numberz.THREE);
-            System.out.print(" = " + ret + "\n");
             if (ret != Numberz.THREE) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
             }
 
-            System.out.print("testEnum(FIVE)");
             ret = testClient.testEnum(context, Numberz.FIVE);
-            System.out.print(" = " + ret + "\n");
             if (ret != Numberz.FIVE) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
             }
 
-            System.out.print("testEnum(EIGHT)");
             ret = testClient.testEnum(context, Numberz.EIGHT);
-            System.out.print(" = " + ret + "\n");
             if (ret != Numberz.EIGHT) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
@@ -471,9 +355,7 @@ public class TestClient {
             /**
              * TYPEDEF TEST
              */
-            System.out.print("testTypedef(309858235082523)");
             long uid = testClient.testTypedef(context, 309858235082523L);
-            System.out.print(" = " + uid + "\n");
             if (uid != 309858235082523L) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
@@ -482,19 +364,8 @@ public class TestClient {
             /**
              * NESTED MAP TEST
              */
-            System.out.print("testMapMap(1)");
             Map<Integer, Map<Integer, Integer>> mm =
                     testClient.testMapMap(context, 1);
-            System.out.print(" = {");
-            for (int key : mm.keySet()) {
-                System.out.print(key + " => {");
-                Map<Integer, Integer> m2 = mm.get(key);
-                for (int k2 : m2.keySet()) {
-                    System.out.print(k2 + " => " + m2.get(k2) + ", ");
-                }
-                System.out.print("}, ");
-            }
-            System.out.print("}\n");
             if (mm.size() != 2 || !mm.containsKey(4) || !mm.containsKey(-4)) {
                 returnCode |= 1;
                 System.out.println("*** FAILURE ***\n");
@@ -533,40 +404,8 @@ public class TestClient {
                 insane.xtructs.add(goodbye);
                 insane.xtructs.add(hello);
 
-                System.out.print("testInsanity()");
                 Map<Long, Map<Numberz, Insanity>> whoa =
                         testClient.testInsanity(context, insane);
-                System.out.print(" = {");
-                for (long key : whoa.keySet()) {
-                    Map<Numberz, Insanity> val = whoa.get(key);
-                    System.out.print(key + " => {");
-
-                    for (Numberz k2 : val.keySet()) {
-                        Insanity v2 = val.get(k2);
-                        System.out.print(k2 + " => {");
-                        Map<Numberz, Long> userMap = v2.userMap;
-                        System.out.print("{");
-                        if (userMap != null) {
-                            for (Numberz k3 : userMap.keySet()) {
-                                System.out.print(k3 + " => " + userMap.get(k3) + ", ");
-                            }
-                        }
-                        System.out.print("}, ");
-
-                        List<Xtruct> xtructs = v2.xtructs;
-                        System.out.print("{");
-                        if (xtructs != null) {
-                            for (Xtruct x : xtructs) {
-                                System.out.print("{" + "\"" + x.string_thing + "\", " + x.byte_thing + ", " + x.i32_thing + ", " + x.i64_thing + "}, ");
-                            }
-                        }
-                        System.out.print("}");
-
-                        System.out.print("}, ");
-                    }
-                    System.out.print("}, ");
-                }
-                System.out.print("}\n");
                 if (whoa.size() == 2 && whoa.containsKey(1L) && whoa.containsKey(2L)) {
                     Map<Numberz, Insanity> first_map = whoa.get(1L);
                     Map<Numberz, Insanity> second_map = whoa.get(2L);
@@ -594,7 +433,6 @@ public class TestClient {
              * EXECPTION TEST
              */
             try {
-                System.out.print("testException(\"Xception\") =>");
                 testClient.testException(context, "Xception");
                 System.out.print("  void\n*** FAILURE ***\n");
                 returnCode |= 1;
@@ -603,9 +441,7 @@ public class TestClient {
             }
 
             try {
-                System.out.print("testException(\"success\") =>");
                 testClient.testException(context, "success");
-                System.out.print("  void\n");
             } catch (Exception e) {
                 System.out.printf("  exception\n*** FAILURE ***\n");
                 returnCode |= 1;
@@ -617,7 +453,6 @@ public class TestClient {
              */
 
             try {
-                System.out.printf("testMultiException(\"Xception\", \"test 1\") =>");
                 testClient.testMultiException(context, "Xception", "test 1");
                 System.out.print("  result\n*** FAILURE ***\n");
                 returnCode |= 1;
@@ -626,7 +461,6 @@ public class TestClient {
             }
 
             try {
-                System.out.printf("testMultiException(\"Xception2\", \"test 2\") =>");
                 testClient.testMultiException(context, "Xception2", "test 2");
                 System.out.print("  result\n*** FAILURE ***\n");
                 returnCode |= 1;
@@ -635,10 +469,7 @@ public class TestClient {
             }
 
             try {
-                System.out.print("testMultiException(\"success\", \"test 3\") =>");
-                Xtruct result;
-                result = testClient.testMultiException(context, "success", "test 3");
-                System.out.printf("  {{\"%s\"}}\n", result.string_thing);
+                testClient.testMultiException(context, "success", "test 3");
             } catch (Exception e) {
                 System.out.printf("  exception\n*** FAILURE ***\n");
                 returnCode |= 1;
@@ -647,10 +478,8 @@ public class TestClient {
             /**
              * ONEWAY TEST
              */
-            System.out.print("testOneWay(1)...");
             try {
                 testClient.testOneway(context, 1);
-                System.out.print(" - no error returned\n");
             } catch (Exception e) {
                 System.out.print("  exception\n*** FAILURE ***\n");
                 System.out.println(e);
@@ -696,7 +525,36 @@ public class TestClient {
             returnCode |= 1;
         }
 
+        if (middlewareCalled) {
+            System.out.println("Middleware successfully called.");
+        } else {
+            System.out.println("Middleware never invoked!");
+            returnCode = 1;
+        }
+
         System.exit(returnCode);
+    }
+
+    public static class ClientMiddleware implements ServiceMiddleware {
+
+        @Override
+        public <T> InvocationHandler<T> apply(T next) {
+            return new InvocationHandler<T>(next) {
+                @Override
+                public Object invoke(Method method, Object receiver, Object[] args) throws Throwable {
+                    Object[] subArgs = Arrays.copyOfRange(args, 1, args.length);
+                    System.out.printf("%s(%s) = ", method.getName(), Arrays.toString(subArgs));
+                    middlewareCalled = true;
+                    try {
+                        Object ret = method.invoke(receiver, args);
+                        System.out.printf("%s \n", ret);
+                        return ret;
+                    } catch (Exception e) {
+                        throw e;
+                    }
+                }
+            };
+        }
     }
 
 }

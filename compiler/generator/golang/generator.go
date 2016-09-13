@@ -1427,7 +1427,12 @@ func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 }
 
 func (g *Generator) generateServiceInterface(service *parser.Service) string {
-	contents := fmt.Sprintf("type F%s interface {\n", snakeToCamel(service.Name))
+	contents := ""
+	if service.Comment != nil {
+		contents += g.GenerateInlineComment(service.Comment, "")
+	}
+
+	contents += fmt.Sprintf("type F%s interface {\n", snakeToCamel(service.Name))
 	if service.Extends != "" {
 		contents += fmt.Sprintf("\t%s\n\n", g.getServiceExtendsName(service))
 	}
@@ -1484,8 +1489,12 @@ func (g *Generator) generateAsyncReturnArgs(method *parser.Method) string {
 
 func (g *Generator) generateClient(service *parser.Service) string {
 	servTitle := snakeToCamel(service.Name)
+	contents := ""
+	if service.Comment != nil {
+		contents += g.GenerateInlineComment(service.Comment, "")
+	}
 
-	contents := fmt.Sprintf("type F%sClient struct {\n", servTitle)
+	contents += fmt.Sprintf("type F%sClient struct {\n", servTitle)
 	if service.Extends != "" {
 		contents += fmt.Sprintf("\t*%sClient\n", g.getServiceExtendsName(service))
 	}
