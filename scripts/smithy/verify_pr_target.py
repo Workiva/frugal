@@ -4,8 +4,7 @@ import sys
 
 
 def _branch_matches_release_branch(branch_name):
-    branch_re = "release_[0-9]+.[0-9]+.[0-9]+"
-    return re.search(branch_re, branch_name)
+    return re.search("release_[0-9]+.[0-9]+.[0-9]+", branch_name)
 
 
 def _is_pull_request():
