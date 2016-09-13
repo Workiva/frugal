@@ -26,8 +26,8 @@ def main():
 
     if _is_pull_request():
 
-        merge_branch = os.environ('GIT_MERGE_BRANCH')
-        cur_branch = os.environ('GIT_BRANCH')
+        merge_branch = os.environ['GIT_MERGE_BRANCH']
+        cur_branch = os.environ['GIT_BRANCH']
 
         if merge_branch == 'master' and not _branch_matches_release_branch(cur_branch):
             print('ERROR: Your branch:{cur_branch} does not appear to be a release PR, but was made against master'.format(cur_branch=cur_branch))
