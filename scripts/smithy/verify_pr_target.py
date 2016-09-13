@@ -8,7 +8,7 @@ def _branch_matches_release_branch(branch_name):
 
 
 def _is_pull_request():
-    return 'GIT_MERGE_BRANCH' in os.environ()
+    return 'GIT_MERGE_BRANCH' in os.environ
 
 
 def test_regex():
@@ -21,7 +21,7 @@ def test_regex():
 def main():
     """
     Verifies when making a PR, the target branch is not master unless the
-    current branch matches a regex for
+    current branch matches a regex for a release PR
     """
 
     if _is_pull_request():
