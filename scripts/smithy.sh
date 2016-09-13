@@ -3,6 +3,8 @@
 # This is so `tee` doesn't absorb a non-zero exit code
 set -eo pipefail
 
+env
+
 echo $PWD
 
 mkdir -p $SMITHY_ROOT/test_results/
