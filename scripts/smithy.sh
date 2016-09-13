@@ -3,9 +3,7 @@
 # This is so `tee` doesn't absorb a non-zero exit code
 set -eo pipefail
 
-env
-
-echo $PWD
+python $SMITH_ROOT/scripts/smithy/verify_pr_target.py
 
 mkdir -p $SMITHY_ROOT/test_results/
 
