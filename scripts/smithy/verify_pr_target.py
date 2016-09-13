@@ -17,6 +17,7 @@ def test_regex():
     assert(not _branch_matches_release_branch('releases_1.1.1'))
     assert(not _branch_matches_release_branch('release_1.1'))
     assert(not _branch_matches_release_branch('release_1'))
+    
 
 def main():
     """
