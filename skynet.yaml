@@ -9,7 +9,7 @@ run:
 contact: messaging@workiva.com
 
 # https://dev.webfilings.org/zuul/release/282084
-image: drydock-prod.workiva.org/workiva/messaging-docker-images:74936
+image: drydock.workiva.org/workiva/messaging-docker-images:74936
 
 scripts:
   - ./scripts/skynet/run_cross_skynet.sh
@@ -30,7 +30,7 @@ run:
 contact: messaging@workiva.com
 
 # https://dev.webfilings.org/zuul/release/282084
-image: drydock-prod.workiva.org/workiva/messaging-docker-images:74936
+image: drydock.workiva.org/workiva/messaging-docker-images:74936
 
 scripts:
   - ./scripts/skynet/run_cross_skynet.sh -gen_with_thrift
