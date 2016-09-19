@@ -1,5 +1,5 @@
 [
-  {
+    {
     "name": "dart",
     "client": {
       "timeout": 15,
@@ -136,6 +136,14 @@
         "python3.5",
         "-u",
         "client.py"
+      ]
+    },
+    "server": {
+      "timeout": 7,
+      "command": [
+        "python3.5",
+        "-u",
+        "server.py"
       ]
     },
     "transports": [

@@ -46,6 +46,7 @@ test/integration/*/gen*
 test/integration/go/bin/*
 test/integration/java/frugal-integration-test/gen-java
 test/integration/java/frugal-integration-test/frugal
+test/integration/java/frugal-integration-test/*.jar
 test/integration/java/frugal.jar
 test/integration/python/tornado/gen_py_tornado
 test/integration/python/asyncio/gen_py_asyncio
