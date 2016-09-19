@@ -46,7 +46,6 @@ async def main():
     nats_client = NatsClient()
     await nats_client.connect(**get_nats_options())
 
-    global port
     port = args.port
 
     handler = FrugalTestHandler()
@@ -56,15 +55,12 @@ async def main():
     # Setup subscriber, send response upon receipt
     scope_transport_factory = FNatsScopeTransportFactory(nats_client)
     provider = FScopeProvider(scope_transport_factory, protocol_factory)
-    global publisher
     publisher = EventsPublisher(provider)
     await publisher.open()
 
     async def response_handler(context, event):
         response_event = Event(Message="Sending Response")
         response_context = FContext("Call")
-        global publisher
-        global port
         await publisher.publish_EventCreated(response_context, "{}-response".format(port), response_event)
 
     subscriber = EventsSubscriber(provider)
