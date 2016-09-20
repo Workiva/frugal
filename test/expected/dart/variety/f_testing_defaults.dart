@@ -629,11 +629,11 @@ class TestingDefaults implements TBase {
           break;
         case LISTFIELD:
           if(field.type == TType.LIST) {
-            TList elem0 = iprot.readListBegin();
+            TList elem4 = iprot.readListBegin();
             listfield = new List<int>();
-            for(int elem2 = 0; elem2 < elem0.length; ++elem2) {
-              int elem1 = iprot.readI32();
-              listfield.add(elem1);
+            for(int elem6 = 0; elem6 < elem4.length; ++elem6) {
+              int elem5 = iprot.readI32();
+              listfield.add(elem5);
             }
             iprot.readListEnd();
           } else {
@@ -678,11 +678,11 @@ class TestingDefaults implements TBase {
           break;
         case LIST2:
           if(field.type == TType.LIST) {
-            TList elem3 = iprot.readListBegin();
+            TList elem7 = iprot.readListBegin();
             list2 = new List<int>();
-            for(int elem5 = 0; elem5 < elem3.length; ++elem5) {
-              int elem4 = iprot.readI32();
-              list2.add(elem4);
+            for(int elem9 = 0; elem9 < elem7.length; ++elem9) {
+              int elem8 = iprot.readI32();
+              list2.add(elem8);
             }
             iprot.readListEnd();
           } else {
@@ -691,11 +691,11 @@ class TestingDefaults implements TBase {
           break;
         case LIST3:
           if(field.type == TType.LIST) {
-            TList elem6 = iprot.readListBegin();
+            TList elem10 = iprot.readListBegin();
             list3 = new List<int>();
-            for(int elem8 = 0; elem8 < elem6.length; ++elem8) {
-              int elem7 = iprot.readI32();
-              list3.add(elem7);
+            for(int elem12 = 0; elem12 < elem10.length; ++elem12) {
+              int elem11 = iprot.readI32();
+              list3.add(elem11);
             }
             iprot.readListEnd();
           } else {
@@ -704,11 +704,11 @@ class TestingDefaults implements TBase {
           break;
         case LIST4:
           if(field.type == TType.LIST) {
-            TList elem9 = iprot.readListBegin();
+            TList elem13 = iprot.readListBegin();
             list4 = new List<int>();
-            for(int elem11 = 0; elem11 < elem9.length; ++elem11) {
-              int elem10 = iprot.readI32();
-              list4.add(elem10);
+            for(int elem15 = 0; elem15 < elem13.length; ++elem15) {
+              int elem14 = iprot.readI32();
+              list4.add(elem14);
             }
             iprot.readListEnd();
           } else {
@@ -717,12 +717,12 @@ class TestingDefaults implements TBase {
           break;
         case A_MAP:
           if(field.type == TType.MAP) {
-            TMap elem12 = iprot.readMapBegin();
+            TMap elem16 = iprot.readMapBegin();
             a_map = new Map<String, String>();
-            for(int elem14 = 0; elem14 < elem12.length; ++elem14) {
-              String elem15 = iprot.readString();
-              String elem13 = iprot.readString();
-              a_map[elem15] = elem13;
+            for(int elem18 = 0; elem18 < elem16.length; ++elem18) {
+              String elem19 = iprot.readString();
+              String elem17 = iprot.readString();
+              a_map[elem19] = elem17;
             }
             iprot.readMapEnd();
           } else {
@@ -798,8 +798,8 @@ class TestingDefaults implements TBase {
     if(this.listfield != null) {
       oprot.writeFieldBegin(_LISTFIELD_FIELD_DESC);
       oprot.writeListBegin(new TList(TType.I32, listfield.length));
-      for(var elem16 in listfield) {
-        oprot.writeI32(elem16);
+      for(var elem20 in listfield) {
+        oprot.writeI32(elem20);
       }
       oprot.writeListEnd();
       oprot.writeFieldEnd();
@@ -830,8 +830,8 @@ class TestingDefaults implements TBase {
     if(isSetList2() && this.list2 != null) {
       oprot.writeFieldBegin(_LIST2_FIELD_DESC);
       oprot.writeListBegin(new TList(TType.I32, list2.length));
-      for(var elem17 in list2) {
-        oprot.writeI32(elem17);
+      for(var elem21 in list2) {
+        oprot.writeI32(elem21);
       }
       oprot.writeListEnd();
       oprot.writeFieldEnd();
@@ -839,8 +839,8 @@ class TestingDefaults implements TBase {
     if(isSetList3() && this.list3 != null) {
       oprot.writeFieldBegin(_LIST3_FIELD_DESC);
       oprot.writeListBegin(new TList(TType.I32, list3.length));
-      for(var elem18 in list3) {
-        oprot.writeI32(elem18);
+      for(var elem22 in list3) {
+        oprot.writeI32(elem22);
       }
       oprot.writeListEnd();
       oprot.writeFieldEnd();
@@ -848,8 +848,8 @@ class TestingDefaults implements TBase {
     if(this.list4 != null) {
       oprot.writeFieldBegin(_LIST4_FIELD_DESC);
       oprot.writeListBegin(new TList(TType.I32, list4.length));
-      for(var elem19 in list4) {
-        oprot.writeI32(elem19);
+      for(var elem23 in list4) {
+        oprot.writeI32(elem23);
       }
       oprot.writeListEnd();
       oprot.writeFieldEnd();
@@ -857,9 +857,9 @@ class TestingDefaults implements TBase {
     if(isSetA_map() && this.a_map != null) {
       oprot.writeFieldBegin(_A_MAP_FIELD_DESC);
       oprot.writeMapBegin(new TMap(TType.STRING, TType.STRING, a_map.length));
-      for(var elem20 in a_map.keys) {
-        oprot.writeString(elem20);
-        oprot.writeString(a_map[elem20]);
+      for(var elem24 in a_map.keys) {
+        oprot.writeString(elem24);
+        oprot.writeString(a_map[elem24]);
       }
       oprot.writeMapEnd();
       oprot.writeFieldEnd();

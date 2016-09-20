@@ -221,12 +221,12 @@ class TestingUnions implements TBase {
           break;
         case REQUESTS:
           if(field.type == TType.MAP) {
-            TMap elem46 = iprot.readMapBegin();
+            TMap elem50 = iprot.readMapBegin();
             requests = new Map<int, String>();
-            for(int elem48 = 0; elem48 < elem46.length; ++elem48) {
-              int elem49 = iprot.readI32();
-              String elem47 = iprot.readString();
-              requests[elem49] = elem47;
+            for(int elem52 = 0; elem52 < elem50.length; ++elem52) {
+              int elem53 = iprot.readI32();
+              String elem51 = iprot.readString();
+              requests[elem53] = elem51;
             }
             iprot.readMapEnd();
           } else {
@@ -272,9 +272,9 @@ class TestingUnions implements TBase {
     if(isSetRequests() && this.requests != null) {
       oprot.writeFieldBegin(_REQUESTS_FIELD_DESC);
       oprot.writeMapBegin(new TMap(TType.I32, TType.STRING, requests.length));
-      for(var elem50 in requests.keys) {
-        oprot.writeI32(elem50);
-        oprot.writeString(requests[elem50]);
+      for(var elem54 in requests.keys) {
+        oprot.writeI32(elem54);
+        oprot.writeString(requests[elem54]);
       }
       oprot.writeMapEnd();
       oprot.writeFieldEnd();

@@ -226,42 +226,42 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 		}
 		if (other.isSetEvents()) {
 			this.Events = new ArrayList<Event>(other.Events.size());
-			for (Event elem53 : other.Events) {
-				Event elem54 = new Event(elem53);
-				this.Events.add(elem54);
+			for (Event elem63 : other.Events) {
+				Event elem64 = new Event(elem63);
+				this.Events.add(elem64);
 			}
 		}
 		if (other.isSetEvents2()) {
 			this.Events2 = new HashSet<Event>(other.Events2.size());
-			for (Event elem55 : other.Events2) {
-				Event elem56 = new Event(elem55);
-				this.Events2.add(elem56);
+			for (Event elem65 : other.Events2) {
+				Event elem66 = new Event(elem65);
+				this.Events2.add(elem66);
 			}
 		}
 		if (other.isSetEventMap()) {
 			this.EventMap = new HashMap<Long,Event>(other.EventMap.size());
-			for (Map.Entry<Long, Event> elem57 : other.EventMap.entrySet()) {
-				long elem59 = elem57.getKey();
-				Event elem58 = new Event(elem57.getValue());
-				this.EventMap.put(elem59, elem58);
+			for (Map.Entry<Long, Event> elem67 : other.EventMap.entrySet()) {
+				long elem69 = elem67.getKey();
+				Event elem68 = new Event(elem67.getValue());
+				this.EventMap.put(elem69, elem68);
 			}
 		}
 		if (other.isSetNums()) {
 			this.Nums = new ArrayList<java.util.List<Integer>>(other.Nums.size());
-			for (java.util.List<Integer> elem60 : other.Nums) {
-				java.util.List<Integer> elem61 = new ArrayList<Integer>(elem60.size());
-				for (int elem62 : elem60) {
-					int elem63 = elem62;
-					elem61.add(elem63);
+			for (java.util.List<Integer> elem70 : other.Nums) {
+				java.util.List<Integer> elem71 = new ArrayList<Integer>(elem70.size());
+				for (int elem72 : elem70) {
+					int elem73 = elem72;
+					elem71.add(elem73);
 				}
-				this.Nums.add(elem61);
+				this.Nums.add(elem71);
 			}
 		}
 		if (other.isSetEnums()) {
 			this.Enums = new ArrayList<ItsAnEnum>(other.Enums.size());
-			for (ItsAnEnum elem64 : other.Enums) {
-				ItsAnEnum elem65 = elem64;
-				this.Enums.add(elem65);
+			for (ItsAnEnum elem74 : other.Enums) {
+				ItsAnEnum elem75 = elem74;
+				this.Enums.add(elem75);
 			}
 		}
 		this.aBoolField = other.aBoolField;
@@ -1197,12 +1197,12 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 						break;
 					case 3: // EVENTS
 						if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
-							org.apache.thrift.protocol.TList elem66 = iprot.readListBegin();
-							struct.Events = new ArrayList<Event>(elem66.size);
-							for (int elem67 = 0; elem67 < elem66.size; ++elem67) {
-								Event elem68 = new Event();
-								elem68.read(iprot);
-								struct.Events.add(elem68);
+							org.apache.thrift.protocol.TList elem76 = iprot.readListBegin();
+							struct.Events = new ArrayList<Event>(elem76.size);
+							for (int elem77 = 0; elem77 < elem76.size; ++elem77) {
+								Event elem78 = new Event();
+								elem78.read(iprot);
+								struct.Events.add(elem78);
 							}
 							iprot.readListEnd();
 							struct.setEventsIsSet(true);
@@ -1212,12 +1212,12 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 						break;
 					case 4: // EVENTS2
 						if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
-							org.apache.thrift.protocol.TSet elem69 = iprot.readSetBegin();
-							struct.Events2 = new HashSet<Event>(2*elem69.size);
-							for (int elem70 = 0; elem70 < elem69.size; ++elem70) {
-								Event elem71 = new Event();
-								elem71.read(iprot);
-								struct.Events2.add(elem71);
+							org.apache.thrift.protocol.TSet elem79 = iprot.readSetBegin();
+							struct.Events2 = new HashSet<Event>(2*elem79.size);
+							for (int elem80 = 0; elem80 < elem79.size; ++elem80) {
+								Event elem81 = new Event();
+								elem81.read(iprot);
+								struct.Events2.add(elem81);
 							}
 							iprot.readSetEnd();
 							struct.setEvents2IsSet(true);
@@ -1227,13 +1227,13 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 						break;
 					case 5: // EVENT_MAP
 						if (schemeField.type == org.apache.thrift.protocol.TType.MAP) {
-							org.apache.thrift.protocol.TMap elem72 = iprot.readMapBegin();
-							struct.EventMap = new HashMap<Long,Event>(2*elem72.size);
-							for (int elem73 = 0; elem73 < elem72.size; ++elem73) {
-								long elem75 = iprot.readI64();
-								Event elem74 = new Event();
-								elem74.read(iprot);
-								struct.EventMap.put(elem75, elem74);
+							org.apache.thrift.protocol.TMap elem82 = iprot.readMapBegin();
+							struct.EventMap = new HashMap<Long,Event>(2*elem82.size);
+							for (int elem83 = 0; elem83 < elem82.size; ++elem83) {
+								long elem85 = iprot.readI64();
+								Event elem84 = new Event();
+								elem84.read(iprot);
+								struct.EventMap.put(elem85, elem84);
 							}
 							iprot.readMapEnd();
 							struct.setEventMapIsSet(true);
@@ -1243,17 +1243,17 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 						break;
 					case 6: // NUMS
 						if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
-							org.apache.thrift.protocol.TList elem76 = iprot.readListBegin();
-							struct.Nums = new ArrayList<java.util.List<Integer>>(elem76.size);
-							for (int elem77 = 0; elem77 < elem76.size; ++elem77) {
-								org.apache.thrift.protocol.TList elem79 = iprot.readListBegin();
-								java.util.List<Integer> elem78 = new ArrayList<Integer>(elem79.size);
-								for (int elem80 = 0; elem80 < elem79.size; ++elem80) {
-									int elem81 = iprot.readI32();
-									elem78.add(elem81);
+							org.apache.thrift.protocol.TList elem86 = iprot.readListBegin();
+							struct.Nums = new ArrayList<java.util.List<Integer>>(elem86.size);
+							for (int elem87 = 0; elem87 < elem86.size; ++elem87) {
+								org.apache.thrift.protocol.TList elem89 = iprot.readListBegin();
+								java.util.List<Integer> elem88 = new ArrayList<Integer>(elem89.size);
+								for (int elem90 = 0; elem90 < elem89.size; ++elem90) {
+									int elem91 = iprot.readI32();
+									elem88.add(elem91);
 								}
 								iprot.readListEnd();
-								struct.Nums.add(elem78);
+								struct.Nums.add(elem88);
 							}
 							iprot.readListEnd();
 							struct.setNumsIsSet(true);
@@ -1263,11 +1263,11 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 						break;
 					case 7: // ENUMS
 						if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
-							org.apache.thrift.protocol.TList elem82 = iprot.readListBegin();
-							struct.Enums = new ArrayList<ItsAnEnum>(elem82.size);
-							for (int elem83 = 0; elem83 < elem82.size; ++elem83) {
-								ItsAnEnum elem84 = ItsAnEnum.findByValue(iprot.readI32());
-								struct.Enums.add(elem84);
+							org.apache.thrift.protocol.TList elem92 = iprot.readListBegin();
+							struct.Enums = new ArrayList<ItsAnEnum>(elem92.size);
+							for (int elem93 = 0; elem93 < elem92.size; ++elem93) {
+								ItsAnEnum elem94 = ItsAnEnum.findByValue(iprot.readI32());
+								struct.Enums.add(elem94);
 							}
 							iprot.readListEnd();
 							struct.setEnumsIsSet(true);
@@ -1328,8 +1328,8 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 			if (struct.Events != null) {
 				oprot.writeFieldBegin(EVENTS_FIELD_DESC);
 				oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, struct.Events.size()));
-				for (Event elem85 : struct.Events) {
-					elem85.write(oprot);
+				for (Event elem95 : struct.Events) {
+					elem95.write(oprot);
 				}
 				oprot.writeListEnd();
 				oprot.writeFieldEnd();
@@ -1337,8 +1337,8 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 			if (struct.Events2 != null) {
 				oprot.writeFieldBegin(EVENTS2_FIELD_DESC);
 				oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.Events2.size()));
-				for (Event elem86 : struct.Events2) {
-					elem86.write(oprot);
+				for (Event elem96 : struct.Events2) {
+					elem96.write(oprot);
 				}
 				oprot.writeSetEnd();
 				oprot.writeFieldEnd();
@@ -1346,9 +1346,9 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 			if (struct.EventMap != null) {
 				oprot.writeFieldBegin(EVENT_MAP_FIELD_DESC);
 				oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I64, org.apache.thrift.protocol.TType.STRUCT, struct.EventMap.size()));
-				for (Map.Entry<Long, Event> elem87 : struct.EventMap.entrySet()) {
-					oprot.writeI64(elem87.getKey());
-					elem87.getValue().write(oprot);
+				for (Map.Entry<Long, Event> elem97 : struct.EventMap.entrySet()) {
+					oprot.writeI64(elem97.getKey());
+					elem97.getValue().write(oprot);
 				}
 				oprot.writeMapEnd();
 				oprot.writeFieldEnd();
@@ -1356,10 +1356,10 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 			if (struct.Nums != null) {
 				oprot.writeFieldBegin(NUMS_FIELD_DESC);
 				oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.LIST, struct.Nums.size()));
-				for (java.util.List<Integer> elem88 : struct.Nums) {
-					oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, elem88.size()));
-					for (int elem89 : elem88) {
-						oprot.writeI32(elem89);
+				for (java.util.List<Integer> elem98 : struct.Nums) {
+					oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, elem98.size()));
+					for (int elem99 : elem98) {
+						oprot.writeI32(elem99);
 					}
 					oprot.writeListEnd();
 				}
@@ -1369,8 +1369,8 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 			if (struct.Enums != null) {
 				oprot.writeFieldBegin(ENUMS_FIELD_DESC);
 				oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, struct.Enums.size()));
-				for (ItsAnEnum elem90 : struct.Enums) {
-					oprot.writeI32(elem90.getValue());
+				for (ItsAnEnum elem100 : struct.Enums) {
+					oprot.writeI32(elem100.getValue());
 				}
 				oprot.writeListEnd();
 				oprot.writeFieldEnd();
@@ -1440,36 +1440,36 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 			}
 			if (struct.isSetEvents()) {
 				oprot.writeI32(struct.Events.size());
-				for (Event elem91 : struct.Events) {
-					elem91.write(oprot);
+				for (Event elem101 : struct.Events) {
+					elem101.write(oprot);
 				}
 			}
 			if (struct.isSetEvents2()) {
 				oprot.writeI32(struct.Events2.size());
-				for (Event elem92 : struct.Events2) {
-					elem92.write(oprot);
+				for (Event elem102 : struct.Events2) {
+					elem102.write(oprot);
 				}
 			}
 			if (struct.isSetEventMap()) {
 				oprot.writeI32(struct.EventMap.size());
-				for (Map.Entry<Long, Event> elem93 : struct.EventMap.entrySet()) {
-					oprot.writeI64(elem93.getKey());
-					elem93.getValue().write(oprot);
+				for (Map.Entry<Long, Event> elem103 : struct.EventMap.entrySet()) {
+					oprot.writeI64(elem103.getKey());
+					elem103.getValue().write(oprot);
 				}
 			}
 			if (struct.isSetNums()) {
 				oprot.writeI32(struct.Nums.size());
-				for (java.util.List<Integer> elem94 : struct.Nums) {
-					oprot.writeI32(elem94.size());
-					for (int elem95 : elem94) {
-						oprot.writeI32(elem95);
+				for (java.util.List<Integer> elem104 : struct.Nums) {
+					oprot.writeI32(elem104.size());
+					for (int elem105 : elem104) {
+						oprot.writeI32(elem105);
 					}
 				}
 			}
 			if (struct.isSetEnums()) {
 				oprot.writeI32(struct.Enums.size());
-				for (ItsAnEnum elem96 : struct.Enums) {
-					oprot.writeI32(elem96.getValue());
+				for (ItsAnEnum elem106 : struct.Enums) {
+					oprot.writeI32(elem106.getValue());
 				}
 			}
 			if (struct.isSetABoolField()) {
@@ -1495,56 +1495,56 @@ public class EventWrapper implements org.apache.thrift.TBase<EventWrapper, Event
 				struct.setIDIsSet(true);
 			}
 			if (incoming.get(1)) {
-				org.apache.thrift.protocol.TList elem97 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-				struct.Events = new ArrayList<Event>(elem97.size);
-				for (int elem98 = 0; elem98 < elem97.size; ++elem98) {
-					Event elem99 = new Event();
-					elem99.read(iprot);
-					struct.Events.add(elem99);
+				org.apache.thrift.protocol.TList elem107 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+				struct.Events = new ArrayList<Event>(elem107.size);
+				for (int elem108 = 0; elem108 < elem107.size; ++elem108) {
+					Event elem109 = new Event();
+					elem109.read(iprot);
+					struct.Events.add(elem109);
 				}
 				struct.setEventsIsSet(true);
 			}
 			if (incoming.get(2)) {
-				org.apache.thrift.protocol.TSet elem100 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-				struct.Events2 = new HashSet<Event>(2*elem100.size);
-				for (int elem101 = 0; elem101 < elem100.size; ++elem101) {
-					Event elem102 = new Event();
-					elem102.read(iprot);
-					struct.Events2.add(elem102);
+				org.apache.thrift.protocol.TSet elem110 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+				struct.Events2 = new HashSet<Event>(2*elem110.size);
+				for (int elem111 = 0; elem111 < elem110.size; ++elem111) {
+					Event elem112 = new Event();
+					elem112.read(iprot);
+					struct.Events2.add(elem112);
 				}
 				struct.setEvents2IsSet(true);
 			}
 			if (incoming.get(3)) {
-				org.apache.thrift.protocol.TMap elem103 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I64, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
-				struct.EventMap = new HashMap<Long,Event>(2*elem103.size);
-				for (int elem104 = 0; elem104 < elem103.size; ++elem104) {
-					long elem106 = iprot.readI64();
-					Event elem105 = new Event();
-					elem105.read(iprot);
-					struct.EventMap.put(elem106, elem105);
+				org.apache.thrift.protocol.TMap elem113 = new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I64, org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+				struct.EventMap = new HashMap<Long,Event>(2*elem113.size);
+				for (int elem114 = 0; elem114 < elem113.size; ++elem114) {
+					long elem116 = iprot.readI64();
+					Event elem115 = new Event();
+					elem115.read(iprot);
+					struct.EventMap.put(elem116, elem115);
 				}
 				struct.setEventMapIsSet(true);
 			}
 			if (incoming.get(4)) {
-				org.apache.thrift.protocol.TList elem107 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.LIST, iprot.readI32());
-				struct.Nums = new ArrayList<java.util.List<Integer>>(elem107.size);
-				for (int elem108 = 0; elem108 < elem107.size; ++elem108) {
-					org.apache.thrift.protocol.TList elem110 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, iprot.readI32());
-					java.util.List<Integer> elem109 = new ArrayList<Integer>(elem110.size);
-					for (int elem111 = 0; elem111 < elem110.size; ++elem111) {
-						int elem112 = iprot.readI32();
-						elem109.add(elem112);
+				org.apache.thrift.protocol.TList elem117 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.LIST, iprot.readI32());
+				struct.Nums = new ArrayList<java.util.List<Integer>>(elem117.size);
+				for (int elem118 = 0; elem118 < elem117.size; ++elem118) {
+					org.apache.thrift.protocol.TList elem120 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, iprot.readI32());
+					java.util.List<Integer> elem119 = new ArrayList<Integer>(elem120.size);
+					for (int elem121 = 0; elem121 < elem120.size; ++elem121) {
+						int elem122 = iprot.readI32();
+						elem119.add(elem122);
 					}
-					struct.Nums.add(elem109);
+					struct.Nums.add(elem119);
 				}
 				struct.setNumsIsSet(true);
 			}
 			if (incoming.get(5)) {
-				org.apache.thrift.protocol.TList elem113 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, iprot.readI32());
-				struct.Enums = new ArrayList<ItsAnEnum>(elem113.size);
-				for (int elem114 = 0; elem114 < elem113.size; ++elem114) {
-					ItsAnEnum elem115 = ItsAnEnum.findByValue(iprot.readI32());
-					struct.Enums.add(elem115);
+				org.apache.thrift.protocol.TList elem123 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, iprot.readI32());
+				struct.Enums = new ArrayList<ItsAnEnum>(elem123.size);
+				for (int elem124 = 0; elem124 < elem123.size; ++elem124) {
+					ItsAnEnum elem125 = ItsAnEnum.findByValue(iprot.readI32());
+					struct.Enums.add(elem125);
 				}
 				struct.setEnumsIsSet(true);
 			}

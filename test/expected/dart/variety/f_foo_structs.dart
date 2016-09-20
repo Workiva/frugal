@@ -684,12 +684,12 @@ class oneWay_args implements TBase {
           break;
         case REQ:
           if(field.type == TType.MAP) {
-            TMap elem51 = iprot.readMapBegin();
+            TMap elem55 = iprot.readMapBegin();
             req = new Map<int, String>();
-            for(int elem53 = 0; elem53 < elem51.length; ++elem53) {
-              int elem54 = iprot.readI32();
-              String elem52 = iprot.readString();
-              req[elem54] = elem52;
+            for(int elem57 = 0; elem57 < elem55.length; ++elem57) {
+              int elem58 = iprot.readI32();
+              String elem56 = iprot.readString();
+              req[elem58] = elem56;
             }
             iprot.readMapEnd();
           } else {
@@ -718,9 +718,9 @@ class oneWay_args implements TBase {
     if(this.req != null) {
       oprot.writeFieldBegin(_REQ_FIELD_DESC);
       oprot.writeMapBegin(new TMap(TType.I32, TType.STRING, req.length));
-      for(var elem55 in req.keys) {
-        oprot.writeI32(elem55);
-        oprot.writeString(req[elem55]);
+      for(var elem59 in req.keys) {
+        oprot.writeI32(elem59);
+        oprot.writeString(req[elem59]);
       }
       oprot.writeMapEnd();
       oprot.writeFieldEnd();
@@ -1508,11 +1508,11 @@ class underlying_types_test_args implements TBase {
       switch(field.id) {
         case LIST_TYPE:
           if(field.type == TType.LIST) {
-            TList elem56 = iprot.readListBegin();
+            TList elem60 = iprot.readListBegin();
             list_type = new List<int>();
-            for(int elem58 = 0; elem58 < elem56.length; ++elem58) {
-              int elem57 = iprot.readI64();
-              list_type.add(elem57);
+            for(int elem62 = 0; elem62 < elem60.length; ++elem62) {
+              int elem61 = iprot.readI64();
+              list_type.add(elem61);
             }
             iprot.readListEnd();
           } else {
@@ -1521,11 +1521,11 @@ class underlying_types_test_args implements TBase {
           break;
         case SET_TYPE:
           if(field.type == TType.SET) {
-            TSet elem59 = iprot.readSetBegin();
+            TSet elem63 = iprot.readSetBegin();
             set_type = new Set<int>();
-            for(int elem61 = 0; elem61 < elem59.length; ++elem61) {
-              int elem60 = iprot.readI64();
-              set_type.add(elem60);
+            for(int elem65 = 0; elem65 < elem63.length; ++elem65) {
+              int elem64 = iprot.readI64();
+              set_type.add(elem64);
             }
             iprot.readSetEnd();
           } else {
@@ -1551,8 +1551,8 @@ class underlying_types_test_args implements TBase {
     if(this.list_type != null) {
       oprot.writeFieldBegin(_LIST_TYPE_FIELD_DESC);
       oprot.writeListBegin(new TList(TType.I64, list_type.length));
-      for(var elem62 in list_type) {
-        oprot.writeI64(elem62);
+      for(var elem66 in list_type) {
+        oprot.writeI64(elem66);
       }
       oprot.writeListEnd();
       oprot.writeFieldEnd();
@@ -1560,8 +1560,8 @@ class underlying_types_test_args implements TBase {
     if(this.set_type != null) {
       oprot.writeFieldBegin(_SET_TYPE_FIELD_DESC);
       oprot.writeSetBegin(new TSet(TType.I64, set_type.length));
-      for(var elem63 in set_type) {
-        oprot.writeI64(elem63);
+      for(var elem67 in set_type) {
+        oprot.writeI64(elem67);
       }
       oprot.writeSetEnd();
       oprot.writeFieldEnd();
@@ -1666,11 +1666,11 @@ class underlying_types_test_result implements TBase {
       switch(field.id) {
         case SUCCESS:
           if(field.type == TType.LIST) {
-            TList elem64 = iprot.readListBegin();
+            TList elem68 = iprot.readListBegin();
             success = new List<int>();
-            for(int elem66 = 0; elem66 < elem64.length; ++elem66) {
-              int elem65 = iprot.readI64();
-              success.add(elem65);
+            for(int elem70 = 0; elem70 < elem68.length; ++elem70) {
+              int elem69 = iprot.readI64();
+              success.add(elem69);
             }
             iprot.readListEnd();
           } else {
@@ -1696,8 +1696,8 @@ class underlying_types_test_result implements TBase {
     if(isSetSuccess() && this.success != null) {
       oprot.writeFieldBegin(_SUCCESS_FIELD_DESC);
       oprot.writeListBegin(new TList(TType.I64, success.length));
-      for(var elem67 in success) {
-        oprot.writeI64(elem67);
+      for(var elem71 in success) {
+        oprot.writeI64(elem71);
       }
       oprot.writeListEnd();
       oprot.writeFieldEnd();
