@@ -198,11 +198,11 @@ func (t *TornadoGenerator) generateProcessorFunction(method *parser.Method) stri
 		contents += tabtab + "try:\n"
 	}
 	if method.ReturnType == nil {
-		contents += indent + fmt.Sprintf("yield gen.maybe_future(self._handler.%s(ctx%s))\n",
-			method.Name, t.generateServerArgs(method.Arguments))
+		contents += indent + fmt.Sprintf("yield gen.maybe_future(self._handler([ctx%s]))\n",
+			t.generateServerArgs(method.Arguments))
 	} else {
-		contents += indent + fmt.Sprintf("result.success = yield gen.maybe_future(self._handler.%s(ctx%s))\n",
-			method.Name, t.generateServerArgs(method.Arguments))
+		contents += indent + fmt.Sprintf("result.success = yield gen.maybe_future(self._handler([ctx%s]))\n",
+			t.generateServerArgs(method.Arguments))
 	}
 	for _, err := range method.Exceptions {
 		contents += tabtab + fmt.Sprintf("except %s as %s:\n", t.qualifiedTypeName(err.Type), err.Name)

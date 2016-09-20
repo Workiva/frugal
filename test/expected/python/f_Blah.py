@@ -252,18 +252,21 @@ class Client(Iface):
 
 class Processor(FBaseProcessor):
 
-    def __init__(self, handler):
+    def __init__(self, handler, middleware=None):
         """
         Create a new Processor.
 
         Args:
             handler: Iface
         """
+        if middleware and not isinstance(middleware, list):
+            middleware = [middleware]
+
         super(Processor, self).__init__()
-        self.add_to_processor_map('ping', _ping(handler, self.get_write_lock()))
-        self.add_to_processor_map('bleh', _bleh(handler, self.get_write_lock()))
-        self.add_to_processor_map('getThing', _getThing(handler, self.get_write_lock()))
-        self.add_to_processor_map('getMyInt', _getMyInt(handler, self.get_write_lock()))
+        self.add_to_processor_map('ping', _ping(Method(handler.ping, middleware), self.get_write_lock()))
+        self.add_to_processor_map('bleh', _bleh(Method(handler.bleh, middleware), self.get_write_lock()))
+        self.add_to_processor_map('getThing', _getThing(Method(handler.getThing, middleware), self.get_write_lock()))
+        self.add_to_processor_map('getMyInt', _getMyInt(Method(handler.getMyInt, middleware), self.get_write_lock()))
 
 
 class _ping(FProcessorFunction):
@@ -277,7 +280,7 @@ class _ping(FProcessorFunction):
         args.read(iprot)
         iprot.readMessageEnd()
         result = ping_result()
-        self._handler.ping(ctx)
+        self._handler([ctx])
         with self._lock:
             oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('ping', TMessageType.REPLY, 0)

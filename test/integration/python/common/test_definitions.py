@@ -31,7 +31,7 @@ def rpc_test_definitions():
     dbl = 42.42
     tests['testDouble'] = dict(args=[dbl], expected_result=dbl)
 
-    binary = "0b101010"
+    binary = b'101010'
     tests['testBinary'] = dict(args=[binary], expected_result=binary)
 
     struct = Xtruct()
