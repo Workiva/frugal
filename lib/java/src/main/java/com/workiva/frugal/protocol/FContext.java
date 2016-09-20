@@ -64,9 +64,7 @@ public class FContext {
      * @return FContext
      */
     protected static FContext withRequestHeaders(Map<String, String> headers) {
-        if (headers.get(CID) == null) {
-            headers.put(CID, generateCorrelationId());
-        }
+        headers.putIfAbsent(CID, generateCorrelationId());
         return new FContext(headers, new HashMap<String, String>());
     }
 
