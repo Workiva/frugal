@@ -94,6 +94,67 @@ class thing:
     def __ne__(self, other):
         return not (self == other)
 
+class nested_thing:
+    """
+    Attributes:
+     - things
+    """
+    def __init__(self, things=None):
+        self.things = things
+
+    def read(self, iprot):
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.LIST:
+                    self.things = []
+                    (_, _elem3) = iprot.readListBegin()
+                    for _ in range(_elem3):
+                        _elem4 = thing()
+                        _elem4.read(iprot)
+                        self.things.append(_elem4)
+                    iprot.readListEnd()
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        oprot.writeStructBegin('nested_thing')
+        if self.things is not None:
+            oprot.writeFieldBegin('things', TType.LIST, 1)
+            oprot.writeListBegin(TType.STRUCT, len(self.things))
+            for _elem5 in self.things:
+                _elem5.write(oprot)
+            oprot.writeListEnd()
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __hash__(self):
+        value = 17
+        value = (value * 31) ^ hash(self.things)
+        return value
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+            for key, value in self.__dict__.items()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+
 class api_exception(TException):
     def read(self, iprot):
         iprot.readStructBegin()

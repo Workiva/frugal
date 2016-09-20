@@ -1730,7 +1730,7 @@ func (g *Generator) qualifiedTypeName(t *parser.Type) string {
 		namespace = toLibraryName(namespace)
 		param = fmt.Sprintf("t_%s.%s", namespace, param)
 	} else {
-		param = fmt.Sprintf("t_%s.%s", g.getNamespaceOrName(), param)
+		param = fmt.Sprintf("t_%s.%s", toLibraryName(g.getNamespaceOrName()), param)
 	}
 	return param
 }

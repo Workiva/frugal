@@ -105,4 +105,6 @@ func TestValidJavaFrugalCompiler(t *testing.T) {
 	compareFiles(t, "expected/java/actual_base/BaseFoo.java", baseFooPath)
 	thingPath := filepath.Join(outputDir, "actual_base", "java", "thing.java")
 	compareFiles(t, "expected/java/actual_base/thing.java", thingPath)
+	nestedThingPath := filepath.Join(outputDir, "actual_base", "java", "nested_thing.java")
+	compareFiles(t, "expected/java/actual_base/nested_thing.java", nestedThingPath)
 }

@@ -17,6 +17,10 @@ struct thing {
     2: string a_string
 }
 
+struct nested_thing {
+    1: list<thing> things,
+}
+
 enum base_health_condition {
     PASS = 1,
     WARN = 2,

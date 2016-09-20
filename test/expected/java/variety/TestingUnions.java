@@ -248,12 +248,12 @@ public class TestingUnions extends org.apache.thrift.TUnion<TestingUnions, Testi
 					}
 				case REQUESTS:
 					if (field.type == REQUESTS_FIELD_DESC.type) {
-						org.apache.thrift.protocol.TMap elem116 = iprot.readMapBegin();
-						java.util.Map<Integer, String> Requests = new HashMap<Integer,String>(2*elem116.size);
-						for (int elem117 = 0; elem117 < elem116.size; ++elem117) {
-							Integer elem119 = iprot.readI32();
-							String elem118 = iprot.readString();
-							Requests.put(elem119, elem118);
+						org.apache.thrift.protocol.TMap elem126 = iprot.readMapBegin();
+						java.util.Map<Integer, String> Requests = new HashMap<Integer,String>(2*elem126.size);
+						for (int elem127 = 0; elem127 < elem126.size; ++elem127) {
+							Integer elem129 = iprot.readI32();
+							String elem128 = iprot.readString();
+							Requests.put(elem129, elem128);
 						}
 						iprot.readMapEnd();
 						return Requests;
@@ -292,9 +292,9 @@ public class TestingUnions extends org.apache.thrift.TUnion<TestingUnions, Testi
 			case REQUESTS:
 				java.util.Map<Integer, String> Requests = (java.util.Map<Integer, String>)value_;
 				oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I32, org.apache.thrift.protocol.TType.STRING, Requests.size()));
-				for (Map.Entry<Integer, String> elem120 : Requests.entrySet()) {
-					oprot.writeI32(elem120.getKey());
-					oprot.writeString(elem120.getValue());
+				for (Map.Entry<Integer, String> elem130 : Requests.entrySet()) {
+					oprot.writeI32(elem130.getKey());
+					oprot.writeString(elem130.getValue());
 				}
 				oprot.writeMapEnd();
 				return;
@@ -321,12 +321,12 @@ public class TestingUnions extends org.apache.thrift.TUnion<TestingUnions, Testi
 					Short AnInt16 = iprot.readI16();
 					return AnInt16;
 				case REQUESTS:
-					org.apache.thrift.protocol.TMap elem121 = iprot.readMapBegin();
-					java.util.Map<Integer, String> Requests = new HashMap<Integer,String>(2*elem121.size);
-					for (int elem122 = 0; elem122 < elem121.size; ++elem122) {
-						Integer elem124 = iprot.readI32();
-						String elem123 = iprot.readString();
-						Requests.put(elem124, elem123);
+					org.apache.thrift.protocol.TMap elem131 = iprot.readMapBegin();
+					java.util.Map<Integer, String> Requests = new HashMap<Integer,String>(2*elem131.size);
+					for (int elem132 = 0; elem132 < elem131.size; ++elem132) {
+						Integer elem134 = iprot.readI32();
+						String elem133 = iprot.readString();
+						Requests.put(elem134, elem133);
 					}
 					iprot.readMapEnd();
 					return Requests;
@@ -360,9 +360,9 @@ public class TestingUnions extends org.apache.thrift.TUnion<TestingUnions, Testi
 			case REQUESTS:
 				java.util.Map<Integer, String> Requests = (java.util.Map<Integer, String>)value_;
 				oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.I32, org.apache.thrift.protocol.TType.STRING, Requests.size()));
-				for (Map.Entry<Integer, String> elem125 : Requests.entrySet()) {
-					oprot.writeI32(elem125.getKey());
-					oprot.writeString(elem125.getValue());
+				for (Map.Entry<Integer, String> elem135 : Requests.entrySet()) {
+					oprot.writeI32(elem135.getKey());
+					oprot.writeString(elem135.getValue());
 				}
 				oprot.writeMapEnd();
 				return;

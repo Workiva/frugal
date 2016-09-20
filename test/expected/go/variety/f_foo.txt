@@ -550,20 +550,20 @@ func (p *FooOneWayArgs) ReadField2(iprot thrift.TProtocol) error {
 	}
 	p.Req = make(Request, size)
 	for i := 0; i < size; i++ {
-		var elem15 Int
+		var elem16 Int
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := Int(v)
-			elem15 = temp
+			elem16 = temp
 		}
-		var elem16 string
+		var elem17 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem16 = v
+			elem17 = v
 		}
-		(p.Req)[elem15] = elem16
+		(p.Req)[elem16] = elem17
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)
@@ -1226,13 +1226,13 @@ func (p *FooUnderlyingTypesTestArgs) ReadField1(iprot thrift.TProtocol) error {
 	}
 	p.ListType = make([]int64, 0, size)
 	for i := 0; i < size; i++ {
-		var elem17 int64
+		var elem18 int64
 		if v, err := iprot.ReadI64(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem17 = v
+			elem18 = v
 		}
-		p.ListType = append(p.ListType, elem17)
+		p.ListType = append(p.ListType, elem18)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -1247,13 +1247,13 @@ func (p *FooUnderlyingTypesTestArgs) ReadField2(iprot thrift.TProtocol) error {
 	}
 	p.SetType = make(map[int64]bool, size)
 	for i := 0; i < size; i++ {
-		var elem18 int64
+		var elem19 int64
 		if v, err := iprot.ReadI64(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem18 = v
+			elem19 = v
 		}
-		(p.SetType)[elem18] = true
+		(p.SetType)[elem19] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -1387,13 +1387,13 @@ func (p *FooUnderlyingTypesTestResult) ReadField0(iprot thrift.TProtocol) error 
 	}
 	p.Success = make([]int64, 0, size)
 	for i := 0; i < size; i++ {
-		var elem19 int64
+		var elem20 int64
 		if v, err := iprot.ReadI64(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem19 = v
+			elem20 = v
 		}
-		p.Success = append(p.Success, elem19)
+		p.Success = append(p.Success, elem20)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)

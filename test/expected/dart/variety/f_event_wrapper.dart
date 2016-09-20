@@ -339,12 +339,12 @@ class EventWrapper implements TBase {
           break;
         case EVENTS:
           if(field.type == TType.LIST) {
-            TList elem21 = iprot.readListBegin();
+            TList elem25 = iprot.readListBegin();
             events = new List<t_variety.Event>();
-            for(int elem23 = 0; elem23 < elem21.length; ++elem23) {
-              t_variety.Event elem22 = new t_variety.Event();
-              elem22.read(iprot);
-              events.add(elem22);
+            for(int elem27 = 0; elem27 < elem25.length; ++elem27) {
+              t_variety.Event elem26 = new t_variety.Event();
+              elem26.read(iprot);
+              events.add(elem26);
             }
             iprot.readListEnd();
           } else {
@@ -353,12 +353,12 @@ class EventWrapper implements TBase {
           break;
         case EVENTS2:
           if(field.type == TType.SET) {
-            TSet elem24 = iprot.readSetBegin();
+            TSet elem28 = iprot.readSetBegin();
             events2 = new Set<t_variety.Event>();
-            for(int elem26 = 0; elem26 < elem24.length; ++elem26) {
-              t_variety.Event elem25 = new t_variety.Event();
-              elem25.read(iprot);
-              events2.add(elem25);
+            for(int elem30 = 0; elem30 < elem28.length; ++elem30) {
+              t_variety.Event elem29 = new t_variety.Event();
+              elem29.read(iprot);
+              events2.add(elem29);
             }
             iprot.readSetEnd();
           } else {
@@ -367,13 +367,13 @@ class EventWrapper implements TBase {
           break;
         case EVENTMAP:
           if(field.type == TType.MAP) {
-            TMap elem27 = iprot.readMapBegin();
+            TMap elem31 = iprot.readMapBegin();
             eventMap = new Map<int, t_variety.Event>();
-            for(int elem29 = 0; elem29 < elem27.length; ++elem29) {
-              int elem30 = iprot.readI64();
-              t_variety.Event elem28 = new t_variety.Event();
-              elem28.read(iprot);
-              eventMap[elem30] = elem28;
+            for(int elem33 = 0; elem33 < elem31.length; ++elem33) {
+              int elem34 = iprot.readI64();
+              t_variety.Event elem32 = new t_variety.Event();
+              elem32.read(iprot);
+              eventMap[elem34] = elem32;
             }
             iprot.readMapEnd();
           } else {
@@ -382,17 +382,17 @@ class EventWrapper implements TBase {
           break;
         case NUMS:
           if(field.type == TType.LIST) {
-            TList elem31 = iprot.readListBegin();
+            TList elem35 = iprot.readListBegin();
             nums = new List<List<int>>();
-            for(int elem36 = 0; elem36 < elem31.length; ++elem36) {
-              TList elem33 = iprot.readListBegin();
-              List<int> elem32 = new List<int>();
-              for(int elem35 = 0; elem35 < elem33.length; ++elem35) {
-                int elem34 = iprot.readI32();
-                elem32.add(elem34);
+            for(int elem40 = 0; elem40 < elem35.length; ++elem40) {
+              TList elem37 = iprot.readListBegin();
+              List<int> elem36 = new List<int>();
+              for(int elem39 = 0; elem39 < elem37.length; ++elem39) {
+                int elem38 = iprot.readI32();
+                elem36.add(elem38);
               }
               iprot.readListEnd();
-              nums.add(elem32);
+              nums.add(elem36);
             }
             iprot.readListEnd();
           } else {
@@ -401,11 +401,11 @@ class EventWrapper implements TBase {
           break;
         case ENUMS:
           if(field.type == TType.LIST) {
-            TList elem37 = iprot.readListBegin();
+            TList elem41 = iprot.readListBegin();
             enums = new List<int>();
-            for(int elem39 = 0; elem39 < elem37.length; ++elem39) {
-              int elem38 = iprot.readI32();
-              enums.add(elem38);
+            for(int elem43 = 0; elem43 < elem41.length; ++elem43) {
+              int elem42 = iprot.readI32();
+              enums.add(elem42);
             }
             iprot.readListEnd();
           } else {
@@ -464,8 +464,8 @@ class EventWrapper implements TBase {
     if(this.events != null) {
       oprot.writeFieldBegin(_EVENTS_FIELD_DESC);
       oprot.writeListBegin(new TList(TType.STRUCT, events.length));
-      for(var elem40 in events) {
-        elem40.write(oprot);
+      for(var elem44 in events) {
+        elem44.write(oprot);
       }
       oprot.writeListEnd();
       oprot.writeFieldEnd();
@@ -473,8 +473,8 @@ class EventWrapper implements TBase {
     if(this.events2 != null) {
       oprot.writeFieldBegin(_EVENTS2_FIELD_DESC);
       oprot.writeSetBegin(new TSet(TType.STRUCT, events2.length));
-      for(var elem41 in events2) {
-        elem41.write(oprot);
+      for(var elem45 in events2) {
+        elem45.write(oprot);
       }
       oprot.writeSetEnd();
       oprot.writeFieldEnd();
@@ -482,9 +482,9 @@ class EventWrapper implements TBase {
     if(this.eventMap != null) {
       oprot.writeFieldBegin(_EVENT_MAP_FIELD_DESC);
       oprot.writeMapBegin(new TMap(TType.I64, TType.STRUCT, eventMap.length));
-      for(var elem42 in eventMap.keys) {
-        oprot.writeI64(elem42);
-        eventMap[elem42].write(oprot);
+      for(var elem46 in eventMap.keys) {
+        oprot.writeI64(elem46);
+        eventMap[elem46].write(oprot);
       }
       oprot.writeMapEnd();
       oprot.writeFieldEnd();
@@ -492,10 +492,10 @@ class EventWrapper implements TBase {
     if(this.nums != null) {
       oprot.writeFieldBegin(_NUMS_FIELD_DESC);
       oprot.writeListBegin(new TList(TType.LIST, nums.length));
-      for(var elem43 in nums) {
-        oprot.writeListBegin(new TList(TType.I32, elem43.length));
-        for(var elem44 in elem43) {
-          oprot.writeI32(elem44);
+      for(var elem47 in nums) {
+        oprot.writeListBegin(new TList(TType.I32, elem47.length));
+        for(var elem48 in elem47) {
+          oprot.writeI32(elem48);
         }
         oprot.writeListEnd();
       }
@@ -505,8 +505,8 @@ class EventWrapper implements TBase {
     if(this.enums != null) {
       oprot.writeFieldBegin(_ENUMS_FIELD_DESC);
       oprot.writeListBegin(new TList(TType.I32, enums.length));
-      for(var elem45 in enums) {
-        oprot.writeI32(elem45);
+      for(var elem49 in enums) {
+        oprot.writeI32(elem49);
       }
       oprot.writeListEnd();
       oprot.writeFieldEnd();

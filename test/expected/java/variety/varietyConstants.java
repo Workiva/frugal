@@ -79,10 +79,10 @@ public class varietyConstants {
 
 		public static final java.util.Map<String, Event> MAPCONSTANT2 = new HashMap<String,Event>();
 		static {
-		Event elem0 = new Event();
-		elem0.setID(-2L);
-		elem0.setMessage("first here");
-			MAPCONSTANT2.put("hello", elem0);
+		Event elem10 = new Event();
+		elem10.setID(-2L);
+		elem10.setMessage("first here");
+			MAPCONSTANT2.put("hello", elem10);
 		}
 
 		public static final java.nio.ByteBuffer bin_const = java.nio.ByteBuffer.wrap("hello".getBytes());

@@ -933,13 +933,13 @@ func (p *TestingDefaults) ReadField7(iprot thrift.TProtocol) error {
 	}
 	p.Listfield = make([]int32, 0, size)
 	for i := 0; i < size; i++ {
-		var elem0 int32
+		var elem1 int32
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem0 = v
+			elem1 = v
 		}
-		p.Listfield = append(p.Listfield, elem0)
+		p.Listfield = append(p.Listfield, elem1)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -1001,13 +1001,13 @@ func (p *TestingDefaults) ReadField13(iprot thrift.TProtocol) error {
 	temp := make([]int32, 0, size)
 	p.List2 = &temp
 	for i := 0; i < size; i++ {
-		var elem1 int32
+		var elem2 int32
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem1 = v
+			elem2 = v
 		}
-		*p.List2 = append(*p.List2, elem1)
+		*p.List2 = append(*p.List2, elem2)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -1022,13 +1022,13 @@ func (p *TestingDefaults) ReadField14(iprot thrift.TProtocol) error {
 	}
 	p.List3 = make([]int32, 0, size)
 	for i := 0; i < size; i++ {
-		var elem2 int32
+		var elem3 int32
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem2 = v
+			elem3 = v
 		}
-		p.List3 = append(p.List3, elem2)
+		p.List3 = append(p.List3, elem3)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -1043,13 +1043,13 @@ func (p *TestingDefaults) ReadField15(iprot thrift.TProtocol) error {
 	}
 	p.List4 = make([]int32, 0, size)
 	for i := 0; i < size; i++ {
-		var elem3 int32
+		var elem4 int32
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem3 = v
+			elem4 = v
 		}
-		p.List4 = append(p.List4, elem3)
+		p.List4 = append(p.List4, elem4)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -1065,19 +1065,19 @@ func (p *TestingDefaults) ReadField16(iprot thrift.TProtocol) error {
 	temp := make(map[string]string, size)
 	p.AMap = &temp
 	for i := 0; i < size; i++ {
-		var elem4 string
-		if v, err := iprot.ReadString(); err != nil {
-			return thrift.PrependError("error reading field 0: ", err)
-		} else {
-			elem4 = v
-		}
 		var elem5 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			elem5 = v
 		}
-		(*p.AMap)[elem4] = elem5
+		var elem6 string
+		if v, err := iprot.ReadString(); err != nil {
+			return thrift.PrependError("error reading field 0: ", err)
+		} else {
+			elem6 = v
+		}
+		(*p.AMap)[elem5] = elem6
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)
@@ -1654,11 +1654,11 @@ func (p *EventWrapper) ReadField3(iprot thrift.TProtocol) error {
 	}
 	p.Events = make([]*Event, 0, size)
 	for i := 0; i < size; i++ {
-		elem6 := NewEvent()
-		if err := elem6.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem6), err)
+		elem7 := NewEvent()
+		if err := elem7.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem7), err)
 		}
-		p.Events = append(p.Events, elem6)
+		p.Events = append(p.Events, elem7)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -1673,11 +1673,11 @@ func (p *EventWrapper) ReadField4(iprot thrift.TProtocol) error {
 	}
 	p.Events2 = make(map[*Event]bool, size)
 	for i := 0; i < size; i++ {
-		elem7 := NewEvent()
-		if err := elem7.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem7), err)
+		elem8 := NewEvent()
+		if err := elem8.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem8), err)
 		}
-		(p.Events2)[elem7] = true
+		(p.Events2)[elem8] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -1692,18 +1692,18 @@ func (p *EventWrapper) ReadField5(iprot thrift.TProtocol) error {
 	}
 	p.EventMap = make(map[ID]*Event, size)
 	for i := 0; i < size; i++ {
-		var elem8 ID
+		var elem9 ID
 		if v, err := iprot.ReadI64(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := ID(v)
-			elem8 = temp
+			elem9 = temp
 		}
-		elem9 := NewEvent()
-		if err := elem9.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem9), err)
+		elem10 := NewEvent()
+		if err := elem10.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", elem10), err)
 		}
-		(p.EventMap)[elem8] = elem9
+		(p.EventMap)[elem9] = elem10
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)
@@ -1722,20 +1722,20 @@ func (p *EventWrapper) ReadField6(iprot thrift.TProtocol) error {
 		if err != nil {
 			return thrift.PrependError("error reading list begin: ", err)
 		}
-		elem10 := make([]int32, 0, size)
+		elem11 := make([]int32, 0, size)
 		for i := 0; i < size; i++ {
-			var elem11 int32
+			var elem12 int32
 			if v, err := iprot.ReadI32(); err != nil {
 				return thrift.PrependError("error reading field 0: ", err)
 			} else {
-				elem11 = v
+				elem12 = v
 			}
-			elem10 = append(elem10, elem11)
+			elem11 = append(elem11, elem12)
 		}
 		if err := iprot.ReadListEnd(); err != nil {
 			return thrift.PrependError("error reading list end: ", err)
 		}
-		p.Nums = append(p.Nums, elem10)
+		p.Nums = append(p.Nums, elem11)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -1750,14 +1750,14 @@ func (p *EventWrapper) ReadField7(iprot thrift.TProtocol) error {
 	}
 	p.Enums = make([]ItsAnEnum, 0, size)
 	for i := 0; i < size; i++ {
-		var elem12 ItsAnEnum
+		var elem13 ItsAnEnum
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := ItsAnEnum(v)
-			elem12 = temp
+			elem13 = temp
 		}
-		p.Enums = append(p.Enums, elem12)
+		p.Enums = append(p.Enums, elem13)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -2210,20 +2210,20 @@ func (p *TestingUnions) ReadField5(iprot thrift.TProtocol) error {
 	}
 	p.Requests = make(Request, size)
 	for i := 0; i < size; i++ {
-		var elem13 Int
+		var elem14 Int
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := Int(v)
-			elem13 = temp
+			elem14 = temp
 		}
-		var elem14 string
+		var elem15 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			elem14 = v
+			elem15 = v
 		}
-		(p.Requests)[elem13] = elem14
+		(p.Requests)[elem14] = elem15
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)

@@ -67,6 +67,8 @@ func TestValidDartFrugalCompiler(t *testing.T) {
 	compareFiles(t, "expected/dart/actual_base/f_base_foo_structs.dart", baseFooStructs)
 	thingPath := filepath.Join(outputDir, "actual_base_dart", "lib", "src", "f_thing.dart")
 	compareFiles(t, "expected/dart/actual_base/f_thing.dart", thingPath)
+	nestedThingPath := filepath.Join(outputDir, "actual_base_dart", "lib", "src", "f_nested_thing.dart")
+	compareFiles(t, "expected/dart/actual_base/f_nested_thing.dart", nestedThingPath)
 	actualBaseExportPath := filepath.Join(outputDir, "actual_base_dart", "lib", "actual_base_dart.dart")
 	compareFiles(t, "expected/dart/actual_base/actual_base_dart.dart", actualBaseExportPath)
 }
