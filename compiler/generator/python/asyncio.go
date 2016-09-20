@@ -248,20 +248,24 @@ func (g *AsyncIOGenerator) generateProcessor(service *parser.Service) string {
 		contents += "class Processor(FBaseProcessor):\n\n"
 	}
 
-	contents += tab + "def __init__(self, handler):\n"
+	contents += tab + "def __init__(self, handler, middleware=None):\n"
 	contents += g.generateDocString([]string{
 		"Create a new Processor.\n",
 		"Args:",
 		tab + "handler: Iface",
 	}, tabtab)
+
+	contents += tabtab+"if middleware and not isinstance(middleware, list):\n"
+	contents += tabtabtab+"middleware = [middleware]\n\n"
+
 	if service.Extends != "" {
-		contents += tabtab + "super(Processor, self).__init__(handler)\n"
+		contents += tabtab + "super(Processor, self).__init__(handler, middleware=middleware)\n"
 	} else {
 		contents += tabtab + "super(Processor, self).__init__()\n"
 	}
 	for _, method := range service.Methods {
-		contents += tabtab + fmt.Sprintf("self.add_to_processor_map('%s', _%s(handler, self.get_write_lock()))\n",
-			method.Name, method.Name)
+		contents += tabtab + fmt.Sprintf("self.add_to_processor_map('%s', _%s(Method(handler.%s, middleware), self.get_write_lock()))\n",
+			method.Name, method.Name, method.Name)
 	}
 	contents += "\n\n"
 	return contents
@@ -286,8 +290,8 @@ func (a *AsyncIOGenerator) generateProcessorFunction(method *parser.Method) stri
 		indent += tab
 		contents += tabtab + "try:\n"
 	}
-	contents += indent + fmt.Sprintf("ret = self._handler.%s(ctx%s)\n",
-		method.Name, a.generateServerArgs(method.Arguments))
+	contents += indent + fmt.Sprintf("ret = self._handler([ctx%s])\n",
+		a.generateServerArgs(method.Arguments))
 	contents += indent + "if inspect.iscoroutine(ret):\n"
 	contents += indent + tab + "ret = await ret\n"
 	if method.ReturnType != nil {

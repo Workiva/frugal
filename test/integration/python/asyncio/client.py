@@ -67,6 +67,7 @@ async def test_rpc(client, ctx):
         method = getattr(client, rpc)
         args = vals['args']
         expected_result = vals['expected_result']
+
         result = None
         try:
             if args:

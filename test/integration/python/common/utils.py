@@ -18,7 +18,7 @@ def get_nats_options():
 
 def get_protocol_factory(protocol):
     """
-    Returns a protocol facotry associated with the string protocol passed in
+    Returns a protocol factory associated with the string protocol passed in
     as a command line argument to the cross runner
 
     :param protocol: string

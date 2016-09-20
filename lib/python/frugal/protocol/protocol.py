@@ -136,6 +136,9 @@ class FProtocol(TProtocolBase, object):
     def writeString(self, str_val):
         self._wrapped_protocol.writeString(str_val)
 
+    def writeBinary(self, str_val):
+        self._wrapped_protocol.writeBinary(str_val)
+
     def readMessageBegin(self):
         return self._wrapped_protocol.readMessageBegin()
 
@@ -192,3 +195,6 @@ class FProtocol(TProtocolBase, object):
 
     def readString(self):
         return self._wrapped_protocol.readString()
+
+    def readBinary(self):
+        return self._wrapped_protocol.readBinary()

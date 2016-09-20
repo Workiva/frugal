@@ -329,7 +329,7 @@ class bin_method_args:
                 break
             if fid == 1:
                 if ftype == TType.STRING:
-                    self.bin = iprot.readString()
+                    self.bin = iprot.readBinary()
                 else:
                     iprot.skip(ftype)
             elif fid == 2:
@@ -346,7 +346,7 @@ class bin_method_args:
         oprot.writeStructBegin('bin_method_args')
         if self.bin is not None:
             oprot.writeFieldBegin('bin', TType.STRING, 1)
-            oprot.writeString(self.bin)
+            oprot.writeBinary(self.bin)
             oprot.writeFieldEnd()
         if self.Str is not None:
             oprot.writeFieldBegin('Str', TType.STRING, 2)
@@ -393,7 +393,7 @@ class bin_method_result:
                 break
             if fid == 0:
                 if ftype == TType.STRING:
-                    self.success = iprot.readString()
+                    self.success = iprot.readBinary()
                 else:
                     iprot.skip(ftype)
             elif fid == 1:
@@ -411,7 +411,7 @@ class bin_method_result:
         oprot.writeStructBegin('bin_method_result')
         if self.success is not None:
             oprot.writeFieldBegin('success', TType.STRING, 0)
-            oprot.writeString(self.success)
+            oprot.writeBinary(self.success)
             oprot.writeFieldEnd()
         if self.api is not None:
             oprot.writeFieldBegin('api', TType.STRUCT, 1)
