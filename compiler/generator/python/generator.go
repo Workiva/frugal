@@ -1200,8 +1200,8 @@ func (g *Generator) generateProcessor(service *parser.Service) string {
 		tab + "handler: Iface",
 	}, tabtab)
 
-	contents += tabtab+"if middleware and not isinstance(middleware, list):\n"
-	contents += tabtabtab+"middleware = [middleware]\n\n"
+	contents += tabtab + "if middleware and not isinstance(middleware, list):\n"
+	contents += tabtabtab + "middleware = [middleware]\n\n"
 
 	if service.Extends != "" {
 		contents += tabtab + "super(Processor, self).__init__(handler, middleware=middleware)\n"
@@ -1239,8 +1239,8 @@ func (g *Generator) generateProcessorFunction(method *parser.Method) string {
 		contents += indent + fmt.Sprintf("self._handler([ctx%s])\n",
 			g.generateServerArgs(method.Arguments))
 	} else {
-		contents += indent + fmt.Sprintf("result.success = self._handler.%s(ctx%s)\n",
-			method.Name, g.generateServerArgs(method.Arguments))
+		contents += indent + fmt.Sprintf("result.success = self._handler([ctx%s])\n",
+			g.generateServerArgs(method.Arguments))
 	}
 	for _, err := range method.Exceptions {
 		contents += tabtab + fmt.Sprintf("except %s as %s:\n", g.qualifiedTypeName(err.Type), err.Name)

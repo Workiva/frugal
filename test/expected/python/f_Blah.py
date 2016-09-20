@@ -301,7 +301,7 @@ class _bleh(FProcessorFunction):
         iprot.readMessageEnd()
         result = bleh_result()
         try:
-            result.success = self._handler.bleh(ctx, args.one, args.Two, args.custom_ints)
+            result.success = self._handler([ctx, args.one, args.Two, args.custom_ints])
         except InvalidOperation as oops:
             result.oops = oops
         except excepts.ttypes.InvalidData as err2:
@@ -325,7 +325,7 @@ class _getThing(FProcessorFunction):
         args.read(iprot)
         iprot.readMessageEnd()
         result = getThing_result()
-        result.success = self._handler.getThing(ctx)
+        result.success = self._handler([ctx])
         with self._lock:
             oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('getThing', TMessageType.REPLY, 0)
@@ -345,7 +345,7 @@ class _getMyInt(FProcessorFunction):
         args.read(iprot)
         iprot.readMessageEnd()
         result = getMyInt_result()
-        result.success = self._handler.getMyInt(ctx)
+        result.success = self._handler([ctx])
         with self._lock:
             oprot.write_response_headers(ctx)
             oprot.writeMessageBegin('getMyInt', TMessageType.REPLY, 0)
