@@ -1,4 +1,6 @@
 from asyncio.locks import Lock
+import asyncio
+import inspect
 
 from nats.aio.client import Client
 from thrift.transport.TTransport import TTransportException
@@ -137,10 +139,16 @@ class FNatsScopeTransport(FScopeTransport, FTransportBase):
             raise TTransportException(TTransportException.UNKNOWN,
                                       'Subscriber cannot have an empty subject')
 
+        async def nats_callback(message):
+            ret = callback(TMemoryBuffer(message.data[4:]))
+            if inspect.iscoroutine(ret):
+                ret = await ret
+            return ret
+
         self._sub_id = await self._nats_client.subscribe(
             'frugal.{0}'.format(self._subject),
             queue=self._queue,
-            cb=lambda message: callback(TMemoryBuffer(message.data[4:]))
+            cb=nats_callback
         )
         self._is_open = True
 

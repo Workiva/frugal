@@ -439,7 +439,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 		panic("referenced constant doesn't exist: " + name)
 	}
 
-	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {
+	if underlyingType.IsPrimitive() || underlyingType.IsContainer() {
 		switch underlyingType.Name {
 		case "bool", "i8", "byte", "i16", "i32", "i64", "double":
 			return fmt.Sprintf("%v", value)
@@ -571,23 +571,14 @@ func (g *Generator) GenerateException(s *parser.Struct) error {
 	return g.GenerateStruct(s)
 }
 
-// GenerateServiceArgsResults generates the args and results objects for the
+// generateServiceArgsResults generates the args and results objects for the
 // given service.
-func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir string, structs []*parser.Struct) error {
+func (g *Generator) generateServiceArgsResults(service *parser.Service) string {
 	contents := ""
-	contents += g.GenerateThriftImports()
-
-	for _, s := range structs {
+	for _, s := range g.GetServiceMethodTypes(service) {
 		contents += g.generateStruct(s)
 	}
-
-	file, err := g.GenerateFile(serviceName+"_structs", g.outputDir, generator.ObjectFile)
-	defer file.Close()
-	if err != nil {
-		return err
-	}
-	_, err = file.WriteString(contents)
-	return err
+	return contents
 }
 
 func (g *Generator) generateStruct(s *parser.Struct) string {
@@ -602,13 +593,13 @@ func (g *Generator) generateStruct(s *parser.Struct) string {
 	if s.Type == parser.StructTypeException {
 		contents += "extends Error "
 	}
-	contents += "implements TBase {\n"
+	contents += "implements thrift.TBase {\n"
 
 	// Struct and field descriptors
-	contents += fmt.Sprintf(tab+"static final TStruct _STRUCT_DESC = new TStruct(\"%s\");\n", s.Name)
+	contents += fmt.Sprintf(tab+"static final thrift.TStruct _STRUCT_DESC = new thrift.TStruct(\"%s\");\n", s.Name)
 	for _, field := range s.Fields {
 		constantName := toScreamingCapsConstant(field.Name)
-		contents += fmt.Sprintf(tab+"static final TField _%s_FIELD_DESC = new TField(\"%s\", %s, %d);\n",
+		contents += fmt.Sprintf(tab+"static final thrift.TField _%s_FIELD_DESC = new thrift.TField(\"%s\", %s, %d);\n",
 			constantName, field.Name, g.getEnumFromThriftType(field.Type), field.ID)
 	}
 	contents += "\n"
@@ -664,7 +655,7 @@ func (g *Generator) generateStruct(s *parser.Struct) string {
 
 func (g *Generator) generateInitValue(field *parser.Field) string {
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
-	if !parser.IsThriftPrimitive(underlyingType) || field.Modifier == parser.Optional {
+	if !underlyingType.IsPrimitive() || field.Modifier == parser.Optional {
 		return ""
 	}
 
@@ -763,11 +754,11 @@ func (g *Generator) generateFieldMethods(s *parser.Struct) string {
 
 func (g *Generator) generateRead(s *parser.Struct) string {
 	contents := tab + "read(TProtocol iprot) {\n"
-	contents += tabtab + "TField field;\n"
+	contents += tabtab + "thrift.TField field;\n"
 	contents += tabtab + "iprot.readStructBegin();\n"
 	contents += tabtab + "while(true) {\n"
 	contents += tabtabtab + "field = iprot.readFieldBegin();\n"
-	contents += tabtabtab + "if(field.type == TType.STOP) {\n"
+	contents += tabtabtab + "if(field.type == thrift.TType.STOP) {\n"
 	contents += tabtabtabtab + "break;\n"
 	contents += tabtabtab + "}\n"
 	contents += tabtabtab + "switch(field.id) {\n"
@@ -782,7 +773,7 @@ func (g *Generator) generateRead(s *parser.Struct) string {
 		contents += tabtabtabtabtab + "break;\n"
 	}
 	contents += tabtabtabtab + "default:\n"
-	contents += tabtabtabtabtab + "TProtocolUtil.skip(iprot, field.type);\n"
+	contents += tabtabtabtabtab + "thrift.TProtocolUtil.skip(iprot, field.type);\n"
 	contents += tabtabtabtabtab + "break;\n"
 	contents += tabtabtab + "}\n"
 	contents += tabtabtab + "iprot.readFieldEnd();\n"
@@ -795,7 +786,7 @@ func (g *Generator) generateRead(s *parser.Struct) string {
 		if field.Modifier == parser.Required && g.isDartPrimitive(field.Type) {
 			fName := toFieldName(field.Name)
 			contents += fmt.Sprintf(tabtab+"if(!__isset_%s) {\n", fName)
-			contents += fmt.Sprintf(tabtabtab+"throw new TProtocolError(TProtocolErrorType.UNKNOWN, \"Required field '%s' was not present in struct %s\");\n", fName, s.Name)
+			contents += fmt.Sprintf(tabtabtab+"throw new thrift.TProtocolError(TProtocolErrorType.UNKNOWN, \"Required field '%s' was not present in struct %s\");\n", fName, s.Name)
 			contents += tabtab + "}\n"
 		}
 	}
@@ -818,7 +809,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	primitive := g.isDartPrimitive(underlyingType)
 	isEnum := g.Frugal.IsEnum(underlyingType)
-	if parser.IsThriftPrimitive(underlyingType) || isEnum {
+	if underlyingType.IsPrimitive() || isEnum {
 		thriftType := ""
 		switch underlyingType.Name {
 		case "bool":
@@ -852,7 +843,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 	} else if g.Frugal.IsStruct(underlyingType) {
 		contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"%s%s = new %s();\n", prefix, fName, dartType)
 		contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"%s.read(iprot);\n", fName)
-	} else if parser.IsThriftContainer(underlyingType) {
+	} else if underlyingType.IsContainer() {
 		containerElem := g.GetElem()
 		valElem := g.GetElem()
 		valField := parser.FieldFromType(underlyingType.ValueType, valElem)
@@ -862,7 +853,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 
 		switch underlyingType.Name {
 		case "list":
-			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"TList %s = iprot.readListBegin();\n", containerElem)
+			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"thrift.TList %s = iprot.readListBegin();\n", containerElem)
 			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"%s%s = new %s();\n", prefix, fName, dartType)
 			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"for(int %s = 0; %s < %s.length; ++%s) {\n", counterElem, counterElem, containerElem, counterElem)
 			contents += valContents
@@ -870,7 +861,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 			contents += tabtabtabtabtabtab + ind + "}\n"
 			contents += tabtabtabtabtabtab + ind + "iprot.readListEnd();\n"
 		case "set":
-			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"TSet %s = iprot.readSetBegin();\n", containerElem)
+			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"thrift.TSet %s = iprot.readSetBegin();\n", containerElem)
 			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"%s%s = new %s();\n", prefix, fName, dartType)
 			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"for(int %s = 0; %s < %s.length; ++%s) {\n",
 				counterElem, counterElem, containerElem, counterElem)
@@ -879,7 +870,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 			contents += tabtabtabtabtabtab + ind + "}\n"
 			contents += tabtabtabtabtabtab + ind + "iprot.readSetEnd();\n"
 		case "map":
-			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"TMap %s = iprot.readMapBegin();\n", containerElem)
+			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"thrift.TMap %s = iprot.readMapBegin();\n", containerElem)
 			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"%s%s = new %s();\n", prefix, fName, dartType)
 			contents += fmt.Sprintf(tabtabtabtabtabtab+ind+"for(int %s = 0; %s < %s.length; ++%s) {\n",
 				counterElem, counterElem, containerElem, counterElem)
@@ -899,7 +890,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 }
 
 func (g *Generator) generateWrite(s *parser.Struct) string {
-	contents := tab + "write(TProtocol oprot) {\n"
+	contents := tab + "write(thrift.TProtocol oprot) {\n"
 	contents += tabtab + "validate();\n\n"
 	contents += tabtab + "oprot.writeStructBegin(_STRUCT_DESC);\n"
 	for _, field := range s.Fields {
@@ -942,7 +933,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 	fName := toFieldName(field.Name)
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	isEnum := g.Frugal.IsEnum(underlyingType)
-	if parser.IsThriftPrimitive(underlyingType) || isEnum {
+	if underlyingType.IsPrimitive() || isEnum {
 		write := tabtab + ind + "oprot.write"
 		switch underlyingType.Name {
 		case "bool":
@@ -972,14 +963,14 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 		contents += fmt.Sprintf(write, fName)
 	} else if g.Frugal.IsStruct(underlyingType) {
 		contents += fmt.Sprintf(tabtab+ind+"%s.write(oprot);\n", fName)
-	} else if parser.IsThriftContainer(underlyingType) {
+	} else if underlyingType.IsContainer() {
 		valEnumType := g.getEnumFromThriftType(underlyingType.ValueType)
 
 		switch underlyingType.Name {
 		case "list":
 			valElem := g.GetElem()
 			valField := parser.FieldFromType(underlyingType.ValueType, valElem)
-			contents += fmt.Sprintf(tabtab+ind+"oprot.writeListBegin(new TList(%s, %s.length));\n", valEnumType, fName)
+			contents += fmt.Sprintf(tabtab+ind+"oprot.writeListBegin(new thrift.TList(%s, %s.length));\n", valEnumType, fName)
 			contents += fmt.Sprintf(tabtab+ind+"for(var %s in %s) {\n", valElem, fName)
 			contents += g.generateWriteFieldRec(valField, false, ind+tab)
 			contents += tabtab + ind + "}\n"
@@ -987,7 +978,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 		case "set":
 			valElem := g.GetElem()
 			valField := parser.FieldFromType(underlyingType.ValueType, valElem)
-			contents += fmt.Sprintf(tabtab+ind+"oprot.writeSetBegin(new TSet(%s, %s.length));\n", valEnumType, fName)
+			contents += fmt.Sprintf(tabtab+ind+"oprot.writeSetBegin(new thrift.TSet(%s, %s.length));\n", valEnumType, fName)
 			contents += fmt.Sprintf(tabtab+ind+"for(var %s in %s) {\n", valElem, fName)
 			contents += g.generateWriteFieldRec(valField, false, ind+tab)
 			contents += tabtab + ind + "}\n"
@@ -997,7 +988,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 			keyElem := g.GetElem()
 			keyField := parser.FieldFromType(underlyingType.KeyType, keyElem)
 			valField := parser.FieldFromType(underlyingType.ValueType, fmt.Sprintf("%s[%s]", fName, keyElem))
-			contents += fmt.Sprintf(tabtab+ind+"oprot.writeMapBegin(new TMap(%s, %s, %s.length));\n", keyEnumType, valEnumType, fName)
+			contents += fmt.Sprintf(tabtab+ind+"oprot.writeMapBegin(new thrift.TMap(%s, %s, %s.length));\n", keyEnumType, valEnumType, fName)
 			contents += fmt.Sprintf(tabtab+ind+"for(var %s in %s.keys) {\n", keyElem, fName)
 			contents += g.generateWriteFieldRec(keyField, false, ind+tab)
 			contents += g.generateWriteFieldRec(valField, false, ind+tab)
@@ -1081,7 +1072,7 @@ func (g *Generator) generateValidate(s *parser.Struct) string {
 			fName := toFieldName(field.Name)
 			if !g.isDartPrimitive(field.Type) {
 				contents += fmt.Sprintf(tabtab+"if(%s == null) {\n", fName)
-				contents += fmt.Sprintf(tabtabtab+"throw new TProtocolError(TProtocolErrorType.UNKNOWN, \"Required field '%s' was not present in struct %s\");\n", fName, s.Name)
+				contents += fmt.Sprintf(tabtabtab+"throw new thrift.TProtocolError(thrift.TProtocolErrorType.UNKNOWN, \"Required field '%s' was not present in struct %s\");\n", fName, s.Name)
 				contents += tabtab + "}\n"
 			}
 		}
@@ -1094,7 +1085,7 @@ func (g *Generator) generateValidate(s *parser.Struct) string {
 			isSetCheck := fmt.Sprintf("isSet%s()", strings.Title(field.Name))
 			contents += fmt.Sprintf(tabtab+"if(%s && !%s.VALID_VALUES.contains(%s)) {\n",
 				isSetCheck, g.qualifiedTypeName(field.Type), fName)
-			contents += fmt.Sprintf(tabtabtab+"throw new TProtocolError(TProtocolErrorType.UNKNOWN, \"The field '%s' has been assigned the invalid value $%s\");\n", fName, fName)
+			contents += fmt.Sprintf(tabtabtab+"throw new thrift.TProtocolError(thrift.TProtocolErrorType.UNKNOWN, \"The field '%s' has been assigned the invalid value $%s\");\n", fName, fName)
 			contents += tabtab + "}\n"
 		}
 	}
@@ -1136,7 +1127,7 @@ func (g *Generator) generatePackage(file *os.File, name, suffix string) error {
 // GenerateThriftImports generates necessary imports for Thrift.
 func (g *Generator) GenerateThriftImports() string {
 	imports := "import 'dart:typed_data' show Uint8List;\n"
-	imports += "import 'package:thrift/thrift.dart';\n"
+	imports += "import 'package:thrift/thrift.dart' as thrift;\n"
 	// Import the current package
 	imports += g.getImportDeclaration(g.getNamespaceOrName())
 
@@ -1172,10 +1163,6 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 
 	// Import same package.
 	imports += g.getImportDeclaration(g.getNamespaceOrName())
-
-	// Import thrift package for method args
-	servSnake := toFileName(s.Name)
-	imports += fmt.Sprintf("import 'f_%s_structs.dart' as t_%s_file;\n", servSnake, servSnake)
 
 	_, err := file.WriteString(imports)
 	return err
@@ -1375,6 +1362,7 @@ func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 	contents := ""
 	contents += g.generateInterface(s)
 	contents += g.generateClient(s)
+	contents += g.generateServiceArgsResults(s)
 
 	_, err := file.WriteString(contents)
 	return err
@@ -1464,12 +1452,11 @@ func (g *Generator) generateClient(service *parser.Service) string {
 	for _, method := range service.Methods {
 		contents += g.generateClientMethod(service, method)
 	}
-	contents += "}\n"
+	contents += "}\n\n"
 	return contents
 }
 
 func (g *Generator) generateClientMethod(service *parser.Service, method *parser.Method) string {
-	servSnake := toFileName(service.Name)
 	nameTitle := strings.Title(method.Name)
 	nameLower := generator.LowercaseFirstLetter(method.Name)
 
@@ -1513,8 +1500,8 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	}
 	contents += fmt.Sprintf(indent+tab+"oprot.writeMessageBegin(new thrift.TMessage(\"%s\", thrift.TMessageType.%s, 0));\n",
 		nameLower, msgType)
-	contents += fmt.Sprintf(indent+tab+"t_%s_file.%s_args args = new t_%s_file.%s_args();\n",
-		servSnake, nameLower, servSnake, nameLower)
+	contents += fmt.Sprintf(indent+tab+"%s_args args = new %s_args();\n",
+		nameLower, nameLower)
 	for _, arg := range method.Arguments {
 		argLower := generator.LowercaseFirstLetter(arg.Name)
 		contents += fmt.Sprintf(indent+tab+"args.%s = %s;\n", argLower, argLower)
@@ -1564,8 +1551,8 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	contents += tabtabtabtabtab + "throw error;\n"
 	contents += tabtabtabtab + "}\n\n"
 
-	contents += fmt.Sprintf(tabtabtabtab+"t_%s_file.%s_result result = new t_%s_file.%s_result();\n",
-		servSnake, nameLower, servSnake, nameLower)
+	contents += fmt.Sprintf(tabtabtabtab+"%s_result result = new %s_result();\n",
+		nameLower, nameLower)
 	contents += tabtabtabtab + "result.read(iprot);\n"
 	contents += tabtabtabtab + "iprot.readMessageEnd();\n"
 	if method.ReturnType == nil {
@@ -1632,30 +1619,30 @@ func (g *Generator) getEnumFromThriftType(t *parser.Type) string {
 	underlyingType := g.Frugal.UnderlyingType(t)
 	switch underlyingType.Name {
 	case "bool":
-		return "TType.BOOL"
+		return "thrift.TType.BOOL"
 	case "byte", "i8":
-		return "TType.BYTE"
+		return "thrift.TType.BYTE"
 	case "i16":
-		return "TType.I16"
+		return "thrift.TType.I16"
 	case "i32":
-		return "TType.I32"
+		return "thrift.TType.I32"
 	case "i64":
-		return "TType.I64"
+		return "thrift.TType.I64"
 	case "double":
-		return "TType.DOUBLE"
+		return "thrift.TType.DOUBLE"
 	case "string", "binary":
-		return "TType.STRING"
+		return "thrift.TType.STRING"
 	case "list":
-		return "TType.LIST"
+		return "thrift.TType.LIST"
 	case "set":
-		return "TType.SET"
+		return "thrift.TType.SET"
 	case "map":
-		return "TType.MAP"
+		return "thrift.TType.MAP"
 	default:
 		if g.Frugal.IsEnum(underlyingType) {
-			return "TType.I32"
+			return "thrift.TType.I32"
 		} else if g.Frugal.IsStruct(underlyingType) {
-			return "TType.STRUCT"
+			return "thrift.TType.STRUCT"
 		}
 		panic("not a valid thrift type: " + underlyingType.Name)
 	}

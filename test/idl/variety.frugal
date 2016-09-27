@@ -4,6 +4,8 @@ namespace java variety.java
 namespace py variety.python
 
 include "base.frugal"
+include "validStructs.frugal"
+include "ValidTypes.frugal"
 
 typedef i64 id
 typedef i32 int
@@ -29,7 +31,7 @@ const Event ConstEvent2 = {"ID": -7, "Message": "second one"}
 const list<i32> NumsList = [2,4,7,1]
 const set<int> NumsSet = [1,3,8,0]
 
-const map<string,Event> MAPCONSTANT2 = {'hello':{"ID": -2, "Message": "first here"}}
+const map<string,Event> MAPCONSTANT2 = {'hello':{"ID": -2, "Message": "first here", "const": bin_const}}
 
 const binary bin_const = "hello"
 
@@ -151,6 +153,10 @@ service Foo extends base.BaseFoo {
     i64 param_modifiers(1:i32 opt_num, 2: optional i32 default_num, 3: required i32 req_num),
 
     list<id> underlying_types_test(1:list<id> list_type, 2: set<id> set_type),
+
+    validStructs.Thing getThing(),
+
+    ValidTypes.MyInt getMyInt(),
 }
 
 /**@

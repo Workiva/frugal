@@ -3,7 +3,7 @@ from struct import pack
 
 from tornado import gen, locks
 
-from frugal.exceptions import FMessageSizeException
+from frugal.exceptions import FException, FMessageSizeException
 from frugal.transport import FTransport
 
 
@@ -31,7 +31,7 @@ class FTornadoTransport(FTransport):
 
         with (yield self._registry_lock.acquire()):
             if self._registry:
-                raise StandardError("registry already set.")
+                raise FException("registry already set.")
 
             self._registry = registry
 
@@ -49,7 +49,7 @@ class FTornadoTransport(FTransport):
         """
         with (yield self._registry_lock.acquire()):
             if not self._registry:
-                raise StandardError("registry cannot be null.")
+                raise FException("registry cannot be null.")
 
             self._registry.register(context, callback)
 
@@ -65,7 +65,7 @@ class FTornadoTransport(FTransport):
         """
         with (yield self._registry_lock.acquire()):
             if not self._registry:
-                raise StandardError("registry cannot be null.")
+                raise FException("registry cannot be null.")
 
             self._registry.unregister(context)
 

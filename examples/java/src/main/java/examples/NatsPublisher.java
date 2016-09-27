@@ -38,7 +38,7 @@ public class NatsPublisher {
         FScopeProvider provider = new FScopeProvider(factory, protocolFactory);
 
         // Create and open a publisher
-        AlbumWinnersPublisher publisher = new AlbumWinnersPublisher(provider);
+        AlbumWinnersPublisher.Iface publisher = new AlbumWinnersPublisher.Client(provider);
         publisher.open();
 
         // Publish a winner announcement

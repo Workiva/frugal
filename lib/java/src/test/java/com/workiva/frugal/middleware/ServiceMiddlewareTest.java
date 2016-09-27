@@ -51,27 +51,6 @@ public class ServiceMiddlewareTest {
     }
 
     /**
-     * Ensure middleware and the proxied method are properly invoked when proxying a concrete class.
-     */
-    @Test
-    public void testApplyConcreteClass() {
-        TestMiddleware middleware1 = new TestMiddleware();
-        TestMiddleware middleware2 = new TestMiddleware();
-        int arg = 42;
-        TestHandler handler = new TestHandler();
-        TestHandler proxy = InvocationHandler.composeMiddlewareClass(handler, TestHandler.class,
-                new ServiceMiddleware[]{middleware1, middleware2});
-
-        String actual = proxy.handlerMethod(arg);
-
-        assertEquals("foo", actual);
-        assertEquals(arg + 2, handler.calledArg);
-        assertEquals(arg, middleware2.calledArg);
-        assertEquals(arg, middleware2.calledArg);
-        assertEquals(arg + 1, middleware1.calledArg);
-    }
-
-    /**
      * Ensure the proxied method is properly invoked if no middleware is provided when proxying a concrete class.
      */
     @Test

@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
-	"github.com/Workiva/frugal/example/go/gen-go/event"
 	"github.com/Workiva/frugal/lib/go"
 	"github.com/Workiva/frugal/test/integration/go/gen/frugaltest"
 )
@@ -61,7 +60,7 @@ func StartClient(
 
 		factory := frugal.NewFNatsScopeTransportFactory(conn)
 		provider := frugal.NewFScopeProvider(factory, frugal.NewFProtocolFactory(protocolFactory))
-		publisher := event.NewEventsPublisher(provider)
+		publisher := frugaltest.NewEventsPublisher(provider)
 		if err := publisher.Open(); err != nil {
 			panic(err)
 		}
@@ -69,14 +68,14 @@ func StartClient(
 
 		// Start Subscription, pass timeout
 		resp := make(chan bool)
-		subscriber := event.NewEventsSubscriber(provider)
+		subscriber := frugaltest.NewEventsSubscriber(provider)
 		// TODO: Document SubscribeEventCreated "user" cannot contain spaces
-		_, err = subscriber.SubscribeEventCreated(fmt.Sprintf("%d-response", port), func(ctx *frugal.FContext, e *event.Event) {
+		_, err = subscriber.SubscribeEventCreated(fmt.Sprintf("%d-response", port), func(ctx *frugal.FContext, e *frugaltest.Event) {
 			fmt.Printf(" Response received %v\n", e)
 			close(resp)
 		})
 		ctx := frugal.NewFContext("Call")
-		event := &event.Event{Message: "Sending call"}
+		event := &frugaltest.Event{Message: "Sending call"}
 		fmt.Print("Publishing... ")
 		if err := publisher.PublishEventCreated(ctx, fmt.Sprintf("%d-call", port), event); err != nil {
 			panic(err)

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testTimeout = 10 * time.Millisecond
+const testTimeout = 25 * time.Millisecond
 
 // Ensure that OnClosedUncleanly returns false if max attempts is 0.
 func TestOnClosedUncleanlyMaxZero(t *testing.T) {

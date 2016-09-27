@@ -138,7 +138,7 @@ func (g *Generator) generateConstantValueWrapper(fieldName string, t *parser.Typ
 		return fmt.Sprintf("%s%s = %s;\n", contents, fieldName, "null")
 	}
 
-	if parser.IsThriftPrimitive(underlyingType) || g.Frugal.IsEnum(underlyingType) {
+	if underlyingType.IsPrimitive() || g.Frugal.IsEnum(underlyingType) {
 		_, val := g.generateConstantValueRec(t, value)
 		return fmt.Sprintf("%s%s = %s;\n", contents, fieldName, val)
 	} else if g.Frugal.IsStruct(underlyingType) {
@@ -174,7 +174,7 @@ func (g *Generator) generateConstantValueWrapper(fieldName string, t *parser.Typ
 		}
 
 		return contents
-	} else if parser.IsThriftContainer(underlyingType) {
+	} else if underlyingType.IsContainer() {
 		switch underlyingType.Name {
 		case "list":
 			contents += fmt.Sprintf("%s = new ArrayList<%s>();\n", fieldName, containerType(g.getJavaTypeFromThriftType(underlyingType.ValueType)))
@@ -328,7 +328,7 @@ func (g *Generator) generateConstantValueRec(t *parser.Type, value interface{}) 
 		panic("referenced constant doesn't exist: " + name)
 	}
 
-	if parser.IsThriftPrimitive(underlyingType) {
+	if underlyingType.IsPrimitive() {
 		switch underlyingType.Name {
 		case "bool":
 			return "", fmt.Sprintf("%v", value)
@@ -807,14 +807,11 @@ func (g *Generator) GenerateException(exception *parser.Struct) error {
 	return g.GenerateStruct(exception)
 }
 
-func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir string, structs []*parser.Struct) error {
+// generateServiceArgsResults generates the args and results objects for the
+// given service.
+func (g *Generator) generateServiceArgsResults(service *parser.Service) string {
 	contents := ""
-	if g.includeGeneratedAnnotation() {
-		contents += g.generatedAnnotation()
-	}
-	contents += fmt.Sprintf("public class %s {\n", serviceName)
-
-	for _, s := range structs {
+	for _, s := range g.GetServiceMethodTypes(service) {
 		for _, field := range s.Fields {
 			if field.Modifier == parser.Optional {
 				field.Modifier = parser.Default
@@ -822,23 +819,7 @@ func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir str
 		}
 		contents += g.generateStruct(s, strings.HasSuffix(s.Name, "_args"), strings.HasSuffix(s.Name, "_result"))
 	}
-
-	contents += "}\n"
-
-	file, err := g.GenerateFile(strings.Title(serviceName), g.outputDir, generator.ObjectFile)
-	defer file.Close()
-	if err != nil {
-		return err
-	}
-
-	if err = g.initStructFile(file); err != nil {
-		return err
-	}
-	if _, err = file.WriteString(contents); err != nil {
-		return err
-	}
-
-	return nil
+	return contents
 }
 
 func (g *Generator) generateStruct(s *parser.Struct, isArg, isResult bool) string {
@@ -882,7 +863,7 @@ func (g *Generator) generateStruct(s *parser.Struct, isArg, isResult bool) strin
 
 	for _, field := range s.Fields {
 		underlyingType := g.Frugal.UnderlyingType(field.Type)
-		if parser.IsThriftContainer(underlyingType) {
+		if underlyingType.IsContainer() {
 			contents += g.generateContainerGetSize(field)
 			contents += g.generateContainerIterator(field)
 			contents += g.generateContainerAddTo(field)
@@ -1901,7 +1882,7 @@ func (g *Generator) generateCopyConstructorField(field *parser.Field, otherField
 		return fmt.Sprintf(ind+"%s%s = new %s(%s);\n", declPrefix, field.Name, g.getJavaTypeFromThriftType(underlyingType), otherFieldName)
 	} else if g.Frugal.IsEnum(underlyingType) {
 		return fmt.Sprintf(ind+"%s%s = %s;\n", declPrefix, field.Name, otherFieldName)
-	} else if parser.IsThriftContainer(underlyingType) {
+	} else if underlyingType.IsContainer() {
 		contents := ""
 		valueType := g.getJavaTypeFromThriftType(underlyingType.ValueType)
 		containerValType := containerType(valueType)
@@ -1956,7 +1937,7 @@ func (g *Generator) generateCopyConstructorField(field *parser.Field, otherField
 func (g *Generator) generateMetaDataMapEntry(t *parser.Type, ind string) string {
 	underlyingType := g.Frugal.UnderlyingType(t)
 	ttype := g.getTType(underlyingType)
-	isThriftPrimitive := parser.IsThriftPrimitive(underlyingType)
+	isThriftPrimitive := underlyingType.IsPrimitive()
 
 	// This indicates a typedef. For some reason java doesn't recurse on
 	// typedef'd types for meta data map entries
@@ -1980,7 +1961,7 @@ func (g *Generator) generateMetaDataMapEntry(t *parser.Type, ind string) string 
 		return fmt.Sprintf(ind+"new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, %s.class)", g.qualifiedTypeName(underlyingType))
 	} else if g.Frugal.IsEnum(underlyingType) {
 		return fmt.Sprintf(ind+"new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, %s.class)", g.qualifiedTypeName(underlyingType))
-	} else if parser.IsThriftContainer(underlyingType) {
+	} else if underlyingType.IsContainer() {
 		switch underlyingType.Name {
 		case "list":
 			valEntry := g.generateMetaDataMapEntry(underlyingType.ValueType, ind+tabtab)
@@ -2016,7 +1997,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, succin
 	}
 
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
-	if parser.IsThriftPrimitive(underlyingType) {
+	if underlyingType.IsPrimitive() {
 		thriftType := ""
 		switch underlyingType.Name {
 		case "bool":
@@ -2045,7 +2026,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, succin
 	} else if g.Frugal.IsStruct(underlyingType) {
 		contents += fmt.Sprintf(ind+"%s%s = new %s();\n", declPrefix, field.Name, javaType)
 		contents += fmt.Sprintf(ind+"%s%s.read(iprot);\n", accessPrefix, field.Name)
-	} else if parser.IsThriftContainer(underlyingType) {
+	} else if underlyingType.IsContainer() {
 		containerElem := g.GetElem()
 		counterElem := g.GetElem()
 
@@ -2124,7 +2105,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, succi
 
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	isEnum := g.Frugal.IsEnum(underlyingType)
-	if parser.IsThriftPrimitive(underlyingType) || isEnum {
+	if underlyingType.IsPrimitive() || isEnum {
 		write := ind + "oprot.write"
 		switch underlyingType.Name {
 		case "bool":
@@ -2154,7 +2135,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, succi
 		contents += fmt.Sprintf(write, accessPrefix, field.Name)
 	} else if g.Frugal.IsStruct(underlyingType) {
 		contents += fmt.Sprintf(ind+"%s%s.write(oprot);\n", accessPrefix, field.Name)
-	} else if parser.IsThriftContainer(underlyingType) {
+	} else if underlyingType.IsContainer() {
 		iterElem := g.GetElem()
 		valJavaType := g.getJavaTypeFromThriftType(underlyingType.ValueType)
 		valTType := g.getTType(underlyingType.ValueType)
@@ -2291,6 +2272,11 @@ func (g *Generator) GenerateEnumImports(file *os.File) error {
 }
 
 func (g *Generator) GenerateStructImports(file *os.File) error {
+	_, err := file.WriteString(g.generateStructImports())
+	return err
+}
+
+func (g *Generator) generateStructImports() string {
 	imports := ""
 	imports += "import org.apache.thrift.scheme.IScheme;\n"
 	imports += "import org.apache.thrift.scheme.SchemeFactory;\n"
@@ -2320,12 +2306,15 @@ func (g *Generator) GenerateStructImports(file *os.File) error {
 
 	imports += "\n"
 
-	_, err := file.WriteString(imports)
-	return err
+	return imports
 }
 
 func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) error {
-	imports := "import com.workiva.frugal.exception.FMessageSizeException;\n"
+	imports := ""
+
+	imports += g.generateStructImports()
+
+	imports += "import com.workiva.frugal.exception.FMessageSizeException;\n"
 	imports += "import com.workiva.frugal.exception.FTimeoutException;\n"
 	imports += "import com.workiva.frugal.middleware.InvocationHandler;\n"
 	imports += "import com.workiva.frugal.middleware.ServiceMiddleware;\n"
@@ -2373,101 +2362,134 @@ func (g *Generator) GenerateConstants(file *os.File, name string) error {
 func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error {
 	scopeTitle := strings.Title(scope.Name)
 	publisher := ""
-	if scope.Comment != nil {
-		publisher += g.GenerateBlockComment(scope.Comment, "")
-	}
+
 	if g.includeGeneratedAnnotation() {
 		publisher += g.generatedAnnotation()
 	}
 	publisher += fmt.Sprintf("public class %sPublisher {\n\n", scopeTitle)
 
-	publisher += fmt.Sprintf(tab+"private static final String DELIMITER = \"%s\";\n\n", globals.TopicDelimiter)
-	publisher += fmt.Sprintf(tab+"private final Internal%sPublisher target;\n", scopeTitle)
-	publisher += fmt.Sprintf(tab+"private final Internal%sPublisher proxy;\n\n", scopeTitle)
+	publisher += g.generatePublisherIface(scope)
+	publisher += g.generatePublisherClient(scope)
 
-	publisher += fmt.Sprintf(tab+"public %sPublisher(FScopeProvider provider, ServiceMiddleware... middleware) {\n", scopeTitle)
-	publisher += fmt.Sprintf(tabtab+"target = new Internal%sPublisher(provider);\n", scopeTitle)
-	publisher += fmt.Sprintf(tabtab+"proxy = (Internal%sPublisher) InvocationHandler.composeMiddlewareClass(target, Internal%sPublisher.class, middleware);\n",
-		scopeTitle, scopeTitle)
-	publisher += tab + "}\n\n"
+	publisher += "}"
 
-	publisher += tab + "public void open() throws TException {\n"
-	publisher += tabtab + "target.open();\n"
-	publisher += tab + "}\n\n"
+	_, err := file.WriteString(publisher)
+	return err
+}
 
-	publisher += tab + "public void close() throws TException {\n"
-	publisher += tabtab + "target.close();\n"
-	publisher += tab + "}\n\n"
+func (g *Generator) generatePublisherIface(scope *parser.Scope) string {
+	contents := ""
 
-	args := ""
-	if len(scope.Prefix.Variables) > 0 {
-		for _, variable := range scope.Prefix.Variables {
-			args = fmt.Sprintf("%sString %s, ", args, variable)
-		}
+	if scope.Comment != nil {
+		contents += g.GenerateBlockComment(scope.Comment, tab)
 	}
+	contents += tab + "public interface Iface {\n"
+
+	contents += tabtab + "public void open() throws TException;\n\n"
+	contents += tabtab + "public void close() throws TException;\n\n"
+
+	args := g.generateScopePrefixArgs(scope)
 
 	for _, op := range scope.Operations {
 		if op.Comment != nil {
-			publisher += g.GenerateBlockComment(op.Comment, tab)
+			contents += g.GenerateBlockComment(op.Comment, tabtab)
 		}
-		publisher += fmt.Sprintf(tab+"public void publish%s(FContext ctx, %s%s req) throws TException {\n", op.Name, args, g.qualifiedTypeName(op.Type))
-		publisher += fmt.Sprintf(tabtab+"proxy.publish%s(%s);\n", op.Name, g.generateScopeArgs(scope))
-		publisher += tab + "}\n\n"
+		contents += fmt.Sprintf(tabtab+"public void publish%s(FContext ctx, %s%s req) throws TException;\n\n", op.Name, args, g.qualifiedTypeName(op.Type))
 	}
 
-	publisher += fmt.Sprintf(tab+"protected static class Internal%sPublisher {\n\n", scopeTitle)
+	contents += tab + "}\n\n"
+	return contents
+}
 
-	publisher += tabtab + "private FScopeProvider provider;\n"
-	publisher += tabtab + "private FScopeTransport transport;\n"
-	publisher += tabtab + "private FProtocol protocol;\n\n"
+func (g *Generator) generatePublisherClient(scope *parser.Scope) string {
+	publisher := ""
 
-	publisher += fmt.Sprintf(tabtab+"protected Internal%sPublisher() {\n", scopeTitle)
-	publisher += tabtab + "}\n\n"
+	scopeTitle := strings.Title(scope.Name)
 
-	publisher += fmt.Sprintf(tabtab+"public Internal%sPublisher(FScopeProvider provider) {\n", scopeTitle)
-	publisher += tabtabtab + "this.provider = provider;\n"
+	if scope.Comment != nil {
+		publisher += g.GenerateBlockComment(scope.Comment, tab)
+	}
+	publisher += tab + "public static class Client implements Iface {\n"
+	publisher += fmt.Sprintf(tabtab+"private static final String DELIMITER = \"%s\";\n\n", globals.TopicDelimiter)
+	publisher += tabtab + "private final Iface target;\n"
+	publisher += tabtab + "private final Iface proxy;\n\n"
+
+	publisher += tabtab + "public Client(FScopeProvider provider, ServiceMiddleware... middleware) {\n"
+	publisher += fmt.Sprintf(tabtabtab+"target = new Internal%sPublisher(provider);\n", scopeTitle)
+	publisher += tabtabtab + "proxy = InvocationHandler.composeMiddleware(target, Iface.class, middleware);\n"
 	publisher += tabtab + "}\n\n"
 
 	publisher += tabtab + "public void open() throws TException {\n"
-	publisher += tabtabtab + "FScopeProvider.Client client = provider.build();\n"
-	publisher += tabtabtab + "transport = client.getTransport();\n"
-	publisher += tabtabtab + "protocol = client.getProtocol();\n"
-	publisher += tabtabtab + "transport.open();\n"
+	publisher += tabtabtab + "target.open();\n"
 	publisher += tabtab + "}\n\n"
 
 	publisher += tabtab + "public void close() throws TException {\n"
-	publisher += tabtabtab + "transport.close();\n"
+	publisher += tabtabtab + "target.close();\n"
 	publisher += tabtab + "}\n\n"
+
+	args := g.generateScopePrefixArgs(scope)
+
+	for _, op := range scope.Operations {
+		if op.Comment != nil {
+			publisher += g.GenerateBlockComment(op.Comment, tabtab)
+		}
+		publisher += fmt.Sprintf(tabtab+"public void publish%s(FContext ctx, %s%s req) throws TException {\n", op.Name, args, g.qualifiedTypeName(op.Type))
+		publisher += fmt.Sprintf(tabtabtab+"proxy.publish%s(%s);\n", op.Name, g.generateScopeArgs(scope))
+		publisher += tabtab + "}\n\n"
+	}
+
+	publisher += fmt.Sprintf(tabtab+"protected static class Internal%sPublisher implements Iface {\n\n", scopeTitle)
+
+	publisher += tabtabtab + "private FScopeProvider provider;\n"
+	publisher += tabtabtab + "private FScopeTransport transport;\n"
+	publisher += tabtabtab + "private FProtocol protocol;\n\n"
+
+	publisher += fmt.Sprintf(tabtabtab+"protected Internal%sPublisher() {\n", scopeTitle)
+	publisher += tabtabtab + "}\n\n"
+
+	publisher += fmt.Sprintf(tabtabtab+"public Internal%sPublisher(FScopeProvider provider) {\n", scopeTitle)
+	publisher += tabtabtabtab + "this.provider = provider;\n"
+	publisher += tabtabtab + "}\n\n"
+
+	publisher += tabtabtab + "public void open() throws TException {\n"
+	publisher += tabtabtabtab + "FScopeProvider.Client client = provider.build();\n"
+	publisher += tabtabtabtab + "transport = client.getTransport();\n"
+	publisher += tabtabtabtab + "protocol = client.getProtocol();\n"
+	publisher += tabtabtabtab + "transport.open();\n"
+	publisher += tabtabtab + "}\n\n"
+
+	publisher += tabtabtab + "public void close() throws TException {\n"
+	publisher += tabtabtabtab + "transport.close();\n"
+	publisher += tabtabtab + "}\n\n"
 
 	prefix := ""
 	for _, op := range scope.Operations {
 		publisher += prefix
 		prefix = "\n\n"
 		if op.Comment != nil {
-			publisher += g.GenerateBlockComment(op.Comment, tabtab)
+			publisher += g.GenerateBlockComment(op.Comment, tabtabtab)
 		}
-		publisher += fmt.Sprintf(tabtab+"public void publish%s(FContext ctx, %s%s req) throws TException {\n", op.Name, args, g.qualifiedTypeName(op.Type))
-		publisher += fmt.Sprintf(tabtabtab+"String op = \"%s\";\n", op.Name)
-		publisher += fmt.Sprintf(tabtabtab+"String prefix = %s;\n", generatePrefixStringTemplate(scope))
-		publisher += tabtabtab + "String topic = String.format(\"%s" + strings.Title(scope.Name) + "%s%s\", prefix, DELIMITER, op);\n"
-		publisher += tabtabtab + "transport.lockTopic(topic);\n"
-		publisher += tabtabtab + "try {\n"
-		publisher += tabtabtabtab + "protocol.writeRequestHeader(ctx);\n"
-		publisher += tabtabtabtab + "protocol.writeMessageBegin(new TMessage(op, TMessageType.CALL, 0));\n"
-		publisher += tabtabtabtab + "req.write(protocol);\n"
-		publisher += tabtabtabtab + "protocol.writeMessageEnd();\n"
-		publisher += tabtabtabtab + "transport.flush();\n"
-		publisher += tabtabtab + "} finally {\n"
-		publisher += tabtabtabtab + "transport.unlockTopic();\n"
+		publisher += fmt.Sprintf(tabtabtab+"public void publish%s(FContext ctx, %s%s req) throws TException {\n", op.Name, args, g.qualifiedTypeName(op.Type))
+		publisher += fmt.Sprintf(tabtabtabtab+"String op = \"%s\";\n", op.Name)
+		publisher += fmt.Sprintf(tabtabtabtab+"String prefix = %s;\n", generatePrefixStringTemplate(scope))
+		publisher += tabtabtabtab + "String topic = String.format(\"%s" + strings.Title(scope.Name) + "%s%s\", prefix, DELIMITER, op);\n"
+		publisher += tabtabtabtab + "transport.lockTopic(topic);\n"
+		publisher += tabtabtabtab + "try {\n"
+		publisher += tabtabtabtabtab + "protocol.writeRequestHeader(ctx);\n"
+		publisher += tabtabtabtabtab + "protocol.writeMessageBegin(new TMessage(op, TMessageType.CALL, 0));\n"
+		publisher += tabtabtabtabtab + "req.write(protocol);\n"
+		publisher += tabtabtabtabtab + "protocol.writeMessageEnd();\n"
+		publisher += tabtabtabtabtab + "transport.flush();\n"
+		publisher += tabtabtabtab + "} finally {\n"
+		publisher += tabtabtabtabtab + "transport.unlockTopic();\n"
+		publisher += tabtabtabtab + "}\n"
 		publisher += tabtabtab + "}\n"
-		publisher += tabtab + "}\n"
 	}
 
+	publisher += tabtab + "}\n"
 	publisher += tab + "}\n"
-	publisher += "}"
 
-	_, err := file.WriteString(publisher)
-	return err
+	return publisher
 }
 
 func generatePrefixStringTemplate(scope *parser.Scope) string {
@@ -2491,100 +2513,149 @@ func generatePrefixStringTemplate(scope *parser.Scope) string {
 
 func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error {
 	subscriber := ""
-	if scope.Comment != nil {
-		subscriber += g.GenerateBlockComment(scope.Comment, "")
-	}
 	scopeName := strings.Title(scope.Name)
 	if g.includeGeneratedAnnotation() {
 		subscriber += g.generatedAnnotation()
 	}
 	subscriber += fmt.Sprintf("public class %sSubscriber {\n\n", scopeName)
 
-	subscriber += fmt.Sprintf(tab+"private static final String DELIMITER = \"%s\";\n", globals.TopicDelimiter)
-	subscriber += fmt.Sprintf(
-		tab+"private static final Logger LOGGER = Logger.getLogger(%sSubscriber.class.getName());\n\n", scopeName)
+	subscriber += g.generateSubscriberIface(scope)
+	subscriber += g.generateHandlerIfaces(scope)
+	subscriber += g.generateSubscriberClient(scope)
 
-	subscriber += tab + "private final FScopeProvider provider;\n"
-	subscriber += tab + "private final ServiceMiddleware[] middleware;\n\n"
+	subscriber += "\n}"
 
-	subscriber += fmt.Sprintf(tab+"public %sSubscriber(FScopeProvider provider, ServiceMiddleware... middleware) {\n",
-		strings.Title(scope.Name))
-	subscriber += tabtab + "this.provider = provider;\n"
-	subscriber += tabtab + "this.middleware = middleware;\n"
-	subscriber += tab + "}\n\n"
+	_, err := file.WriteString(subscriber)
+	return err
+}
 
+func (g *Generator) generateSubscriberIface(scope *parser.Scope) string {
+	contents := ""
+
+	if scope.Comment != nil {
+		contents += g.GenerateBlockComment(scope.Comment, tab)
+	}
+	contents += tab + "public interface Iface {\n"
+
+	args := g.generateScopePrefixArgs(scope)
+
+	for _, op := range scope.Operations {
+		if op.Comment != nil {
+			contents += g.GenerateBlockComment(op.Comment, tabtab)
+		}
+		contents += fmt.Sprintf(tabtab+"public FSubscription subscribe%s(%sfinal %sHandler handler) throws TException;\n\n",
+			op.Name, args, op.Name)
+	}
+
+	contents += tab + "}\n\n"
+	return contents
+}
+
+func (g *Generator) generateHandlerIfaces(scope *parser.Scope) string {
+	contents := ""
+
+	for _, op := range scope.Operations {
+		contents += fmt.Sprintf(tab+"public interface %sHandler {\n", op.Name)
+		contents += fmt.Sprintf(tabtab+"void on%s(FContext ctx, %s req);\n", op.Name, g.qualifiedTypeName(op.Type))
+		contents += tab + "}\n\n"
+	}
+
+	return contents
+}
+
+func (g *Generator) generateSubscriberClient(scope *parser.Scope) string {
+	subscriber := ""
+
+	prefix := ""
+	args := g.generateScopePrefixArgs(scope)
+
+	if scope.Comment != nil {
+		subscriber += g.GenerateBlockComment(scope.Comment, tab)
+	}
+	subscriber += tab + "public static class Client implements Iface {\n"
+
+	subscriber += fmt.Sprintf(tabtab+"private static final String DELIMITER = \"%s\";\n", globals.TopicDelimiter)
+	subscriber += tabtab + "private static final Logger LOGGER = Logger.getLogger(Client.class.getName());\n\n"
+
+	subscriber += tabtab + "private final FScopeProvider provider;\n"
+	subscriber += tabtab + "private final ServiceMiddleware[] middleware;\n\n"
+
+	subscriber += tabtab + "public Client(FScopeProvider provider, ServiceMiddleware... middleware) {\n"
+	subscriber += tabtabtab + "this.provider = provider;\n"
+	subscriber += tabtabtab + "this.middleware = middleware;\n"
+	subscriber += tabtab + "}\n\n"
+
+	for _, op := range scope.Operations {
+		subscriber += prefix
+		prefix = "\n\n"
+		if op.Comment != nil {
+			subscriber += g.GenerateBlockComment(op.Comment, tabtab)
+		}
+		subscriber += fmt.Sprintf(tabtab+"public FSubscription subscribe%s(%sfinal %sHandler handler) throws TException {\n",
+			op.Name, args, op.Name)
+		subscriber += fmt.Sprintf(tabtabtab+"final String op = \"%s\";\n", op.Name)
+		subscriber += fmt.Sprintf(tabtabtab+"String prefix = %s;\n", generatePrefixStringTemplate(scope))
+		subscriber += tabtabtab + "final String topic = String.format(\"%s" + strings.Title(scope.Name) + "%s%s\", prefix, DELIMITER, op);\n"
+		subscriber += tabtabtab + "final FScopeProvider.Client client = provider.build();\n"
+		subscriber += tabtabtab + "final FScopeTransport transport = client.getTransport();\n"
+		subscriber += tabtabtab + "transport.subscribe(topic);\n\n"
+
+		subscriber += tabtabtab + fmt.Sprintf(
+			"final %sHandler proxiedHandler = InvocationHandler.composeMiddleware(handler, %sHandler.class, middleware);\n",
+			op.Name, op.Name)
+		subscriber += tabtabtab + "final FSubscription sub = FSubscription.of(topic, transport);\n"
+		subscriber += tabtabtab + "new Thread(new Runnable() {\n"
+		subscriber += tabtabtabtab + "public void run() {\n"
+		subscriber += tabtabtabtabtab + "while (true) {\n"
+		subscriber += tabtabtabtabtabtab + "try {\n"
+		subscriber += tabtabtabtabtabtabtab + "FContext ctx = client.getProtocol().readRequestHeader();\n"
+		subscriber += tabtabtabtabtabtabtab + fmt.Sprintf("%s received = recv%s(op, client.getProtocol());\n",
+			g.qualifiedTypeName(op.Type), op.Name)
+		subscriber += tabtabtabtabtabtabtab + fmt.Sprintf("proxiedHandler.on%s(ctx, received);\n", op.Name)
+		subscriber += tabtabtabtabtabtab + "} catch (TException e) {\n"
+		subscriber += tabtabtabtabtabtabtab + "if (e instanceof TTransportException) {\n"
+		subscriber += tabtabtabtabtabtabtabtab + "TTransportException transportException = (TTransportException) e;\n"
+		subscriber += tabtabtabtabtabtabtabtab + "if (transportException.getType() == TTransportException.END_OF_FILE) {\n"
+		subscriber += tabtabtabtabtabtabtabtabtab + "return;\n"
+		subscriber += tabtabtabtabtabtabtabtab + "}\n"
+		subscriber += tabtabtabtabtabtabtab + "}\n"
+		subscriber += tabtabtabtabtabtabtab + "LOGGER.warning(String.format(\"Subscriber error receiving %s, discarding frame: %s\", topic, e.getMessage()));\n"
+		subscriber += tabtabtabtabtabtabtab + "transport.discardFrame();\n"
+		subscriber += tabtabtabtabtabtab + "}\n"
+		subscriber += tabtabtabtabtab + "}\n"
+		subscriber += tabtabtabtab + "}\n"
+		subscriber += tabtabtab + "}, \"subscription\").start();\n\n"
+
+		subscriber += tabtabtab + "return sub;\n"
+		subscriber += tabtab + "}\n\n"
+
+		subscriber += tabtab + fmt.Sprintf("private %s recv%s(String op, FProtocol iprot) throws TException {\n", g.qualifiedTypeName(op.Type), op.Name)
+		subscriber += tabtabtab + "TMessage msg = iprot.readMessageBegin();\n"
+		subscriber += tabtabtab + "if (!msg.name.equals(op)) {\n"
+		subscriber += tabtabtabtab + "TProtocolUtil.skip(iprot, TType.STRUCT);\n"
+		subscriber += tabtabtabtab + "iprot.readMessageEnd();\n"
+		subscriber += tabtabtabtab + "throw new TApplicationException(TApplicationException.UNKNOWN_METHOD);\n"
+		subscriber += tabtabtab + "}\n"
+		subscriber += tabtabtab + fmt.Sprintf("%s req = new %s();\n", g.qualifiedTypeName(op.Type), g.qualifiedTypeName(op.Type))
+		subscriber += tabtabtab + "req.read(iprot);\n"
+		subscriber += tabtabtab + "iprot.readMessageEnd();\n"
+		subscriber += tabtabtab + "return req;\n"
+		subscriber += tabtab + "}\n\n"
+	}
+
+	subscriber += tab + "}\n"
+
+	return subscriber
+}
+
+func (g *Generator) generateScopePrefixArgs(scope *parser.Scope) string {
 	args := ""
 	if len(scope.Prefix.Variables) > 0 {
 		for _, variable := range scope.Prefix.Variables {
 			args = fmt.Sprintf("%sString %s, ", args, variable)
 		}
 	}
-	prefix := ""
-	for _, op := range scope.Operations {
-		subscriber += fmt.Sprintf(tab+"public interface %sHandler {\n", op.Name)
-		subscriber += fmt.Sprintf(tabtab+"void on%s(FContext ctx, %s req);\n", op.Name, g.qualifiedTypeName(op.Type))
-		subscriber += tab + "}\n\n"
-
-		subscriber += prefix
-		prefix = "\n\n"
-		if op.Comment != nil {
-			subscriber += g.GenerateBlockComment(op.Comment, tab)
-		}
-		subscriber += fmt.Sprintf(tab+"public FSubscription subscribe%s(%sfinal %sHandler handler) throws TException {\n",
-			op.Name, args, op.Name)
-		subscriber += fmt.Sprintf(tabtab+"final String op = \"%s\";\n", op.Name)
-		subscriber += fmt.Sprintf(tabtab+"String prefix = %s;\n", generatePrefixStringTemplate(scope))
-		subscriber += tabtab + "final String topic = String.format(\"%s" + strings.Title(scope.Name) + "%s%s\", prefix, DELIMITER, op);\n"
-		subscriber += tabtab + "final FScopeProvider.Client client = provider.build();\n"
-		subscriber += tabtab + "final FScopeTransport transport = client.getTransport();\n"
-		subscriber += tabtab + "transport.subscribe(topic);\n\n"
-
-		subscriber += tabtab + fmt.Sprintf(
-			"final %sHandler proxiedHandler = InvocationHandler.composeMiddleware(handler, %sHandler.class, middleware);\n",
-			op.Name, op.Name)
-		subscriber += tabtab + "final FSubscription sub = new FSubscription(topic, transport);\n"
-		subscriber += tabtab + "new Thread(new Runnable() {\n"
-		subscriber += tabtabtab + "public void run() {\n"
-		subscriber += tabtabtabtab + "while (true) {\n"
-		subscriber += tabtabtabtabtab + "try {\n"
-		subscriber += tabtabtabtabtabtab + "FContext ctx = client.getProtocol().readRequestHeader();\n"
-		subscriber += tabtabtabtabtabtab + fmt.Sprintf("%s received = recv%s(op, client.getProtocol());\n",
-			g.qualifiedTypeName(op.Type), op.Name)
-		subscriber += tabtabtabtabtabtab + fmt.Sprintf("proxiedHandler.on%s(ctx, received);\n", op.Name)
-		subscriber += tabtabtabtabtab + "} catch (TException e) {\n"
-		subscriber += tabtabtabtabtabtab + "if (e instanceof TTransportException) {\n"
-		subscriber += tabtabtabtabtabtabtab + "TTransportException transportException = (TTransportException) e;\n"
-		subscriber += tabtabtabtabtabtabtab + "if (transportException.getType() == TTransportException.END_OF_FILE) {\n"
-		subscriber += tabtabtabtabtabtabtabtab + "return;\n"
-		subscriber += tabtabtabtabtabtabtab + "}\n"
-		subscriber += tabtabtabtabtabtab + "}\n"
-		subscriber += tabtabtabtabtabtab + "LOGGER.warning(String.format(\"Subscriber error receiving %s, discarding frame: %s\", topic, e.getMessage()));\n"
-		subscriber += tabtabtabtabtabtab + "transport.discardFrame();\n"
-		subscriber += tabtabtabtabtab + "}\n"
-		subscriber += tabtabtabtab + "}\n"
-		subscriber += tabtabtab + "}\n"
-		subscriber += tabtab + "}, \"subscription\").start();\n\n"
-
-		subscriber += tabtab + "return sub;\n"
-		subscriber += tab + "}\n\n"
-
-		subscriber += tab + fmt.Sprintf("private %s recv%s(String op, FProtocol iprot) throws TException {\n", g.qualifiedTypeName(op.Type), op.Name)
-		subscriber += tabtab + "TMessage msg = iprot.readMessageBegin();\n"
-		subscriber += tabtab + "if (!msg.name.equals(op)) {\n"
-		subscriber += tabtabtab + "TProtocolUtil.skip(iprot, TType.STRUCT);\n"
-		subscriber += tabtabtab + "iprot.readMessageEnd();\n"
-		subscriber += tabtabtab + "throw new TApplicationException(TApplicationException.UNKNOWN_METHOD);\n"
-		subscriber += tabtab + "}\n"
-		subscriber += tabtab + fmt.Sprintf("%s req = new %s();\n", g.qualifiedTypeName(op.Type), g.qualifiedTypeName(op.Type))
-		subscriber += tabtab + "req.read(iprot);\n"
-		subscriber += tabtab + "iprot.readMessageEnd();\n"
-		subscriber += tabtab + "return req;\n"
-		subscriber += tab + "}\n\n"
-	}
-	subscriber += "\n}"
-
-	_, err := file.WriteString(subscriber)
-	return err
+	return args
 }
 
 func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
@@ -2596,6 +2667,8 @@ func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 	contents += g.generateServiceInterface(s)
 	contents += g.generateClient(s)
 	contents += g.generateServer(s)
+	contents += g.generateServiceArgsResults(s)
+	contents += "}"
 
 	_, err := file.WriteString(contents)
 	return err
@@ -2775,8 +2848,6 @@ func (g *Generator) generateInternalClient(service *parser.Service) string {
 }
 
 func (g *Generator) generateClientMethod(service *parser.Service, method *parser.Method) string {
-	servTitle := strings.Title(service.Name)
-
 	contents := ""
 	if method.Comment != nil {
 		contents += g.GenerateBlockComment(method.Comment, tabtab)
@@ -2798,7 +2869,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 		msgType = "ONEWAY"
 	}
 	contents += indent + tab + fmt.Sprintf("oprot.writeMessageBegin(new TMessage(\"%s\", TMessageType.%s, 0));\n", method.Name, msgType)
-	contents += indent + tab + fmt.Sprintf("%s.%s_args args = new %s.%s_args();\n", servTitle, method.Name, servTitle, method.Name)
+	contents += indent + tab + fmt.Sprintf("%s_args args = new %s_args();\n", method.Name, method.Name)
 	for _, arg := range method.Arguments {
 		contents += indent + tab + fmt.Sprintf("args.set%s(%s);\n", strings.Title(arg.Name), arg.Name)
 	}
@@ -2827,7 +2898,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	contents += tabtabtabtab + "if (res instanceof TException) {\n"
 	contents += tabtabtabtabtab + "throw (TException) res;\n"
 	contents += tabtabtabtab + "}\n"
-	contents += tabtabtabtab + fmt.Sprintf("%s.%s_result r = (%s.%s_result) res;\n", servTitle, method.Name, servTitle, method.Name)
+	contents += tabtabtabtab + fmt.Sprintf("%s_result r = (%s_result) res;\n", method.Name, method.Name)
 	if method.ReturnType != nil {
 		contents += tabtabtabtab + "if (r.isSetSuccess()) {\n"
 		contents += tabtabtabtabtab + "return r.success;\n"
@@ -2887,7 +2958,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 		"throw new TApplicationException(TApplicationException.INVALID_MESSAGE_TYPE, \"%s failed: invalid message type\");\n",
 		method.Name)
 	contents += tabtabtabtabtabtab + "}\n"
-	contents += tabtabtabtabtabtab + fmt.Sprintf("%s.%s_result res = new %s.%s_result();\n", servTitle, method.Name, servTitle, method.Name)
+	contents += tabtabtabtabtabtab + fmt.Sprintf("%s_result res = new %s_result();\n", method.Name, method.Name)
 	contents += tabtabtabtabtabtab + "res.read(iprot);\n"
 	contents += tabtabtabtabtabtab + "iprot.readMessageEnd();\n"
 	contents += tabtabtabtabtabtab + "try {\n"
@@ -2920,8 +2991,6 @@ func (g *Generator) generateExceptions(exceptions []*parser.Field) string {
 }
 
 func (g *Generator) generateServer(service *parser.Service) string {
-	servTitle := strings.Title(service.Name)
-
 	contents := ""
 	extends := "FBaseProcessor"
 	if service.Extends != "" {
@@ -2963,7 +3032,7 @@ func (g *Generator) generateServer(service *parser.Service) string {
 		contents += tabtabtab + "}\n\n"
 
 		contents += tabtabtab + "public void process(FContext ctx, FProtocol iprot, FProtocol oprot) throws TException {\n"
-		contents += tabtabtabtab + fmt.Sprintf("%s.%s_args args = new %s.%s_args();\n", servTitle, method.Name, servTitle, method.Name)
+		contents += tabtabtabtab + fmt.Sprintf("%s_args args = new %s_args();\n", method.Name, method.Name)
 		contents += tabtabtabtab + "try {\n"
 		contents += tabtabtabtabtab + "args.read(iprot);\n"
 		contents += tabtabtabtab + "} catch (TException e) {\n"
@@ -2985,7 +3054,7 @@ func (g *Generator) generateServer(service *parser.Service) string {
 			continue
 		}
 
-		contents += tabtabtabtab + fmt.Sprintf("%s.%s_result result = new %s.%s_result();\n", servTitle, method.Name, servTitle, method.Name)
+		contents += tabtabtabtab + fmt.Sprintf("%s_result result = new %s_result();\n", method.Name, method.Name)
 		contents += tabtabtabtab + "try {\n"
 		if method.ReturnType == nil {
 			contents += tabtabtabtabtab + fmt.Sprintf("this.handler.%s(%s);\n", method.Name, g.generateServerCallArgs(method.Arguments))
@@ -3036,8 +3105,6 @@ func (g *Generator) generateServer(service *parser.Service) string {
 	contents += tabtab + "}\n\n"
 
 	contents += tab + "}\n\n"
-
-	contents += "}"
 
 	return contents
 }

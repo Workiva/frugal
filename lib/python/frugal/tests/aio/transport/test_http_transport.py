@@ -136,9 +136,8 @@ class TestFHttpTransport(utils.AsyncIOTestCase):
     @utils.async_runner
     async def test_flush_response_error(self):
         message = b'something went wrong'
-        encoded_message = base64.b64encode(message)
         response_future = Future()
-        response_future.set_result((404, encoded_message))
+        response_future.set_result((404, message))
         self.make_request_mock.return_value = response_future
 
         self.transport.write(bytearray([1, 2, 3]))

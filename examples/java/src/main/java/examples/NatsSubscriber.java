@@ -34,7 +34,7 @@ public class NatsSubscriber {
         FScopeProvider provider = new FScopeProvider(factory, protocolFactory);
 
         // Subscribe to winner announcements
-        AlbumWinnersSubscriber subscriber = new AlbumWinnersSubscriber(provider);
+        AlbumWinnersSubscriber.Iface subscriber = new AlbumWinnersSubscriber.Client(provider);
         subscriber.subscribeWinner(new AlbumWinnersSubscriber.WinnerHandler() {
             @Override
             public void onWinner(FContext ctx, Album album) {

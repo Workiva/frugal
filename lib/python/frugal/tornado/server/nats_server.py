@@ -50,7 +50,8 @@ class FNatsTornadoServer(FServer):
     def stop(self):
         """Unsubscribe from server subject"""
         logger.debug("Frugal server stopping...")
-        yield self._nats_client.unsubscribe(self._sub_id)
+        for sid in self._sids:
+            yield self._nats_client.unsubscribe(sid)
 
     @gen.coroutine
     def _on_message_callback(self, msg):

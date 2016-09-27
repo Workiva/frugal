@@ -65,15 +65,15 @@ class FHttpTransport(FRegistryTransport):
             raise FMessageSizeException(
                 'response was too large for the transport')
 
-        decoded = base64.b64decode(text)
         if status >= 300:
             raise TTransportException(
                 type=TTransportException.UNKNOWN,
                 message='request errored with code {0} and message {1}'.format(
-                    status, str(decoded)
+                    status, str(text)
                 )
             )
 
+        decoded = base64.b64decode(text)
         if len(decoded) < 4:
             raise TTransportException(type=TTransportException.UNKNOWN,
                                       message='invalid frame size')

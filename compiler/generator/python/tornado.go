@@ -66,6 +66,7 @@ func (t *TornadoGenerator) GenerateService(file *os.File, s *parser.Service) err
 	contents += t.generateServiceInterface(s)
 	contents += t.generateClient(s)
 	contents += t.generateServer(s)
+	contents += t.generateServiceArgsResults(s)
 
 	_, err := file.WriteString(contents)
 	return err
@@ -100,8 +101,8 @@ func (t *TornadoGenerator) generateClientMethod(method *parser.Method) string {
 	contents += tabtab + "callback_future = Future()\n"
 	contents += tabtab + "timeout_future = gen.with_timeout(delta, callback_future)\n"
 	contents += tabtab + fmt.Sprintf("self._transport.register(ctx, self._recv_%s(ctx, callback_future))\n", method.Name)
-	contents += tabtab + fmt.Sprintf("yield self._send_%s(ctx%s)\n\n", method.Name, t.generateClientArgs(method.Arguments))
 	contents += tabtab + "try:\n"
+	contents += tabtabtab + fmt.Sprintf("yield self._send_%s(ctx%s)\n", method.Name, t.generateClientArgs(method.Arguments))
 	contents += tabtabtab + "result = yield timeout_future\n"
 	contents += tabtab + "finally:\n"
 	contents += tabtabtab + "self._transport.unregister(ctx)\n"
@@ -198,11 +199,11 @@ func (t *TornadoGenerator) generateProcessorFunction(method *parser.Method) stri
 		contents += tabtab + "try:\n"
 	}
 	if method.ReturnType == nil {
-		contents += indent + fmt.Sprintf("yield gen.maybe_future(self._handler.%s(ctx%s))\n",
-			method.Name, t.generateServerArgs(method.Arguments))
+		contents += indent + fmt.Sprintf("yield gen.maybe_future(self._handler([ctx%s]))\n",
+			t.generateServerArgs(method.Arguments))
 	} else {
-		contents += indent + fmt.Sprintf("result.success = yield gen.maybe_future(self._handler.%s(ctx%s))\n",
-			method.Name, t.generateServerArgs(method.Arguments))
+		contents += indent + fmt.Sprintf("result.success = yield gen.maybe_future(self._handler([ctx%s]))\n",
+			t.generateServerArgs(method.Arguments))
 	}
 	for _, err := range method.Exceptions {
 		contents += tabtab + fmt.Sprintf("except %s as %s:\n", t.qualifiedTypeName(err.Type), err.Name)

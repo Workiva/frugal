@@ -1,0 +1,1017 @@
+
+<html>
+	<head>
+	    <link href="style.css" rel="stylesheet" type="text/css" />
+		<title>Frugal Module: variety</title>
+	</head>
+	<body>
+		<div class="container-fluid">
+			<h1>Frugal Module: variety</h1>
+			<table class="table-bordered table-striped table-condensed">
+				<tr>
+					<th>Module</th>
+					<th>Services</th>
+					<th>Scopes</th>
+					<th>Data Types</th>
+					<th>Constants</th>
+				</tr>
+				<tr>
+					<td>variety</td>
+					<td>
+					
+						<a href="#svc_Foo">Foo</a><br />
+						<ul>
+						
+							<li><a href="#fn_Foo_ping">ping</a></li>
+						
+							<li><a href="#fn_Foo_blah">blah</a></li>
+						
+							<li><a href="#fn_Foo_oneWay">oneWay</a></li>
+						
+							<li><a href="#fn_Foo_bin_method">bin_method</a></li>
+						
+							<li><a href="#fn_Foo_param_modifiers">param_modifiers</a></li>
+						
+							<li><a href="#fn_Foo_underlying_types_test">underlying_types_test</a></li>
+						
+							<li><a href="#fn_Foo_getThing">getThing</a></li>
+						
+							<li><a href="#fn_Foo_getMyInt">getMyInt</a></li>
+						
+						</ul>
+					
+					</td>
+					<td>
+					
+					    <a href="#scp_Events">Events</a><br />
+						<ul>
+						
+							<li><a href="#fn_Events_EventCreated">EventCreated</a></li>
+						
+						</ul>
+					
+					</td>
+					<td>
+					
+						<a href="#typedef_id">id</a><br />
+					
+						<a href="#typedef_int">int</a><br />
+					
+						<a href="#typedef_request">request</a><br />
+					
+						<a href="#typedef_t1_string">t1_string</a><br />
+					
+						<a href="#typedef_t2_string">t2_string</a><br />
+					
+					
+						<a href="#enum_HealthCondition">HealthCondition</a><br />
+					
+						<a href="#enum_ItsAnEnum">ItsAnEnum</a><br />
+					
+					
+						<a href="#struct_TestBase">TestBase</a><br />
+					
+						<a href="#struct_TestLowercase">TestLowercase</a><br />
+					
+						<a href="#struct_Event">Event</a><br />
+					
+						<a href="#struct_TestingDefaults">TestingDefaults</a><br />
+					
+						<a href="#struct_EventWrapper">EventWrapper</a><br />
+					
+						<a href="#struct_AwesomeException">AwesomeException</a><br />
+					
+						<a href="#struct_TestingUnions">TestingUnions</a><br />
+					
+					</td>
+					<td>
+					
+					    <code><a href="#const_redef_const">redef_const</a></code><br />
+					
+					    <code><a href="#const_DEFAULT_ID">DEFAULT_ID</a></code><br />
+					
+					    <code><a href="#const_other_default">other_default</a></code><br />
+					
+					    <code><a href="#const_thirtyfour">thirtyfour</a></code><br />
+					
+					    <code><a href="#const_MAPCONSTANT">MAPCONSTANT</a></code><br />
+					
+					    <code><a href="#const_ConstEvent1">ConstEvent1</a></code><br />
+					
+					    <code><a href="#const_ConstEvent2">ConstEvent2</a></code><br />
+					
+					    <code><a href="#const_NumsList">NumsList</a></code><br />
+					
+					    <code><a href="#const_NumsSet">NumsSet</a></code><br />
+					
+					    <code><a href="#const_MAPCONSTANT2">MAPCONSTANT2</a></code><br />
+					
+					    <code><a href="#const_bin_const">bin_const</a></code><br />
+					
+					    <code><a href="#const_true_constant">true_constant</a></code><br />
+					
+					    <code><a href="#const_false_constant">false_constant</a></code><br />
+					
+					    <code><a href="#const_const_hc">const_hc</a></code><br />
+					
+					    <code><a href="#const_evil_string">evil_string</a></code><br />
+					
+					    <code><a href="#const_evil_string2">evil_string2</a></code><br />
+					
+					    <code><a href="#const_const_lower">const_lower</a></code><br />
+					
+					</td>
+				</tr>
+			</table>
+			
+			<hr />
+			<h2 id="constants">Constants</h2>
+			<table class="table-bordered table-striped table-condensed">
+				<tr>
+					<th>Constant</th>
+					<th>Type</th>
+					<th>Value</th>
+				</tr>
+				
+				<tr id="const_redef_const">
+					<td><code>redef_const</code></td>
+					<td><code>i32</code></td>
+					<td><code><a href="base.html#const_const_i32_from_base">base.const_i32_from_base</a></code></td>
+				</tr>
+				
+				
+				<tr id="const_DEFAULT_ID">
+					<td><code>DEFAULT_ID</code></td>
+					<td><code><a href="#typedef_id">id</a></code></td>
+					<td><code>-1</code></td>
+				</tr>
+				
+				
+				<tr id="const_other_default">
+					<td><code>other_default</code></td>
+					<td><code><a href="#typedef_id">id</a></code></td>
+					<td><code><a href="#const_DEFAULT_ID">DEFAULT_ID</a></code></td>
+				</tr>
+				
+				
+				<tr id="const_thirtyfour">
+					<td><code>thirtyfour</code></td>
+					<td><code>i8</code></td>
+					<td><code>34</code></td>
+				</tr>
+				
+				
+				<tr id="const_MAPCONSTANT">
+					<td><code>MAPCONSTANT</code></td>
+					<td><code>map&lt;string, string&gt;</code></td>
+					<td><code>{ "hello" = "world", "goodnight" = "moon" }</code></td>
+				</tr>
+				
+				
+				<tr id="const_ConstEvent1">
+					<td><code>ConstEvent1</code></td>
+					<td><code><a href="#struct_Event">Event</a></code></td>
+					<td><code>{ "ID" = -2, "Message" = "first one" }</code></td>
+				</tr>
+				
+				
+				<tr id="const_ConstEvent2">
+					<td><code>ConstEvent2</code></td>
+					<td><code><a href="#struct_Event">Event</a></code></td>
+					<td><code>{ "ID" = -7, "Message" = "second one" }</code></td>
+				</tr>
+				
+				
+				<tr id="const_NumsList">
+					<td><code>NumsList</code></td>
+					<td><code>list&lt;i32&gt;</code></td>
+					<td><code>{ 2, 4, 7, 1 }</code></td>
+				</tr>
+				
+				
+				<tr id="const_NumsSet">
+					<td><code>NumsSet</code></td>
+					<td><code>set&lt;<a href="#typedef_int">int</a>&gt;</code></td>
+					<td><code>{ 1, 3, 8, 0 }</code></td>
+				</tr>
+				
+				
+				<tr id="const_MAPCONSTANT2">
+					<td><code>MAPCONSTANT2</code></td>
+					<td><code>map&lt;string, <a href="#struct_Event">Event</a>&gt;</code></td>
+					<td><code>{ "hello" = { "ID" = -2, "Message" = "first here", "const" = <a href="#const_bin_const">bin_const</a> } }</code></td>
+				</tr>
+				
+				
+				<tr id="const_bin_const">
+					<td><code>bin_const</code></td>
+					<td><code>binary</code></td>
+					<td><code>"hello"</code></td>
+				</tr>
+				
+				
+				<tr id="const_true_constant">
+					<td><code>true_constant</code></td>
+					<td><code>bool</code></td>
+					<td><code>true</code></td>
+				</tr>
+				
+				
+				<tr id="const_false_constant">
+					<td><code>false_constant</code></td>
+					<td><code>bool</code></td>
+					<td><code>false</code></td>
+				</tr>
+				
+				
+				<tr id="const_const_hc">
+					<td><code>const_hc</code></td>
+					<td><code><a href="#enum_HealthCondition">HealthCondition</a></code></td>
+					<td><code>2</code></td>
+				</tr>
+				
+				
+				<tr id="const_evil_string">
+					<td><code>evil_string</code></td>
+					<td><code>string</code></td>
+					<td><code>"thin'g" ""</code></td>
+				</tr>
+				
+				
+				<tr id="const_evil_string2">
+					<td><code>evil_string2</code></td>
+					<td><code>string</code></td>
+					<td><code>"th'ing"ad"f"</code></td>
+				</tr>
+				
+				
+				<tr id="const_const_lower">
+					<td><code>const_lower</code></td>
+					<td><code><a href="#struct_TestLowercase">TestLowercase</a></code></td>
+					<td><code>{ "lowercaseInt" = 2 }</code></td>
+				</tr>
+				
+				
+			</table>
+			
+			
+			<hr />
+			<h2 id="enumerations">Enumerations</h2>
+			
+				<div class="definition">
+					<h3 id="enum_HealthCondition">Enumeration: HealthCondition</h3>
+					
+					<table class="table-bordered table-striped table-condensed">
+					
+						<tr>
+							<td><code>PASS</code></td>
+							<td><code>1</code></td>
+							<td>
+							
+							</td>
+						</tr>
+					
+						<tr>
+							<td><code>WARN</code></td>
+							<td><code>2</code></td>
+							<td>
+							
+							</td>
+						</tr>
+					
+						<tr>
+							<td><code>FAIL</code></td>
+							<td><code>3</code></td>
+							<td>
+							
+							</td>
+						</tr>
+					
+						<tr>
+							<td><code>UNKNOWN</code></td>
+							<td><code>4</code></td>
+							<td>
+							
+							</td>
+						</tr>
+					
+					</table>
+				</div>
+			
+				<div class="definition">
+					<h3 id="enum_ItsAnEnum">Enumeration: ItsAnEnum</h3>
+					
+					<table class="table-bordered table-striped table-condensed">
+					
+						<tr>
+							<td><code>FIRST</code></td>
+							<td><code>2</code></td>
+							<td>
+							
+							</td>
+						</tr>
+					
+						<tr>
+							<td><code>SECOND</code></td>
+							<td><code>3</code></td>
+							<td>
+							
+							</td>
+						</tr>
+					
+						<tr>
+							<td><code>THIRD</code></td>
+							<td><code>4</code></td>
+							<td>
+							
+							</td>
+						</tr>
+					
+						<tr>
+							<td><code>fourth</code></td>
+							<td><code>5</code></td>
+							<td>
+							
+							</td>
+						</tr>
+					
+						<tr>
+							<td><code>Fifth</code></td>
+							<td><code>6</code></td>
+							<td>
+							
+							</td>
+						</tr>
+					
+						<tr>
+							<td><code>sIxItH</code></td>
+							<td><code>7</code></td>
+							<td>
+							
+							</td>
+						</tr>
+					
+					</table>
+				</div>
+			
+			
+			
+			<hr />
+			<h2 id="typedefs">Type Declarations</h2>
+			
+				<div class="definition">
+					<h3 id="typedef_id">Typedef: id</h3>
+					<p>
+						<strong>Base type:</strong>&nbsp;
+						<code>i64</code>
+					</p>
+					
+				</div>
+			
+				<div class="definition">
+					<h3 id="typedef_int">Typedef: int</h3>
+					<p>
+						<strong>Base type:</strong>&nbsp;
+						<code>i32</code>
+					</p>
+					
+				</div>
+			
+				<div class="definition">
+					<h3 id="typedef_request">Typedef: request</h3>
+					<p>
+						<strong>Base type:</strong>&nbsp;
+						<code>map&lt;<a href="#typedef_int">int</a>, string&gt;</code>
+					</p>
+					
+				</div>
+			
+				<div class="definition">
+					<h3 id="typedef_t1_string">Typedef: t1_string</h3>
+					<p>
+						<strong>Base type:</strong>&nbsp;
+						<code>string</code>
+					</p>
+					
+				</div>
+			
+				<div class="definition">
+					<h3 id="typedef_t2_string">Typedef: t2_string</h3>
+					<p>
+						<strong>Base type:</strong>&nbsp;
+						<code><a href="#typedef_t1_string">t1_string</a></code>
+					</p>
+					
+				</div>
+			
+			
+			
+			<hr />
+			<h2 id="structs">Data Structures</h2>
+			
+			<div class="definition">
+				<h3 id="struct_TestBase">Struct: TestBase</h3>
+				<table class="table-bordered table-striped table-condensed">
+					<tr>
+						<th>Key</th>
+						<th>Field</th>
+						<th>Type</th>
+						<th>Description</th>
+						<th>Requiredness</th>
+						<th>Default Value</th>
+					</tr>
+					
+					<tr>
+						<td>1</td>
+						<td>base_struct</td>
+						<td><code><a href="base.html#struct_thing">base.thing</a></code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+				</table>
+				<br />
+				
+			</div>
+			
+			<div class="definition">
+				<h3 id="struct_TestLowercase">Struct: TestLowercase</h3>
+				<table class="table-bordered table-striped table-condensed">
+					<tr>
+						<th>Key</th>
+						<th>Field</th>
+						<th>Type</th>
+						<th>Description</th>
+						<th>Requiredness</th>
+						<th>Default Value</th>
+					</tr>
+					
+					<tr>
+						<td>1</td>
+						<td>lowercaseInt</td>
+						<td><code>i32</code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+				</table>
+				<br />
+				
+			</div>
+			
+			<div class="definition">
+				<h3 id="struct_Event">Struct: Event</h3>
+				<table class="table-bordered table-striped table-condensed">
+					<tr>
+						<th>Key</th>
+						<th>Field</th>
+						<th>Type</th>
+						<th>Description</th>
+						<th>Requiredness</th>
+						<th>Default Value</th>
+					</tr>
+					
+					<tr>
+						<td>1</td>
+						<td>ID</td>
+						<td><code><a href="#typedef_id">id</a></code></td>
+						<td>ID is a unique identifier for an event.<br /></td>
+						<td>default</td>
+						<td><code><a href="#const_DEFAULT_ID">DEFAULT_ID</a></code></td>
+					</tr>
+					
+					<tr>
+						<td>2</td>
+						<td>Message</td>
+						<td><code>string</code></td>
+						<td>Message contains the event payload.<br /></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+				</table>
+				<br />
+				
+				<blockquote>
+					
+					This docstring gets added to the generated code because it has<br />
+					
+					the @ sign.<br />
+					
+				</blockquote>
+				
+			</div>
+			
+			<div class="definition">
+				<h3 id="struct_TestingDefaults">Struct: TestingDefaults</h3>
+				<table class="table-bordered table-striped table-condensed">
+					<tr>
+						<th>Key</th>
+						<th>Field</th>
+						<th>Type</th>
+						<th>Description</th>
+						<th>Requiredness</th>
+						<th>Default Value</th>
+					</tr>
+					
+					<tr>
+						<td>1</td>
+						<td>ID2</td>
+						<td><code><a href="#typedef_id">id</a></code></td>
+						<td></td>
+						<td>optional</td>
+						<td><code><a href="#const_DEFAULT_ID">DEFAULT_ID</a></code></td>
+					</tr>
+					
+					<tr>
+						<td>2</td>
+						<td>ev1</td>
+						<td><code><a href="#struct_Event">Event</a></code></td>
+						<td></td>
+						<td>default</td>
+						<td><code>{ "ID" = <a href="#const_DEFAULT_ID">DEFAULT_ID</a>, "Message" = "a message" }</code></td>
+					</tr>
+					
+					<tr>
+						<td>3</td>
+						<td>ev2</td>
+						<td><code><a href="#struct_Event">Event</a></code></td>
+						<td></td>
+						<td>default</td>
+						<td><code>{ "ID" = 5, "Message" = "a message2" }</code></td>
+					</tr>
+					
+					<tr>
+						<td>4</td>
+						<td>ID</td>
+						<td><code><a href="#typedef_id">id</a></code></td>
+						<td></td>
+						<td>default</td>
+						<td><code>-2</code></td>
+					</tr>
+					
+					<tr>
+						<td>5</td>
+						<td>thing</td>
+						<td><code>string</code></td>
+						<td></td>
+						<td>default</td>
+						<td><code>"a constant"</code></td>
+					</tr>
+					
+					<tr>
+						<td>6</td>
+						<td>thing2</td>
+						<td><code>string</code></td>
+						<td></td>
+						<td>optional</td>
+						<td><code>"another constant"</code></td>
+					</tr>
+					
+					<tr>
+						<td>7</td>
+						<td>listfield</td>
+						<td><code>list&lt;<a href="#typedef_int">int</a>&gt;</code></td>
+						<td></td>
+						<td>default</td>
+						<td><code>{ 1, 2, 3, 4, 5 }</code></td>
+					</tr>
+					
+					<tr>
+						<td>8</td>
+						<td>ID3</td>
+						<td><code><a href="#typedef_id">id</a></code></td>
+						<td></td>
+						<td>default</td>
+						<td><code><a href="#const_other_default">other_default</a></code></td>
+					</tr>
+					
+					<tr>
+						<td>9</td>
+						<td>bin_field</td>
+						<td><code>binary</code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>10</td>
+						<td>bin_field2</td>
+						<td><code>binary</code></td>
+						<td></td>
+						<td>optional</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>11</td>
+						<td>bin_field3</td>
+						<td><code>binary</code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>12</td>
+						<td>bin_field4</td>
+						<td><code>binary</code></td>
+						<td></td>
+						<td>optional</td>
+						<td><code><a href="#const_bin_const">bin_const</a></code></td>
+					</tr>
+					
+					<tr>
+						<td>13</td>
+						<td>list2</td>
+						<td><code>list&lt;<a href="#typedef_int">int</a>&gt;</code></td>
+						<td></td>
+						<td>optional</td>
+						<td><code>{ 1, 3, 4, 5, 8 }</code></td>
+					</tr>
+					
+					<tr>
+						<td>14</td>
+						<td>list3</td>
+						<td><code>list&lt;<a href="#typedef_int">int</a>&gt;</code></td>
+						<td></td>
+						<td>optional</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>15</td>
+						<td>list4</td>
+						<td><code>list&lt;<a href="#typedef_int">int</a>&gt;</code></td>
+						<td></td>
+						<td>default</td>
+						<td><code>{ 1, 2, 3, 6 }</code></td>
+					</tr>
+					
+					<tr>
+						<td>16</td>
+						<td>a_map</td>
+						<td><code>map&lt;string, string&gt;</code></td>
+						<td></td>
+						<td>optional</td>
+						<td><code>{ "k1" = "v1", "k2" = "v2" }</code></td>
+					</tr>
+					
+					<tr>
+						<td>17</td>
+						<td>status</td>
+						<td><code><a href="#enum_HealthCondition">HealthCondition</a></code></td>
+						<td></td>
+						<td>required</td>
+						<td><code><a href="#enum_HealthCondition">HealthCondition.PASS</a></code></td>
+					</tr>
+					
+					<tr>
+						<td>18</td>
+						<td>base_status</td>
+						<td><code><a href="base.html#enum_base_health_condition">base.base_health_condition</a></code></td>
+						<td></td>
+						<td>required</td>
+						<td><code><a href="base.html#enum_base_health_condition">base.base_health_condition.FAIL</a></code></td>
+					</tr>
+					
+				</table>
+				<br />
+				
+			</div>
+			
+			<div class="definition">
+				<h3 id="struct_EventWrapper">Struct: EventWrapper</h3>
+				<table class="table-bordered table-striped table-condensed">
+					<tr>
+						<th>Key</th>
+						<th>Field</th>
+						<th>Type</th>
+						<th>Description</th>
+						<th>Requiredness</th>
+						<th>Default Value</th>
+					</tr>
+					
+					<tr>
+						<td>1</td>
+						<td>ID</td>
+						<td><code><a href="#typedef_id">id</a></code></td>
+						<td></td>
+						<td>optional</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>2</td>
+						<td>Ev</td>
+						<td><code><a href="#struct_Event">Event</a></code></td>
+						<td></td>
+						<td>required</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>3</td>
+						<td>Events</td>
+						<td><code>list&lt;<a href="#struct_Event">Event</a>&gt;</code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>4</td>
+						<td>Events2</td>
+						<td><code>set&lt;<a href="#struct_Event">Event</a>&gt;</code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>5</td>
+						<td>EventMap</td>
+						<td><code>map&lt;<a href="#typedef_id">id</a>, <a href="#struct_Event">Event</a>&gt;</code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>6</td>
+						<td>Nums</td>
+						<td><code>list&lt;list&lt;<a href="#typedef_int">int</a>&gt;&gt;</code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>7</td>
+						<td>Enums</td>
+						<td><code>list&lt;<a href="#enum_ItsAnEnum">ItsAnEnum</a>&gt;</code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>8</td>
+						<td>aBoolField</td>
+						<td><code>bool</code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>9</td>
+						<td>a_union</td>
+						<td><code><a href="#struct_TestingUnions">TestingUnions</a></code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>10</td>
+						<td>typedefOfTypedef</td>
+						<td><code><a href="#typedef_t2_string">t2_string</a></code></td>
+						<td></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+				</table>
+				<br />
+				
+			</div>
+			
+			<div class="definition">
+				<h3 id="struct_AwesomeException">Exception: AwesomeException</h3>
+				<table class="table-bordered table-striped table-condensed">
+					<tr>
+						<th>Key</th>
+						<th>Field</th>
+						<th>Type</th>
+						<th>Description</th>
+						<th>Requiredness</th>
+						<th>Default Value</th>
+					</tr>
+					
+					<tr>
+						<td>1</td>
+						<td>ID</td>
+						<td><code><a href="#typedef_id">id</a></code></td>
+						<td>ID is a unique identifier for an awesome exception.<br /></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>2</td>
+						<td>Reason</td>
+						<td><code>string</code></td>
+						<td>Reason contains the error message.<br /></td>
+						<td>default</td>
+						<td></td>
+					</tr>
+					
+				</table>
+				<br />
+				
+			</div>
+			
+			<div class="definition">
+				<h3 id="struct_TestingUnions">Union: TestingUnions</h3>
+				<table class="table-bordered table-striped table-condensed">
+					<tr>
+						<th>Key</th>
+						<th>Field</th>
+						<th>Type</th>
+						<th>Description</th>
+						<th>Requiredness</th>
+						<th>Default Value</th>
+					</tr>
+					
+					<tr>
+						<td>1</td>
+						<td>AnID</td>
+						<td><code><a href="#typedef_id">id</a></code></td>
+						<td></td>
+						<td>optional</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>2</td>
+						<td>aString</td>
+						<td><code>string</code></td>
+						<td></td>
+						<td>optional</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>3</td>
+						<td>someotherthing</td>
+						<td><code><a href="#typedef_int">int</a></code></td>
+						<td></td>
+						<td>optional</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>4</td>
+						<td>AnInt16</td>
+						<td><code>i16</code></td>
+						<td></td>
+						<td>optional</td>
+						<td></td>
+					</tr>
+					
+					<tr>
+						<td>5</td>
+						<td>Requests</td>
+						<td><code><a href="#typedef_request">request</a></code></td>
+						<td></td>
+						<td>optional</td>
+						<td></td>
+					</tr>
+					
+				</table>
+				<br />
+				
+			</div>
+			
+			
+			
+			<hr />
+			<h2 id="services">Services</h2>
+			
+			<h3 id="svc_Foo">Service: Foo</h3>
+			
+			<div class="extends">
+				<em>extends</em> <code><a href="base.html#svc_BaseFoo">base.BaseFoo</a></code>
+			</div>
+			
+			
+			<blockquote>
+				
+				This is a thrift service. Frugal will generate bindings that include<br />
+				
+				a frugal Context for each service call.<br />
+				
+			</blockquote>
+			
+			
+			<div class="definition">
+				<h4 id="fn_Foo_ping">Function: Foo.ping</h4>
+				<pre><code>void ping()</code></pre>
+				
+				<blockquote>
+					
+					Ping the server.<br />
+					
+				</blockquote>
+				
+			</div>
+			
+			<div class="definition">
+				<h4 id="fn_Foo_blah">Function: Foo.blah</h4>
+				<pre><code>i64 blah(i32 num, string Str, <a href="#struct_Event">Event</a> event)<br />    throws <a href="#struct_AwesomeException">AwesomeException</a>, <a href="base.html#struct_api_exception">base.api_exception</a></code></pre>
+				
+				<blockquote>
+					
+					Blah the server.<br />
+					
+				</blockquote>
+				
+			</div>
+			
+			<div class="definition">
+				<h4 id="fn_Foo_oneWay">Function: Foo.oneWay</h4>
+				<pre><code>void oneWay(<a href="#typedef_id">id</a> id, <a href="#typedef_request">request</a> req)</code></pre>
+				
+				<blockquote>
+					
+					oneway methods don&#39;t receive a response from the server.<br />
+					
+				</blockquote>
+				
+			</div>
+			
+			<div class="definition">
+				<h4 id="fn_Foo_bin_method">Function: Foo.bin_method</h4>
+				<pre><code>binary bin_method(binary bin, string Str)<br />    throws <a href="base.html#struct_api_exception">base.api_exception</a></code></pre>
+				
+			</div>
+			
+			<div class="definition">
+				<h4 id="fn_Foo_param_modifiers">Function: Foo.param_modifiers</h4>
+				<pre><code>i64 param_modifiers(i32 opt_num, i32 default_num, i32 req_num)</code></pre>
+				
+			</div>
+			
+			<div class="definition">
+				<h4 id="fn_Foo_underlying_types_test">Function: Foo.underlying_types_test</h4>
+				<pre><code>list&lt;<a href="#typedef_id">id</a>&gt; underlying_types_test(list&lt;<a href="#typedef_id">id</a>&gt; list_type, set&lt;<a href="#typedef_id">id</a>&gt; set_type)</code></pre>
+				
+			</div>
+			
+			<div class="definition">
+				<h4 id="fn_Foo_getThing">Function: Foo.getThing</h4>
+				<pre><code><a href="validStructs.html#struct_Thing">validStructs.Thing</a> getThing()</code></pre>
+				
+			</div>
+			
+			<div class="definition">
+				<h4 id="fn_Foo_getMyInt">Function: Foo.getMyInt</h4>
+				<pre><code><a href="ValidTypes.html#typedef_MyInt">ValidTypes.MyInt</a> getMyInt()</code></pre>
+				
+			</div>
+			
+			
+			
+			
+			<hr />
+			<h2 id="scopes">Scopes</h2>
+			
+			<h3 id="scp_Events">Scope: Events</h3>
+			
+			<div class="prefix">
+				<em>prefix</em> <code>foo.{user}</code>
+			</div>
+			
+			
+			<blockquote>
+				
+				This docstring gets added to the generated code because it has<br />
+				
+				the @ sign. Prefix specifies topic prefix tokens, which can be static or<br />
+				
+				variable.<br />
+				
+			</blockquote>
+			
+			
+			<div class="definition">
+				<h4 id="fn_Events_EventCreated">Operation: Events.EventCreated</h4>
+				<pre><code>[publish|subscribe]EventCreated: <a href="#struct_Event">Event</a></code></pre>
+				
+				<blockquote>
+					
+					This is a docstring.<br />
+					
+				</blockquote>
+				
+			</div>
+			
+			
+			
+		</div>
+	</body>
+</html>

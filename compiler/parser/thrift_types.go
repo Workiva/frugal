@@ -54,19 +54,6 @@ func (f *FieldModifier) String() string {
 	}
 }
 
-// IsThriftPrimitive indicates if the given type is a Thrift primitive type.
-func IsThriftPrimitive(typ *Type) bool {
-	_, ok := thriftBaseTypes[typ.Name]
-	return ok
-}
-
-// IsThriftContainer indicates if the given type is a Thrift container type
-// (list, set, or map).
-func IsThriftContainer(t *Type) bool {
-	_, ok := thriftContainerTypes[t.Name]
-	return ok
-}
-
 // FieldFromType returns a new Field from the given Type and name.
 func FieldFromType(t *Type, name string) *Field {
 	return &Field{
@@ -105,6 +92,24 @@ type Type struct {
 	Name      string
 	KeyType   *Type // If map
 	ValueType *Type // If map, list, or set
+}
+
+// IsPrimitive indicates if the type is a Thrift primitive type.
+func (t *Type) IsPrimitive() bool {
+	_, ok := thriftBaseTypes[t.Name]
+	return ok
+}
+
+// IsCustom indicates if the type is not a container or primitive type.
+func (t *Type) IsCustom() bool {
+	return !t.IsPrimitive() && !t.IsContainer()
+}
+
+// IsContainer indicates if the type is a Thrift container type (list, set, or
+// map).
+func (t *Type) IsContainer() bool {
+	_, ok := thriftContainerTypes[t.Name]
+	return ok
 }
 
 // IncludeName returns the base include name of the type, if any.
@@ -432,6 +437,22 @@ func (t *Thrift) ReferencedInternals() []string {
 	return internals
 }
 
+// DataStructures returns a slice containing all structs, exceptions, and
+// unions.
+func (t *Thrift) DataStructures() []*Struct {
+	structs := []*Struct{}
+	for _, s := range t.Structs {
+		structs = append(structs, s)
+	}
+	for _, s := range t.Exceptions {
+		structs = append(structs, s)
+	}
+	for _, s := range t.Unions {
+		structs = append(structs, s)
+	}
+	return structs
+}
+
 func (t *Thrift) validate(includes map[string]*Frugal) error {
 	if err := t.validateIncludes(); err != nil {
 		return err
@@ -581,9 +602,9 @@ func (t *Thrift) validateStructLike(s *Struct, includes map[string]*Frugal) erro
 
 func (t *Thrift) isValidType(typ *Type, includes map[string]*Frugal) bool {
 	// Check base types
-	if IsThriftPrimitive(typ) {
+	if typ.IsPrimitive() {
 		return true
-	} else if IsThriftContainer(typ) {
+	} else if typ.IsContainer() {
 		switch typ.Name {
 		case "list", "set":
 			return t.isValidType(typ.ValueType, includes)

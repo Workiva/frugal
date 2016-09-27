@@ -43,7 +43,6 @@ func (a *AsyncIOGenerator) GenerateServiceImports(file *os.File, s *parser.Servi
 	if !ok {
 		namespace = a.Frugal.Name
 	}
-	imports += fmt.Sprintf("from %s.%s import *\n", namespace, s.Name)
 	imports += fmt.Sprintf("from %s.ttypes import *\n", namespace)
 
 	_, err := file.WriteString(imports)
@@ -52,7 +51,8 @@ func (a *AsyncIOGenerator) GenerateServiceImports(file *os.File, s *parser.Servi
 
 // GenerateScopeImports generates necessary imports for the given scope.
 func (a *AsyncIOGenerator) GenerateScopeImports(file *os.File, s *parser.Scope) error {
-	imports := "import sys\n"
+	imports := "import inspect\n"
+	imports += "import sys\n"
 	imports += "import traceback\n\n"
 
 	imports += "from thrift.Thrift import TApplicationException\n"
@@ -79,6 +79,7 @@ func (a *AsyncIOGenerator) GenerateService(file *os.File, s *parser.Service) err
 	contents += a.generateServiceInterface(s)
 	contents += a.generateClient(s)
 	contents += a.generateServer(s)
+	contents += a.generateServiceArgsResults(s)
 
 	_, err := file.WriteString(contents)
 	return err
@@ -163,8 +164,8 @@ func (a *AsyncIOGenerator) generateClientMethod(method *parser.Method) string {
 	contents += tabtab + "future = asyncio.Future()\n"
 	contents += tabtab + "timed_future = asyncio.wait_for(future, timeout)\n"
 	contents += tabtab + fmt.Sprintf("await self._transport.register(ctx, self._recv_%s(ctx, future))\n", method.Name)
-	contents += tabtab + fmt.Sprintf("await self._send_%s(ctx%s)\n\n", method.Name, a.generateClientArgs(method.Arguments))
 	contents += tabtab + "try:\n"
+	contents += tabtabtab + fmt.Sprintf("await self._send_%s(ctx%s)\n", method.Name, a.generateClientArgs(method.Arguments))
 	contents += tabtabtab + "result = await timed_future\n"
 	contents += tabtab + "finally:\n"
 	contents += tabtabtab + "await self._transport.unregister(ctx)\n"
@@ -247,20 +248,24 @@ func (g *AsyncIOGenerator) generateProcessor(service *parser.Service) string {
 		contents += "class Processor(FBaseProcessor):\n\n"
 	}
 
-	contents += tab + "def __init__(self, handler):\n"
+	contents += tab + "def __init__(self, handler, middleware=None):\n"
 	contents += g.generateDocString([]string{
 		"Create a new Processor.\n",
 		"Args:",
 		tab + "handler: Iface",
 	}, tabtab)
+
+	contents += tabtab + "if middleware and not isinstance(middleware, list):\n"
+	contents += tabtabtab + "middleware = [middleware]\n\n"
+
 	if service.Extends != "" {
-		contents += tabtab + "super(Processor, self).__init__(handler)\n"
+		contents += tabtab + "super(Processor, self).__init__(handler, middleware=middleware)\n"
 	} else {
 		contents += tabtab + "super(Processor, self).__init__()\n"
 	}
 	for _, method := range service.Methods {
-		contents += tabtab + fmt.Sprintf("self.add_to_processor_map('%s', _%s(handler, self.get_write_lock()))\n",
-			method.Name, method.Name)
+		contents += tabtab + fmt.Sprintf("self.add_to_processor_map('%s', _%s(Method(handler.%s, middleware), self.get_write_lock()))\n",
+			method.Name, method.Name, method.Name)
 	}
 	contents += "\n\n"
 	return contents
@@ -285,8 +290,8 @@ func (a *AsyncIOGenerator) generateProcessorFunction(method *parser.Method) stri
 		indent += tab
 		contents += tabtab + "try:\n"
 	}
-	contents += indent + fmt.Sprintf("ret = self._handler.%s(ctx%s)\n",
-		method.Name, a.generateServerArgs(method.Arguments))
+	contents += indent + fmt.Sprintf("ret = self._handler([ctx%s])\n",
+		a.generateServerArgs(method.Arguments))
 	contents += indent + "if inspect.iscoroutine(ret):\n"
 	contents += indent + tab + "ret = await ret\n"
 	if method.ReturnType != nil {
@@ -376,7 +381,7 @@ func (a *AsyncIOGenerator) generateSubscribeMethod(scope *parser.Scope, op *pars
 	method += tab + fmt.Sprintf("def _recv_%s(self, protocol_factory, op, handler):\n", op.Name)
 	method += tabtab + "method = Method(handler, self._middleware)\n\n"
 
-	method += tabtab + "def callback(transport):\n"
+	method += tabtab + "async def callback(transport):\n"
 	method += tabtabtab + "iprot = protocol_factory.get_protocol(transport)\n"
 	method += tabtabtab + "ctx = iprot.read_request_headers()\n"
 	method += tabtabtab + "mname, _, _ = iprot.readMessageBegin()\n"
@@ -388,7 +393,9 @@ func (a *AsyncIOGenerator) generateSubscribeMethod(scope *parser.Scope, op *pars
 	method += tabtabtab + "req.read(iprot)\n"
 	method += tabtabtab + "iprot.readMessageEnd()\n"
 	method += tabtabtab + "try:\n"
-	method += tabtabtabtab + "method([ctx, req])\n"
+	method += tabtabtabtab + "ret = method([ctx, req])\n"
+	method += tabtabtabtab + "if inspect.iscoroutine(ret):\n"
+	method += tabtabtabtabtab + "await ret\n"
 	method += tabtabtab + "except:\n"
 	method += tabtabtabtab + "traceback.print_exc()\n"
 	method += tabtabtabtab + "sys.exit(1)\n\n"

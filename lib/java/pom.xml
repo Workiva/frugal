@@ -5,8 +5,7 @@
 
     <groupId>com.workiva</groupId>
     <artifactId>frugal</artifactId>
-    <version>1.17.0</version>
-    <packaging>jar</packaging>
+    <version>1.19.0</version>
 
     <name>frugal</name>
     <url>https://github.com/Workiva/frugal/lib/java</url>
@@ -31,11 +30,6 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.5</version>
-        </dependency>
-        <dependency>
-            <groupId>cglib</groupId>
-            <artifactId>cglib</artifactId>
-            <version>3.2.2</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>

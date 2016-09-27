@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 //go:generate pigeon -o grammar.peg.go ./grammar.peg
@@ -157,6 +158,63 @@ func (f *Frugal) ConstantFromField(field *Field, value interface{}) *Constant {
 		Type:  field.Type,
 		Value: value,
 	}
+}
+
+// ValueFromIdentifier returns either a *Constant or a *Enum depending on what
+// the given Identifier references.
+func (f *Frugal) ValueFromIdentifier(identifier Identifier) interface{} {
+	name := string(identifier)
+
+	// Split based on '.', if present, it should be from an include.
+	pieces := strings.Split(name, ".")
+	if len(pieces) == 1 {
+		// From this file.
+		for _, constant := range f.Thrift.Constants {
+			if name == constant.Name {
+				return constant
+			}
+		}
+	} else if len(pieces) == 2 {
+		// Either from an include or part of an enum.
+		for _, enum := range f.Thrift.Enums {
+			if pieces[0] == enum.Name {
+				for _, value := range enum.Values {
+					if pieces[1] == value.Name {
+						return enum
+					}
+				}
+			}
+		}
+
+		// If not part of an enum, it's from an include.
+		include, ok := f.ParsedIncludes[pieces[0]]
+		if !ok {
+			panic(fmt.Sprintf("referenced include '%s' in constant '%s' not present", pieces[0], name))
+		}
+		for _, constant := range include.Thrift.Constants {
+			if pieces[1] == constant.Name {
+				return constant
+			}
+		}
+	} else if len(pieces) == 3 {
+		// Enum from an include.
+		include, ok := f.ParsedIncludes[pieces[0]]
+		if !ok {
+			panic(fmt.Sprintf("referenced include '%s' in constant '%s' not present", pieces[0], name))
+		}
+		for _, enum := range include.Thrift.Enums {
+			if pieces[1] == enum.Name {
+				for _, value := range enum.Values {
+					if pieces[2] == value.Name {
+						return enum
+					}
+				}
+				panic(fmt.Sprintf("referenced value '%s' of enum '%s' doesn't exist", pieces[1], pieces[0]))
+			}
+		}
+	}
+
+	panic("referenced constant doesn't exist: " + name)
 }
 
 // IsStruct indicates if the underlying Type is a struct.

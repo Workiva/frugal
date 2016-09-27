@@ -104,6 +104,26 @@ void main() {
       expect(registry.data[1], transportResponse);
     });
 
+    test('Test transport does not execute frame on oneway requests', () async {
+      transport.writeAll(transportRequest);
+      Uint8List responseBytes = new Uint8List.fromList([0, 0, 0, 0]);
+      Response response =
+          new MockResponse.ok(body: BASE64.encode(responseBytes));
+      MockTransports.http.expect('POST', config.uri, respondWith: response);
+      await transport.flush();
+      expect(registry.data.length, 0);
+    });
+
+    test('Test transport throws TransportError on bad oneway requests',
+        () async {
+      transport.writeAll(transportRequest);
+      Uint8List responseBytes = new Uint8List.fromList([0, 0, 0, 1]);
+      Response response =
+          new MockResponse.ok(body: BASE64.encode(responseBytes));
+      MockTransports.http.expect('POST', config.uri, respondWith: response);
+      expect(transport.flush(), throwsA(new isInstanceOf<TTransportError>()));
+    });
+
     test('Test transport receives non-base64 payload', () async {
       transport.writeAll(transportRequest);
       Response response = new MockResponse.ok(body: '`');

@@ -187,7 +187,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 		}
 	}
 
-	if parser.IsThriftPrimitive(underlyingType) || parser.IsThriftContainer(underlyingType) {
+	if underlyingType.IsPrimitive() || underlyingType.IsContainer() {
 		switch underlyingType.Name {
 		case "bool":
 			return strings.Title(fmt.Sprintf("%v", value))
@@ -304,35 +304,14 @@ func (g *Generator) GenerateException(exception *parser.Struct) error {
 	return err
 }
 
-// GenerateServiceArgsResults generates the args and results objects for the
+// generateServiceArgsResults generates the args and results objects for the
 // given service.
-func (g *Generator) GenerateServiceArgsResults(serviceName string, outputDir string, structs []*parser.Struct) error {
-	file, err := g.GenerateFile(serviceName, g.outputDir, generator.ObjectFile)
-	defer file.Close()
-	if err != nil {
-		return err
-	}
-
-	if err = g.GenerateDocStringComment(file); err != nil {
-		return err
-	}
-	if _, err = file.WriteString("\n\n"); err != nil {
-		return err
-	}
-	if err = g.GenerateTypesImports(file, true); err != nil {
-		return err
-	}
-	if _, err = file.WriteString("\n\n"); err != nil {
-		return err
-	}
-
+func (g *Generator) generateServiceArgsResults(service *parser.Service) string {
 	contents := ""
-	for _, s := range structs {
+	for _, s := range g.GetServiceMethodTypes(service) {
 		contents += g.generateStruct(s)
 	}
-
-	_, err = file.WriteString(contents)
-	return err
+	return contents
 }
 
 // generateStruct generates a python representation of a thrift struct
@@ -370,7 +349,7 @@ func (g *Generator) generateDefaultMarkers(s *parser.Struct) string {
 			// use 'object()' as a marker value to avoid instantiating
 			// a class defined later in the file
 			defaultVal := "object()"
-			if parser.IsThriftPrimitive(underlyingType) || g.Frugal.IsEnum(underlyingType) {
+			if underlyingType.IsPrimitive() || g.Frugal.IsEnum(underlyingType) {
 				defaultVal = g.generateConstantValue(underlyingType, field.Default, tab)
 			}
 			contents += fmt.Sprintf(tab+"_DEFAULT_%s_MARKER = %s\n", field.Name, defaultVal)
@@ -397,7 +376,7 @@ func (g *Generator) generateInit(s *parser.Struct) string {
 	contents += fmt.Sprintf(tab+"def __init__(self%s):\n", argList)
 	for _, field := range s.Fields {
 		underlyingType := g.Frugal.UnderlyingType(field.Type)
-		if !parser.IsThriftPrimitive(underlyingType) && !g.Frugal.IsEnum(underlyingType) && field.Default != nil {
+		if !underlyingType.IsPrimitive() && !g.Frugal.IsEnum(underlyingType) && field.Default != nil {
 			contents += fmt.Sprintf(tabtab+"if %s is self._DEFAULT_%s_MARKER:\n", field.Name, field.Name)
 			val := g.generateConstantValue(field.Type, field.Default, tabtabtab)
 			contents += fmt.Sprintf(tabtabtab+"%s = %s\n", field.Name, val)
@@ -530,9 +509,9 @@ func (g *Generator) generateMagicMethods(s *parser.Struct) string {
 func (g *Generator) generateSpecArgs(t *parser.Type) string {
 	underlyingType := g.Frugal.UnderlyingType(t)
 
-	if parser.IsThriftPrimitive(underlyingType) {
+	if underlyingType.IsPrimitive() {
 		return "None"
-	} else if parser.IsThriftContainer(underlyingType) {
+	} else if underlyingType.IsContainer() {
 		switch underlyingType.Name {
 		case "list", "set":
 			return fmt.Sprintf("(%s, %s)", g.getTType(underlyingType.ValueType), g.generateSpecArgs(underlyingType.ValueType))
@@ -561,15 +540,13 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 	}
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	isEnum := g.Frugal.IsEnum(underlyingType)
-	if parser.IsThriftPrimitive(underlyingType) || isEnum {
+	if underlyingType.IsPrimitive() || isEnum {
 		thriftType := ""
 		switch underlyingType.Name {
-		case "bool", "byte", "i16", "i32", "i64", "double", "string":
+		case "bool", "byte", "i16", "i32", "i64", "double", "string", "binary":
 			thriftType = strings.Title(underlyingType.Name)
 		case "i8":
 			thriftType = "Byte"
-		case "binary":
-			thriftType = "String"
 		default:
 			if isEnum {
 				thriftType = "I32"
@@ -582,7 +559,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 		g.qualifiedTypeName(underlyingType)
 		contents += fmt.Sprintf(ind+"%s%s = %s()\n", prefix, field.Name, g.qualifiedTypeName(underlyingType))
 		contents += fmt.Sprintf(ind+"%s%s.read(iprot)\n", prefix, field.Name)
-	} else if parser.IsThriftContainer(underlyingType) {
+	} else if underlyingType.IsContainer() {
 		sizeElem := g.GetElem()
 		valElem := g.GetElem()
 		valField := parser.FieldFromType(underlyingType.ValueType, valElem)
@@ -628,15 +605,13 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 	}
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	isEnum := g.Frugal.IsEnum(underlyingType)
-	if parser.IsThriftPrimitive(underlyingType) || isEnum {
+	if underlyingType.IsPrimitive() || isEnum {
 		thriftType := ""
 		switch underlyingType.Name {
-		case "bool", "byte", "i16", "i32", "i64", "double", "string":
+		case "bool", "byte", "i16", "i32", "i64", "double", "string", "binary":
 			thriftType = strings.Title(underlyingType.Name)
 		case "i8":
 			thriftType = "Byte"
-		case "binary":
-			thriftType = "String"
 		default:
 			if isEnum {
 				thriftType = "I32"
@@ -647,7 +622,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 		contents += fmt.Sprintf(ind+"oprot.write%s(%s%s)\n", thriftType, prefix, field.Name)
 	} else if g.Frugal.IsStruct(underlyingType) {
 		contents += fmt.Sprintf(ind+"%s%s.write(oprot)\n", prefix, field.Name)
-	} else if parser.IsThriftContainer(underlyingType) {
+	} else if underlyingType.IsContainer() {
 		valElem := g.GetElem()
 		valField := parser.FieldFromType(underlyingType.ValueType, valElem)
 		valTType := g.getTType(underlyingType.ValueType)
@@ -803,7 +778,6 @@ func (g *Generator) generateServiceIncludeImports(s *parser.Service) string {
 	if !ok {
 		namespace = g.Frugal.Name
 	}
-	imports += fmt.Sprintf("from %s.%s import *\n", namespace, s.Name)
 	imports += fmt.Sprintf("from %s.ttypes import *\n", namespace)
 
 	return imports
@@ -991,6 +965,7 @@ func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 	contents += g.generateServiceInterface(s)
 	contents += g.generateClient(s)
 	contents += g.generateServer(s)
+	contents += g.generateServiceArgsResults(s)
 
 	_, err := file.WriteString(contents)
 	return err
@@ -1195,20 +1170,24 @@ func (g *Generator) generateProcessor(service *parser.Service) string {
 		contents += "class Processor(FBaseProcessor):\n\n"
 	}
 
-	contents += tab + "def __init__(self, handler):\n"
+	contents += tab + "def __init__(self, handler, middleware=None):\n"
 	contents += g.generateDocString([]string{
 		"Create a new Processor.\n",
 		"Args:",
 		tab + "handler: Iface",
 	}, tabtab)
+
+	contents += tabtab + "if middleware and not isinstance(middleware, list):\n"
+	contents += tabtabtab + "middleware = [middleware]\n\n"
+
 	if service.Extends != "" {
-		contents += tabtab + "super(Processor, self).__init__(handler)\n"
+		contents += tabtab + "super(Processor, self).__init__(handler, middleware=middleware)\n"
 	} else {
 		contents += tabtab + "super(Processor, self).__init__()\n"
 	}
 	for _, method := range service.Methods {
-		contents += tabtab + fmt.Sprintf("self.add_to_processor_map('%s', _%s(handler, self.get_write_lock()))\n",
-			method.Name, method.Name)
+		contents += tabtab + fmt.Sprintf("self.add_to_processor_map('%s', _%s(Method(handler.%s, middleware), self.get_write_lock()))\n",
+			method.Name, method.Name, method.Name)
 	}
 	contents += "\n\n"
 	return contents
@@ -1234,11 +1213,11 @@ func (g *Generator) generateProcessorFunction(method *parser.Method) string {
 		contents += tabtab + "try:\n"
 	}
 	if method.ReturnType == nil {
-		contents += indent + fmt.Sprintf("self._handler.%s(ctx%s)\n",
-			method.Name, g.generateServerArgs(method.Arguments))
+		contents += indent + fmt.Sprintf("self._handler([ctx%s])\n",
+			g.generateServerArgs(method.Arguments))
 	} else {
-		contents += indent + fmt.Sprintf("result.success = self._handler.%s(ctx%s)\n",
-			method.Name, g.generateServerArgs(method.Arguments))
+		contents += indent + fmt.Sprintf("result.success = self._handler([ctx%s])\n",
+			g.generateServerArgs(method.Arguments))
 	}
 	for _, err := range method.Exceptions {
 		contents += tabtab + fmt.Sprintf("except %s as %s:\n", g.qualifiedTypeName(err.Type), err.Name)

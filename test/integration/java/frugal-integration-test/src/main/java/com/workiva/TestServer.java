@@ -204,11 +204,11 @@ public class TestServer {
                 Connection conn = cf.createConnection();
                 FScopeTransportFactory factory = new FNatsScopeTransport.Factory(conn);
                 FScopeProvider provider = new FScopeProvider(factory, protocolFactory);
-                EventsSubscriber subscriber = new EventsSubscriber(provider);
+                EventsSubscriber.Iface subscriber = new EventsSubscriber.Client(provider);
                 try {
                     subscriber.subscribeEventCreated(Integer.toString(port)+"-call", (context, event) -> {
                         System.out.format("received " + context + " : " + event);
-                        EventsPublisher publisher = new EventsPublisher(provider);
+                        EventsPublisher.Iface publisher = new EventsPublisher.Client(provider);
                         try {
                             publisher.open();
                             event = new Event(1, "received call");

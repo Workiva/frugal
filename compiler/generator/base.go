@@ -74,3 +74,48 @@ func (b *BaseGenerator) GetElem() string {
 	b.elemNum++
 	return s
 }
+
+func (b *BaseGenerator) GetServiceMethodTypes(service *parser.Service) []*parser.Struct {
+	structs := []*parser.Struct{}
+	for _, method := range service.Methods {
+		arg := &parser.Struct{
+			Name:   fmt.Sprintf("%s_args", method.Name),
+			Fields: method.Arguments,
+			Type:   parser.StructTypeStruct,
+		}
+
+		// TODO 2.0.0: thrift doesn't support optional parameters in service
+		// methods we should see if this is feasible, but it will require
+		// changes to service methods, so would be a breaking change
+		for _, field := range arg.Fields {
+			if field.Modifier == parser.Optional {
+				field.Modifier = parser.Default
+			}
+		}
+		structs = append(structs, arg)
+
+		if !method.Oneway {
+			numReturns := 0
+			if method.ReturnType != nil {
+				numReturns = 1
+			}
+
+			fields := make([]*parser.Field, len(method.Exceptions)+numReturns, len(method.Exceptions)+numReturns)
+			if numReturns == 1 {
+				fields[0] = parser.FieldFromType(method.ReturnType, "success")
+			}
+			copy(fields[numReturns:], method.Exceptions)
+			for _, field := range fields {
+				field.Modifier = parser.Optional
+			}
+
+			result := &parser.Struct{
+				Name:   fmt.Sprintf("%s_result", method.Name),
+				Fields: fields,
+				Type:   parser.StructTypeStruct,
+			}
+			structs = append(structs, result)
+		}
+	}
+	return structs
+}

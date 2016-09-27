@@ -68,6 +68,16 @@ class FHttpClientTransport extends FTransport {
           TProtocolErrorType.INVALID_DATA, 'Expected frugal data to be framed');
     }
 
+    // If there are only 4 bytes, this is a one-way request
+    if (data.length == 4) {
+      var bData = new ByteData.view(data.buffer);
+      if (bData.getUint32(0) != 0) {
+        throw new TTransportError(
+            TTransportErrorType.UNKNOWN, "invalid frame size");
+      }
+      return;
+    }
+
     // Process the request, but drop the frame size
     executeFrame(data);
   }

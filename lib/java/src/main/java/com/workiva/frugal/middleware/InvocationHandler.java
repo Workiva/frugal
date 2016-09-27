@@ -1,9 +1,5 @@
 package com.workiva.frugal.middleware;
 
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -13,7 +9,7 @@ import java.lang.reflect.Proxy;
  *
  * @param <T> the service handler type.
  */
-public abstract class InvocationHandler<T> implements java.lang.reflect.InvocationHandler, MethodInterceptor {
+public abstract class InvocationHandler<T> implements java.lang.reflect.InvocationHandler {
 
     private final T next;
 
@@ -28,15 +24,6 @@ public abstract class InvocationHandler<T> implements java.lang.reflect.Invocati
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        try {
-            return invoke(method, next, args);
-        } catch (InvocationTargetException e) {
-            throw e.getCause();
-        }
-    }
-
-    @Override
-    public Object intercept(Object target, Method method, Object[] args, MethodProxy proxy) throws Throwable {
         try {
             return invoke(method, next, args);
         } catch (InvocationTargetException e) {
@@ -75,29 +62,4 @@ public abstract class InvocationHandler<T> implements java.lang.reflect.Invocati
         }
         return target;
     }
-
-    /**
-     * Applies ServiceMiddleware to the provided target object by constructing a dynamic proxy. The difference between
-     * this and {@link InvocationHandler#composeMiddleware(Object, Class, ServiceMiddleware[])} is that this can be
-     * used to proxy concrete classes while the latter only interfaces. This should only be called by generated code.
-     *
-     * TODO 2.0.0: The only reason this is needed is because scope publishers and subscribers are generated as concrete
-     * classes which do not implement an interface. Remove this in a major release and use composeMiddleware once we
-     * generate publisher and subscriber interfaces.
-     *
-     * @param target     the service handler.
-     * @param clazz      the handler class.
-     * @param middleware the middleware to apply.
-     * @param <T>        the handler type.
-     * @return handler proxy.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> T composeMiddlewareClass(T target, Class clazz, ServiceMiddleware[] middleware) {
-        for (ServiceMiddleware m : middleware) {
-            InvocationHandler handler = m.apply(target);
-            target = (T) Enhancer.create(clazz, handler);
-        }
-        return target;
-    }
-
 }

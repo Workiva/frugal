@@ -81,7 +81,7 @@ def main():
     processor = FStoreProcessor(StoreHandler())
 
     # Create a new music store server using the processor,
-    # The sever will listen on the music-service NATS topic
+    # The server will listen on the music-service NATS topic
     server = FNatsTornadoServer(nats_client, "music-service",
                                 processor, prot_factory)
 

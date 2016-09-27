@@ -2,6 +2,7 @@ import mock
 
 from tornado.testing import gen_test, AsyncTestCase
 
+from frugal.exceptions import FException
 from frugal.tornado.transport import FTornadoTransport
 
 
@@ -34,14 +35,14 @@ class TestFTornadoTranpsort(AsyncTestCase):
     @gen_test
     def test_set_registry_if_already_set_raises_standard_error(self):
         yield self.transport.set_registry(mock.Mock())
-        with self.assertRaises(StandardError) as cm:
+        with self.assertRaises(FException) as cm:
             yield self.transport.set_registry(mock.Mock())
 
         self.assertEquals("registry already set.", cm.exception.message)
 
     @gen_test
     def test_register_raises_standard_error_if_registry_not_set(self):
-        with self.assertRaises(StandardError) as cm:
+        with self.assertRaises(FException) as cm:
             yield self.transport.register("", "")
 
         self.assertEquals("registry cannot be null.", cm.exception.message)
