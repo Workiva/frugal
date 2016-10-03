@@ -117,9 +117,18 @@ func AddNamedImport(fset *token.FileSet, f *ast.File, name, ipath string) (added
 	impDecl.Specs[insertAt] = newImport
 	pos := impDecl.Pos()
 	if insertAt > 0 {
-		// Assign same position as the previous import,
-		// so that the sorter sees it as being in the same block.
-		pos = impDecl.Specs[insertAt-1].Pos()
+		// If there is a comment after an existing import, preserve the comment
+		// position by adding the new import after the comment.
+		if spec, ok := impDecl.Specs[insertAt-1].(*ast.ImportSpec); ok && spec.Comment != nil {
+			pos = spec.Comment.End()
+		} else {
+			// Assign same position as the previous import,
+			// so that the sorter sees it as being in the same block.
+			pos = impDecl.Specs[insertAt-1].Pos()
+		}
+	}
+	if newImport.Name != nil {
+		newImport.Name.NamePos = pos
 	}
 	newImport.Path.ValuePos = pos
 	newImport.EndPos = pos
@@ -134,11 +143,40 @@ func AddNamedImport(fset *token.FileSet, f *ast.File, name, ipath string) (added
 	}
 
 	f.Imports = append(f.Imports, newImport)
+
+	if len(f.Decls) <= 1 {
+		return true
+	}
+
+	// Merge all the import declarations into the first one.
+	var first *ast.GenDecl
+	for i, decl := range f.Decls {
+		gen, ok := decl.(*ast.GenDecl)
+		if !ok || gen.Tok != token.IMPORT || declImports(gen, "C") {
+			continue
+		}
+		if first == nil {
+			first = gen
+			continue // Don't touch the first one.
+		}
+		// Move the imports of the other import declaration to the first one.
+		for _, spec := range gen.Specs {
+			spec.(*ast.ImportSpec).Path.ValuePos = first.Pos()
+			first.Specs = append(first.Specs, spec)
+		}
+		f.Decls = append(f.Decls[:i], f.Decls[i+1:]...)
+	}
+
 	return true
 }
 
 // DeleteImport deletes the import path from the file f, if present.
 func DeleteImport(fset *token.FileSet, f *ast.File, path string) (deleted bool) {
+	return DeleteNamedImport(fset, f, "", path)
+}
+
+// DeleteNamedImport deletes the import with the given name and path from the file f, if present.
+func DeleteNamedImport(fset *token.FileSet, f *ast.File, name, path string) (deleted bool) {
 	var delspecs []*ast.ImportSpec
 
 	// Find the import nodes that import path, if any.
@@ -151,6 +189,12 @@ func DeleteImport(fset *token.FileSet, f *ast.File, path string) (deleted bool) 
 		for j := 0; j < len(gen.Specs); j++ {
 			spec := gen.Specs[j]
 			impspec := spec.(*ast.ImportSpec)
+			if impspec.Name == nil && name != "" {
+				continue
+			}
+			if impspec.Name != nil && impspec.Name.Name != name {
+				continue
+			}
 			if importPath(impspec) != path {
 				continue
 			}
@@ -308,13 +352,15 @@ func declImports(gen *ast.GenDecl, path string) bool {
 	return false
 }
 
-// matchLen returns the length of the longest prefix shared by x and y.
+// matchLen returns the length of the longest path segment prefix shared by x and y.
 func matchLen(x, y string) int {
-	i := 0
-	for i < len(x) && i < len(y) && x[i] == y[i] {
-		i++
+	n := 0
+	for i := 0; i < len(x) && i < len(y) && x[i] == y[i]; i++ {
+		if x[i] == '/' {
+			n++
+		}
 	}
-	return i
+	return n
 }
 
 // isTopName returns true if n is a top-level unresolved identifier with the given name.

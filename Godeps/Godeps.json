@@ -10,11 +10,11 @@
 		},
 		{
 			"ImportPath": "golang.org/x/tools/go/ast/astutil",
-			"Rev": "d29758bc2ee3aad47371bd6918424054ea9c1029"
+			"Rev": "3f4088edb48e8a4e3c66a5f8e7b2a78615fcb83f"
 		},
 		{
 			"ImportPath": "golang.org/x/tools/imports",
-			"Rev": "d29758bc2ee3aad47371bd6918424054ea9c1029"
+			"Rev": "3f4088edb48e8a4e3c66a5f8e7b2a78615fcb83f"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
