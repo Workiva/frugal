@@ -8,8 +8,8 @@ run:  # local tests only, never run in Skynet
 
 contact: messaging@workiva.com
 
-# https://dev.webfilings.org/zuul/release/282084
-image: drydock.workiva.org/workiva/messaging-docker-images:74936
+# https://dev.webfilings.org/zuul/release/293382
+image: drydock.workiva.org/workiva/messaging-docker-images:81307
 
 env:
   - IN_SKYNET_CLI=true
@@ -41,8 +41,8 @@ requires:
 
 contact: messaging@workiva.com
 
-# https://dev.webfilings.org/zuul/release/282084
-image: drydock.workiva.org/workiva/messaging-docker-images:74936
+# https://dev.webfilings.org/zuul/release/293382
+image: drydock.workiva.org/workiva/messaging-docker-images:81307
 
 scripts:
   - ./scripts/skynet/run_cross_skynet.sh
@@ -70,8 +70,8 @@ requires:
 
 contact: messaging@workiva.com
 
-# https://dev.webfilings.org/zuul/release/282084
-image: drydock.workiva.org/workiva/messaging-docker-images:74936
+# https://dev.webfilings.org/zuul/release/293382
+image: drydock.workiva.org/workiva/messaging-docker-images:81307
 
 scripts:
   - ./scripts/skynet/run_cross_skynet.sh -gen_with_thrift
