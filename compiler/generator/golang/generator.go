@@ -1733,6 +1733,11 @@ func (g *Generator) generateInternalClientMethod(service *parser.Service, method
 	contents += "\t\t\t\terrorC <- err\n"
 	contents += "\t\t\t\treturn nil\n"
 	contents += "\t\t\t}\n"
+	contents += "\t\t\tif error1.TypeId() == frugal.RATE_LIMIT_EXCEEDED {\n"
+	contents += "\t\t\t\terr = frugal.ErrRateLimitExceeded\n"
+	contents += "\t\t\t\terrorC <- err\n"
+	contents += "\t\t\t\treturn nil\n"
+	contents += "\t\t\t}\n"
 	contents += "\t\t\terr = error1\n"
 	contents += "\t\t\terrorC <- err\n"
 	contents += "\t\t\treturn err\n"
@@ -1849,7 +1854,6 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 	}
 	contents += "\tvar err2 error\n"
 	if method.ReturnType != nil {
-		contents += fmt.Sprintf("\tvar retval %s\n", g.getGoTypeFromThriftType(method.ReturnType))
 	}
 	contents += fmt.Sprintf("\tret := p.handler.Invoke(%s)\n", g.generateHandlerArgs(method))
 	numReturn := "2"
@@ -1860,7 +1864,6 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 	contents += fmt.Sprintf("\t\tpanic(fmt.Sprintf(\"Middleware returned %%d arguments, expected %s\", len(ret)))\n", numReturn)
 	contents += "\t}\n"
 	if method.ReturnType != nil {
-		contents += fmt.Sprintf("\tretval = ret[0].(%s)\n", g.getGoTypeFromThriftType(method.ReturnType))
 		contents += "\tif ret[1] != nil {\n"
 		contents += "\t\terr2 = ret[1].(error)\n"
 		contents += "\t}\n"
@@ -1870,6 +1873,14 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 		contents += "\t}\n"
 	}
 	contents += "\tif err2 != nil {\n"
+	contents += "\t\tif err2 == frugal.ErrRateLimitExceeded {\n"
+	contents += "\t\t\tp.writeMu.Lock()\n"
+	contents += fmt.Sprintf(
+		"\t\t\t%sWriteApplicationError(ctx, oprot, frugal.RATE_LIMIT_EXCEEDED, \"%s\", \"Rate limit exceeded\")\n",
+		servLower, nameLower)
+	contents += "\t\t\tp.writeMu.Unlock()\n"
+	contents += "\t\t\treturn nil\n"
+	contents += "\t\t}\n"
 	if len(method.Exceptions) > 0 {
 		contents += "\t\tswitch v := err2.(type) {\n"
 		for _, err := range method.Exceptions {
@@ -1884,6 +1895,8 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 	}
 	if method.ReturnType != nil {
 		contents += "\t} else {\n"
+		contents += fmt.Sprintf("\t\tvar retval %s = ret[0].(%s)\n",
+			g.getGoTypeFromThriftType(method.ReturnType), g.getGoTypeFromThriftType(method.ReturnType))
 		if g.isPrimitive(method.ReturnType) || g.Frugal.IsEnum(method.ReturnType) {
 			contents += "\t\tresult.Success = &retval\n"
 		} else {
