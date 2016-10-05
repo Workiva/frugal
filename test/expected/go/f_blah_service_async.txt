@@ -149,6 +149,11 @@ func (f *FBlahClient) recvPingHandler(ctx *frugal.FContext, resultC chan<- struc
 				errorC <- err
 				return nil
 			}
+			if error1.TypeId() == frugal.RATE_LIMIT_EXCEEDED {
+				err = frugal.ErrRateLimitExceeded
+				errorC <- err
+				return nil
+			}
 			err = error1
 			errorC <- err
 			return err
@@ -271,6 +276,11 @@ func (f *FBlahClient) recvBlehHandler(ctx *frugal.FContext, resultC chan<- int64
 			}
 			if error1.TypeId() == frugal.RESPONSE_TOO_LARGE {
 				err = thrift.NewTTransportException(frugal.RESPONSE_TOO_LARGE, "response too large for transport")
+				errorC <- err
+				return nil
+			}
+			if error1.TypeId() == frugal.RATE_LIMIT_EXCEEDED {
+				err = frugal.ErrRateLimitExceeded
 				errorC <- err
 				return nil
 			}
@@ -408,6 +418,11 @@ func (f *FBlahClient) recvGetThingHandler(ctx *frugal.FContext, resultC chan<- *
 				errorC <- err
 				return nil
 			}
+			if error1.TypeId() == frugal.RATE_LIMIT_EXCEEDED {
+				err = frugal.ErrRateLimitExceeded
+				errorC <- err
+				return nil
+			}
 			err = error1
 			errorC <- err
 			return err
@@ -533,6 +548,11 @@ func (f *FBlahClient) recvGetMyIntHandler(ctx *frugal.FContext, resultC chan<- V
 				errorC <- err
 				return nil
 			}
+			if error1.TypeId() == frugal.RATE_LIMIT_EXCEEDED {
+				err = frugal.ErrRateLimitExceeded
+				errorC <- err
+				return nil
+			}
 			err = error1
 			errorC <- err
 			return err
@@ -610,6 +630,12 @@ func (p *blahFPing) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol
 		err2 = ret[0].(error)
 	}
 	if err2 != nil {
+		if err2 == frugal.ErrRateLimitExceeded {
+			p.writeMu.Lock()
+			blahWriteApplicationError(ctx, oprot, frugal.RATE_LIMIT_EXCEEDED, "ping", "Rate limit exceeded")
+			p.writeMu.Unlock()
+			return nil
+		}
 		p.writeMu.Lock()
 		blahWriteApplicationError(ctx, oprot, thrift.INTERNAL_ERROR, "ping", "Internal error processing ping: "+err2.Error())
 		p.writeMu.Unlock()
@@ -674,16 +700,20 @@ func (p *blahFBleh) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol
 	iprot.ReadMessageEnd()
 	result := BlahBlehResult{}
 	var err2 error
-	var retval int64
 	ret := p.handler.Invoke([]interface{}{ctx, args.One, args.Two, args.CustomInts})
 	if len(ret) != 2 {
 		panic(fmt.Sprintf("Middleware returned %d arguments, expected 2", len(ret)))
 	}
-	retval = ret[0].(int64)
 	if ret[1] != nil {
 		err2 = ret[1].(error)
 	}
 	if err2 != nil {
+		if err2 == frugal.ErrRateLimitExceeded {
+			p.writeMu.Lock()
+			blahWriteApplicationError(ctx, oprot, frugal.RATE_LIMIT_EXCEEDED, "bleh", "Rate limit exceeded")
+			p.writeMu.Unlock()
+			return nil
+		}
 		switch v := err2.(type) {
 		case *InvalidOperation:
 			result.Oops = v
@@ -696,6 +726,7 @@ func (p *blahFBleh) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProtocol
 			return err2
 		}
 	} else {
+		var retval int64 = ret[0].(int64)
 		result.Success = &retval
 	}
 	p.writeMu.Lock()
@@ -757,21 +788,26 @@ func (p *blahFGetThing) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProt
 	iprot.ReadMessageEnd()
 	result := BlahGetThingResult{}
 	var err2 error
-	var retval *validStructs.Thing
 	ret := p.handler.Invoke([]interface{}{ctx})
 	if len(ret) != 2 {
 		panic(fmt.Sprintf("Middleware returned %d arguments, expected 2", len(ret)))
 	}
-	retval = ret[0].(*validStructs.Thing)
 	if ret[1] != nil {
 		err2 = ret[1].(error)
 	}
 	if err2 != nil {
+		if err2 == frugal.ErrRateLimitExceeded {
+			p.writeMu.Lock()
+			blahWriteApplicationError(ctx, oprot, frugal.RATE_LIMIT_EXCEEDED, "getThing", "Rate limit exceeded")
+			p.writeMu.Unlock()
+			return nil
+		}
 		p.writeMu.Lock()
 		blahWriteApplicationError(ctx, oprot, thrift.INTERNAL_ERROR, "getThing", "Internal error processing getThing: "+err2.Error())
 		p.writeMu.Unlock()
 		return err2
 	} else {
+		var retval *validStructs.Thing = ret[0].(*validStructs.Thing)
 		result.Success = retval
 	}
 	p.writeMu.Lock()
@@ -833,21 +869,26 @@ func (p *blahFGetMyInt) Process(ctx *frugal.FContext, iprot, oprot *frugal.FProt
 	iprot.ReadMessageEnd()
 	result := BlahGetMyIntResult{}
 	var err2 error
-	var retval ValidTypes.MyInt
 	ret := p.handler.Invoke([]interface{}{ctx})
 	if len(ret) != 2 {
 		panic(fmt.Sprintf("Middleware returned %d arguments, expected 2", len(ret)))
 	}
-	retval = ret[0].(ValidTypes.MyInt)
 	if ret[1] != nil {
 		err2 = ret[1].(error)
 	}
 	if err2 != nil {
+		if err2 == frugal.ErrRateLimitExceeded {
+			p.writeMu.Lock()
+			blahWriteApplicationError(ctx, oprot, frugal.RATE_LIMIT_EXCEEDED, "getMyInt", "Rate limit exceeded")
+			p.writeMu.Unlock()
+			return nil
+		}
 		p.writeMu.Lock()
 		blahWriteApplicationError(ctx, oprot, thrift.INTERNAL_ERROR, "getMyInt", "Internal error processing getMyInt: "+err2.Error())
 		p.writeMu.Unlock()
 		return err2
 	} else {
+		var retval ValidTypes.MyInt = ret[0].(ValidTypes.MyInt)
 		result.Success = &retval
 	}
 	p.writeMu.Lock()

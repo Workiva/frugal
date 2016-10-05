@@ -145,6 +145,11 @@ func (f *FStoreClient) recvBuyAlbumHandler(ctx *frugal.FContext, resultC chan<- 
 				errorC <- err
 				return nil
 			}
+			if error1.TypeId() == frugal.RATE_LIMIT_EXCEEDED {
+				err = frugal.ErrRateLimitExceeded
+				errorC <- err
+				return nil
+			}
 			err = error1
 			errorC <- err
 			return err
@@ -263,6 +268,11 @@ func (f *FStoreClient) recvEnterAlbumGiveawayHandler(ctx *frugal.FContext, resul
 				errorC <- err
 				return nil
 			}
+			if error1.TypeId() == frugal.RATE_LIMIT_EXCEEDED {
+				err = frugal.ErrRateLimitExceeded
+				errorC <- err
+				return nil
+			}
 			err = error1
 			errorC <- err
 			return err
@@ -316,16 +326,20 @@ func (p *storeFBuyAlbum) Process(ctx *frugal.FContext, iprot, oprot *frugal.FPro
 	iprot.ReadMessageEnd()
 	result := StoreBuyAlbumResult{}
 	var err2 error
-	var retval *Album
 	ret := p.handler.Invoke([]interface{}{ctx, args.ASIN, args.Acct})
 	if len(ret) != 2 {
 		panic(fmt.Sprintf("Middleware returned %d arguments, expected 2", len(ret)))
 	}
-	retval = ret[0].(*Album)
 	if ret[1] != nil {
 		err2 = ret[1].(error)
 	}
 	if err2 != nil {
+		if err2 == frugal.ErrRateLimitExceeded {
+			p.writeMu.Lock()
+			storeWriteApplicationError(ctx, oprot, frugal.RATE_LIMIT_EXCEEDED, "buyAlbum", "Rate limit exceeded")
+			p.writeMu.Unlock()
+			return nil
+		}
 		switch v := err2.(type) {
 		case *PurchasingError:
 			result.Error = v
@@ -336,6 +350,7 @@ func (p *storeFBuyAlbum) Process(ctx *frugal.FContext, iprot, oprot *frugal.FPro
 			return err2
 		}
 	} else {
+		var retval *Album = ret[0].(*Album)
 		result.Success = retval
 	}
 	p.writeMu.Lock()
@@ -397,21 +412,26 @@ func (p *storeFEnterAlbumGiveaway) Process(ctx *frugal.FContext, iprot, oprot *f
 	iprot.ReadMessageEnd()
 	result := StoreEnterAlbumGiveawayResult{}
 	var err2 error
-	var retval bool
 	ret := p.handler.Invoke([]interface{}{ctx, args.Email, args.Name})
 	if len(ret) != 2 {
 		panic(fmt.Sprintf("Middleware returned %d arguments, expected 2", len(ret)))
 	}
-	retval = ret[0].(bool)
 	if ret[1] != nil {
 		err2 = ret[1].(error)
 	}
 	if err2 != nil {
+		if err2 == frugal.ErrRateLimitExceeded {
+			p.writeMu.Lock()
+			storeWriteApplicationError(ctx, oprot, frugal.RATE_LIMIT_EXCEEDED, "enterAlbumGiveaway", "Rate limit exceeded")
+			p.writeMu.Unlock()
+			return nil
+		}
 		p.writeMu.Lock()
 		storeWriteApplicationError(ctx, oprot, thrift.INTERNAL_ERROR, "enterAlbumGiveaway", "Internal error processing enterAlbumGiveaway: "+err2.Error())
 		p.writeMu.Unlock()
 		return err2
 	} else {
+		var retval bool = ret[0].(bool)
 		result.Success = &retval
 	}
 	p.writeMu.Lock()
