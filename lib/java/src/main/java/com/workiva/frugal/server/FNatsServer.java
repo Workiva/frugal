@@ -1,8 +1,15 @@
 package com.workiva.frugal.server;
 
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.transport.FBoundedMemoryBuffer;
+import com.workiva.frugal.transport.JsonDataConverter;
+import com.workiva.frugal.transport.MessageS3Pointer;
 import com.workiva.frugal.util.BlockingRejectedExecutionHandler;
 import com.workiva.frugal.util.ProtocolUtils;
 import io.nats.client.Connection;
@@ -14,7 +21,10 @@ import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -44,6 +54,9 @@ public class FNatsServer implements FServer {
 
     private final CountDownLatch shutdownSignal = new CountDownLatch(1);
     private final ExecutorService executorService;
+    private final AmazonS3 s3;
+    private final String s3BucketName;
+    private final boolean largePayloadSupport;
 
     /**
      * Creates a new FNatsServer which receives requests on the given subject and queue.
@@ -62,7 +75,8 @@ public class FNatsServer implements FServer {
      * @param executorService Custom executor service for processing messages
      */
     private FNatsServer(Connection conn, FProcessor processor, FProtocolFactory protoFactory,
-                        String subject, String queue, long highWatermark, ExecutorService executorService) {
+                        String subject, String queue, long highWatermark, ExecutorService executorService,
+                        AmazonS3 s3, String s3BucketName, boolean largePayloadSupport) {
         this.conn = conn;
         this.processor = processor;
         this.inputProtoFactory = protoFactory;
@@ -71,6 +85,9 @@ public class FNatsServer implements FServer {
         this.queue = queue;
         this.highWatermark = highWatermark;
         this.executorService = executorService;
+        this.s3 = s3;
+        this.s3BucketName = s3BucketName;
+        this.largePayloadSupport = largePayloadSupport;
     }
 
     /**
@@ -88,6 +105,9 @@ public class FNatsServer implements FServer {
         private int queueLength = DEFAULT_WORK_QUEUE_LEN;
         private long highWatermark = DEFAULT_WATERMARK;
         private ExecutorService executorService;
+        private AmazonS3 s3;
+        private String s3BucketName;
+        private boolean largePayloadSupport = false;
 
         /**
          * Creates a new Builder which creates FStatelessNatsServers that subscribe to the given NATS subject.
@@ -174,6 +194,20 @@ public class FNatsServer implements FServer {
         }
 
         /**
+         * Returns a new FNatsTransport with support for sending large messages.
+         *
+         * @param s3           Amazon S3 client used for storing large-payload messages.
+         * @param s3BucketName Name of the bucket used for storing large-payload messages.
+         *                     The bucket must be already created and configured in s3.
+         */
+        public Builder withLargePayloadEnabled(AmazonS3 s3, String s3BucketName) {
+            this.s3 = s3;
+            this.s3BucketName = s3BucketName;
+            this.largePayloadSupport = true;
+            return this;
+        }
+
+        /**
          * Creates a new configured FNatsServer.
          *
          * @return FNatsServer
@@ -186,7 +220,8 @@ public class FNatsServer implements FServer {
                         new BlockingRejectedExecutionHandler());
             }
             FNatsServer server =
-                    new FNatsServer(conn, processor, protoFactory, subject, queue, highWatermark, executorService);
+                    new FNatsServer(conn, processor, protoFactory, subject, queue, highWatermark, executorService,
+                            s3, s3BucketName, largePayloadSupport);
             return server;
         }
 
@@ -249,7 +284,8 @@ public class FNatsServer implements FServer {
 
             executorService.submit(
                     new Request(message.getData(), System.currentTimeMillis(), message.getReplyTo(),
-                        highWatermark, inputProtoFactory, outputProtoFactory, processor, conn));
+                            highWatermark, inputProtoFactory, outputProtoFactory, processor, conn,
+                            s3, s3BucketName, largePayloadSupport));
         };
     }
 
@@ -266,10 +302,13 @@ public class FNatsServer implements FServer {
         final FProtocolFactory outputProtoFactory;
         final FProcessor processor;
         final Connection conn;
+        final AmazonS3 s3;
+        final String s3BucketName;
+        final boolean largePayloadSupport;
 
         Request(byte[] frameBytes, long timestamp, String reply, long highWatermark,
                 FProtocolFactory inputProtoFactory, FProtocolFactory outputProtoFactory,
-                FProcessor processor, Connection conn) {
+                FProcessor processor, Connection conn, AmazonS3 s3, String s3BucketName, boolean largePayloadSupport) {
             this.frameBytes = frameBytes;
             this.timestamp = timestamp;
             this.reply = reply;
@@ -278,6 +317,9 @@ public class FNatsServer implements FServer {
             this.outputProtoFactory = outputProtoFactory;
             this.processor = processor;
             this.conn = conn;
+            this.s3 = s3;
+            this.s3BucketName = s3BucketName;
+            this.largePayloadSupport = largePayloadSupport;
         }
 
         @Override
@@ -290,9 +332,36 @@ public class FNatsServer implements FServer {
         }
 
         private void process() {
-            // Read and process frame (exclude first 4 bytes which represent frame size).
-            byte[] frame = Arrays.copyOfRange(frameBytes, 4, frameBytes.length);
-            TTransport input = new TMemoryInputTransport(frame);
+            TTransport input;
+
+            // Read the S3 pointer data
+            if (largePayloadSupport) {
+                String s3PointerJson = new String(frameBytes, StandardCharsets.UTF_8);
+                MessageS3Pointer s3Pointer = readMessageS3PointerFromJSON(s3PointerJson);
+
+                if (s3Pointer != null) {
+                    // Data is an S3 pointer, retrieve message from S3
+                    String s3MsgBucketName = s3Pointer.getS3BucketName();
+                    String s3MsgKey = s3Pointer.getS3Key();
+
+                    byte[] message = getMessageFromS3(s3, s3MsgBucketName, s3MsgKey);
+
+                    input = new TMemoryInputTransport(message);
+                } else {
+                    // Read and process frame (exclude first 4 bytes which represent frame size).
+                    byte[] frame = Arrays.copyOfRange(frameBytes, 4, frameBytes.length);
+
+                    // Data is not an S3 pointer, read message directly
+                    input = new TMemoryInputTransport(frame);
+                }
+            } else {
+                // Read and process frame (exclude first 4 bytes which represent frame size).
+                byte[] frame = Arrays.copyOfRange(frameBytes, 4, frameBytes.length);
+
+                // Data is not an S3 pointer, read message directly
+                input = new TMemoryInputTransport(frame);
+            }
+
             // Buffer 1MB - 4 bytes since frame size is copied directly.
             FBoundedMemoryBuffer output = new FBoundedMemoryBuffer(NATS_MAX_MESSAGE_SIZE - 4);
             try {
@@ -319,6 +388,21 @@ public class FNatsServer implements FServer {
             }
         }
 
+        private MessageS3Pointer readMessageS3PointerFromJSON(String messageBody) {
+            MessageS3Pointer s3Pointer = null;
+            System.out.println("Receiving: " + messageBody);
+            try {
+                JsonDataConverter jsonDataConverter = new JsonDataConverter();
+                s3Pointer = jsonDataConverter.deserializeFromJson(messageBody, MessageS3Pointer.class);
+            } catch (Exception e) {
+                // Failed to deserialize, most not be s3 pointer
+                System.out.println(e.getMessage());
+                return null;
+            }
+            System.out.println(s3Pointer.getS3BucketName());
+            return s3Pointer;
+        }
+
     }
 
     /**
@@ -341,5 +425,47 @@ public class FNatsServer implements FServer {
 
     ExecutorService getExecutorService() {
         return executorService;
+    }
+
+    private static byte[] getMessageFromS3(AmazonS3 s3, String s3BucketName, String s3Key) {
+        // Retrieve the object from S3
+        GetObjectRequest getObjectRequest = new GetObjectRequest(s3BucketName, s3Key);
+        S3Object obj = null;
+        try {
+            obj = s3.getObject(getObjectRequest);
+        } catch (AmazonServiceException e) {
+            String errorMessage = "Failed to get the S3 object which contains the message payload. Message was not received.";
+            LOGGER.error(errorMessage, e);
+            throw new AmazonServiceException(errorMessage, e);
+        } catch (AmazonClientException e) {
+            String errorMessage = "Failed to get the S3 object which contains the message payload. Message was not received.";
+            LOGGER.error(errorMessage, e);
+            throw new AmazonClientException(errorMessage, e);
+        }
+
+        // Parse the message
+        byte[] message;
+        try {
+            InputStream objContent = obj.getObjectContent();
+            message = getBytesFromInputStream(objContent);
+        } catch (IOException e) {
+            String errorMessage = "Failure when handling the message which was read from S3 object. Message was not received.";
+            LOGGER.error(errorMessage, e);
+            throw new AmazonClientException(errorMessage, e);
+        }
+        return message;
+    }
+
+    public static byte[] getBytesFromInputStream(InputStream is) throws IOException {
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream();) {
+            byte[] buffer = new byte[0xFFFF];
+
+            for (int len; (len = is.read(buffer)) != -1; )
+                os.write(buffer, 0, len);
+
+            os.flush();
+
+            return os.toByteArray();
+        }
     }
 }

@@ -124,13 +124,13 @@ public abstract class FTransport extends TTransport {
             throw new UnsupportedOperationException("No write buffer set on FTransport.");
         }
 
-        if (writeBufferSize > 0 && writeBuffer.size() + len > writeBufferSize) {
-            int size = writeBuffer.size() + len;
-            writeBuffer.reset();
-            throw new FMessageSizeException(
-                    String.format("Message exceeds %d bytes, was %d bytes",
-                            writeBufferSize, size));
-        }
+//        if (writeBufferSize > 0 && writeBuffer.size() + len > writeBufferSize) {
+//            int size = writeBuffer.size() + len;
+//            writeBuffer.reset();
+//            throw new FMessageSizeException(
+//                    String.format("Message exceeds %d bytes, was %d bytes",
+//                            writeBufferSize, size));
+//        }
         writeBuffer.write(bytes, off, len);
     }
 
