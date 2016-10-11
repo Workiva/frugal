@@ -1,0 +1,31 @@
+package: github.com/Workiva/frugal
+import:
+- package: github.com/urfave/cli
+  version: 4205e9c4ee9672a8df5bb4fe486a8aa07e1e4037
+- package: golang.org/x/tools
+  version: 3f4088edb48e8a4e3c66a5f8e7b2a78615fcb83f
+  subpackages:
+  - go/ast/astutil
+  - imports
+- package: gopkg.in/yaml.v2
+  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
+- package: git.apache.org/thrift.git
+  subpackages:
+  - lib/go/thrift
+- package: github.com/Sirupsen/logrus
+- package: github.com/mattrobenolt/gocql
+  subpackages:
+  - uuid
+- package: github.com/nats-io/nats
+testImport:
+- package: github.com/nats-io/gnatsd
+  subpackages:
+  - server
+- package: github.com/stretchr/testify
+  subpackages:
+  - assert
+  - mock
+  - require
+ignore:
+  - github.com/Workiva/frugal/example
+  - github.com/Workiva/frugal/test
