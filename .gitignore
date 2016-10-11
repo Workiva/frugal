@@ -37,6 +37,7 @@ lib/python/frugal.egg-info/
 lib/python/frugalc
 lib/python/dist
 Library/
+vendor
 
 # Integration tests
 artifacts/

@@ -1,0 +1,42 @@
+hash: e5e520e15e9db38a7d36c6227db9555ad422cf7ab13371d9602042ae8961bc1f
+updated: 2016-10-11T09:49:54.622830169-05:00
+imports:
+- name: git.apache.org/thrift.git
+  version: cdc83335d60756c4bfb0d2c8af7933500c9e3c06
+  subpackages:
+  - lib/go/thrift
+- name: github.com/davecgh/go-spew
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  subpackages:
+  - spew
+- name: github.com/mattrobenolt/gocql
+  version: 56c5a46b65eead93e1e53e983d1b2e7dbfde570d
+  subpackages:
+  - uuid
+- name: github.com/nats-io/gnatsd
+  version: 3ff8ad706a6816b13c9277637e2e7d5bb406951a
+  subpackages:
+  - conf
+  - server
+  - server/pse
+- name: github.com/nats-io/nats
+  version: fc85f44c1659ab6610d76fd6bd0e44ad2cadf697
+  subpackages:
+  - encoders/builtin
+- name: github.com/nats-io/nuid
+  version: 4f84f5f3b2786224e336af2e13dba0a0a80b76fa
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
+- name: github.com/Sirupsen/logrus
+  version: 418b41d23a1bf978c06faea5313ba194650ac088
+- name: github.com/stretchr/objx
+  version: 1a9d0bb9f541897e62256577b352fdbc1fb4fd94
+- name: github.com/stretchr/testify
+  version: f390dcf405f7b83c997eac1b06768bb9f44dec18
+  subpackages:
+  - assert
+  - mock
+  - require
+testImports: []
