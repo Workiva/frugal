@@ -15,3 +15,5 @@ cp -r $FRUGAL_HOME/lib/go/Godeps/_workspace/* $GOPATH/
 cd $FRUGAL_HOME
 go run scripts/smithy/parallel_smithy.go
 
+# Report coverage
+$FRUGAL_HOME/scripts/smithy/codecov.sh
