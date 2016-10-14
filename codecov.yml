@@ -1,0 +1,54 @@
+this yaml inherits bot from team, do not add bot
+
+codecov:
+  url: "https://codecov.workiva.net"
+#coverage:
+#  status:
+#    project:
+#      default: off
+#      frontend:
+#        flags: frontend
+#      backend:
+#        target: 50%
+#        flags: backend
+#      api:
+#        target: 89%
+#        flags: api
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      dart:
+        flags: dart_library
+          paths:
+            - lib/dart/lib/src
+      go_lib:
+        flags: go_library
+          paths:
+            - lib/go
+      python_two:
+        flags: python_two
+          paths:
+            - lib/python/
+    patch: no
+#  flags:
+#    dart_library: Dart Library
+#
+#    go_library: Golang Library
+#      paths:
+#        - lib/go
+
+#    python_two: Python 2 Libraries (Tornado, GAE)
+#      paths:
+#        - lib/python/unit_tests_py2.xml
+#    python_three: Python 3 Libraries (Asyncio)
+#      paths:
+#        - lib/python/unit_tests_py3.xml
+
+comment:
+  layout: header, diff, changes, sunburst, uncovered, tree
+  behavior: default

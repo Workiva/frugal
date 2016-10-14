@@ -10,7 +10,7 @@ cd $FRUGAL_HOME/lib/go
 godep go build
 
 # Run the tests
-godep go test -race
+godep go test -race -coverprofile=$FRUGAL_HOME/gocoverage.txt
 
 # Build artifact
 cd $FRUGAL_HOME
