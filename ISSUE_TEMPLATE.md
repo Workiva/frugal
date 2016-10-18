@@ -2,4 +2,6 @@
 
 - [ ] Frugal version: 
 
-- [ ] Issue details that would assist with resolution: 
+- [ ] Description of Issue: 
+
+- [ ] Steps to Reproduce:
