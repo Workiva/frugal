@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"strings"
@@ -60,19 +61,45 @@ func NewAuditorWithLogger(logger ValidationLogger) *Auditor {
 	}
 }
 
-// Compare checks the contents of newFile for breaking changes with respect to
+// Audit checks the contents of newFile for breaking changes with respect to
 // oldFile
 func (a *Auditor) Audit(oldFile, newFile string) error {
 	newFrugal, err := ParseFrugal(newFile)
 	if err != nil {
 		return err
 	}
-
 	oldFrugal, err := ParseFrugal(oldFile)
 	if err != nil {
 		return err
 	}
+	return a.auditModel(oldFrugal, newFrugal)
+}
 
+// AuditBits is the same as Audit but processes file contents rather the files themselves
+// NOTE: the includes are no longer processed
+func (a *Auditor) AuditBits(oldFile, newFile []byte) error {
+	oldParsed, err := ParseReader("", bytes.NewReader(oldFile))
+	if err == nil {
+		err = oldParsed.(*Frugal).validate()
+	}
+	if err != nil {
+		return err
+	}
+	newParsed, err := ParseReader("", bytes.NewReader(newFile))
+	if err == nil {
+		err = newParsed.(*Frugal).validate()
+	}
+	if err != nil {
+		return err
+	}
+
+	oldParsed.(*Frugal).assignFrugal()
+	newParsed.(*Frugal).assignFrugal()
+
+	return a.auditModel(oldParsed.(*Frugal), newParsed.(*Frugal))
+}
+
+func (a *Auditor) auditModel(oldFrugal, newFrugal *Frugal) error {
 	a.oldFrugal = oldFrugal
 	a.newFrugal = newFrugal
 
@@ -87,7 +114,7 @@ func (a *Auditor) Audit(oldFile, newFile string) error {
 	a.checkServices(oldFrugal.Thrift.Services, newFrugal.Thrift.Services)
 
 	if a.logger.ErrorsLogged() {
-		return fmt.Errorf("FAILED: audit of %s against %s", newFile, oldFile)
+		return fmt.Errorf("AUDIT FAILED: audit of %s against %s", oldFrugal.File, newFrugal.File)
 	}
 	return nil
 }
