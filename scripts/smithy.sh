@@ -14,4 +14,3 @@ cp -r $FRUGAL_HOME/lib/go/Godeps/_workspace/* $GOPATH/
 # Run each language build and tests in parallel
 cd $FRUGAL_HOME
 go run scripts/smithy/parallel_smithy.go
-

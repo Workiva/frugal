@@ -16,6 +16,7 @@ script:
 env:
     - FRUGAL_HOME=/smithy-builder/builds/Workiva/frugal/cache/GO/src/github.com/Workiva/frugal # $GOPATH/src/github.com/Workiva/frugal
     - SMITHY_ROOT=/smithy-builder/builds/Workiva/frugal/workspace
+    - CODECOV_TOKEN='d88d0bbe-b5f0-4dce-92ae-a110aa028ddb'
 
 artifacts:
     artifactory:
