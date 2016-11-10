@@ -156,7 +156,7 @@ public class FBlah {
 									ex = new FMessageSizeException(FTransport.RESPONSE_TOO_LARGE, "response too large for transport");
 								}
 								else {
-									ex = new FRateLimitException("rate limit exceeded");
+									ex = new FRateLimitException(e.getMessage());
 								}
 								try {
 									result.put(ex);
@@ -260,7 +260,7 @@ public class FBlah {
 									ex = new FMessageSizeException(FTransport.RESPONSE_TOO_LARGE, "response too large for transport");
 								}
 								else {
-									ex = new FRateLimitException("rate limit exceeded");
+									ex = new FRateLimitException(e.getMessage());
 								}
 								try {
 									result.put(ex);
@@ -352,7 +352,7 @@ public class FBlah {
 									ex = new FMessageSizeException(FTransport.RESPONSE_TOO_LARGE, "response too large for transport");
 								}
 								else {
-									ex = new FRateLimitException("rate limit exceeded");
+									ex = new FRateLimitException(e.getMessage());
 								}
 								try {
 									result.put(ex);
@@ -444,7 +444,7 @@ public class FBlah {
 									ex = new FMessageSizeException(FTransport.RESPONSE_TOO_LARGE, "response too large for transport");
 								}
 								else {
-									ex = new FRateLimitException("rate limit exceeded");
+									ex = new FRateLimitException(e.getMessage());
 								}
 								try {
 									result.put(ex);
@@ -527,7 +527,7 @@ public class FBlah {
 				try {
 					this.handler.ping(ctx);
 				} catch (FRateLimitException e) {
-					writeApplicationException(ctx, oprot, FRateLimitException.RATE_LIMIT_EXCEEDED, "ping", "rate limit exceeded");
+					writeApplicationException(ctx, oprot, FRateLimitException.RATE_LIMIT_EXCEEDED, "ping", e.getMessage());
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
@@ -583,7 +583,7 @@ public class FBlah {
 				} catch (InvalidData err2) {
 					result.err2 = err2;
 				} catch (FRateLimitException e) {
-					writeApplicationException(ctx, oprot, FRateLimitException.RATE_LIMIT_EXCEEDED, "bleh", "rate limit exceeded");
+					writeApplicationException(ctx, oprot, FRateLimitException.RATE_LIMIT_EXCEEDED, "bleh", e.getMessage());
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
@@ -635,7 +635,7 @@ public class FBlah {
 					result.success = this.handler.getThing(ctx);
 					result.setSuccessIsSet(true);
 				} catch (FRateLimitException e) {
-					writeApplicationException(ctx, oprot, FRateLimitException.RATE_LIMIT_EXCEEDED, "getThing", "rate limit exceeded");
+					writeApplicationException(ctx, oprot, FRateLimitException.RATE_LIMIT_EXCEEDED, "getThing", e.getMessage());
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
@@ -687,7 +687,7 @@ public class FBlah {
 					result.success = this.handler.getMyInt(ctx);
 					result.setSuccessIsSet(true);
 				} catch (FRateLimitException e) {
-					writeApplicationException(ctx, oprot, FRateLimitException.RATE_LIMIT_EXCEEDED, "getMyInt", "rate limit exceeded");
+					writeApplicationException(ctx, oprot, FRateLimitException.RATE_LIMIT_EXCEEDED, "getMyInt", e.getMessage());
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
