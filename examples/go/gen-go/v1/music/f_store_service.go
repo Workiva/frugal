@@ -17,6 +17,8 @@ var _ = thrift.ZERO
 var _ = fmt.Printf
 var _ = bytes.Equal
 
+const FStoreName = "store"
+
 // Services are the API for client and server interaction.
 // Users can buy an album or enter a giveaway for a free album.
 type FStore interface {

@@ -21,6 +21,9 @@ import generic_package_prefix.actual_base.python.f_BaseFoo
 from .ttypes import *
 
 
+NAME = "foo"
+
+
 class Iface(generic_package_prefix.actual_base.python.f_BaseFoo.Iface):
 
     def get_thing(self, ctx, the_thing):

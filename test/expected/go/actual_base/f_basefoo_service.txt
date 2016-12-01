@@ -17,6 +17,8 @@ var _ = thrift.ZERO
 var _ = fmt.Printf
 var _ = bytes.Equal
 
+const FBaseFooName = "baseFoo"
+
 type FBaseFoo interface {
 	BasePing(ctx frugal.FContext) (err error)
 }

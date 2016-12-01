@@ -16,6 +16,8 @@ import 'package:subdir_include/subdir_include.dart' as t_subdir_include;
 import 'package:variety/variety.dart' as t_variety;
 
 
+const String fFooName = "foo";
+
 /// This is a thrift service. Frugal will generate bindings that include
 /// a frugal Context for each service call.
 abstract class FFoo extends t_actual_base_dart.FBaseFoo {

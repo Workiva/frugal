@@ -1350,6 +1350,7 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 // GenerateService generates the given service.
 func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 	contents := ""
+	contents += fmt.Sprintf("const String f%sName = \"%s\";\n\n", snakeToCamel(s.Name), generator.LowercaseFirstLetter(s.Name))
 	contents += g.generateInterface(s)
 	contents += g.generateClient(s)
 	contents += g.generateServiceArgsResults(s)

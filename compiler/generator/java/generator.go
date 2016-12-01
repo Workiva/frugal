@@ -2622,7 +2622,8 @@ func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 	if g.includeGeneratedAnnotation() {
 		contents += g.generatedAnnotation()
 	}
-	contents += fmt.Sprintf("public class F%s {\n\n", s.Name)
+	contents += fmt.Sprintf("public class F%s {\n", s.Name)
+	contents += tab + fmt.Sprintf("public static final String name = \"%s\";\n\n", generator.LowercaseFirstLetter(s.Name))
 	contents += g.generateServiceInterface(s)
 	contents += g.generateClient(s)
 	contents += g.generateServer(s)

@@ -759,7 +759,7 @@ func (g *Generator) generateServiceIncludeImports(s *parser.Service) string {
 		imports += fmt.Sprintf("import %s.constants\n", namespace)
 		if s.Extends != "" {
 			extendsSlice := strings.Split(s.Extends, ".")
-			extendsService := extendsSlice[len(extendsSlice) - 1]
+			extendsService := extendsSlice[len(extendsSlice)-1]
 			imports += fmt.Sprintf("import %s.f_%s\n", namespace, extendsService)
 		}
 	}
@@ -953,6 +953,7 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 // GenerateService generates the given service.
 func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 	contents := ""
+	contents += fmt.Sprintf("NAME = \"%s\"\n\n\n", generator.LowercaseFirstLetter(s.Name))
 	contents += g.generateServiceInterface(s)
 	contents += g.generateClient(s)
 	contents += g.generateServer(s)
@@ -1107,7 +1108,6 @@ func (g *Generator) generateServer(service *parser.Service) string {
 
 	return contents
 }
-
 
 func (g *Generator) generateServiceInterface(service *parser.Service) string {
 	contents := ""
