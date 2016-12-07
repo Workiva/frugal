@@ -2,6 +2,7 @@ import base64
 import struct
 
 from thrift.transport.TTransport import TMemoryBuffer
+from tornado import gen
 from tornado.web import RequestHandler
 
 
@@ -21,6 +22,7 @@ class FTornadoHttpHandler(RequestHandler):
         self._processor = processor
         self._protocol_factory = protocol_factory
 
+    @gen.coroutine
     def post(self):
         self.set_header('content-type', 'application/x-frugal')
 
@@ -36,7 +38,7 @@ class FTornadoHttpHandler(RequestHandler):
         )
         out_transport = TMemoryBuffer()
         oprot = self._protocol_factory.get_protocol(out_transport)
-        self._processor.process(iprot, oprot)
+        yield gen.maybe_future(self._processor.process(iprot, oprot))
 
         # write back response
         output_data = out_transport.getvalue()
