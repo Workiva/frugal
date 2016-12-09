@@ -31,7 +31,11 @@ func (t *TornadoGenerator) GenerateServiceImports(file *os.File, s *parser.Servi
 	imports += "from tornado.concurrent import Future\n\n"
 
 	imports += t.generateServiceExtendsImport(s)
-	imports += t.generateServiceIncludeImports(s)
+	if imp, err := t.generateServiceIncludeImports(s); err != nil {
+		return err
+	} else {
+		imports += imp
+	}
 
 	_, err := file.WriteString(imports)
 	return err

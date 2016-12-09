@@ -235,6 +235,60 @@ service FooService {
 }
 ```
 
+### Vendoring Includes
+
+Frugal does not generate code for includes by default. The `-r` flag is
+required to recursively generate includes. If `-r` is set, Frugal generates the
+entire IDL tree, including code for includes, in the same output directory (as
+specified by `-out`) by default. Since this can cause problems when using a
+library that uses a Frugal-generated object generated with the same IDL in two
+or more places, Frugal provides special support for vendoring dependencies
+through a `vendor` annotation on includes and namespaces.
+
+The `vendor` annotation is used on namespace definitions to indicate to any
+consumers of the IDL where the generated code is vendored so that consumers can
+generate code that points to it. This cannot be used with `*` namespaces since
+it is language-dependent. Consumers then use the `vendor` annotation on
+includes they wish to vendor. The value provided on the include-side `vendor`
+annotation, if any, is ignored.
+
+When an include is annotated with `vendor`, Frugal will skip generating the
+include if `-use-vendor` is set since this flag indicates intention to use the
+vendored code as advertised by the `vendor` annotation.
+
+If no location is specified by the `vendor` annotation, the behavior is defined
+by the language generator.
+
+The `vendor` annotation is currently only supported by Go.
+
+The example below illustrates how this works.
+
+bar.frugal ("providing" IDL):
+```thrift
+namespace go bar (vendor="github.com/Workiva/my-repo/gen-go/bar")
+
+struct Struct {}
+```
+
+foo.frugal ("consuming" IDL):
+```thrift
+include "bar.frugal" (vendor)
+
+service MyService {
+    bar.Struct getStruct()
+}
+```
+
+```
+frugal -r -gen go:package_prefix=github.com/Workiva/my-other-repo/gen-go -use-vendor foo.frugal
+```
+
+When we run the above command to generate `foo.frugal`, Frugal will not
+generate code for `bar.frugal` since `-use-vendor` is set and the "providing"
+IDL has a vendor path set for the Go namespace. Instead, the generated code for
+`foo.frugal` will reference the vendor path specified in `bar.frugal`
+(github.com/Workiva/my-repo/gen-go/bar).
+
 ## Thrift Parity
 
 Frugal is intended to be a superset of Thrift, meaning valid Thrift should be

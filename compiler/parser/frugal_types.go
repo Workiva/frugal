@@ -16,7 +16,7 @@ type Operation struct {
 	Comment     []string
 	Name        string
 	Type        *Type
-	Annotations []*Annotation
+	Annotations Annotations
 	Scope       *Scope // Pointer back to containing Scope
 }
 
@@ -40,19 +40,23 @@ type Scope struct {
 	Name        string
 	Prefix      *ScopePrefix
 	Operations  []*Operation
-	Annotations []*Annotation
+	Annotations Annotations
 	Frugal      *Frugal // Pointer back to containing Frugal
 }
 
 // ReferencedIncludes returns a slice containing the referenced includes which
 // will need to be imported in generated code for this Scope.
-func (s *Scope) ReferencedIncludes() []string {
-	includes := []string{}
-	includesSet := make(map[string]bool)
+func (s *Scope) ReferencedIncludes() ([]*Include, error) {
+	var err error
+	includes := []*Include{}
+	includesSet := make(map[string]*Include)
 	for _, op := range s.Operations {
-		includesSet, includes = addInclude(includesSet, includes, op.Type)
+		includesSet, includes, err = addInclude(includesSet, includes, op.Type, s.Frugal.Thrift)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return includes
+	return includes, nil
 }
 
 func (s *Scope) assignScope() {
@@ -81,15 +85,14 @@ type Frugal struct {
 	OrderedDefinitions []interface{}
 }
 
-// NamespaceForInclude returns the namespace value for the given inclue name
-// and language.
-func (f *Frugal) NamespaceForInclude(include, lang string) (string, bool) {
+// NamespaceForInclude returns the Namespace for the given inclue name and
+// language.
+func (f *Frugal) NamespaceForInclude(include, lang string) *Namespace {
 	parsed, ok := f.ParsedIncludes[include]
 	if !ok {
-		return "", ok
+		return nil
 	}
-	namespace, ok := parsed.Thrift.Namespace(lang)
-	return namespace, ok
+	return parsed.Thrift.Namespace(lang)
 }
 
 // ContainsFrugalDefinitions indicates if the parse tree contains any
@@ -100,36 +103,52 @@ func (f *Frugal) ContainsFrugalDefinitions() bool {
 
 // ReferencedScopeIncludes returns a slice containing the referenced includes
 // which will need to be imported in generated code for scopes.
-func (f *Frugal) ReferencedScopeIncludes() []string {
-	includes := []string{}
-	includesSet := make(map[string]bool)
+func (f *Frugal) ReferencedScopeIncludes() ([]*Include, error) {
+	includeNames := []string{}
+	includesSet := make(map[string]*Include)
 	for _, scope := range f.Scopes {
-		for _, include := range scope.ReferencedIncludes() {
-			if _, ok := includesSet[include]; !ok {
-				includesSet[include] = true
-				includes = append(includes, include)
+		scopeIncludes, err := scope.ReferencedIncludes()
+		if err != nil {
+			return nil, err
+		}
+		for _, include := range scopeIncludes {
+			if _, ok := includesSet[include.Name]; !ok {
+				includesSet[include.Name] = include
+				includeNames = append(includeNames, include.Name)
 			}
 		}
 	}
-	sort.Strings(includes)
-	return includes
+	sort.Strings(includeNames)
+	includes := make([]*Include, len(includeNames))
+	for i, include := range includeNames {
+		includes[i] = includesSet[include]
+	}
+	return includes, nil
 }
 
 // ReferencedServiceIncludes returns a slice containing the referenced includes
 // which will need to be imported in generated code for services.
-func (f *Frugal) ReferencedServiceIncludes() []string {
-	includes := []string{}
-	includesSet := make(map[string]bool)
+func (f *Frugal) ReferencedServiceIncludes() ([]*Include, error) {
+	includeNames := []string{}
+	includesSet := make(map[string]*Include)
 	for _, service := range f.Thrift.Services {
-		for _, include := range service.ReferencedIncludes() {
-			if _, ok := includesSet[include]; !ok {
-				includesSet[include] = true
-				includes = append(includes, include)
+		servIncludes, err := service.ReferencedIncludes()
+		if err != nil {
+			return nil, err
+		}
+		for _, include := range servIncludes {
+			if _, ok := includesSet[include.Name]; !ok {
+				includesSet[include.Name] = include
+				includeNames = append(includeNames, include.Name)
 			}
 		}
 	}
-	sort.Strings(includes)
-	return includes
+	sort.Strings(includeNames)
+	includes := make([]*Include, len(includeNames))
+	for i, include := range includeNames {
+		includes[i] = includesSet[include]
+	}
+	return includes, nil
 }
 
 // UnderlyingType follows any typedefs to get the base IDL type.
@@ -269,6 +288,8 @@ func (f *Frugal) assignFrugal() {
 	}
 }
 
+// validate parsed Frugal IDL by ensuring there are no duplicate service/scope
+// names and the Thrift is valid.
 func (f *Frugal) validate() error {
 	// Ensure there are no duplicate names between services and scopes.
 	names := make(map[string]struct{})
@@ -284,6 +305,7 @@ func (f *Frugal) validate() error {
 		}
 		names[scope.Name] = struct{}{}
 	}
+
 	return f.Thrift.validate(f.ParsedIncludes)
 }
 

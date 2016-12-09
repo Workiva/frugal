@@ -2216,8 +2216,8 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, succi
 }
 
 func (g *Generator) GetOutputDir(dir string) string {
-	if pkg, ok := g.Frugal.Thrift.Namespace(lang); ok {
-		path := generator.GetPackageComponents(pkg)
+	if namespace := g.Frugal.Thrift.Namespace(lang); namespace != nil {
+		path := generator.GetPackageComponents(namespace.Value)
 		dir = filepath.Join(append([]string{dir}, path...)...)
 	}
 	return dir
@@ -2271,11 +2271,11 @@ func (g *Generator) GenerateScopePackage(file *os.File, s *parser.Scope) error {
 }
 
 func (g *Generator) generatePackage(file *os.File) error {
-	pkg, ok := g.Frugal.Thrift.Namespace(lang)
-	if !ok {
+	namespace := g.Frugal.Thrift.Namespace(lang)
+	if namespace == nil {
 		return nil
 	}
-	_, err := file.WriteString(fmt.Sprintf("package %s;", pkg))
+	_, err := file.WriteString(fmt.Sprintf("package %s;", namespace.Value))
 	return err
 }
 
@@ -2628,8 +2628,8 @@ func (g *Generator) getServiceExtendsName(service *parser.Service) string {
 	serviceName := "F" + service.ExtendsService()
 	include := service.ExtendsInclude()
 	if include != "" {
-		if inc, ok := g.Frugal.NamespaceForInclude(include, lang); ok {
-			include = inc
+		if namespace := g.Frugal.NamespaceForInclude(include, lang); namespace != nil {
+			include = namespace.Value
 		} else {
 			return serviceName
 		}
@@ -3180,9 +3180,8 @@ func (g *Generator) qualifiedTypeName(t *parser.Type) string {
 	param := t.ParamName()
 	include := t.IncludeName()
 	if include != "" {
-		namespace, ok := g.Frugal.NamespaceForInclude(include, lang)
-		if ok {
-			return fmt.Sprintf("%s.%s", namespace, param)
+		if namespace := g.Frugal.NamespaceForInclude(include, lang); namespace != nil {
+			return fmt.Sprintf("%s.%s", namespace.Value, param)
 		}
 	}
 	return param

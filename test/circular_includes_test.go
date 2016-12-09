@@ -22,6 +22,6 @@ func TestCircularIncludes(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(
 		t,
-		"Circular include: [circular_1 circular_2 circular_3 circular_1]",
+		"Include circular_2.frugal: Include circular_3.frugal: Include circular_1.frugal: Circular include: [circular_1 circular_2 circular_3 circular_1]",
 		err.Error())
 }

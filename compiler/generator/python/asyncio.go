@@ -31,8 +31,12 @@ func (a *AsyncIOGenerator) GenerateServiceImports(file *os.File, s *parser.Servi
 	imports += "from thrift.Thrift import TMessageType\n"
 
 	// Import include modules.
-	for _, include := range s.ReferencedIncludes() {
-		namespace := a.getPackageNamespace(include)
+	includes, err := s.ReferencedIncludes()
+	if err != nil {
+		return err
+	}
+	for _, include := range includes {
+		namespace := a.getPackageNamespace(include.Name)
 		imports += fmt.Sprintf("import %s\n", namespace)
 	}
 	imports += a.generateServiceExtendsImport(s)
@@ -40,7 +44,7 @@ func (a *AsyncIOGenerator) GenerateServiceImports(file *os.File, s *parser.Servi
 	imports += fmt.Sprintf("from .%s import *\n", s.Name)
 	imports += "from .ttypes import *\n"
 
-	_, err := file.WriteString(imports)
+	_, err = file.WriteString(imports)
 	return err
 }
 

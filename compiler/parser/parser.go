@@ -7,6 +7,24 @@ import (
 	"strings"
 )
 
+// Supported generator annotations.
+const (
+	// VendorAnnotation is used on namespace definitions to indicate to any
+	// consumers of the IDL where the generated code is vendored so that
+	// consumers can generate code that points to it. This cannot be used with
+	// "*" namespaces since it is language-dependent. Consumers then use the
+	// "vendor" annotation on includes they wish to vendor. The value provided
+	// on the include-side "vendor" annotation, if any, is ignored.
+	//
+	// When an include is annotated with "vendor", Frugal will skip generating
+	// the include if -use-vendor is set since this flag indicates intention to
+	// use the vendored code as advertised by the "vendor" annotation.
+	//
+	// If no location is specified by the "vendor" annotation, the behavior is
+	// defined by the language generator.
+	VendorAnnotation = "vendor"
+)
+
 // ParseFrugal parses the given Frugal file into its semantic representation.
 func ParseFrugal(filePath string) (*Frugal, error) {
 	return parseFrugal(filePath, []string{})
@@ -50,7 +68,7 @@ func parseFrugal(filePath string, visitedIncludes []string) (*Frugal, error) {
 
 		parsedIncl, err := parseFrugal(filepath.Join(frugal.Dir, include), visitedIncludes)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Include %s: %s", include, err)
 		}
 
 		// Lop off extension (.frugal or .thrift)

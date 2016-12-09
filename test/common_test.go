@@ -14,6 +14,10 @@ const (
 	duplicateMethodArgIds   = "idl/duplicate_arg_ids.frugal"
 	duplicateStructFieldIds = "idl/duplicate_field_ids.frugal"
 	frugalGenFile           = "idl/variety.frugal"
+	badNamespace            = "idl/bad_namespace.frugal"
+	includeVendor           = "idl/include_vendor.frugal"
+	includeVendorNoPath     = "idl/include_vendor_no_path.frugal"
+	vendorNamespace         = "idl/vendor_namespace.frugal"
 )
 
 var (

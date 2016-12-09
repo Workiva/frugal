@@ -24,6 +24,7 @@ var (
 	recurse            bool
 	verbose            bool
 	version            bool
+	useVendor          bool
 )
 
 func main() {
@@ -79,6 +80,10 @@ func main() {
 			Name:        "audit",
 			Usage:       "frugal file to run audit against",
 			Destination: &audit,
+		}, cli.BoolFlag{
+			Name:        "use-vendor",
+			Usage:       "use specified import references for vendored includes and do not generate code for them (supported by go)",
+			Destination: &useVendor,
 		},
 	}
 
@@ -113,6 +118,7 @@ func main() {
 			RetainIntermediate: retainIntermediate,
 			Recurse:            recurse,
 			Verbose:            verbose,
+			UseVendor:          useVendor,
 		}
 
 		// Handle panics for graceful error messages.

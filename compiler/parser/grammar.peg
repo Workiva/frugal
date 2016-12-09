@@ -70,11 +70,11 @@
     }
 
     // toAnnotations converts an interface{} to an Annotation slice.
-    func toAnnotations(v interface{}) []*Annotation {
+    func toAnnotations(v interface{}) Annotations {
         if v == nil {
             return nil
         }
-        return v.([]*Annotation)
+        return Annotations(v.([]*Annotation))
     }
 }
 
@@ -139,6 +139,7 @@ Grammar <- __ statements:( Statement __ )* (EOF / SyntaxError) {
             frugal.OrderedDefinitions[i] = strct
         case *Service:
             v.Comment = wrapper.comment
+            v.Thrift = frugal.Thrift
             thrift.Services = append(thrift.Services, v)
         case *Include:
             thrift.Includes = append(thrift.Includes, v)
@@ -172,26 +173,32 @@ Statement <- docstr:(DocString __)? statement:(ThriftStatement / FrugalStatement
 
 ThriftStatement <- Include / Namespace / Const / Enum / TypeDef / Struct / Exception / Union / Service
 
-Include <- "include" _ file:Literal EOS {
+Include <- "include" _ file:Literal _ annotations:TypeAnnotations? EOS {
     name := file.(string)
     if ix := strings.LastIndex(name, "."); ix > 0 {
         name = name[:ix]
     }
-    return &Include{Name: name, Value: file.(string)}, nil
-}
-
-Namespace <- "namespace" _ scope:[*a-z.-]+ _ ns:Identifier EOS {
-    return &Namespace{
-        Scope: ifaceSliceToString(scope),
-        Value: string(ns.(Identifier)),
+    return &Include{
+        Name:        name,
+        Value:       file.(string),
+        Annotations: toAnnotations(annotations),
     }, nil
 }
 
-Const <- "const" _ typ:FieldType _ name:Identifier _ "=" _ value:ConstValue EOS {
+Namespace <- "namespace" _ scope:[*a-z.-]+ _ ns:Identifier _ annotations:TypeAnnotations? EOS {
+    return &Namespace{
+        Scope:       ifaceSliceToString(scope),
+        Value:       string(ns.(Identifier)),
+        Annotations: toAnnotations(annotations),
+    }, nil
+}
+
+Const <- "const" _ typ:FieldType _ name:Identifier _ "=" _ value:ConstValue _ annotations:TypeAnnotations? EOS {
     return &Constant{
         Name: string(name.(Identifier)),
-        Type: typ.(*Type),
-        Value: value,
+        Type:        typ.(*Type),
+        Value:       value,
+        Annotations: toAnnotations(annotations),
     }, nil
 }
 

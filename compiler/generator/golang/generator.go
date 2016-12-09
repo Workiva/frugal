@@ -17,10 +17,11 @@ import (
 )
 
 const (
-	lang             = "go"
-	defaultOutputDir = "gen-go"
-	serviceSuffix    = "_service"
-	scopeSuffix      = "_scope"
+	lang                = "go"
+	defaultOutputDir    = "gen-go"
+	serviceSuffix       = "_service"
+	scopeSuffix         = "_scope"
+	packagePrefixOption = "package_prefix"
 )
 
 // Generator implements the LanguageGenerator interface for Go.
@@ -72,8 +73,8 @@ func (g *Generator) TeardownGenerator() error {
 
 // GetOutputDir returns the output directory for generated files.
 func (g *Generator) GetOutputDir(dir string) string {
-	if pkg, ok := g.Frugal.Thrift.Namespace(lang); ok {
-		path := generator.GetPackageComponents(pkg)
+	if namespace := g.Frugal.Thrift.Namespace(lang); namespace != nil {
+		path := generator.GetPackageComponents(namespace.Value)
 		dir = filepath.Join(append([]string{dir}, path...)...)
 	} else {
 		dir = filepath.Join(dir, g.Frugal.Name)
@@ -142,9 +143,10 @@ func (g *Generator) GenerateScopePackage(file *os.File, s *parser.Scope) error {
 }
 
 func (g *Generator) generatePackage(file *os.File) error {
-	pkg, ok := g.Frugal.Thrift.Namespace(lang)
-	if ok {
-		components := generator.GetPackageComponents(pkg)
+	pkg := ""
+	namespace := g.Frugal.Thrift.Namespace(lang)
+	if namespace != nil {
+		components := generator.GetPackageComponents(namespace.Value)
 		pkg = components[len(components)-1]
 	} else {
 		pkg = g.Frugal.Name
@@ -714,7 +716,7 @@ func (g *Generator) generateWrite(s *parser.Struct, sName string) string {
 	return contents
 }
 
-func(g *Generator) generateToString(s *parser.Struct, sName string) string {
+func (g *Generator) generateToString(s *parser.Struct, sName string) string {
 	contents := ""
 
 	contents += fmt.Sprintf("func (p *%s) String() string {\n", sName)
@@ -1051,14 +1053,14 @@ func (g *Generator) GenerateTypesImports(file *os.File) error {
 	}
 
 	protections := ""
-	pkgPrefix := g.Options["package_prefix"]
+	pkgPrefix := g.Options[packagePrefixOption]
 	for _, include := range g.Frugal.Thrift.Includes {
-		includeName, ok := g.Frugal.NamespaceForInclude(filepath.Base(include.Name), lang)
-		if !ok {
-			includeName = filepath.Base(include.Name)
+		if imp, err := g.generateIncludeImport(include, pkgPrefix); err != nil {
+			return err
+		} else {
+			contents += imp
 		}
-		contents += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, includeNameToImport(includeName))
-		protections += fmt.Sprintf("var _ = %s.GoUnusedProtection__\n", includeNameToReference(includeName))
+		protections += g.generateImportProtection(include)
 	}
 
 	contents += ")\n\n"
@@ -1086,14 +1088,14 @@ func (g *Generator) GenerateServiceResultArgsImports(file *os.File) error {
 	}
 
 	protections := ""
-	pkgPrefix := g.Options["package_prefix"]
+	pkgPrefix := g.Options[packagePrefixOption]
 	for _, include := range g.Frugal.Thrift.Includes {
-		includeName, ok := g.Frugal.NamespaceForInclude(filepath.Base(include.Name), lang)
-		if !ok {
-			includeName = filepath.Base(include.Name)
+		if imp, err := g.generateIncludeImport(include, pkgPrefix); err != nil {
+			return err
+		} else {
+			contents += imp
 		}
-		contents += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, includeNameToImport(includeName))
-		protections += fmt.Sprintf("var _ = %s.GoUnusedProtection__\n", includeNameToReference(includeName))
+		protections += g.generateImportProtection(include)
 	}
 
 	contents += ")\n\n"
@@ -1128,13 +1130,17 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 		imports += "\t\"github.com/Workiva/frugal/lib/go\"\n"
 	}
 
-	pkgPrefix := g.Options["package_prefix"]
-	for _, include := range s.ReferencedIncludes() {
-		namespace, ok := g.Frugal.NamespaceForInclude(include, lang)
-		if !ok {
-			namespace = include
+	pkgPrefix := g.Options[packagePrefixOption]
+	includes, err := s.ReferencedIncludes()
+	if err != nil {
+		return err
+	}
+	for _, include := range includes {
+		if imp, err := g.generateIncludeImport(include, pkgPrefix); err != nil {
+			return err
+		} else {
+			imports += imp
 		}
-		imports += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, includeNameToImport(namespace))
 	}
 
 	imports += ")\n\n"
@@ -1144,7 +1150,7 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	imports += "var _ = fmt.Printf\n"
 	imports += "var _ = bytes.Equal"
 
-	_, err := file.WriteString(imports)
+	_, err = file.WriteString(imports)
 	return err
 }
 
@@ -1164,19 +1170,62 @@ func (g *Generator) GenerateScopeImports(file *os.File, s *parser.Scope) error {
 		imports += "\t\"github.com/Workiva/frugal/lib/go\"\n"
 	}
 
-	pkgPrefix := g.Options["package_prefix"]
-	for _, include := range g.Frugal.ReferencedScopeIncludes() {
-		namespace, ok := g.Frugal.NamespaceForInclude(include, lang)
-		if !ok {
-			namespace = include
+	pkgPrefix := g.Options[packagePrefixOption]
+	scopeIncludes, err := g.Frugal.ReferencedScopeIncludes()
+	if err != nil {
+		return err
+	}
+	for _, include := range scopeIncludes {
+		if imp, err := g.generateIncludeImport(include, pkgPrefix); err != nil {
+			return err
+		} else {
+			imports += imp
 		}
-		imports += fmt.Sprintf("\t\"%s%s\"\n", pkgPrefix, includeNameToImport(namespace))
 	}
 
 	imports += ")"
 
-	_, err := file.WriteString(imports)
+	_, err = file.WriteString(imports)
 	return err
+}
+
+func (g *Generator) generateIncludeImport(include *parser.Include, pkgPrefix string) (string, error) {
+	includeName := filepath.Base(include.Name)
+	importPath := fmt.Sprintf("%s%s", pkgPrefix, includeNameToImport(includeName))
+	namespace := g.Frugal.NamespaceForInclude(includeName, lang)
+
+	_, vendored := include.Annotations.Vendor()
+	vendored = vendored && globals.UseVendor
+	vendorPath := ""
+
+	if namespace != nil {
+		importPath = fmt.Sprintf("%s%s", pkgPrefix, includeNameToImport(namespace.Value))
+		if nsVendorPath, ok := namespace.Annotations.Vendor(); ok {
+			vendorPath = nsVendorPath
+		}
+	}
+
+	// If -use-vendor is set and this include is vendored, honor the path
+	// specified by the include's namespace vendor annotation.
+	if vendored {
+		if vendorPath == "" {
+			return "", fmt.Errorf("Vendored include %s does not specify vendor path for go namespace",
+				include.Name)
+		}
+		importPath = vendorPath
+	}
+
+	return fmt.Sprintf("\t\"%s\"\n", importPath), nil
+}
+
+func (g *Generator) generateImportProtection(include *parser.Include) string {
+	includeName := filepath.Base(include.Name)
+	namespace := g.Frugal.NamespaceForInclude(includeName, lang)
+	if namespace != nil {
+		includeName = namespace.Value
+	}
+	return fmt.Sprintf("var _ = %s.GoUnusedProtection__\n",
+		includeNameToReference(includeName))
 }
 
 // GenerateConstants generates any static constants.
@@ -1490,8 +1539,8 @@ func (g *Generator) getServiceExtendsName(service *parser.Service) string {
 	serviceName := "F" + service.ExtendsService()
 	include := service.ExtendsInclude()
 	if include != "" {
-		if inc, ok := g.Frugal.NamespaceForInclude(include, lang); ok {
-			include = inc
+		if namespace := g.Frugal.NamespaceForInclude(include, lang); namespace != nil {
+			include = namespace.Value
 		}
 		include = includeNameToReference(include)
 		serviceName = include + "." + serviceName
@@ -1502,8 +1551,8 @@ func (g *Generator) getServiceExtendsName(service *parser.Service) string {
 func (g *Generator) getServiceExtendsNamespace(service *parser.Service) string {
 	namespace := ""
 	if service.ExtendsInclude() != "" {
-		if ns, ok := g.Frugal.NamespaceForInclude(service.ExtendsInclude(), lang); ok {
-			namespace = ns
+		if ns := g.Frugal.NamespaceForInclude(service.ExtendsInclude(), lang); ns != nil {
+			namespace = ns.Value
 		} else {
 			namespace = service.ExtendsInclude()
 		}
@@ -2215,12 +2264,12 @@ func (g *Generator) qualifiedTypeName(t *parser.Type) string {
 	param := snakeToCamel(t.ParamName())
 	include := t.IncludeName()
 	if include != "" {
-		namespace, ok := g.Frugal.NamespaceForInclude(include, lang)
-		if !ok {
-			namespace = include
+		name := include
+		if namespace := g.Frugal.NamespaceForInclude(include, lang); namespace != nil {
+			name = namespace.Value
 		}
-		namespace = includeNameToReference(namespace)
-		param = fmt.Sprintf("%s.%s", namespace, param)
+		name = includeNameToReference(name)
+		param = fmt.Sprintf("%s.%s", name, param)
 	}
 
 	// The Thrift generator uses a convention of appending a suffix of '_'
@@ -2245,7 +2294,7 @@ func includeNameToReference(includeName string) string {
 	split := strings.FieldsFunc(includeName, func(r rune) bool {
 		return r == '.' || r == '/'
 	})
-	return split[len(split) - 1]
+	return split[len(split)-1]
 }
 
 // snakeToCamel returns a string converted from snake case to uppercase.

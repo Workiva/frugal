@@ -676,8 +676,8 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 
 // GetOutputDir returns the output directory for generated files.
 func (g *Generator) GetOutputDir(dir string) string {
-	if pkg, ok := g.Frugal.Thrift.Namespace(lang); ok {
-		path := generator.GetPackageComponents(pkg)
+	if namespace := g.Frugal.Thrift.Namespace(lang); namespace != nil {
+		path := generator.GetPackageComponents(namespace.Value)
 		dir = filepath.Join(append([]string{dir}, path...)...)
 	} else {
 		dir = filepath.Join(dir, g.Frugal.Name)
@@ -775,7 +775,11 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	imports += "from thrift.Thrift import TMessageType\n\n"
 
 	imports += g.generateServiceExtendsImport(s)
-	imports += g.generateServiceIncludeImports(s)
+	if imp, err := g.generateServiceIncludeImports(s); err != nil {
+		return err
+	} else {
+		imports += imp
+	}
 
 	_, err := file.WriteString(imports)
 	return err
@@ -790,12 +794,16 @@ func (g *Generator) generateServiceExtendsImport(s *parser.Service) string {
 	return fmt.Sprintf("from . import f_%s\n", s.Extends)
 }
 
-func (g *Generator) generateServiceIncludeImports(s *parser.Service) string {
+func (g *Generator) generateServiceIncludeImports(s *parser.Service) (string, error) {
 	imports := ""
 
 	// Import include modules.
-	for _, include := range s.ReferencedIncludes() {
-		namespace := g.getPackageNamespace(include)
+	includes, err := s.ReferencedIncludes()
+	if err != nil {
+		return "", err
+	}
+	for _, include := range includes {
+		namespace := g.getPackageNamespace(include.Name)
 		imports += fmt.Sprintf("import %s\n", namespace)
 	}
 
@@ -803,7 +811,7 @@ func (g *Generator) generateServiceIncludeImports(s *parser.Service) string {
 	imports += fmt.Sprintf("from .%s import *\n", s.Name)
 	imports += "from .ttypes import *\n"
 
-	return imports
+	return imports, nil
 }
 
 // GenerateScopeImports generates necessary imports for the given scope.
@@ -1394,11 +1402,11 @@ func (g *Generator) getTType(t *parser.Type) string {
 }
 
 func (g *Generator) getPackageNamespace(include string) string {
-	namespace, ok := g.Frugal.NamespaceForInclude(include, lang)
-	if !ok {
-		namespace = include
+	name := include
+	if namespace := g.Frugal.NamespaceForInclude(include, lang); namespace != nil {
+		name = namespace.Value
 	}
-	return g.Options["package_prefix"] + namespace
+	return g.Options["package_prefix"] + name
 }
 
 var elemNum int

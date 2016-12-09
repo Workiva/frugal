@@ -27,11 +27,13 @@ type Options struct {
 	DryRun             bool   // Do not generate code
 	Recurse            bool   // Generate includes
 	Verbose            bool   // Verbose mode
+	UseVendor          bool   // Do not generate code for vendored includes
 }
 
 // Compile parses the Frugal IDL and generates code for it, returning an error
 // if something failed.
 func Compile(options Options) error {
+	var err error
 	defer globals.Reset()
 	globals.TopicDelimiter = options.Delim
 	globals.Gen = options.Gen
@@ -39,6 +41,7 @@ func Compile(options Options) error {
 	globals.DryRun = options.DryRun
 	globals.Recurse = options.Recurse
 	globals.Verbose = options.Verbose
+	globals.UseVendor = options.UseVendor
 	globals.FileDir = filepath.Dir(options.File)
 
 	defer func() {
@@ -92,10 +95,11 @@ func warnGenWithoutFrugal(genWithFrugal bool) {
 // an error if something failed.
 func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 	var (
-		gen    = globals.Gen
-		out    = globals.Out
-		dryRun = globals.DryRun
-		dir    = filepath.Dir(file)
+		gen       = globals.Gen
+		out       = globals.Out
+		dryRun    = globals.DryRun
+		useVendor = globals.UseVendor
+		dir       = filepath.Dir(file)
 	)
 
 	if frugal, ok := globals.CompiledFiles[file]; ok {
@@ -114,6 +118,11 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 		return nil, err
 	}
 
+	// TODO: Address as needed when more languages support vendoring.
+	if useVendor && lang != "go" {
+		return nil, fmt.Errorf("-use-vendor not supported by %s", lang)
+	}
+
 	// Gen with Frugal by default.
 	genWithFrugal := true
 	if genWithFrugalStr, ok := options["gen_with_frugal"]; ok {
@@ -125,6 +134,74 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 	}
 
 	// Resolve Frugal generator.
+	g, err := getProgramGenerator(lang, options, genWithFrugal)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse the Frugal file.
+	logv(fmt.Sprintf("Parsing %s", file))
+	frugal, err := parser.ParseFrugal(file)
+	if err != nil {
+		return nil, err
+	}
+	globals.CompiledFiles[file] = frugal
+
+	if out == "" {
+		out = g.DefaultOutputDir()
+	}
+	fullOut := g.GetOutputDir(out, frugal)
+	if err := os.MkdirAll(out, 0777); err != nil {
+		return nil, err
+	}
+
+	if genWithFrugal {
+		// If not using frugal, add parsed includes here
+		// preserve what thrift does to keep ordering in the file
+		for _, include := range frugal.Thrift.Includes {
+			if _, ok := include.Annotations.Vendor(); ok && useVendor {
+				// Don't generate the include if -use-vendor and the include is
+				// vendored.
+				continue
+			}
+			if _, err := generateInclude(frugal, include); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if !genWithFrugal && !isThrift {
+		// Generate intermediate Thrift IDL for Frugal. If this is already a
+		// .thrift file, do not generate an intermediate IDL.
+		logv(fmt.Sprintf("Generating intermediate Thrift file %s",
+			filepath.Join(dir, fmt.Sprintf("%s.thrift", frugal.Name))))
+		idlFile, err := generateThriftIDL(dir, frugal)
+		if err != nil {
+			return nil, err
+		}
+		file = idlFile
+	}
+
+	if dryRun || !generate {
+		return frugal, nil
+	}
+
+	if !genWithFrugal {
+		// Generate Thrift code.
+		logv(fmt.Sprintf("Generating \"%s\" Thrift code for %s", lang, file))
+		if err := generateThrift(frugal, dir, file, out, removeGenWithFrugalOption(gen)); err != nil {
+			return nil, err
+		}
+	}
+
+	// Generate Frugal code.
+	logv(fmt.Sprintf("Generating \"%s\" Frugal code for %s", lang, frugal.File))
+	return frugal, g.Generate(frugal, fullOut, genWithFrugal)
+}
+
+// getProgramGenerator resolves the ProgramGenerator for the given language. It
+// returns an error if the language is not supported.
+func getProgramGenerator(lang string, options map[string]string, genWithFrugal bool) (generator.ProgramGenerator, error) {
 	var g generator.ProgramGenerator
 	switch lang {
 	case "dart":
@@ -157,60 +234,9 @@ func compile(file string, isThrift, generate bool) (*parser.Frugal, error) {
 	case "html":
 		g = html.NewGenerator(options)
 	default:
-		return nil, fmt.Errorf("Invalid gen value %s", gen)
+		return nil, fmt.Errorf("Invalid gen value %s", lang)
 	}
-
-	// Parse the Frugal file.
-	logv(fmt.Sprintf("Parsing %s", file))
-	frugal, err := parser.ParseFrugal(file)
-	if err != nil {
-		return nil, err
-	}
-	globals.CompiledFiles[file] = frugal
-
-	if out == "" {
-		out = g.DefaultOutputDir()
-	}
-	fullOut := g.GetOutputDir(out, frugal)
-	if err := os.MkdirAll(out, 0777); err != nil {
-		return nil, err
-	}
-
-	if genWithFrugal {
-		// If not using frugal, add parsed includes here
-		// preserve what thrift does to keep ordering in the file
-		for _, include := range frugal.Thrift.Includes {
-			generateInclude(frugal, include)
-		}
-	}
-
-	if !genWithFrugal && !isThrift {
-		// Generate intermediate Thrift IDL for Frugal. If this is already a
-		// .thrift file, do not generate an intermediate IDL.
-		logv(fmt.Sprintf("Generating intermediate Thrift file %s",
-			filepath.Join(dir, fmt.Sprintf("%s.thrift", frugal.Name))))
-		idlFile, err := generateThriftIDL(dir, frugal)
-		if err != nil {
-			return nil, err
-		}
-		file = idlFile
-	}
-
-	if dryRun || !generate {
-		return frugal, nil
-	}
-
-	if !genWithFrugal {
-		// Generate Thrift code.
-		logv(fmt.Sprintf("Generating \"%s\" Thrift code for %s", lang, file))
-		if err := generateThrift(frugal, dir, file, out, removeGenWithFrugalOption(gen)); err != nil {
-			return nil, err
-		}
-	}
-
-	// Generate Frugal code.
-	logv(fmt.Sprintf("Generating \"%s\" Frugal code for %s", lang, frugal.File))
-	return frugal, g.Generate(frugal, fullOut, genWithFrugal)
+	return g, nil
 }
 
 // exists determines if the file at the given path exists.
