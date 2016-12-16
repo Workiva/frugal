@@ -7,8 +7,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -19,14 +17,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link FServlet}.
@@ -76,10 +72,7 @@ public class FServletTest extends HttpServlet {
     }
 
     /**
-     * Verifies that the doPost method throws an exception when passed null arguments
-     *
-     * @throws ServletException
-     * @throws IOException
+     * Verifies that the doPost method throws an exception when passed null arguments.
      */
     @Test(expected = NullPointerException.class)
     public final void testDoPostPositive() throws ServletException, IOException {
@@ -88,9 +81,6 @@ public class FServletTest extends HttpServlet {
 
     /**
      * Verifies that the doPost method runs without exception when data is available.
-     *
-     * @throws ServletException
-     * @throws IOException
      */
     @Test
     public final void testDoPostNegative() throws ServletException, IOException {
@@ -98,5 +88,4 @@ public class FServletTest extends HttpServlet {
         when(response.getOutputStream()).thenReturn(mockServletOutputStream);
         servlet.doPost(request, response);
     }
-
 }

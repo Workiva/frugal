@@ -26,6 +26,7 @@ import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.provider.FScopeProvider;
 import com.workiva.frugal.server.FNatsServer;
 import com.workiva.frugal.server.FServer;
+import com.workiva.frugal.server.FServlet;
 import com.workiva.frugal.transport.FPublisherTransportFactory;
 import com.workiva.frugal.transport.FNatsPublisherTransport;
 import com.workiva.frugal.transport.FNatsSubscriberTransport;
@@ -37,9 +38,12 @@ import frugal.test.FFrugalTest;
 import io.nats.client.Connection;
 import io.nats.client.ConnectionFactory;
 import io.nats.client.Constants;
+import org.apache.catalina.Context;
+import org.apache.catalina.startup.Tomcat;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TProtocolFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -54,7 +58,7 @@ public class TestServer {
 
     public static boolean middlewareCalled = false;
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         try {
             // default testing parameters, overwritten in Python runner
             int port = 9090;
@@ -105,6 +109,7 @@ public class TestServer {
             CountDownLatch called = new CountDownLatch(1);
             FFrugalTest.Processor processor = new FFrugalTest.Processor(handler, new ServerMiddleware(called));
             FServer server = null;
+            Tomcat tomcat = null;
             switch (transport_type) {
                 case "stateless":
                     server = new FNatsServer.Builder(
@@ -113,46 +118,64 @@ public class TestServer {
                             fProtocolFactory,
                             new String[]{Integer.toString(port)}).build();
                     break;
-            }
+                case "http":
+                    tomcat = new Tomcat();
+                    tomcat.setPort(port);
+                    String servletName = "testServlet";
 
-            // Start a healthcheck server for the cross language tests
-            try {
-                HealthCheck healthcheck = new HealthCheck(port);
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
+                    Context ctx = tomcat.addContext("/", new File(".").getAbsolutePath());
 
-            // Start server in separate thread
-            runServer serverThread = new runServer(server, transport_type);
-            serverThread.start();
+                    Tomcat.addServlet(ctx, servletName, new FServlet(processor, fProtocolFactory));
 
-            // Wait for the middleware to be invoked, fail if it exceeds the longest client timeout (currently 20 sec)
-            if (called.await(20, TimeUnit.SECONDS)) {
-                System.out.println("Server middleware called successfully");
-            } else {
-                System.out.println("Server middleware not called within 20 seconds");
-                System.exit(1);
-            }
-
-        } catch (Exception x) {
-            x.printStackTrace();
+                    ctx.addServletMappingDecoded("/*", servletName);
+                    break;
         }
+
+        // Start a healthcheck server for the cross language tests
+        try {
+            new HealthCheck(port);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+        // Start server in separate thread
+        if (tomcat != null) {
+            RunTomcat serverThread = new RunTomcat(tomcat);
+            serverThread.start();
+        } else {
+            RunServer serverThread = new RunServer(server, transport_type);
+            serverThread.start();
+        }
+
+        // Wait for the middleware to be invoked, fail if it exceeds the longest client timeout (currently 20 sec)
+        if (called.await(20, TimeUnit.SECONDS)) {
+            System.out.println("Server middleware called successfully");
+        } else {
+            System.out.println("Server middleware not called within 20 seconds");
+            System.exit(1);
+        }
+
+    } catch(
+    Exception x)
+
+    {
+        x.printStackTrace();
     }
+}
 
 
-    private static class runServer extends Thread {
-        FServer server;
-        String transport_type;
+private static class RunTomcat extends Thread {
+        Tomcat tomcat;
 
-        runServer(FServer server, String transport_type) {
-            this.server = server;
-            this.transport_type = transport_type;
+        RunTomcat(Tomcat tomcat) {
+            this.tomcat = tomcat;
         }
 
         public void run() {
-            System.out.println("Starting " + transport_type + " server...");
+            System.out.println("Starting HTTP server...");
             try {
-                server.serve();
+                tomcat.start();
+                tomcat.getServer().await();
             } catch (Exception e) {
                 System.out.printf("Exception starting server %s\n", e);
             }
@@ -160,86 +183,106 @@ public class TestServer {
     }
 
 
-    private static class ServerMiddleware implements ServiceMiddleware {
-        CountDownLatch called;
+private static class RunServer extends Thread {
+    FServer server;
+    String transport_type;
 
-        ServerMiddleware(CountDownLatch called) {
-            this.called = called;
-        }
-
-        @Override
-        public <T> InvocationHandler<T> apply(T next) {
-            return new InvocationHandler<T>(next) {
-                @Override
-                public Object invoke(Method method, Object receiver, Object[] args) throws Throwable {
-                    Object[] subArgs = Arrays.copyOfRange(args, 1, args.length);
-                    System.out.printf("%s(%s)\n", method.getName(), Arrays.toString(subArgs));
-                    if (method.getName().equals("testOneway")) {
-
-                        called.countDown();
-                    }
-                    return method.invoke(receiver, args);
-                }
-            };
-        }
+    RunServer(FServer server, String transport_type) {
+        this.server = server;
+        this.transport_type = transport_type;
     }
 
-
-    /*
-    Subscriber subscribes to "port-'call'" and upon receipt, publishes to "port-'response'".
-    The corresponding publisher in the client code publishes to "port-'call'" and subscribes
-    and awaits a response on "port-'response'".
-    */
-    private static class Subscriber implements Runnable {
-
-        FProtocolFactory protocolFactory;
-        int port;
-
-        Subscriber(FProtocolFactory protocolFactory, int port) {
-            this.protocolFactory = protocolFactory;
-            this.port = port;
+    public void run() {
+        System.out.println("Starting " + transport_type + " server...");
+        try {
+            server.serve();
+        } catch (Exception e) {
+            System.out.printf("Exception starting server %s\n", e);
         }
+    }
+}
 
-        public void run() {
-            ConnectionFactory cf = new ConnectionFactory(Constants.DEFAULT_URL);
-            try {
-                Connection conn = cf.createConnection();
-                FPublisherTransportFactory publisherFactory = new FNatsPublisherTransport.Factory(conn);
-                FSubscriberTransportFactory subscriberFactory = new FNatsSubscriberTransport.Factory(conn);
-                FScopeProvider provider = new FScopeProvider(publisherFactory, subscriberFactory, protocolFactory);
-                EventsSubscriber.Iface subscriber = new EventsSubscriber.Client(provider);
-                try {
-                    subscriber.subscribeEventCreated("*", "*", "call", Integer.toString(port), (context, event) -> {
-                        System.out.format("received " + context + " : " + event);
-                        EventsPublisher.Iface publisher = new EventsPublisher.Client(provider);
-                        try {
-                            publisher.open();
-                            String preamble = context.getRequestHeader(utils.PREAMBLE_HEADER);
-                            if (preamble == null || "".equals(preamble)) {
-                                System.out.println("Client did not provide preamble header");
-                                return;
-                            }
-                            String ramble = context.getRequestHeader(utils.RAMBLE_HEADER);
-                            if (ramble == null || "".equals(ramble)) {
-                                System.out.println("Client did not provide ramble header");
-                                return;
-                            }
-                            event = new Event(1, "received call");
-                            publisher.publishEventCreated(new FContext("Call"), preamble, ramble, "response", Integer.toString(port), event);
 
-                        } catch (TException e) {
-                            System.out.println("Error opening publisher to respond" + e.getMessage());
-                        }
-                    });
-                } catch (TException e) {
-                    System.out.println("Error subscribing" + e.getMessage());
+private static class ServerMiddleware implements ServiceMiddleware {
+    CountDownLatch called;
+
+    ServerMiddleware(CountDownLatch called) {
+        this.called = called;
+    }
+
+    @Override
+    public <T> InvocationHandler<T> apply(T next) {
+        return new InvocationHandler<T>(next) {
+            @Override
+            public Object invoke(Method method, Object receiver, Object[] args) throws Throwable {
+                Object[] subArgs = Arrays.copyOfRange(args, 1, args.length);
+                System.out.printf("%s(%s)\n", method.getName(), Arrays.toString(subArgs));
+                if (method.getName().equals("testOneway")) {
+
+                    called.countDown();
                 }
-                System.out.println("Subscriber started...");
-
-            } catch (TimeoutException | IOException e) {
-                System.out.println("Error connecting to nats" + e.getMessage());
+                return method.invoke(receiver, args);
             }
+        };
+    }
+}
+
+
+/*
+Subscriber subscribes to "port-'call'" and upon receipt, publishes to "port-'response'".
+The corresponding publisher in the client code publishes to "port-'call'" and subscribes
+and awaits a response on "port-'response'".
+*/
+private static class Subscriber implements Runnable {
+
+    FProtocolFactory protocolFactory;
+    int port;
+
+    Subscriber(FProtocolFactory protocolFactory, int port) {
+        this.protocolFactory = protocolFactory;
+        this.port = port;
+    }
+
+    public void run() {
+        ConnectionFactory cf = new ConnectionFactory(Constants.DEFAULT_URL);
+        try {
+            Connection conn = cf.createConnection();
+            FPublisherTransportFactory publisherFactory = new FNatsPublisherTransport.Factory(conn);
+            FSubscriberTransportFactory subscriberFactory = new FNatsSubscriberTransport.Factory(conn);
+            FScopeProvider provider = new FScopeProvider(publisherFactory, subscriberFactory, protocolFactory);
+            EventsSubscriber.Iface subscriber = new EventsSubscriber.Client(provider);
+            try {
+                subscriber.subscribeEventCreated("*", "*", "call", Integer.toString(port), (context, event) -> {
+                    System.out.format("received " + context + " : " + event);
+                    EventsPublisher.Iface publisher = new EventsPublisher.Client(provider);
+                    try {
+                        publisher.open();
+                        String preamble = context.getRequestHeader(utils.PREAMBLE_HEADER);
+                        if (preamble == null || "".equals(preamble)) {
+                            System.out.println("Client did not provide preamble header");
+                            return;
+                        }
+                        String ramble = context.getRequestHeader(utils.RAMBLE_HEADER);
+                        if (ramble == null || "".equals(ramble)) {
+                            System.out.println("Client did not provide ramble header");
+                            return;
+                        }
+                        event = new Event(1, "received call");
+                        publisher.publishEventCreated(new FContext("Call"), preamble, ramble, "response", Integer.toString(port), event);
+
+                    } catch (TException e) {
+                        System.out.println("Error opening publisher to respond" + e.getMessage());
+                    }
+                });
+            } catch (TException e) {
+                System.out.println("Error subscribing" + e.getMessage());
+            }
+            System.out.println("Subscriber started...");
+
+        } catch (TimeoutException | IOException e) {
+            System.out.println("Error connecting to nats" + e.getMessage());
         }
     }
+}
 
 }

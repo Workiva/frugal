@@ -35,7 +35,7 @@
     "server": {
       "delay": 15,
       "command": [ "/usr/bin/java", "-Djava.security.egd=file:///dev/urandom", "-cp", "cross.jar", "com.workiva.TestServer" ],
-      "transports": [ "stateless" ]
+      "transports": [ "stateless", "http" ]
     },
     "sockets": [ "ip" ],
     "protocols": [ "binary", "compact", "json" ],
