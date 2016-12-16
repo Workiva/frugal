@@ -7,6 +7,8 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -26,6 +28,8 @@ import java.util.Scanner;
  * Servlet implementation class for Frugal.
  */
 public class FServlet extends HttpServlet {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FServlet.class);
 
     private final FProcessor processor;
 
@@ -61,6 +65,12 @@ public class FServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        Integer responseLimit;
+        try {
+            responseLimit = Integer.parseInt(request.getHeader("x-frugal-payload-limit"));
+        } catch (NumberFormatException ignored) {
+            responseLimit = 0;
+        }
 
         // Read input bytes
         StringBuilder buffer = new StringBuilder();
@@ -71,6 +81,12 @@ public class FServlet extends HttpServlet {
         }
         String data = buffer.toString();
         byte[] inputBytes = Base64.decodeBase64(data);
+
+        if (inputBytes.length <= 4) {
+            LOGGER.info("Invalid request frame length", inputBytes.length);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
 
         // Process frame (exclude first 4 bytes which represent frame size).
         byte[] inputFrame = Arrays.copyOfRange(inputBytes, 4, inputBytes.length);
@@ -83,19 +99,16 @@ public class FServlet extends HttpServlet {
             throw new ServletException(te);
         }
 
-        // Frame output
-        byte[] outputBytes = outTransport.getWriteBytes();
-//        byte[] frameBytes = ByteBuffer.allocate(4).putInt(outputBytes.length).array();
-//        byte[] output = new byte[frameBytes.length + outputBytes.length];
-//        System.arraycopy(frameBytes, 0, output, 0, frameBytes.length);
-//        System.arraycopy(outputBytes, 0, output, frameBytes.length, outputBytes.length);
-//
-//        System.out.println(Arrays.toString(outputBytes));
-//        System.out.println(Arrays.toString(frameBytes));
-//        System.out.println(Arrays.toString(output));
+        byte[] framedOutput = Base64.encodeBase64(outTransport.getWriteBytes());
+
+        // Make sure response is within limit
+        if (responseLimit > 0 && framedOutput.length > responseLimit) {
+            LOGGER.info("Response limit exceeded", responseLimit);
+            response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
+            return;
+        }
 
         // Base64 encode and return
-        byte[] framedOutput = Base64.encodeBase64(outputBytes);
         OutputStream out = response.getOutputStream();
         out.write(framedOutput);
 
@@ -103,6 +116,13 @@ public class FServlet extends HttpServlet {
         response.setContentType("application/x-frugal");
         response.setContentLength(framedOutput.length);
         response.setHeader("Content-Transfer-Encoding", "base64");
+
+        // Add custom headers
+        if (null != this.customHeaders) {
+            for (Map.Entry<String, String> header : this.customHeaders) {
+                response.addHeader(header.getKey(), header.getValue());
+            }
+        }
     }
 
     /**
@@ -111,40 +131,6 @@ public class FServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         doPost(request, response);
-    }
-
-    private void printRequest(HttpServletRequest httpRequest) {
-        System.out.println(" \n\n Headers");
-
-        Enumeration headerNames = httpRequest.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
-            String headerName = (String) headerNames.nextElement();
-            System.out.println(headerName + " = " + httpRequest.getHeader(headerName));
-        }
-
-        System.out.println("\n\nParameters");
-
-        Enumeration params = httpRequest.getParameterNames();
-        while (params.hasMoreElements()) {
-            String paramName = (String) params.nextElement();
-            System.out.println(paramName + " = " + httpRequest.getParameter(paramName));
-        }
-
-        System.out.println("\n\n Row data");
-        System.out.println(extractPostRequestBody(httpRequest));
-    }
-
-    static String extractPostRequestBody(HttpServletRequest request) {
-        if ("POST".equalsIgnoreCase(request.getMethod())) {
-            Scanner s = null;
-            try {
-                s = new Scanner(request.getInputStream(), "UTF-8").useDelimiter("\\A");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return s.hasNext() ? s.next() : "";
-        }
-        return "";
     }
 
     public void addCustomHeader(final String key, final String value) {
