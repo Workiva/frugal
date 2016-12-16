@@ -174,7 +174,7 @@ Statement <- docstr:(DocString __)? statement:(ThriftStatement / FrugalStatement
 ThriftStatement <- Include / Namespace / Const / Enum / TypeDef / Struct / Exception / Union / Service
 
 Include <- "include" _ file:Literal _ annotations:TypeAnnotations? EOS {
-    name := file.(string)
+    name := filepath.Base(file.(string))
     if ix := strings.LastIndex(name, "."); ix > 0 {
         name = name[:ix]
     }
