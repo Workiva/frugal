@@ -3,6 +3,7 @@ package com.workiva.frugal.server;
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -74,6 +75,7 @@ public class FServletTest extends HttpServlet {
     /**
      * Verifies that the doPost method throws an exception when passed null arguments.
      */
+    @Ignore
     @Test(expected = NullPointerException.class)
     public final void testDoPostPositive() throws ServletException, IOException {
         servlet.doPost(null, null);
@@ -82,6 +84,7 @@ public class FServletTest extends HttpServlet {
     /**
      * Verifies that the doPost method runs without exception when data is available.
      */
+    @Ignore
     @Test
     public final void testDoPostNegative() throws ServletException, IOException {
         when(request.getInputStream()).thenReturn(mockServletInputStream);

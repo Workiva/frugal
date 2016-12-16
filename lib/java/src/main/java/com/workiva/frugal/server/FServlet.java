@@ -3,20 +3,24 @@ package com.workiva.frugal.server;
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocol;
 import com.workiva.frugal.protocol.FProtocolFactory;
+import com.workiva.frugal.transport.TMemoryOutputBuffer;
 import org.apache.thrift.TException;
-import org.apache.thrift.transport.TIOStreamTransport;
+import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.Map;
+import java.util.Scanner;
 
 /**
  * Servlet implementation class for Frugal.
@@ -58,26 +62,25 @@ public class FServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        // Read input
+        StringBuilder buffer = new StringBuilder();
+        BufferedReader reader = request.getReader();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            buffer.append(line);
+        }
+        String data = buffer.toString();
+        byte[] frame = Base64.getDecoder().decode(data);
+        System.out.println(Arrays.toString(frame));
+
+        TTransport inTransport = new TMemoryInputTransport(frame);
+        TMemoryOutputBuffer outTransport = new TMemoryOutputBuffer();
+
+        FProtocol inProtocol = inProtocolFactory.getProtocol(inTransport);
+        FProtocol outProtocol = outProtocolFactory.getProtocol(outTransport);
+
         try {
-            response.setContentType("application/x-frugal");
-
-            if (null != this.customHeaders) {
-                for (Map.Entry<String, String> header : this.customHeaders) {
-                    response.addHeader(header.getKey(), header.getValue());
-                }
-            }
-            InputStream in = request.getInputStream();
-            OutputStream out = response.getOutputStream();
-
-            TTransport transport = new TIOStreamTransport(in, out);
-            TTransport inTransport = transport;
-            TTransport outTransport = transport;
-
-            FProtocol inProtocol = inProtocolFactory.getProtocol(inTransport);
-            FProtocol outProtocol = outProtocolFactory.getProtocol(outTransport);
-
             processor.process(inProtocol, outProtocol);
-            out.flush();
         } catch (TException te) {
             throw new ServletException(te);
         }
@@ -89,6 +92,40 @@ public class FServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         doPost(request, response);
+    }
+
+    private void printRequest(HttpServletRequest httpRequest) {
+        System.out.println(" \n\n Headers");
+
+        Enumeration headerNames = httpRequest.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            String headerName = (String) headerNames.nextElement();
+            System.out.println(headerName + " = " + httpRequest.getHeader(headerName));
+        }
+
+        System.out.println("\n\nParameters");
+
+        Enumeration params = httpRequest.getParameterNames();
+        while (params.hasMoreElements()) {
+            String paramName = (String) params.nextElement();
+            System.out.println(paramName + " = " + httpRequest.getParameter(paramName));
+        }
+
+        System.out.println("\n\n Row data");
+        System.out.println(extractPostRequestBody(httpRequest));
+    }
+
+    static String extractPostRequestBody(HttpServletRequest request) {
+        if ("POST".equalsIgnoreCase(request.getMethod())) {
+            Scanner s = null;
+            try {
+                s = new Scanner(request.getInputStream(), "UTF-8").useDelimiter("\\A");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return s.hasNext() ? s.next() : "";
+        }
+        return "";
     }
 
     public void addCustomHeader(final String key, final String value) {

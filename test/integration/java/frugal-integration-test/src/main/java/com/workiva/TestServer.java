@@ -95,8 +95,7 @@ public class TestServer {
             ConnectionFactory cf = new ConnectionFactory("nats://localhost:4222");
             Connection conn = cf.createConnection();
 
-            List<String> validTransports = new ArrayList<>();
-            validTransports.add("stateless");
+            List<String> validTransports = Arrays.asList("stateless", "http");
 
             if (!validTransports.contains(transport_type)) {
                 throw new Exception("Unknown transport type! " + transport_type);
@@ -131,13 +130,6 @@ public class TestServer {
                     break;
         }
 
-        // Start a healthcheck server for the cross language tests
-        try {
-            new HealthCheck(port);
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
-
         // Start server in separate thread
         if (tomcat != null) {
             RunTomcat serverThread = new RunTomcat(tomcat);
@@ -145,6 +137,12 @@ public class TestServer {
         } else {
             RunServer serverThread = new RunServer(server, transport_type);
             serverThread.start();
+            // Start a healthcheck server for the cross language tests
+            try {
+                new HealthCheck(port);
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
         }
 
         // Wait for the middleware to be invoked, fail if it exceeds the longest client timeout (currently 20 sec)
