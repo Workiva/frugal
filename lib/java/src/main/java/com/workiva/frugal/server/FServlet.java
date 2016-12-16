@@ -1,9 +1,9 @@
 package com.workiva.frugal.server;
 
 import com.workiva.frugal.processor.FProcessor;
-import com.workiva.frugal.protocol.FProtocol;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.transport.TMemoryOutputBuffer;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
@@ -14,9 +14,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Map;
@@ -62,7 +62,7 @@ public class FServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // Read input
+        // Read input bytes
         StringBuilder buffer = new StringBuilder();
         BufferedReader reader = request.getReader();
         String line;
@@ -70,20 +70,39 @@ public class FServlet extends HttpServlet {
             buffer.append(line);
         }
         String data = buffer.toString();
-        byte[] frame = Base64.getDecoder().decode(data);
-        System.out.println(Arrays.toString(frame));
+        byte[] inputBytes = Base64.decodeBase64(data);
 
-        TTransport inTransport = new TMemoryInputTransport(frame);
+        // Process frame (exclude first 4 bytes which represent frame size).
+        byte[] inputFrame = Arrays.copyOfRange(inputBytes, 4, inputBytes.length);
+        TTransport inTransport = new TMemoryInputTransport(inputFrame);
         TMemoryOutputBuffer outTransport = new TMemoryOutputBuffer();
 
-        FProtocol inProtocol = inProtocolFactory.getProtocol(inTransport);
-        FProtocol outProtocol = outProtocolFactory.getProtocol(outTransport);
-
         try {
-            processor.process(inProtocol, outProtocol);
+            processor.process(inProtocolFactory.getProtocol(inTransport), outProtocolFactory.getProtocol(outTransport));
         } catch (TException te) {
             throw new ServletException(te);
         }
+
+        // Frame output
+        byte[] outputBytes = outTransport.getWriteBytes();
+//        byte[] frameBytes = ByteBuffer.allocate(4).putInt(outputBytes.length).array();
+//        byte[] output = new byte[frameBytes.length + outputBytes.length];
+//        System.arraycopy(frameBytes, 0, output, 0, frameBytes.length);
+//        System.arraycopy(outputBytes, 0, output, frameBytes.length, outputBytes.length);
+//
+//        System.out.println(Arrays.toString(outputBytes));
+//        System.out.println(Arrays.toString(frameBytes));
+//        System.out.println(Arrays.toString(output));
+
+        // Base64 encode and return
+        byte[] framedOutput = Base64.encodeBase64(outputBytes);
+        OutputStream out = response.getOutputStream();
+        out.write(framedOutput);
+
+        // Set response headers
+        response.setContentType("application/x-frugal");
+        response.setContentLength(framedOutput.length);
+        response.setHeader("Content-Transfer-Encoding", "base64");
     }
 
     /**
