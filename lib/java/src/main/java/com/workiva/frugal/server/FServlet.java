@@ -20,9 +20,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.Map;
-import java.util.Scanner;
 
 /**
  * Servlet implementation class for Frugal.
