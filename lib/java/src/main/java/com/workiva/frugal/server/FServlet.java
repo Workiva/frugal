@@ -182,7 +182,7 @@ public class FServlet extends HttpServlet {
     }
 
     /**
-     * Returns payload body from the request as a byte[]
+     * Returns payload body from the request as a byte[].
      *
      * @param request an HTTP request
      * @return The payload body
