@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
-	"github.com/nats-io/nats"
+	"github.com/nats-io/go-nats"
 )
 
 const (

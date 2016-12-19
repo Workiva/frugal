@@ -1,23 +1,24 @@
 {
 	"ImportPath": "github.com/Workiva/frugal/lib/go",
 	"GoVersion": "go1.5",
-	"GodepVersion": "v70",
+	"GodepVersion": "v75",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
 		{
 			"ImportPath": "git.apache.org/thrift.git/lib/go/thrift",
-			"Rev": "cdc83335d60756c4bfb0d2c8af7933500c9e3c06"
+			"Rev": "0d9b713b173f35ce02552b2f4372899440a99b25"
 		},
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
-			"Comment": "v0.8.7",
-			"Rev": "418b41d23a1bf978c06faea5313ba194650ac088"
+			"Comment": "v0.11.0",
+			"Rev": "d26492970760ca5d33129d2d799e34be5c4782eb"
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
-			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+			"Comment": "v1.1.0",
+			"Rev": "346938d642f2ec3594ed81d874461961cd0faa76"
 		},
 		{
 			"ImportPath": "github.com/mattrobenolt/gocql/uuid",
@@ -25,36 +26,38 @@
 		},
 		{
 			"ImportPath": "github.com/nats-io/gnatsd/conf",
-			"Comment": "v0.8.0",
-			"Rev": "3ff8ad706a6816b13c9277637e2e7d5bb406951a"
+			"Comment": "v0.9.4",
+			"Rev": "dcbf5d8d35659a9a43f2832a20d98b92eedceb9e"
 		},
 		{
 			"ImportPath": "github.com/nats-io/gnatsd/server",
-			"Comment": "v0.8.0",
-			"Rev": "3ff8ad706a6816b13c9277637e2e7d5bb406951a"
+			"Comment": "v0.9.4",
+			"Rev": "dcbf5d8d35659a9a43f2832a20d98b92eedceb9e"
 		},
 		{
 			"ImportPath": "github.com/nats-io/gnatsd/server/pse",
-			"Comment": "v0.8.0",
-			"Rev": "3ff8ad706a6816b13c9277637e2e7d5bb406951a"
+			"Comment": "v0.9.4",
+			"Rev": "dcbf5d8d35659a9a43f2832a20d98b92eedceb9e"
 		},
 		{
-			"ImportPath": "github.com/nats-io/nats",
-			"Comment": "v1.1.6-150-gfc85f44",
-			"Rev": "fc85f44c1659ab6610d76fd6bd0e44ad2cadf697"
+			"ImportPath": "github.com/nats-io/go-nats",
+			"Comment": "v1.2.2-6-g6b6bf39",
+			"Rev": "6b6bf392d34d01f57cc563ae123f00c13778bd57"
 		},
 		{
-			"ImportPath": "github.com/nats-io/nats/encoders/builtin",
-			"Comment": "v1.1.6-150-gfc85f44",
-			"Rev": "fc85f44c1659ab6610d76fd6bd0e44ad2cadf697"
+			"ImportPath": "github.com/nats-io/go-nats/encoders/builtin",
+			"Comment": "v1.2.2-6-g6b6bf39",
+			"Rev": "6b6bf392d34d01f57cc563ae123f00c13778bd57"
 		},
 		{
 			"ImportPath": "github.com/nats-io/nuid",
-			"Rev": "4f84f5f3b2786224e336af2e13dba0a0a80b76fa"
+			"Comment": "v1.0.0",
+			"Rev": "289cccf02c178dc782430d534e3c1f5b72af807f"
 		},
 		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",
-			"Rev": "d8ed2627bdf02c080bf22230dbb337003b7aba2d"
+			"Comment": "v1.0.0",
+			"Rev": "792786c7400a136282c1664665ae0a8db921c6c2"
 		},
 		{
 			"ImportPath": "github.com/stretchr/objx",
@@ -62,18 +65,27 @@
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
-			"Comment": "v1.1.3",
-			"Rev": "f390dcf405f7b83c997eac1b06768bb9f44dec18"
+			"Comment": "v1.1.4",
+			"Rev": "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/mock",
-			"Comment": "v1.1.3",
-			"Rev": "f390dcf405f7b83c997eac1b06768bb9f44dec18"
+			"Comment": "v1.1.4",
+			"Rev": "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/require",
-			"Comment": "v1.1.3",
-			"Rev": "f390dcf405f7b83c997eac1b06768bb9f44dec18"
+			"Comment": "v1.1.4",
+			"Rev": "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "f64b50fbea64174967a8882830d621a18ee1548e"
+		},
+		{
+			"ImportPath": "github.com/nats-io/go-nats/util",
+			"Comment": "v1.2.2-6-g6b6bf39",
+			"Rev": "6b6bf392d34d01f57cc563ae123f00c13778bd57"
 		}
 	]
 }

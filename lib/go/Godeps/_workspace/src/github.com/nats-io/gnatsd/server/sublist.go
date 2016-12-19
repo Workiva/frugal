@@ -188,7 +188,7 @@ func (s *Sublist) addToCache(subject string, sub *subscription) {
 // removeFromCache will remove the sub from any active cache entries.
 // Assumes write lock is held.
 func (s *Sublist) removeFromCache(subject string, sub *subscription) {
-	for k, _ := range s.cache {
+	for k := range s.cache {
 		if !matchLiteral(k, subject) {
 			continue
 		}
@@ -231,7 +231,7 @@ func (s *Sublist) Match(subject string) *SublistResult {
 	s.cache[subject] = result
 	// Bound the number of entries to sublistMaxCache
 	if len(s.cache) > slCacheMax {
-		for k, _ := range s.cache {
+		for k := range s.cache {
 			delete(s.cache, k)
 			break
 		}
@@ -565,7 +565,29 @@ func visitLevel(l *level, depth int) int {
 	return maxDepth
 }
 
-// IsValidLiteralSubject returns true if a subject is valid, false otherwise
+// IsValidSubject returns true if a subject is valid, false otherwise
+func IsValidSubject(subject string) bool {
+	if subject == "" {
+		return false
+	}
+	sfwc := false
+	tokens := strings.Split(string(subject), tsep)
+	for _, t := range tokens {
+		if len(t) == 0 || sfwc {
+			return false
+		}
+		if len(t) > 1 {
+			continue
+		}
+		switch t[0] {
+		case fwc:
+			sfwc = true
+		}
+	}
+	return true
+}
+
+// IsValidLiteralSubject returns true if a subject is valid and literal (no wildcards), false otherwise
 func IsValidLiteralSubject(subject string) bool {
 	tokens := strings.Split(string(subject), tsep)
 	for _, t := range tokens {

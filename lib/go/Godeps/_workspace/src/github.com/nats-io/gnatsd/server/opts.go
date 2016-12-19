@@ -1,4 +1,4 @@
-// Copyright 2012-2015 Apcera Inc. All rights reserved.
+// Copyright 2012-2016 Apcera Inc. All rights reserved.
 
 package server
 
@@ -17,6 +17,20 @@ import (
 	"github.com/nats-io/gnatsd/conf"
 )
 
+// For multiple accounts/users.
+type User struct {
+	Username    string       `json:"user"`
+	Password    string       `json:"password"`
+	Permissions *Permissions `json:"permissions"`
+}
+
+// Authorization are the allowed subjects on a per
+// publish or subscribe basis.
+type Permissions struct {
+	Publish   []string `json:"publish"`
+	Subscribe []string `json:"subscribe"`
+}
+
 // Options block for gnatsd server.
 type Options struct {
 	Host               string        `json:"addr"`
@@ -27,11 +41,13 @@ type Options struct {
 	NoSigs             bool          `json:"-"`
 	Logtime            bool          `json:"-"`
 	MaxConn            int           `json:"max_connections"`
-	Username           string        `json:"user,omitempty"`
+	Users              []*User       `json:"-"`
+	Username           string        `json:"-"`
 	Password           string        `json:"-"`
 	Authorization      string        `json:"-"`
 	PingInterval       time.Duration `json:"ping_interval"`
 	MaxPingsOut        int           `json:"ping_max"`
+	HTTPHost           string        `json:"http_host"`
 	HTTPPort           int           `json:"http_port"`
 	HTTPSPort          int           `json:"https_port"`
 	AuthTimeout        float64       `json:"auth_timeout"`
@@ -46,6 +62,7 @@ type Options struct {
 	ClusterTLSTimeout  float64       `json:"-"`
 	ClusterTLSConfig   *tls.Config   `json:"-"`
 	ClusterListenStr   string        `json:"-"`
+	ClusterNoAdvertise bool          `json:"-"`
 	ProfPort           int           `json:"-"`
 	PidFile            string        `json:"-"`
 	LogFile            string        `json:"-"`
@@ -62,10 +79,15 @@ type Options struct {
 	TLSConfig          *tls.Config   `json:"-"`
 }
 
+// Configuration file authorization section.
 type authorization struct {
-	user    string
-	pass    string
-	timeout float64
+	// Singles
+	user string
+	pass string
+	// Multiple Users
+	users              []*User
+	timeout            float64
+	defaultPermissions *Permissions
 }
 
 // TLSConfigOpts holds the parsed tls config information,
@@ -120,6 +142,13 @@ func ProcessConfigFile(configFile string) (*Options, error) {
 
 	for k, v := range m {
 		switch strings.ToLower(k) {
+		case "listen":
+			hp, err := parseListen(v)
+			if err != nil {
+				return nil, err
+			}
+			opts.Host = hp.host
+			opts.Port = hp.port
 		case "port":
 			opts.Port = int(v.(int64))
 		case "host", "net":
@@ -132,10 +161,34 @@ func ProcessConfigFile(configFile string) (*Options, error) {
 			opts.Logtime = v.(bool)
 		case "authorization":
 			am := v.(map[string]interface{})
-			auth := parseAuthorization(am)
+			auth, err := parseAuthorization(am)
+			if err != nil {
+				return nil, err
+			}
 			opts.Username = auth.user
 			opts.Password = auth.pass
 			opts.AuthTimeout = auth.timeout
+			// Check for multiple users defined
+			if auth.users != nil {
+				if auth.user != "" {
+					return nil, fmt.Errorf("Can not have a single user/pass and a users array")
+				}
+				opts.Users = auth.users
+			}
+		case "http":
+			hp, err := parseListen(v)
+			if err != nil {
+				return nil, err
+			}
+			opts.HTTPHost = hp.host
+			opts.HTTPPort = hp.port
+		case "https":
+			hp, err := parseListen(v)
+			if err != nil {
+				return nil, err
+			}
+			opts.HTTPHost = hp.host
+			opts.HTTPSPort = hp.port
 		case "http_port", "monitor_port":
 			opts.HTTPPort = int(v.(int64))
 		case "https_port":
@@ -178,17 +231,57 @@ func ProcessConfigFile(configFile string) (*Options, error) {
 	return opts, nil
 }
 
+// hostPort is simple struct to hold parsed listen/addr strings.
+type hostPort struct {
+	host string
+	port int
+}
+
+// parseListen will parse listen option which is replacing host/net and port
+func parseListen(v interface{}) (*hostPort, error) {
+	hp := &hostPort{}
+	switch v.(type) {
+	// Only a port
+	case int64:
+		hp.port = int(v.(int64))
+	case string:
+		host, port, err := net.SplitHostPort(v.(string))
+		if err != nil {
+			return nil, fmt.Errorf("Could not parse address string %q", v)
+		}
+		hp.port, err = strconv.Atoi(port)
+		if err != nil {
+			return nil, fmt.Errorf("Could not parse port %q", port)
+		}
+		hp.host = host
+	}
+	return hp, nil
+}
+
 // parseCluster will parse the cluster config.
 func parseCluster(cm map[string]interface{}, opts *Options) error {
 	for mk, mv := range cm {
 		switch strings.ToLower(mk) {
+		case "listen":
+			hp, err := parseListen(mv)
+			if err != nil {
+				return err
+			}
+			opts.ClusterHost = hp.host
+			opts.ClusterPort = hp.port
 		case "port":
 			opts.ClusterPort = int(mv.(int64))
 		case "host", "net":
 			opts.ClusterHost = mv.(string)
 		case "authorization":
 			am := mv.(map[string]interface{})
-			auth := parseAuthorization(am)
+			auth, err := parseAuthorization(am)
+			if err != nil {
+				return err
+			}
+			if auth.users != nil {
+				return fmt.Errorf("Cluster authorization does not allow multiple users")
+			}
 			opts.ClusterUsername = auth.user
 			opts.ClusterPassword = auth.pass
 			opts.ClusterAuthTimeout = auth.timeout
@@ -218,14 +311,16 @@ func parseCluster(cm map[string]interface{}, opts *Options) error {
 			opts.ClusterTLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
 			opts.ClusterTLSConfig.ClientCAs = opts.ClusterTLSConfig.RootCAs
 			opts.ClusterTLSTimeout = tc.Timeout
+		case "no_advertise":
+			opts.ClusterNoAdvertise = mv.(bool)
 		}
 	}
 	return nil
 }
 
 // Helper function to parse Authorization configs.
-func parseAuthorization(am map[string]interface{}) authorization {
-	auth := authorization{}
+func parseAuthorization(am map[string]interface{}) (*authorization, error) {
+	auth := &authorization{}
 	for mk, mv := range am {
 		switch strings.ToLower(mk) {
 		case "user", "username":
@@ -241,9 +336,133 @@ func parseAuthorization(am map[string]interface{}) authorization {
 				at = mv.(float64)
 			}
 			auth.timeout = at
+		case "users":
+			users, err := parseUsers(mv)
+			if err != nil {
+				return nil, err
+			}
+			auth.users = users
+		case "default_permission", "default_permissions":
+			pm, ok := mv.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("Expected default permissions to be a map/struct, got %+v", mv)
+			}
+			permissions, err := parseUserPermissions(pm)
+			if err != nil {
+				return nil, err
+			}
+			auth.defaultPermissions = permissions
+		}
+
+		// Now check for permission defaults with multiple users, etc.
+		if auth.users != nil && auth.defaultPermissions != nil {
+			for _, user := range auth.users {
+				if user.Permissions == nil {
+					user.Permissions = auth.defaultPermissions
+				}
+			}
+		}
+
+	}
+	return auth, nil
+}
+
+// Helper function to parse multiple users array with optional permissions.
+func parseUsers(mv interface{}) ([]*User, error) {
+	// Make sure we have an array
+	uv, ok := mv.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Expected users field to be an array, got %v", mv)
+	}
+	users := []*User{}
+	for _, u := range uv {
+		// Check its a map/struct
+		um, ok := u.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("Expected user entry to be a map/struct, got %v", u)
+		}
+		user := &User{}
+		for k, v := range um {
+			switch strings.ToLower(k) {
+			case "user", "username":
+				user.Username = v.(string)
+			case "pass", "password":
+				user.Password = v.(string)
+			case "permission", "permissions", "authroization":
+				pm, ok := v.(map[string]interface{})
+				if !ok {
+					return nil, fmt.Errorf("Expected user permissions to be a map/struct, got %+v", v)
+				}
+				permissions, err := parseUserPermissions(pm)
+				if err != nil {
+					return nil, err
+				}
+				user.Permissions = permissions
+			}
+		}
+		// Check to make sure we have at least username and password
+		if user.Username == "" || user.Password == "" {
+			return nil, fmt.Errorf("User entry requires a user and a password")
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
+// Helper function to parse user/account permissions
+func parseUserPermissions(pm map[string]interface{}) (*Permissions, error) {
+	p := &Permissions{}
+	for k, v := range pm {
+		switch strings.ToLower(k) {
+		case "pub", "publish":
+			subjects, err := parseSubjects(v)
+			if err != nil {
+				return nil, err
+			}
+			p.Publish = subjects
+		case "sub", "subscribe":
+			subjects, err := parseSubjects(v)
+			if err != nil {
+				return nil, err
+			}
+			p.Subscribe = subjects
+		default:
+			return nil, fmt.Errorf("Unknown field %s parsing permissions", k)
 		}
 	}
-	return auth
+	return p, nil
+}
+
+// Helper function to parse subject singeltons and/or arrays
+func parseSubjects(v interface{}) ([]string, error) {
+	var subjects []string
+	switch v.(type) {
+	case string:
+		subjects = append(subjects, v.(string))
+	case []string:
+		subjects = v.([]string)
+	case []interface{}:
+		for _, i := range v.([]interface{}) {
+			subject, ok := i.(string)
+			if !ok {
+				return nil, fmt.Errorf("Subject in permissions array cannot be cast to string")
+			}
+			subjects = append(subjects, subject)
+		}
+	default:
+		return nil, fmt.Errorf("Expected subject permissions to be a subject, or array of subjects, got %T", v)
+	}
+	return checkSubjectArray(subjects)
+}
+
+// Helper function to validate subjects, etc for account permissioning.
+func checkSubjectArray(sa []string) ([]string, error) {
+	for _, s := range sa {
+		if !IsValidSubject(s) {
+			return nil, fmt.Errorf("Subject %q is not a valid subject", s)
+		}
+	}
+	return sa, nil
 }
 
 // PrintTLSHelpAndDie prints TLS usage and exits.
@@ -421,6 +640,12 @@ func MergeOptions(fileOpts, flagOpts *Options) *Options {
 	if flagOpts.ProfPort != 0 {
 		opts.ProfPort = flagOpts.ProfPort
 	}
+	if flagOpts.ClusterListenStr != "" {
+		opts.ClusterListenStr = flagOpts.ClusterListenStr
+	}
+	if flagOpts.ClusterNoAdvertise {
+		opts.ClusterNoAdvertise = true
+	}
 	if flagOpts.RoutesStr != "" {
 		mergeRoutes(&opts, flagOpts)
 	}
@@ -532,6 +757,10 @@ func processOptions(opts *Options) {
 	// Setup non-standard Go defaults
 	if opts.Host == "" {
 		opts.Host = DEFAULT_HOST
+	}
+	if opts.HTTPHost == "" {
+		// Default to same bind from server if left undefined
+		opts.HTTPHost = opts.Host
 	}
 	if opts.Port == 0 {
 		opts.Port = DEFAULT_PORT

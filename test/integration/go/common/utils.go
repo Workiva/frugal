@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/Workiva/frugal/lib/go"
-	"github.com/nats-io/nats"
+	"github.com/nats-io/go-nats"
 )
 
 const (

@@ -1,24 +1,24 @@
 {
 	"ImportPath": "github.com/Workiva/frugal",
 	"GoVersion": "go1.5",
-	"GodepVersion": "v70",
+	"GodepVersion": "v75",
 	"Deps": [
 		{
 			"ImportPath": "github.com/urfave/cli",
-			"Comment": "v1.17.0-85-g4205e9c",
-			"Rev": "4205e9c4ee9672a8df5bb4fe486a8aa07e1e4037"
+			"Comment": "v1.19.1",
+			"Rev": "0bdeddeeb0f650497d603c4ad7b20cfe685682f6"
 		},
 		{
 			"ImportPath": "golang.org/x/tools/go/ast/astutil",
-			"Rev": "3f4088edb48e8a4e3c66a5f8e7b2a78615fcb83f"
+			"Rev": "dd796641777bce15ee87fb6bea64943b648bdcf3"
 		},
 		{
 			"ImportPath": "golang.org/x/tools/imports",
-			"Rev": "3f4088edb48e8a4e3c66a5f8e7b2a78615fcb83f"
+			"Rev": "dd796641777bce15ee87fb6bea64943b648bdcf3"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
-			"Rev": "53feefa2559fb8dfa8d81baad31be332c97d6c77"
+			"Rev": "a5b47d31c556af34a302ce5d659e6fea44d90de0"
 		}
 	]
 }

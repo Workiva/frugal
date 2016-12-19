@@ -8,9 +8,9 @@ import (
 
 const (
 	// VERSION is the current version for the server.
-	VERSION = "0.8.0"
+	VERSION = "0.9.4"
 
-	// DEFAULT_PORT is the deault port for client connections.
+	// DEFAULT_PORT is the default port for client connections.
 	DEFAULT_PORT = 4222
 
 	// RANDOM_PORT is the value for port that, when supplied, will cause the

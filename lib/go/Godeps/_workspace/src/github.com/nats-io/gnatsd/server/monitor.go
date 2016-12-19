@@ -36,36 +36,39 @@ type Connz struct {
 
 // ConnInfo has detailed information on a per connection basis.
 type ConnInfo struct {
-	Cid          uint64    `json:"cid"`
-	IP           string    `json:"ip"`
-	Port         int       `json:"port"`
-	Start        time.Time `json:"start"`
-	LastActivity time.Time `json:"last_activity"`
-	Uptime       string    `json:"uptime"`
-	Idle         string    `json:"idle"`
-	Pending      int       `json:"pending_bytes"`
-	InMsgs       int64     `json:"in_msgs"`
-	OutMsgs      int64     `json:"out_msgs"`
-	InBytes      int64     `json:"in_bytes"`
-	OutBytes     int64     `json:"out_bytes"`
-	NumSubs      uint32    `json:"subscriptions"`
-	Name         string    `json:"name,omitempty"`
-	Lang         string    `json:"lang,omitempty"`
-	Version      string    `json:"version,omitempty"`
-	TLSVersion   string    `json:"tls_version,omitempty"`
-	TLSCipher    string    `json:"tls_cipher_suite,omitempty"`
-	Subs         []string  `json:"subscriptions_list,omitempty"`
+	Cid            uint64    `json:"cid"`
+	IP             string    `json:"ip"`
+	Port           int       `json:"port"`
+	Start          time.Time `json:"start"`
+	LastActivity   time.Time `json:"last_activity"`
+	Uptime         string    `json:"uptime"`
+	Idle           string    `json:"idle"`
+	Pending        int       `json:"pending_bytes"`
+	InMsgs         int64     `json:"in_msgs"`
+	OutMsgs        int64     `json:"out_msgs"`
+	InBytes        int64     `json:"in_bytes"`
+	OutBytes       int64     `json:"out_bytes"`
+	NumSubs        uint32    `json:"subscriptions"`
+	Name           string    `json:"name,omitempty"`
+	Lang           string    `json:"lang,omitempty"`
+	Version        string    `json:"version,omitempty"`
+	TLSVersion     string    `json:"tls_version,omitempty"`
+	TLSCipher      string    `json:"tls_cipher_suite,omitempty"`
+	AuthorizedUser string    `json:"authorized_user,omitempty"`
+	Subs           []string  `json:"subscriptions_list,omitempty"`
 }
 
 // DefaultConnListSize is the default size of the connection list.
 const DefaultConnListSize = 1024
 
+const defaultStackBufSize = 10000
+
 // HandleConnz process HTTP requests for connection information.
 func (s *Server) HandleConnz(w http.ResponseWriter, r *http.Request) {
 	sortOpt := SortOpt(r.URL.Query().Get("sort"))
 
-	// If no sort option given, sort by cid
-	if sortOpt == "" {
+	// If no sort option given or sort is by uptime, then sort by cid
+	if sortOpt == "" || sortOpt == byUptime {
 		sortOpt = byCid
 	} else if !sortOpt.IsValid() {
 		w.WriteHeader(http.StatusBadRequest)
@@ -76,6 +79,7 @@ func (s *Server) HandleConnz(w http.ResponseWriter, r *http.Request) {
 	c := &Connz{}
 	c.Now = time.Now()
 
+	auth, _ := strconv.Atoi(r.URL.Query().Get("auth"))
 	subs, _ := strconv.Atoi(r.URL.Query().Get("subs"))
 	c.Offset, _ = strconv.Atoi(r.URL.Query().Get("offset"))
 	c.Limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
@@ -216,12 +220,18 @@ func (s *Server) HandleConnz(w http.ResponseWriter, r *http.Request) {
 			ci.IP = addr.IP.String()
 		}
 
+		// Fill in subscription data if requested.
 		if subs == 1 {
 			sublist := make([]*subscription, 0, len(client.subs))
 			for _, sub := range client.subs {
 				sublist = append(sublist, sub)
 			}
 			ci.Subs = castToSliceString(sublist)
+		}
+
+		// Fill in user if auth requested.
+		if auth == 1 {
+			ci.AuthorizedUser = client.opts.Username
 		}
 
 		client.mu.Unlock()
@@ -344,29 +354,49 @@ func (s *Server) HandleSubsz(w http.ResponseWriter, r *http.Request) {
 	ResponseHandler(w, r, b)
 }
 
+// HandleStacksz processes HTTP requests for getting stacks
+func (s *Server) HandleStacksz(w http.ResponseWriter, r *http.Request) {
+	// Do not get any lock here that would prevent getting the stacks
+	// if we were to have a deadlock somewhere.
+	var defaultBuf [defaultStackBufSize]byte
+	size := defaultStackBufSize
+	buf := defaultBuf[:size]
+	n := 0
+	for {
+		n = runtime.Stack(buf, true)
+		if n < size {
+			break
+		}
+		size *= 2
+		buf = make([]byte, size)
+	}
+	// Handle response
+	ResponseHandler(w, r, buf[:n])
+}
+
 // Varz will output server information on the monitoring port at /varz.
 type Varz struct {
 	*Info
 	*Options
-	Port             int       `json:"port"`
-	MaxPayload       int       `json:"max_payload"`
-	Start            time.Time `json:"start"`
-	Now              time.Time `json:"now"`
-	Uptime           string    `json:"uptime"`
-	Mem              int64     `json:"mem"`
-	Cores            int       `json:"cores"`
-	CPU              float64   `json:"cpu"`
-	Connections      int       `json:"connections"`
-	TotalConnections uint64    `json:"total_connections"`
-	Routes           int       `json:"routes"`
-	Remotes          int       `json:"remotes"`
-	InMsgs           int64     `json:"in_msgs"`
-	OutMsgs          int64     `json:"out_msgs"`
-	InBytes          int64     `json:"in_bytes"`
-	OutBytes         int64     `json:"out_bytes"`
-	SlowConsumers    int64     `json:"slow_consumers"`
-
-	HTTPReqStats map[string]uint64 `json:"http_req_stats"`
+	Port             int               `json:"port"`
+	MaxPayload       int               `json:"max_payload"`
+	Start            time.Time         `json:"start"`
+	Now              time.Time         `json:"now"`
+	Uptime           string            `json:"uptime"`
+	Mem              int64             `json:"mem"`
+	Cores            int               `json:"cores"`
+	CPU              float64           `json:"cpu"`
+	Connections      int               `json:"connections"`
+	TotalConnections uint64            `json:"total_connections"`
+	Routes           int               `json:"routes"`
+	Remotes          int               `json:"remotes"`
+	InMsgs           int64             `json:"in_msgs"`
+	OutMsgs          int64             `json:"out_msgs"`
+	InBytes          int64             `json:"in_bytes"`
+	OutBytes         int64             `json:"out_bytes"`
+	SlowConsumers    int64             `json:"slow_consumers"`
+	Subscriptions    uint32            `json:"subscriptions"`
+	HTTPReqStats     map[string]uint64 `json:"http_req_stats"`
 }
 
 type usage struct {
@@ -448,8 +478,14 @@ func (s *Server) HandleVarz(w http.ResponseWriter, r *http.Request) {
 	v.OutMsgs = s.outMsgs
 	v.OutBytes = s.outBytes
 	v.SlowConsumers = s.slowConsumers
+	v.Subscriptions = s.sl.Count()
 	s.httpReqStats[VarzPath]++
-	v.HTTPReqStats = s.httpReqStats
+	// Need a copy here since s.httpReqStas can change while doing
+	// the marshaling down below.
+	v.HTTPReqStats = make(map[string]uint64, len(s.httpReqStats))
+	for key, val := range s.httpReqStats {
+		v.HTTPReqStats[key] = val
+	}
 	s.mu.Unlock()
 
 	b, err := json.MarshalIndent(v, "", "  ")

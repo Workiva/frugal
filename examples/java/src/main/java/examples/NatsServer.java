@@ -29,11 +29,6 @@ public class NatsServer {
         ConnectionFactory cf = new ConnectionFactory(ConnectionFactory.DEFAULT_URL);
         Connection conn = cf.createConnection();
 
-        // Create and open a new transport that uses NATS for sending data.
-        // The NATS transport will communicate using the music-service topic.
-        FTransport transport = FNatsTransport.of(conn, "music-service");
-        transport.open();
-
         // Create a new server processor.
         // Incoming requests to the server are passed to the processor.
         // Results from the processor are returned back to the client.
