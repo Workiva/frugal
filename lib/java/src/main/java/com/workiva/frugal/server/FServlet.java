@@ -134,6 +134,14 @@ public class FServlet extends HttpServlet {
     }
 
     /**
+     * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+     */
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        doPost(request, response);
+    }
+
+    /**
      * Process one frame of data.
      *
      * @param inputBytes an input frame
@@ -153,14 +161,6 @@ public class FServlet extends HttpServlet {
         processor.process(inProtocolFactory.getProtocol(inTransport), outProtocolFactory.getProtocol(outTransport));
 
         return outTransport;
-    }
-
-    /**
-     * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-     */
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        doPost(request, response);
     }
 
     /**
