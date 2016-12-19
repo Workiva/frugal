@@ -57,80 +57,6 @@ public class FServlet extends HttpServlet {
         this(processor, protocolFactory, protocolFactory);
     }
 
-    /**
-     * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-     */
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        Integer responseLimit;
-        try {
-            responseLimit = Integer.parseInt(request.getHeader("x-frugal-payload-limit"));
-        } catch (NumberFormatException ignored) {
-            responseLimit = 0;
-        }
-
-        // Read input bytes
-        StringBuilder buffer = new StringBuilder();
-        BufferedReader reader = request.getReader();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            buffer.append(line);
-        }
-        String data = buffer.toString();
-        byte[] inputBytes = Base64.decodeBase64(data);
-
-        if (inputBytes.length <= 4) {
-            LOGGER.info("Invalid request frame length", inputBytes.length);
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            return;
-        }
-
-        // Process frame (exclude first 4 bytes which represent frame size).
-        byte[] inputFrame = Arrays.copyOfRange(inputBytes, 4, inputBytes.length);
-        TTransport inTransport = new TMemoryInputTransport(inputFrame);
-        TMemoryOutputBuffer outTransport = new TMemoryOutputBuffer();
-
-        try {
-            processor.process(inProtocolFactory.getProtocol(inTransport), outProtocolFactory.getProtocol(outTransport));
-        } catch (TException te) {
-            throw new ServletException(te);
-        }
-
-        byte[] framedOutput = Base64.encodeBase64(outTransport.getWriteBytes());
-
-        // Make sure response is within limit
-        if (responseLimit > 0 && framedOutput.length > responseLimit) {
-            LOGGER.info("Response limit exceeded", responseLimit);
-            response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
-            return;
-        }
-
-        // Base64 encode and return
-        OutputStream out = response.getOutputStream();
-        out.write(framedOutput);
-
-        // Set response headers
-        response.setContentType("application/x-frugal");
-        response.setContentLength(framedOutput.length);
-        response.setHeader("Content-Transfer-Encoding", "base64");
-
-        // Add custom headers
-        if (null != this.customHeaders) {
-            for (Map.Entry<String, String> header : this.customHeaders) {
-                response.addHeader(header.getKey(), header.getValue());
-            }
-        }
-    }
-
-    /**
-     * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-     */
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        doPost(request, response);
-    }
-
     public void addCustomHeader(final String key, final String value) {
         this.customHeaders.add(new Map.Entry<String, String>() {
             public String getKey() {
@@ -151,4 +77,131 @@ public class FServlet extends HttpServlet {
         this.customHeaders.clear();
         this.customHeaders.addAll(headers);
     }
+
+    /**
+     * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
+     */
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        // Read input data as bytes
+        byte[] inputBytes;
+        try {
+            inputBytes = getInputBytes(request);
+        } catch (IOException e) {
+            LOGGER.error("Error reading input", e);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+
+        // Process a frame of data
+        TMemoryOutputBuffer outputBuffer;
+        try {
+            outputBuffer = processFrame(inputBytes);
+        } catch (TException e) {
+            LOGGER.error("Error processing frame", e);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        byte[] outputBytes = Base64.encodeBase64(outputBuffer.getWriteBytes());
+
+        // Ensure response is within limit
+        Integer responseLimit = getResponseLimit(request);
+        if (responseLimit > 0 && outputBytes.length > responseLimit) {
+            LOGGER.info("Response limit exceeded", responseLimit);
+            response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
+            return;
+        }
+
+        // Set response headers
+        response.setContentType("application/x-frugal");
+        response.setContentLength(outputBytes.length);
+        response.setHeader("Content-Transfer-Encoding", "base64");
+
+        // Add custom headers
+        if (null != this.customHeaders) {
+            for (Map.Entry<String, String> header : this.customHeaders) {
+                response.addHeader(header.getKey(), header.getValue());
+            }
+        }
+
+        // Write output body
+        OutputStream outputStream = response.getOutputStream();
+        outputStream.write(outputBytes);
+
+        response.setStatus(HttpServletResponse.SC_OK);
+    }
+
+    /**
+     * Process one frame of data.
+     *
+     * @param inputBytes an input frame
+     * @return The processes frame as an output buffer
+     * @throws TException if error processing frame
+     */
+    protected TMemoryOutputBuffer processFrame(byte[] inputBytes) throws TException {
+        if (inputBytes == null) {
+            throw new TException("inputBytes must not be null.");
+        }
+        // Exclude first 4 bytes which represent frame size
+        byte[] inputFrame = Arrays.copyOfRange(inputBytes, 4, inputBytes.length);
+
+        TTransport inTransport = new TMemoryInputTransport(inputFrame);
+        TMemoryOutputBuffer outTransport = new TMemoryOutputBuffer();
+
+        processor.process(inProtocolFactory.getProtocol(inTransport), outProtocolFactory.getProtocol(outTransport));
+
+        return outTransport;
+    }
+
+    /**
+     * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+     */
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        doPost(request, response);
+    }
+
+    /**
+     * Returns the size limit of the response payload.
+     * Set in the x-frugal-payload-limit HTTP header.
+     *
+     * @param request an HTTP request
+     * @return The size limit of the response, 0 if no limit header set
+     */
+    protected Integer getResponseLimit(HttpServletRequest request) {
+        String payloadHeader = request.getHeader("x-frugal-payload-limit");
+        Integer responseLimit;
+        try {
+            responseLimit = Integer.parseInt(payloadHeader);
+        } catch (NumberFormatException ignored) {
+            responseLimit = 0;
+        }
+        return responseLimit;
+    }
+
+    /**
+     * Returns payload body from the request as a byte[]
+     *
+     * @param request an HTTP request
+     * @return The payload body
+     * @throws IOException when invalid request frame
+     */
+    protected byte[] getInputBytes(HttpServletRequest request) throws IOException {
+        StringBuilder buffer = new StringBuilder();
+        BufferedReader reader = request.getReader();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            buffer.append(line);
+        }
+        String data = buffer.toString();
+        byte[] inputBytes = Base64.decodeBase64(data);
+
+        if (inputBytes.length <= 4) {
+            throw new IOException("Invalid request frame");
+        }
+        return inputBytes;
+    }
+
 }
