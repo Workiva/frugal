@@ -57,6 +57,12 @@ public class FServlet extends HttpServlet {
         this(processor, protocolFactory, protocolFactory);
     }
 
+    /**
+     * Add a custom header to the returned response.
+     *
+     * @param key Header name
+     * @param value Header value
+     */
     public void addCustomHeader(final String key, final String value) {
         this.customHeaders.add(new Map.Entry<String, String>() {
             public String getKey() {
@@ -73,6 +79,11 @@ public class FServlet extends HttpServlet {
         });
     }
 
+    /**
+     * Add a map of custom header to the returned response.
+     *
+     * @param headers Map of header name, header value pairs.
+     */
     public void setCustomHeaders(Collection<Map.Entry<String, String>> headers) {
         this.customHeaders.clear();
         this.customHeaders.addAll(headers);
