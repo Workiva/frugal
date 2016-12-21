@@ -9,6 +9,7 @@ pip install -U pip
 cd $FRUGAL_HOME/lib/python
 make deps-tornado
 make deps-gae
+make deps-gevent
 make xunit-py2
 
 # Write dependencies out so that RM is able to track them
