@@ -46,4 +46,5 @@ public enum ItsAnEnum implements org.apache.thrift.TEnum {
 				return null;
 		}
 	}
+
 }

@@ -68,7 +68,8 @@ func parseFrugal(file string) (*parser.Frugal, error) {
 func generateFrugal(f *parser.Frugal) error {
 	var gen = globals.Gen
 
-	lang, options, err := cleanGenParam(gen)
+	// Process options for specific generators.
+	lang, options, err := CleanGenParam(gen)
 	if err != nil {
 		return err
 	}
@@ -162,13 +163,14 @@ func exists(path string) bool {
 	return err == nil
 }
 
-// cleanGenParam processes a string that includes an optional trailing
+// CleanGenParam processes a string that includes an optional trailing
 // options set.  Format: <language>:<name>=<value>,<name>=<value>,...
-func cleanGenParam(gen string) (lang string, options map[string]string, err error) {
+// TODO: unexport once plugin workaround is no longer needed in main.go.
+func CleanGenParam(gen string) (lang string, options map[string]string, err error) {
 	lang = gen
 	options = make(map[string]string)
 	if strings.Contains(gen, ":") {
-		s := strings.Split(gen, ":")
+		s := strings.SplitN(gen, ":", 2)
 		lang = s[0]
 		dirty := s[1]
 		var optionArray []string

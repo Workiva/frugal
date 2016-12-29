@@ -5,25 +5,26 @@ import (
 	"os"
 	"sort"
 
+	"github.com/urfave/cli"
+
 	"github.com/Workiva/frugal/compiler"
 	"github.com/Workiva/frugal/compiler/generator"
 	"github.com/Workiva/frugal/compiler/globals"
 	"github.com/Workiva/frugal/compiler/parser"
-	"github.com/urfave/cli"
 )
 
 const defaultTopicDelim = "."
 
 var (
-	help               bool
-	gen                string
-	out                string
-	delim              string
-	audit              string
-	recurse            bool
-	verbose            bool
-	version            bool
-	useVendor          bool
+	help      bool
+	gen       string
+	out       string
+	delim     string
+	audit     string
+	recurse   bool
+	verbose   bool
+	version   bool
+	useVendor bool
 )
 
 func main() {
@@ -106,12 +107,24 @@ func main() {
 		}
 
 		options := compiler.Options{
-			Gen:                gen,
-			Out:                out,
-			Delim:              delim,
-			Recurse:            recurse,
-			Verbose:            verbose,
-			UseVendor:          useVendor,
+			Gen:       gen,
+			Out:       out,
+			Delim:     delim,
+			Recurse:   recurse,
+			Verbose:   verbose,
+			UseVendor: useVendor,
+		}
+
+		// TODO: This is currently a workaround to https://github.com/golang/go/issues/17928.
+		// Remove once that has been released.
+		_, opts, err := compiler.CleanGenParam(gen)
+		if err != nil {
+			fmt.Printf("Failed to generate %s:\n\t%s\n", options.File, err.Error())
+			os.Exit(1)
+		}
+		if err := preloadPlugins(opts); err != nil {
+			fmt.Printf("Failed to generate %s:\n\t%s\n", options.File, err.Error())
+			os.Exit(1)
 		}
 
 		// Handle panics for graceful error messages.
@@ -122,7 +135,6 @@ func main() {
 			}
 		}()
 
-		var err error
 		auditor := parser.NewAuditor()
 		for _, options.File = range c.Args() {
 			if audit == "" {

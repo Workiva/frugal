@@ -45,7 +45,8 @@ var Languages = LanguageOptions{
 		"generated_annotations": "[undated|suppress] " +
 			"undated: suppress the date at @Generated annotations, " +
 			"suppress: suppress @Generated annotations entirely",
-		"async": "Generate async client code using futures",
+		"async":   "Generate async client code using futures",
+		"plugins": "Colon-delimited list of plugins for augmenting code-generation behavior",
 	},
 	"dart": Options{
 		"library_prefix": "Generate code that can be used within an existing library. " +
@@ -53,9 +54,9 @@ var Languages = LanguageOptions{
 		"use_enums": "Generate enums as enums rather than a class with numerical constants",
 	},
 	"py": Options{
-		"tornado":         "Generate code for use with Tornado (compatible with Python 2.7)",
-		"asyncio":         "Generate code for use with asyncio (compatible with Python 3.5 or above)",
-		"package_prefix":  "Package prefix for generated files",
+		"tornado":        "Generate code for use with Tornado (compatible with Python 2.7)",
+		"asyncio":        "Generate code for use with asyncio (compatible with Python 3.5 or above)",
+		"package_prefix": "Package prefix for generated files",
 	},
 	"html": Options{
 		"standalone": "Self-contained mode, includes all CSS in the HTML files. Generates no style.css file, but HTML files will be larger",

@@ -12,6 +12,7 @@ import (
 	"github.com/Workiva/frugal/compiler/generator"
 	"github.com/Workiva/frugal/compiler/globals"
 	"github.com/Workiva/frugal/compiler/parser"
+	"github.com/Workiva/frugal/compiler/plugin"
 )
 
 const (
@@ -33,6 +34,7 @@ type Generator struct {
 	*generator.BaseGenerator
 	time      time.Time
 	outputDir string
+	behavior  Behavior
 }
 
 func NewGenerator(options map[string]string) generator.LanguageGenerator {
@@ -40,6 +42,7 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 		&generator.BaseGenerator{Options: options},
 		globals.Now,
 		"",
+		new(defaultBehavior),
 	}
 }
 
@@ -79,6 +82,14 @@ func (g *Generator) getIsSetType(s *parser.Struct) (IsSetType, string) {
 
 func (g *Generator) SetupGenerator(outputDir string) error {
 	g.outputDir = outputDir
+	pluginsStr, ok := g.Options["plugins"]
+	if ok {
+		plugins, err := plugin.LoadPlugins(strings.Split(pluginsStr, ":"))
+		if err != nil {
+			return err
+		}
+		g.behavior = newPluginBehavior(plugins, g.behavior)
+	}
 	return nil
 }
 
@@ -342,34 +353,47 @@ func (g *Generator) GenerateTypeDef(*parser.TypeDef) error {
 func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 	contents := ""
 	contents += fmt.Sprintf("public enum %s implements org.apache.thrift.TEnum {\n", enum.Name)
+	// Generate enum values.
 	for idx, value := range enum.Values {
 		terminator := ","
 		if idx == len(enum.Values)-1 {
 			terminator = ";"
 		}
-		contents += fmt.Sprintf(tab+"%s(%d)%s\n", value.Name, value.Value, terminator)
+		enumValue, err := g.behavior.GenerateEnumValue(enum, value)
+		if err != nil {
+			return err
+		}
+		contents += tab + fmt.Sprintf("%s%s\n", enumValue.format(), terminator)
 	}
 	contents += "\n"
 
-	contents += tab + "private final int value;\n\n"
-	contents += fmt.Sprintf(tab+"private %s(int value) {\n", enum.Name)
-	contents += tabtab + "this.value = value;\n"
-	contents += tab + "}\n\n"
-
-	contents += tab + "public int getValue() {\n"
-	contents += tabtab + "return value;\n"
-	contents += tab + "}\n\n"
-
-	contents += fmt.Sprintf(tab+"public static %s findByValue(int value) {\n", enum.Name)
-	contents += tabtab + "switch (value) {\n"
-	for _, value := range enum.Values {
-		contents += fmt.Sprintf(tabtabtab+"case %d:\n", value.Value)
-		contents += fmt.Sprintf(tabtabtabtab+"return %s;\n", value.Name)
+	// Generate enum fields.
+	fields, err := g.behavior.GenerateEnumFields(enum)
+	if err != nil {
+		return err
 	}
-	contents += tabtabtab + "default:\n"
-	contents += tabtabtabtab + "return null;\n"
-	contents += tabtab + "}\n"
-	contents += tab + "}\n"
+	for _, field := range fields {
+		contents += fmt.Sprintf("%s%s;\n", tab, field.format())
+	}
+	contents += "\n"
+
+	// Generate enum constructors.
+	constructors, err := g.behavior.GenerateEnumConstructors(enum)
+	if err != nil {
+		return err
+	}
+	for _, constructor := range constructors {
+		contents += constructor.format(1, tab, enum.Name)
+	}
+
+	// Generate enum methods.
+	methods, err := g.behavior.GenerateEnumMethods(enum)
+	if err != nil {
+		return err
+	}
+	for _, method := range methods {
+		contents += method.format(1, tab)
+	}
 
 	contents += "}\n"
 

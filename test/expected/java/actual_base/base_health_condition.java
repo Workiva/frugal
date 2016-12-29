@@ -40,4 +40,5 @@ public enum base_health_condition implements org.apache.thrift.TEnum {
 				return null;
 		}
 	}
+
 }
