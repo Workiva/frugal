@@ -12,6 +12,8 @@ import 'package:frugal/frugal.dart' as frugal;
 import 'package:v1_music/v1_music.dart' as t_v1_music;
 
 
+const String fStoreName = "store";
+
 /// Services are the API for client and server interaction.
 /// Users can buy an album or enter a giveaway for a free album.
 abstract class FStore {

@@ -974,6 +974,7 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 // GenerateService generates the given service.
 func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 	contents := ""
+	contents += fmt.Sprintf("NAME = \"%s\"\n\n\n", generator.LowercaseFirstLetter(s.Name))
 	contents += g.generateServiceInterface(s)
 	contents += g.generateClient(s)
 	contents += g.generateServer(s)

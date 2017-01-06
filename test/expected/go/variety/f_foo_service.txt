@@ -21,6 +21,8 @@ var _ = thrift.ZERO
 var _ = fmt.Printf
 var _ = bytes.Equal
 
+const FFooName = "foo"
+
 // This is a thrift service. Frugal will generate bindings that include
 // a frugal Context for each service call.
 type FFoo interface {

@@ -18,6 +18,9 @@ from thrift.Thrift import TMessageType
 from .ttypes import *
 
 
+NAME = "store"
+
+
 class Iface(object):
     """
     Services are the API for client and server interaction.

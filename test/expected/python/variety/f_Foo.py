@@ -30,6 +30,9 @@ import subdir_include.f_BaseFoo
 from .ttypes import *
 
 
+NAME = "foo"
+
+
 class Iface(actual_base.python.f_BaseFoo.Iface):
     """
     This is a thrift service. Frugal will generate bindings that include

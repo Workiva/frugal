@@ -18,6 +18,9 @@ from thrift.Thrift import TMessageType
 from .ttypes import *
 
 
+NAME = "baseFoo"
+
+
 class Iface(object):
 
     def basePing(self, ctx):

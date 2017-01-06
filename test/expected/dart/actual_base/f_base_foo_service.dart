@@ -12,6 +12,8 @@ import 'package:frugal/frugal.dart' as frugal;
 import 'package:actual_base_dart/actual_base_dart.dart' as t_actual_base_dart;
 
 
+const String fBaseFooName = "baseFoo";
+
 abstract class FBaseFoo {
 
   Future basePing(frugal.FContext ctx);
