@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 	"strings"
-	"fmt"
 )
 
 const superFContextPrefix = "super-f-context-"
@@ -55,8 +54,6 @@ func NewSuperFContext(fContext FContext) SuperFContext {
 		if strings.HasPrefix(key, superFContextDeadlinePrefix) {
 			if deadlineTime, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", val); err == nil {
 				ctx, _ = WithDeadline(ctx, deadlineTime)
-			} else {
-				fmt.Println("not adding deadline")
 			}
 		} else if strings.HasPrefix(key, superFContextPrefix) {
 			ctx.AddRequestHeader(string(key[len(superFContextPrefix)]), val)
@@ -76,15 +73,7 @@ func NewSuperFContextWithContext(fContext FContext, goContext context.Context) S
 // Adds string key value pairs to the request headers
 func (c *SuperFContext) Inject(contextMap map[string] string) {
 	for key, val := range contextMap {
-		if strings.HasPrefix(key, superFContextDeadlinePrefix) {
-			if deadlineTime, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", val); err == nil {
-				newCtx, _ := WithDeadline(*c, deadlineTime)
-				c = &newCtx
-				fmt.Println(c.Deadline())
-			} else {
-				fmt.Println("not adding deadline")
-			}
-		} else if strings.HasPrefix(key, superFContextPrefix) {
+		if strings.HasPrefix(key, superFContextPrefix) {
 			c.AddRequestHeader(string(key[len(superFContextPrefix)]), val)
 		} else {
 			c.AddRequestHeader(key, val)

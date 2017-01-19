@@ -26,7 +26,7 @@ func main() {
 
 	// Start the server using the configured processor, and protocol
 	http.HandleFunc("/frugal", frugal.NewFrugalHandlerFunc(processor, fProtocolFactory))
-	fmt.Println("Listening for the first player.")
+	fmt.Println("Listening for the first player...")
 	log.Fatal(http.ListenAndServe(":9090", http.DefaultServeMux))
 }
 
