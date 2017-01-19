@@ -12,7 +12,6 @@ func CheckDeadlineContextMiddleware() frugal.ServiceMiddleware {
 		return func(service reflect.Value, method reflect.Method, args frugal.Arguments) frugal.Results {
 			if frugalCtx, ok := args.Context().(*frugal.FContextImpl); ok {
 				superCtx := frugal.NewSuperFContext(frugalCtx)
-				superCtx.Inject(frugalCtx.Extract())
 
 				fmt.Println(superCtx.Deadline())
 				if superCtx.Err() == context.DeadlineExceeded {

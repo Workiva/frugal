@@ -13,7 +13,6 @@ func AddTimeoutContextMiddleware(timeout time.Duration) frugal.ServiceMiddleware
 			if frugalCtx, ok := args.Context().(*frugal.FContextImpl); ok {
 				fmt.Println("adding timeout to fcontext")
 				superCtx := frugal.NewSuperFContext(frugalCtx)
-				superCtx.Inject(frugalCtx.Extract())
 				timeoutCtx, cancelFunc := frugal.WithTimeout(superCtx, timeout)
 				timeoutCtx.AddRequestHeader("testtesttest", "test")
 				args.SetContext(timeoutCtx)

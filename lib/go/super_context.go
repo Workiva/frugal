@@ -7,9 +7,9 @@ import (
 	"fmt"
 )
 
-var superFContextPrefix = "super-f-context-"
-var superFContextDeadlinePrefix = superFContextPrefix + "deadline"
-var superFContextErrorPrefix = superFContextPrefix + "error"
+const superFContextPrefix = "super-f-context-"
+const superFContextDeadlinePrefix = superFContextPrefix + "deadline"
+const superFContextErrorPrefix = superFContextPrefix + "error"
 
 // Structs that implement this interface use inject and extract to propagate
 // data from one struct to another. An example of using inject/extract to
@@ -49,7 +49,23 @@ type SuperFContext struct {
 
 // Creates a new SuperFContext with a given a FContext
 func NewSuperFContext(fContext FContext) SuperFContext {
-	return SuperFContext{fContext, context.Background()}
+	ctx := NewSuperFContextWithContext(fContext, context.Background())
+
+	for key, val := range fContext.RequestHeaders() {
+		if strings.HasPrefix(key, superFContextDeadlinePrefix) {
+			if deadlineTime, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", val); err == nil {
+				ctx, _ = WithDeadline(ctx, deadlineTime)
+			} else {
+				fmt.Println("not adding deadline")
+			}
+		} else if strings.HasPrefix(key, superFContextPrefix) {
+			ctx.AddRequestHeader(string(key[len(superFContextPrefix)]), val)
+		} else {
+			ctx.AddRequestHeader(key, val)
+		}
+	}
+
+	return ctx
 }
 
 // Creates a new SuperFContext with a given FContext and Golang context
@@ -58,12 +74,13 @@ func NewSuperFContextWithContext(fContext FContext, goContext context.Context) S
 }
 
 // Adds string key value pairs to the request headers
-func (c SuperFContext) Inject(contextMap map[string] string) {
+func (c *SuperFContext) Inject(contextMap map[string] string) {
 	for key, val := range contextMap {
 		if strings.HasPrefix(key, superFContextDeadlinePrefix) {
 			if deadlineTime, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", val); err == nil {
-				c, _ = WithDeadline(c, deadlineTime)
-				fmt.Println("adding deadline")
+				newCtx, _ := WithDeadline(*c, deadlineTime)
+				c = &newCtx
+				fmt.Println(c.Deadline())
 			} else {
 				fmt.Println("not adding deadline")
 			}
@@ -76,7 +93,7 @@ func (c SuperFContext) Inject(contextMap map[string] string) {
 }
 
 // Returns the key value pairs in the context's request headers.
-func (c SuperFContext) Extract() map[string] string {
+func (c *SuperFContext) Extract() map[string] string {
 	contextMap := make(map[string] string)
 
 	for key, val := range c.RequestHeaders() {
