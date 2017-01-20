@@ -14,16 +14,30 @@
     "name": "go",
     "server": {
       "delay": 8,
-      "command": [ "testserver" ]
+      "command": [
+        "go/bin/testserver"
+      ]
     },
     "client": {
       "timeout": 8,
-      "command": [ "testclient" ]
+      "command": [
+        "go/bin/testclient"
+      ]
     },
-    "transports": [ "stateless", "http" ],
-    "sockets": [ "ip" ],
-    "protocols": [ "binary", "compact", "json" ],
-    "workdir": "go/bin"
+    "transports": [
+      "stateless",
+      "stateful",
+      "stateless-stateful",
+      "http"
+    ],
+    "sockets": [
+      "ip"
+    ],
+    "protocols": [
+      "binary",
+      "compact",
+      "json"
+    ]
   },
    {
     "name": "java",
