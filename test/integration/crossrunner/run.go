@@ -123,7 +123,7 @@ func RunConfig(pair *Pair, port uint64) {
 		panic(err)
 	}
 
-	// Stop server and client (if it is still running)
+	// Stop server
 	err = server.Process.Kill()
 	if err != nil {
 		pair.ReturnCode = CROSSRUNNER_FAILURE

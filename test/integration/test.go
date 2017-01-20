@@ -12,9 +12,6 @@ import (
 	"github.com/Workiva/frugal/test/integration/crossrunner"
 )
 
-// TODO: Push up a PR to v2_integration branch branch to start getting this
-// torn apart. This is going to hurt!!!
-
 // a testCase is a pointer to a valid test pair (client/server) and port to run
 // the pair on
 type testCase struct {
@@ -43,7 +40,7 @@ func main() {
 	// json file
 	pairs := crossrunner.Load(filepath)
 
-	// REVIEW: There are a 195 pairs in the cross config, but not all are running, see comment on line 71
+	// REVIEW: There are a 195 pairs in the cross config, but not all are running, see comment on line 72
 	log.Info(len(pairs))
 	crossrunnerTasks := make(chan *testCase)
 
