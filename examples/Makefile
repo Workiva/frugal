@@ -4,6 +4,7 @@ GO = go/gen-go
 PYTHON = python/gen-py
 PYTHON_TORNADO = python.tornado/gen-py.tornado
 PYTHON_ASYNCIO = python.asyncio/gen-py.asyncio
+PYTHON_GEVENT = python.gevent/gen-py.gevent
 DART = dart/gen-dart
 JAVA = java/src/main/java/
 
@@ -13,6 +14,7 @@ clean:
 	@-rm -rf $(PYTHON)
 	@-rm -rf $(PYTHON_TORNADO)
 	@-rm -rf $(PYTHON_ASYNCIO)
+	@-rm -rf $(PYTHON_GEVENT)
 	@-rm -rf $(DART)
 
 generate: clean
@@ -22,4 +24,5 @@ generate: clean
 		-exec frugal -out $(PYTHON) --gen py {} \; \
 		-exec frugal -out $(PYTHON_TORNADO) --gen py:tornado {} \; \
 		-exec frugal -out $(PYTHON_ASYNCIO) --gen py:asyncio {} \; \
+		-exec frugal -out $(PYTHON_GEVENT) --gen py:gevent {} \; \
 		-exec frugal -out $(DART) --gen dart {} \;

@@ -1,0 +1,2 @@
+gevent==1.1.2
+git+ssh://git@github.com/Workiva/gevent-nats.git

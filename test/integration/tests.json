@@ -72,6 +72,21 @@
     "workdir": "python/asyncio"
   },
   {
+    "name": "py:gevent",
+    "client": {
+      "timeout": 7,
+      "command": [ "python", "-u", "gevent_client.py" ]
+    },
+    "server": {
+      "delay": 8,
+      "command": [ "python", "-u", "gevent_server.py" ]
+    },
+    "transports": [ "stateless"],
+    "sockets": [ "ip" ],
+    "protocols": [ "binary", "compact", "json" ],
+    "workdir": "python/gevent"
+  },
+  {
     "name": "py:vanilla",
     "client": {
       "timeout": 7,

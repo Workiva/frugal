@@ -54,9 +54,10 @@ var Languages = LanguageOptions{
 		"use_enums": "Generate enums as enums rather than a class with numerical constants",
 	},
 	"py": Options{
-		"tornado":        "Generate code for use with Tornado (compatible with Python 2.7)",
-		"asyncio":        "Generate code for use with asyncio (compatible with Python 3.5 or above)",
-		"package_prefix": "Package prefix for generated files",
+		"tornado":         "Generate code for use with Tornado (compatible with Python 2.7)",
+		"asyncio":         "Generate code for use with asyncio (compatible with Python 3.5 or above)",
+		"gevent":          "Generate code for use with gevent (compatible with Python 2.7 or above)",
+		"package_prefix":  "Package prefix for generated files",
 	},
 	"html": Options{
 		"standalone": "Self-contained mode, includes all CSS in the HTML files. Generates no style.css file, but HTML files will be larger",

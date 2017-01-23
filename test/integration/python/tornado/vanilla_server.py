@@ -3,6 +3,7 @@ from __future__ import print_function
 import argparse
 import sys
 import thread
+import logging
 
 sys.path.append('..')
 sys.path.append('gen-py')
@@ -96,4 +97,5 @@ def tornado_thread(subject, protocol_factory):
 
 
 if __name__ == '__main__':
+    logging.basicConfig()
     main()

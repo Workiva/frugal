@@ -58,6 +58,7 @@ test/integration/java/frugal.jar
 test/integration/python/tornado/gen-py
 test/integration/python/tornado/gen_py_tornado
 test/integration/python/asyncio/gen_py_asyncio
+test/integration/python/gevent/gen_py_gevent
 
 # Cross-compiled code
 pkg/
