@@ -24,7 +24,6 @@ from gen_py_tornado.frugal_test.f_Events_subscriber import EventsSubscriber
 from gen_py_tornado.frugal_test.ttypes import Event
 
 
-@gen.coroutine
 def main():
     parser = argparse.ArgumentParser(description="Run a python server")
     parser.add_argument('--port', dest='port', type=int, default='9090')

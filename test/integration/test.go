@@ -40,8 +40,6 @@ func main() {
 	// json file
 	pairs := crossrunner.Load(filepath)
 
-	// REVIEW: There are a 195 pairs in the cross config, but not all are running, see comment on line 72
-	log.Info(len(pairs))
 	crossrunnerTasks := make(chan *testCase)
 
 	// All tests run relative to test/integration
@@ -66,11 +64,12 @@ func main() {
 
 	crossrunner.WriteConsoleHeader()
 
-	// REVIEW: This is exiting before all workers are finished.  Need some sort
-	// of waitGroup or something to ensure all are run?
+	var wg sync.WaitGroup
+
 	for workers := 1; workers <= int(runtime.NumCPU()); workers++ {
 		go func(crossrunnerTasks <-chan *testCase) {
 			for task := range crossrunnerTasks {
+				wg.Add(1)
 				// Run each configuration
 				crossrunner.RunConfig(task.pair, task.port)
 				// Check return code
@@ -91,6 +90,7 @@ func main() {
 				crossrunner.WritePairResult(task.pair)
 				// Increment the count of tests run
 				atomic.AddUint64(&testsRun, 1)
+				wg.Done()
 			}
 		}(crossrunnerTasks)
 	}
@@ -109,11 +109,8 @@ func main() {
 		atomic.StoreUint64(&port, next)
 	}
 
+	wg.Wait()
 	close(crossrunnerTasks)
-
-	// REVIEW: There are also several goroutines still active at this close,
-	// presumably the test cases that haven't completed
-	log.Info("Currently running goroutines: ", runtime.NumGoroutine())
 
 	// Print out console results
 	runningTime := time.Since(startTime) // Do we need to check that this number is positive?

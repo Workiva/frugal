@@ -1,6 +1,6 @@
 import time
 
-from frugal_test.f_FrugalTest import Iface, Xtruct, Xception, Xception2, Insanity
+from frugal_test.f_FrugalTest import Iface, Xtruct, Xception, Xception2
 
 
 class FrugalTestHandler(Iface):

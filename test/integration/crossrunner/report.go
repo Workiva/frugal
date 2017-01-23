@@ -88,7 +88,6 @@ func starBreak() string {
 
 // writeFileFooter writes execution time and closes the file
 func writeFileFooter(file *os.File, executionTime time.Duration) (err error) {
-	// defer file.Close()
 	footer := breakLine()
 	footer += fmt.Sprintf("Test execution took %.2f seconds\n", executionTime.Seconds())
 	footer += GetTimestamp()
