@@ -3,10 +3,12 @@ package crossrunner
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
 	"time"
 )
 
-// Client/Server struct used in tests.json
+// client/server level options defined in tests.json
+// this is useful if there is option supported by a client but not a server within a language
 type options struct {
 	Command    []string
 	Transports []string
@@ -14,15 +16,15 @@ type options struct {
 	Timeout    time.Duration
 }
 
-// Language struct used in tests.json
-type Languages struct {
-	Name       string
-	Client     options
-	Server     options
-	Transports []string
-	Protocols  []string
-	Command    []string
-	Workdir    string
+// language level options defined in tests.json
+type languages struct { // Example
+	Name       string   // Language name
+	Client     options  // client specific commands, protocols, transports, and timesouts
+	Server     options  // server specific commands, protocols, transports, and timesouts
+	Transports []string // transports that apply to both clients and servers within a language
+	Protocols  []string // protocols that apply to both clients and servers within a language
+	Command    []string // command that applies to both clients and servers within a language
+	Workdir    string   // working directory relative to /test/integration
 }
 
 //  Complete information required to shell out a client or server command
@@ -33,7 +35,7 @@ type config struct {
 	Protocol  string
 	Command   []string
 	Workdir   string
-	Logs      *LogFile
+	Logs      *os.File
 }
 
 // Matched client and server commands
@@ -53,35 +55,35 @@ func newPair(client, server config) *Pair {
 
 // Load takes a json file of client/server definitions and returns a list of
 // valid client/server pairs
-func Load(jsonFile string) (pairs []*Pair) {
+func Load(jsonFile string) (pairs []*Pair, err error) {
 	bytes, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	Tests := new([]Languages)
+	tests := []languages{}
 
 	// Unmarshal json into defined structs
-	if err := json.Unmarshal(bytes, &Tests); err != nil {
-		panic(err)
+	if err := json.Unmarshal(bytes, &tests); err != nil {
+		return nil, err
 	}
 
 	// Create empty lists of client and server configurations
 	clients := []config{}
 	servers := []config{}
 
-	// Iterate over each language to get all client/server configurations
-	for _, test := range *Tests {
+	// Iterate over each language to get all client/server configurations in that language
+	for _, test := range tests {
 
-		// Append "global" transports and protocols to client/server level
+		// Append language level transports and protocols to client/server level
 		test.Client.Transports = append(test.Client.Transports, test.Transports...)
 		test.Server.Transports = append(test.Server.Transports, test.Transports...)
 		test.Client.Protocols = append(test.Client.Protocols, test.Protocols...)
 		test.Server.Protocols = append(test.Server.Protocols, test.Protocols...)
 
-		// Get expanded list of clients/servers
-		clients = append(clients, getList(test.Client, test)...)
-		servers = append(servers, getList(test.Server, test)...)
+		// Get expanded list of clients/servers, using both language and config level options
+		clients = append(clients, getExpandedConfigs(test.Client, test)...)
+		servers = append(servers, getExpandedConfigs(test.Server, test)...)
 	}
 
 	// Find all valid client/server pairs
@@ -95,5 +97,5 @@ func Load(jsonFile string) (pairs []*Pair) {
 		}
 	}
 
-	return pairs
+	return pairs, nil
 }

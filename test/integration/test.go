@@ -16,34 +16,48 @@ import (
 // the pair on
 type testCase struct {
 	pair *crossrunner.Pair
-	port uint64
+	port int
 }
 
-// failures is used to store the unepected_failures.log file
-// contains a filepath, pointer to the files location, and a mutex for locking
+// failures is used to store the unexpected_failures.log file
+// contains a filepath, pointer to the files location, count of total failed
+// configurations, and a mutex for locking
 type failures struct {
-	path string
-	file *os.File
-	mu   sync.Mutex
+	path   string
+	file   *os.File
+	failed int
+	mu     sync.Mutex
 }
 
 func main() {
 	startTime := time.Now()
 
 	// path to json test definitions
-	filepath := os.Args[1]
+	var testDefinitions string
+	if len(os.Args) < 2 {
+		log.Fatal("Expected test definition json file. None provided.")
+	} else {
+		testDefinitions = os.Args[1]
+	}
 
 	// TODO: Allow setting loglevel to debug with -V flag/-debug/similar
 	// log.SetLevel(log.DebugLevel)
 
 	// pairs is a struct of valid client/server pairs loaded from the provided
 	// json file
-	pairs := crossrunner.Load(filepath)
+	pairs, err := crossrunner.Load(testDefinitions)
+	if err != nil {
+		log.Info("Error in parsing json test definitions")
+		panic(err)
+	}
 
 	crossrunnerTasks := make(chan *testCase)
 
 	// All tests run relative to test/integration
-	os.Chdir("test/integration")
+	if err := os.Chdir("test/integration"); err != nil {
+		log.Info("Unable to change directory to /test/integration")
+		panic(err)
+	}
 
 	// Make log file for unexpected failures
 	failLog := &failures{
@@ -56,15 +70,12 @@ func main() {
 	}
 	defer failLog.file.Close()
 
-	// Start with arbitrarily high port to avoid collisions, these are still
-	// checked before assiging a port to a pair
-	var port uint64 = 55000
-	var testsRun uint64 = 0
-	var failed uint64 = 0
+	var (
+		testsRun uint64
+		wg       sync.WaitGroup
+	)
 
-	crossrunner.WriteConsoleHeader()
-
-	var wg sync.WaitGroup
+	crossrunner.PrintConsoleHeader()
 
 	for workers := 1; workers <= int(runtime.NumCPU()); workers++ {
 		go func(crossrunnerTasks <-chan *testCase) {
@@ -73,21 +84,21 @@ func main() {
 				// Run each configuration
 				crossrunner.RunConfig(task.pair, task.port)
 				// Check return code
-				if task.pair.ReturnCode == crossrunner.TEST_FAILURE {
+				if task.pair.ReturnCode == crossrunner.TestFailure {
 					// if failed, add to the failed count
-					atomic.AddUint64(&failed, 1)
 					failLog.mu.Lock()
+					failLog.failed += 1
 					// copy the logs to the unexpected_failures.log file
 					if err := crossrunner.AppendToFailures(failLog.path, task.pair); err != nil {
 						panic(err)
 					}
 					failLog.mu.Unlock()
-				} else if task.pair.ReturnCode == crossrunner.CROSSRUNNER_FAILURE {
+				} else if task.pair.ReturnCode == crossrunner.CrossrunnerFailure {
 					// If there was a crossrunner failure, fail immediately
 					panic(task.pair.Err)
 				}
-				// Write configuration results to console
-				crossrunner.WritePairResult(task.pair)
+				// Print configuration results to console
+				crossrunner.PrintPairResult(task.pair)
 				// Increment the count of tests run
 				atomic.AddUint64(&testsRun, 1)
 				wg.Done()
@@ -97,29 +108,25 @@ func main() {
 
 	// Add each configuration to the crossrunnerTasks channel
 	for _, pair := range pairs {
-		// Get next available port. Should all be clear, but this is a good sanity check.
-		// REVIEW: I am still seeing inconsistent "port already allocated" errors.
-		// Must be doing something wrong here, but I'm not sure what.
-		available := crossrunner.CheckPort(atomic.LoadUint64(&port))
+		available, err := crossrunner.GetAvailablePort()
+		if err != nil {
+			panic(err)
+		}
 		tCase := testCase{pair, available}
 		// put the test case on the crossrunnerTasks channel
 		crossrunnerTasks <- &tCase
-		// increment the port
-		next := available + 1
-		atomic.StoreUint64(&port, next)
 	}
 
 	wg.Wait()
 	close(crossrunnerTasks)
 
 	// Print out console results
-	runningTime := time.Since(startTime) // Do we need to check that this number is positive?
+	runningTime := time.Since(startTime)
 	testCount := atomic.LoadUint64(&testsRun)
-	failedCount := atomic.LoadUint64(&failed)
-	crossrunner.WriteConsoleFooter(failedCount, testCount, runningTime)
+	crossrunner.PrintConsoleFooter(failLog.failed, testCount, runningTime)
 
 	// If any configurations failed, fail the suite.
-	if failedCount > 0 {
+	if failLog.failed > 0 {
 		// If there was a failure, move the logs to correct artifact location
 		err := os.Rename(failLog.path, "/testing/artifacts/unexpected_failures.log")
 		if err != nil {

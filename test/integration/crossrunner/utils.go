@@ -4,17 +4,21 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"strconv"
 	"strings"
+	"time"
 )
 
 const (
 	// Default timeout in seconds for client/server configutions without a defined timeout
-	DEFAULT_TIMEOUT     = 7
-	TEST_FAILURE        = 101
-	CROSSRUNNER_FAILURE = 102
+	DefaultTimeout     time.Duration = 7
+	TestFailure                      = 101
+	CrossrunnerFailure               = 102
 )
 
-func getList(options options, test Languages) (apps []config) {
+// getExpandedConfigs takes a client/server at the language level and the options
+// associated with that client/server and returns a list of unique configs.
+func getExpandedConfigs(options options, test languages) (apps []config) {
 	app := new(config)
 
 	// Loop through each transport and protocol to construct expanded list
@@ -25,7 +29,7 @@ func getList(options options, test Languages) (apps []config) {
 			app.Transport = transport
 			app.Command = append(test.Command, options.Command...)
 			app.Workdir = test.Workdir
-			app.Timeout = DEFAULT_TIMEOUT
+			app.Timeout = DefaultTimeout
 			if options.Timeout != 0 {
 				app.Timeout = options.Timeout
 			}
@@ -36,20 +40,22 @@ func getList(options options, test Languages) (apps []config) {
 }
 
 // Return next available port
-func CheckPort(port uint64) uint64 {
-	// Check if port is available
-	conn, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+func GetAvailablePort() (int, error) {
+	// Passing 0 allows the OS to select an available port
+	conn, err := net.Listen("tcp", ":0")
 	if err != nil {
 		// If unavailable, skip port
-		return CheckPort(port + 1)
+		return GetAvailablePort()
 	}
-	conn.Close()
-	return port
+	defer conn.Close()
+	// conn.Addr().String returns something like "[::]:49856", trim the first 5 chars
+	port, err := strconv.Atoi(conn.Addr().String()[5:])
+	return port, err
 }
 
 // getCommand returns a Cmd struct used to execute a client or server and a
 // nicely formatted string for verbose logging
-func getCommand(config config, port uint64) (cmd *exec.Cmd, formatted string) {
+func getCommand(config config, port int) (cmd *exec.Cmd, formatted string) {
 	var args []string
 
 	command := config.Command[0]
@@ -64,8 +70,8 @@ func getCommand(config config, port uint64) (cmd *exec.Cmd, formatted string) {
 
 	cmd = exec.Command(command, args...)
 	cmd.Dir = config.Workdir
-	cmd.Stdout = config.Logs.File
-	cmd.Stderr = config.Logs.File
+	cmd.Stdout = config.Logs
+	cmd.Stderr = config.Logs
 
 	// Nicely format command here for use at the top of each log file
 	formatted = fmt.Sprintf("%s %s", command, strings.Trim(fmt.Sprint(args), "[]"))
