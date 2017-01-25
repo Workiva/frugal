@@ -57,9 +57,11 @@ def logging_middleware(next):
     def handler(method, args):
         service = '%s.%s' % (method.im_self.__module__,
                              method.im_class.__name__)
-        print '==== CALLING %s.%s ====' % (service, method.im_func.func_name)
+        root.info('==== CALLING %s.%s ===='.format(service,
+                                                   method.im_func.func_name))
         ret = next(method, args)
-        print '==== CALLED  %s.%s ====' % (service, method.im_func.func_name)
+        root.info('==== CALLED  %s.%s ===='.format(service,
+                                                   method.im_func.func_name))
         return ret
     return handler
 

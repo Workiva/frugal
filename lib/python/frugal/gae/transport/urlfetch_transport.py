@@ -5,7 +5,7 @@ from struct import unpack
 from thrift.transport.TTransport import TTransportException
 
 from frugal.exceptions import FTimeoutException
-from frugal.transport.http_transport import TBaseHttpTransport
+from frugal.transport.base_http_transport import TBaseHttpTransport
 
 
 class TUrlfetchTransport(TBaseHttpTransport):

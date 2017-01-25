@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/rs/cors"
 
 	"github.com/Workiva/frugal/examples/go/gen-go/v1/music"
 	"github.com/Workiva/frugal/lib/go"
@@ -24,9 +25,12 @@ func main() {
 	processor := music.NewFStoreProcessor(handler)
 
 	// Start the server using the configured processor, and protocol
-	http.HandleFunc("/frugal", frugal.NewFrugalHandlerFunc(processor, fProtocolFactory))
+	mux := http.NewServeMux()
+	mux.HandleFunc("/frugal", frugal.NewFrugalHandlerFunc(processor, fProtocolFactory))
+	httpHandler := cors.Default().Handler(mux)
+
 	fmt.Println("Starting the http server...")
-	log.Fatal(http.ListenAndServe(":9090", http.DefaultServeMux))
+	log.Fatal(http.ListenAndServe(":9090", httpHandler))
 }
 
 // StoreHandler handles all incoming requests to the server.
@@ -38,7 +42,7 @@ func (f *StoreHandler) BuyAlbum(ctx frugal.FContext, ASIN string, acct string) (
 	album := &music.Album{
 		ASIN:     "c54d385a-5024-4f3f-86ef-6314546a7e7f",
 		Duration: 1200,
-		Tracks: []*music.Track{&music.Track{
+		Tracks: []*music.Track{{
 			Title:     "Comme des enfants",
 			Artist:    "Coeur de pirate",
 			Publisher: "Grosse Boîte",

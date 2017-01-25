@@ -16,6 +16,8 @@ class TestHeaders(unittest.TestCase):
 
     def test_write_header_given_fcontext(self):
         ctx = FContext("corrId")
+        # Manually set the op id to avoid changes to global op id
+        ctx._set_op_id(0)
         expected = bytearray(b'\x00\x00\x00\x00 \x00\x00\x00\x05_opid\x00\x00'
                              b'\x00\x010\x00\x00\x00\x04_cid\x00\x00\x00\x06'
                              b'corrId\x00\x00\x00\x08_timeout\x00\x00\x00'

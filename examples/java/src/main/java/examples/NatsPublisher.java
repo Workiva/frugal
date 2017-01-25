@@ -60,5 +60,6 @@ public class NatsPublisher {
         System.out.println("Published event");
 
         publisher.close();
+        conn.close();
     }
 }

@@ -24,8 +24,14 @@ func main() {
 		panic(err)
 	}
 
-	// Create a client used to send messages with our desired protocol
-	storeClient := music.NewFStoreClient(frugal.NewFServiceProvider(httpTransport, fProtocolFactory, newLoggingMiddleware()))
+	// Create a provider with the transport and protocol factory. The provider
+	// can be used to create multiple Clients.
+	provider := frugal.NewFServiceProvider(httpTransport, fProtocolFactory)
+
+	// Create a client used to send messages with our desired protocol.  You
+	// can also pass middleware in here if you only want it to intercept calls
+	// for this specific client.
+	storeClient := music.NewFStoreClient(provider, newLoggingMiddleware())
 
 	// Request to buy an album
 	album, err := storeClient.BuyAlbum(frugal.NewFContext("corr-id-1"), "ASIN-1290AIUBOA89", "ACCOUNT-12345")

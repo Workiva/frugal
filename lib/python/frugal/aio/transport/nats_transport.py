@@ -3,25 +3,24 @@ from nats.aio.utils import new_inbox
 from thrift.transport.TTransport import TTransportException
 
 from frugal import _NATS_MAX_MESSAGE_SIZE
-from frugal.aio.transport import FRegistryTransport
+from frugal.aio.transport import FAsyncTransport
 
 
-class FNatsTransport(FRegistryTransport):
+class FNatsTransport(FAsyncTransport):
     """
-    FNatsTransport is an FTransport that uses nats as the underlying transport.
-    This is "stateless" in the sense there is no connection with a server. A
-    request is published on a subject and responses are received on another
-    subject. To use this, requests and responses MUST fit within a single nats
-    message.
+    FNatsTransport is an extension of FAsyncTransport that uses nats as the
+    underlying transport. This is "stateless" in the sense there is no
+    connection with a server. A request is published on a subject and responses
+    are received on another subject. To use this, requests and responses MUST
+    fit within a single nats message.
     """
     def __init__(
         self,
-        nats_client:
-        Client,
+        nats_client: Client,
         subject: str,
         inbox=''
     ):
-        super().__init__(_NATS_MAX_MESSAGE_SIZE)
+        super().__init__(request_size_limit=_NATS_MAX_MESSAGE_SIZE)
         self._nats_client = nats_client
         self._subject = subject
         self._inbox = inbox or new_inbox()
@@ -49,7 +48,7 @@ class FNatsTransport(FRegistryTransport):
         self._is_open = True
 
     async def _on_message_callback(self, message):
-        await self.execute_frame(message.data[4:])
+        await self.handle_response(message.data[4:])
 
     async def close(self):
         """Unsubscribe from the inbox subject."""
@@ -60,11 +59,7 @@ class FNatsTransport(FRegistryTransport):
         self._is_open = False
         self._sub_id = None
 
-    async def send(self, data):
-        if not self._is_open:
-            raise TTransportException(TTransportException.NOT_OPEN,
-                                      'Transport is not open')
-
+    async def flush(self, data):
         await self._nats_client.publish_request(
             self._subject,
             self._inbox,

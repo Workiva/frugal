@@ -46,7 +46,7 @@ func TestSimpleServer(t *testing.T) {
 
 	ctx := NewFContext("")
 	ctx.SetTimeout(5 * time.Millisecond)
-	_, err = fTransport.Request(ctx, false, make([]byte, 10))
+	_, err = fTransport.Request(ctx, make([]byte, 10))
 	assert.Equal(t, thrift.TIMED_OUT, err.(thrift.TTransportException).TypeId())
 
 	assert.Nil(t, server.Stop())

@@ -107,7 +107,7 @@ func TestNatsTransportWrite(t *testing.T) {
 	assert.True(t, tr.IsOpen())
 
 	buff := make([]byte, 1024*1024+1)
-	_, err := tr.Request(NewFContext(""), false, buff)
+	_, err := tr.Request(NewFContext(""), buff)
 	assert.True(t, IsErrTooLarge(err))
 	assert.Equal(t, TTRANSPORT_REQUEST_TOO_LARGE, err.(thrift.TTransportException).TypeId())
 	assert.Equal(t, 0, tr.writeBuffer.Len())
@@ -126,7 +126,7 @@ func TestNatsTransportFlushNotOpen(t *testing.T) {
 
 	tr := NewFNatsTransport(conn, "foo", "bar")
 
-	_, err = tr.Request(nil, false, []byte{})
+	_, err = tr.Request(nil, []byte{})
 	trErr := err.(thrift.TTransportException)
 	assert.Equal(t, thrift.NOT_OPEN, trErr.TypeId())
 }
@@ -146,7 +146,7 @@ func TestNatsTransportFlushNatsDisconnected(t *testing.T) {
 	conn.Close()
 
 	//err := tr.Send(nil, []byte{})
-	_, err := tr.Request(nil, false, []byte{})
+	_, err := tr.Request(nil, []byte{})
 	trErr := err.(thrift.TTransportException)
 	assert.Equal(t, thrift.NOT_OPEN, trErr.TypeId())
 }
@@ -164,7 +164,7 @@ func TestNatsTransportFlushNoData(t *testing.T) {
 
 	sub, err := conn.SubscribeSync(tr.subject)
 	assert.Nil(t, err)
-	_, err = tr.Request(nil, false, []byte{0, 0, 0, 0})
+	_, err = tr.Request(nil, []byte{0, 0, 0, 0})
 	assert.Nil(t, err)
 	conn.Flush()
 	_, err = sub.NextMsg(5 * time.Millisecond)
@@ -188,7 +188,7 @@ func TestNatsTransportFlush(t *testing.T) {
 
 	ctx := NewFContext("")
 	ctx.SetTimeout(5 * time.Millisecond)
-	_, err = tr.Request(ctx, false, prependFrameSize(frame))
+	_, err = tr.Request(ctx, prependFrameSize(frame))
 	// expect a timeout error because nothing is answering
 	assert.Equal(t, thrift.TIMED_OUT, err.(thrift.TTransportException).TypeId())
 	conn.Flush()

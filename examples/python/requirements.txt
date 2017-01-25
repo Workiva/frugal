@@ -1,4 +1,1 @@
-w-thrift==1.0.0.dev5
-frugal
-httplib2==0.9.2
-six
+frugal==2.0.0rc8

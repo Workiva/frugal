@@ -13,7 +13,9 @@ _OPID_HEADER = "_opid"
 _TIMEOUT_HEADER = "_timeout"
 
 _DEFAULT_TIMEOUT = 5 * 1000
-_DEFAULT_OP_ID = 0
+
+# Global incrementing op id.
+_OP_ID = 0
 
 
 class FContext(object):
@@ -34,7 +36,7 @@ class FContext(object):
 
     An FContext should belong to a single request for the lifetime of that
     request. It can be reused once the request has completed, though they
-    should generally not be reused.
+    should generally not be reused. This class is _not_ thread-safe.
     """
 
     def __init__(self, correlation_id=None, timeout=_DEFAULT_TIMEOUT):
@@ -51,8 +53,12 @@ class FContext(object):
             correlation_id = self._generate_cid()
 
         self._request_headers[_CID_HEADER] = correlation_id
-        self._request_headers[_OPID_HEADER] = str(_DEFAULT_OP_ID)
         self._request_headers[_TIMEOUT_HEADER] = str(timeout)
+
+        # Take the current op id and increment the counter
+        global _OP_ID
+        self._request_headers[_OPID_HEADER] = str(_OP_ID)
+        _OP_ID += 1
 
     @property
     def correlation_id(self):

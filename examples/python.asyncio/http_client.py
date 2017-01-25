@@ -55,9 +55,9 @@ async def main():
 
 def logging_middleware(next):
     def handler(method, args):
-        print('==== CALLING %s ====', method.__name__)
+        root.info('==== CALLING %s ====', method.__name__)
         ret = next(method, args)
-        print('==== CALLED  %s ====', method.__name__)
+        root.info('==== CALLED  %s ====', method.__name__)
         return ret
     return handler
 

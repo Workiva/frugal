@@ -1,15 +1,26 @@
 from thrift.transport.TTransport import TTransportBase
+from thrift.transport.TTransport import TTransportException
+
+from frugal.exceptions import FMessageSizeException
 
 
 class FTransport(object):
     """
-    FTransport is comparable to Thrift's TTransport in that it represents the
+    FTransport is comparable to Thrift's TTransport in that it represent the
     transport layer for frugal clients. However, frugal is callback based and
-    sends only framed data. Due to this, instead of read, write, and flush
-    methods, FTransport has a send method that sends framed frugal messages.
-    To handle callback data, an FTransport also has an FRegistry, so it provides
-    methods for registering and unregistering an FAsyncCallback to an FContext.
+    sends only framed data. Therefore, instead of exposing read, write, and
+    flush, the transport has a simple request method that sends framed frugal
+    messages and returns the response.
     """
+    def __init__(self, request_size_limit=0):
+        """
+        Args:
+            request_size_limit: The maximum request payload size for this
+                                transport. A non-positive number indicates
+                                an unbounded allowable size.
+        """
+        self._request_size_limit = request_size_limit
+
     def open(self):
         """Open the transport."""
         raise NotImplementedError('You must override this')
@@ -22,25 +33,6 @@ class FTransport(object):
         """Return True if the transport is open, False otherwise."""
         raise NotImplementedError('You must override this')
 
-    def register(self, context, callback):
-        """
-        Register a callback with a context.
-
-        Args:
-            context: The context to register.
-            callback: The function associated with the given context.
-        """
-        raise NotImplementedError('You must override this')
-
-    def unregister(self, context):
-        """
-        Unregister the given context.
-
-        Args:
-            context: The context to unregister.
-        """
-        raise NotImplementedError('You must override this')
-
     def set_monitor(self, monitor):
         """
         Set the transport monitor for the transport. This should only be used
@@ -51,20 +43,56 @@ class FTransport(object):
         """
         raise NotImplementedError('You must override this')
 
-    def send(self, data):
-        """Transmits the given data."""
+    def oneway(self, context, payload):
+        """
+        Send the given framed frugal payload over the transport.
+
+        Args:
+            context:    FContext associated with the request (used for timeout
+                        and logging)
+
+            payload:    framed frugal data
+        """
+        raise NotImplementedError('You must override this')
+
+    def request(self, context, payload):
+        """
+        Send the given framed frugal payload over the transport and returns the
+        response.
+
+        Args:
+            context:    FContext associated with the request (used for timeout
+                        and logging)
+
+            payload:    framed frugal data
+        """
         raise NotImplementedError('You must override this')
 
     def get_request_size_limit(self):
         """
-        Returns the maximum number of bytes that can be sent. A non-positive
-        number is returned to indicate an unbounded allowable size.
+        Returns the maximum request payload size for this transport. A non-
+        positive number is returned to indicate an unbounded allowable size.
         """
-        raise NotImplementedError('You must override this')
+        return self._request_size_limit
+
+    def _preflight_request_check(self, payload):
+        """
+        Helper function that throws TTransportException.NOT_OPEN if the
+        transport is not open or throws FMessageSizeException if the payload is
+        too large. Should only be called by extending classes.
+        """
+        if not self.is_open():
+            raise TTransportException(TTransportException.NOT_OPEN,
+                                      'Transport is not open')
+
+        if len(payload) > self.get_request_size_limit() > 0:
+            raise FMessageSizeException.request(
+                'Message exceeds {0} bytes, was {1} bytes'.format(
+                    self.get_request_size_limit(), len(payload)))
 
 
 class TSynchronousTransport(TTransportBase, object):
-    """FSynchronousTransport is a Thrift TTransport for services which makes
+    """TSynchronousTransport is a Thrift TTransport for services which make
     synchronous requests.
     """
 

@@ -1,4 +1,1 @@
-w-thrift==1.0.0.dev5
-asyncio-nats-client==0.3.1
-aiohttp==0.22.3
-frugal[asyncio]
+frugal[asyncio]==2.0.0rc8

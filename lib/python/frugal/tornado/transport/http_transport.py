@@ -2,19 +2,19 @@ import base64
 import httplib
 import logging
 
+from thrift.transport.TTransport import TMemoryBuffer
 from thrift.transport.TTransport import TTransportException
 from tornado import gen
 from tornado.httpclient import AsyncHTTPClient
 from tornado.httpclient import HTTPError
 from tornado.httpclient import HTTPRequest
 
-from frugal.exceptions import FMessageSizeException
-from frugal.tornado.transport import FTornadoTransport
+from frugal.tornado.transport.transport import FTransportBase
 
 logger = logging.getLogger(__name__)
 
 
-class FHttpTransport(FTornadoTransport):
+class FHttpTransport(FTransportBase):
     def __init__(self, url, request_capacity=0, response_capacity=0):
         """
         Create an HTTP transport.
@@ -26,7 +26,8 @@ class FHttpTransport(FTornadoTransport):
             response_capacity: The maximum size allowed to be read in a
                                response. Set to 0 for no size restrictions.
         """
-        super(FHttpTransport, self).__init__(max_message_size=request_capacity)
+        super(FHttpTransport, self).__init__(
+            request_size_limit=request_capacity)
         self._url = url
         self._http = AsyncHTTPClient()
 
@@ -58,19 +59,27 @@ class FHttpTransport(FTornadoTransport):
         pass
 
     @gen.coroutine
-    def send(self, data):
+    def oneway(self, context, payload):
         """
-        Write the current buffer and execute the set callback with the
-        response.
+        Write the current buffer. This transport detects oneway requests via
+        via the payload size on the server response. Therefore, just call
+        through to request.
         """
-        if len(data) > self._max_message_size > 0:
-            raise FMessageSizeException.request(
-                'Message exceeds {0} bytes, was {1} bytes'.format(
-                    self._max_message_size, len(data)))
+        yield self.request(context, payload)
 
-        encoded = base64.b64encode(data)
-        request = HTTPRequest(self._url, method='POST', body=encoded,
-                              headers=self._headers)
+    @gen.coroutine
+    def request(self, context, payload):
+        """
+        Write the current buffer and return the response.
+        """
+        self._preflight_request_check(payload)
+        encoded = base64.b64encode(payload)
+        request = HTTPRequest(self._url,
+                              method='POST',
+                              body=encoded,
+                              headers=self._headers,
+                              request_timeout=context.timeout / 1000.0
+                              )
 
         try:
             response = yield self._http.fetch(request)
@@ -78,6 +87,12 @@ class FHttpTransport(FTornadoTransport):
             if e.code == httplib.REQUEST_ENTITY_TOO_LARGE:
                 raise TTransportException(type=TTransportException.UNKNOWN,
                                           message='response was too large')
+
+            # Tornado HttpClient uses 599 as the HTTP code to indicate a
+            # request timeout
+            if e.code == 599:
+                raise TTransportException(type=TTransportException.TIMED_OUT,
+                                          message='request timed out')
 
             message = 'response errored with code {0} and body {1}'.format(
                 e.code, e.message
@@ -95,4 +110,4 @@ class FHttpTransport(FTornadoTransport):
             # One-way method, drop response
             return
 
-        yield self.execute_frame(decoded)
+        raise gen.Return(TMemoryBuffer(decoded[4:]))

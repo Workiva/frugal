@@ -11,10 +11,19 @@ def async_runner(f):
     return wrapper
 
 
+def default_gen():
+    """Advance test time by the time requested to allow timeouts to expire."""
+    time_requested = 1
+    while time_requested != 0:
+        time_requested = yield time_requested
+
+
 class AsyncIOTestCase(TestCase):
-    def setUp(self):
+    def setUp(self, gen=None):
         super().setUp()
-        self.loop = self.new_test_loop()
+        if gen is None:
+            gen = default_gen
+        self.loop = self.new_test_loop(gen=gen)
         asyncio.set_event_loop(self.loop)
 
     def tearDown(self):

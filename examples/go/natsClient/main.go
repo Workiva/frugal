@@ -32,9 +32,13 @@ func main() {
 		panic(err)
 	}
 
+	// Create a ServiceProvider to wrap the transport and protocol factory.
+	// This can be used to create multiple clients.
+	provider := frugal.NewFServiceProvider(natsT, fProtocolFactory)
+
 	// Create a client using NATS to send messages with our desired
 	// protocol
-	storeClient := music.NewFStoreClient(frugal.NewFServiceProvider(natsT, fProtocolFactory), newLoggingMiddleware())
+	storeClient := music.NewFStoreClient(provider, newLoggingMiddleware())
 
 	// Request to buy an album
 	album, err := storeClient.BuyAlbum(frugal.NewFContext("corr-id-1"), "ASIN-1290AIUBOA89", "ACCOUNT-12345")

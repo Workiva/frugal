@@ -94,10 +94,38 @@ func (f *fNatsTransport) Close() error {
 	return nil
 }
 
+func (f *fNatsTransport) checkMessageSize(data []byte) error {
+	if len(data) > natsMaxMessageSize {
+		return thrift.NewTTransportException(
+			TTRANSPORT_REQUEST_TOO_LARGE,
+			fmt.Sprintf("Message exceeds %d bytes, was %d bytes", natsMaxMessageSize, len(data)))
+	}
+	return nil
+}
+
+// Oneway transmits the given data and doesn't wait for a response.
+// Implementations of oneway should be threadsafe and respect the timeout
+// present on the context.
+func (f *fNatsTransport) Oneway(ctx FContext, data []byte) error {
+	if !f.IsOpen() {
+		return f.getClosedConditionError("request:")
+	}
+
+	if len(data) == 4 {
+		return nil
+	}
+
+	if err := f.checkMessageSize(data); err != nil {
+		return err
+	}
+
+	return f.conn.PublishRequest(f.subject, f.inbox, data)
+}
+
 // Request transmits the given data and waits for a response.
 // Implementations of request should be threadsafe and respect the timeout
 // present the on context. The data is expected to already be framed.
-func (f *fNatsTransport) Request(ctx FContext, oneway bool, data []byte) (thrift.TTransport, error) {
+func (f *fNatsTransport) Request(ctx FContext, data []byte) (thrift.TTransport, error) {
 	resultC := make(chan []byte, 1)
 
 	if !f.IsOpen() {
@@ -108,23 +136,15 @@ func (f *fNatsTransport) Request(ctx FContext, oneway bool, data []byte) (thrift
 		return nil, nil
 	}
 
-	if !oneway {
-		f.registry.Register(ctx, resultC)
-		defer f.registry.Unregister(ctx)
-	}
+	f.registry.Register(ctx, resultC)
+	defer f.registry.Unregister(ctx)
 
-	if len(data) > natsMaxMessageSize {
-		return nil, thrift.NewTTransportException(
-			TTRANSPORT_REQUEST_TOO_LARGE,
-			fmt.Sprintf("Message exceeds %d bytes, was %d bytes", natsMaxMessageSize, len(data)))
+	if err := f.checkMessageSize(data); err != nil {
+		return nil, err
 	}
 
 	if err := f.conn.PublishRequest(f.subject, f.inbox, data); err != nil {
 		return nil, err
-	}
-
-	if oneway {
-		return nil, nil
 	}
 
 	select {

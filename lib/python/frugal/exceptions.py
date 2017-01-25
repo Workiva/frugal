@@ -16,6 +16,7 @@ class FApplicationException(TApplicationException):
     RESPONSE_TOO_LARGE = 100
     RATE_LIMIT_EXCEEDED = 102
 
+
 class FTransportException(TTransportException):
 
     REQUEST_TOO_LARGE = 100

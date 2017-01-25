@@ -1086,7 +1086,7 @@ func (g *Generator) generateClientConstructor(service *parser.Service, async boo
 	if async {
 		docstring = append(docstring, tab+"provider: FServiceProvider")
 	} else {
-		docstring = append(docstring, tab+"provider: FServiceProvider with FSynchronousTransport")
+		docstring = append(docstring, tab+"provider: FServiceProvider with TSynchronousTransport")
 	}
 	docstring = append(docstring, tab+"middleware: ServiceMiddleware or list of ServiceMiddleware")
 	contents += g.generateDocString(docstring, tabtab)

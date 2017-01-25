@@ -197,10 +197,18 @@ func (h *fHTTPTransport) Close() error {
 	return nil
 }
 
+// Oneway transmits the given data and doesn't wait for a response.
+// Implementations of oneway should be threadsafe and respect the timeout
+// present on the context.
+func (h *fHTTPTransport) Oneway(ctx FContext, data []byte) error {
+	_, err := h.Request(ctx, data)
+	return err
+}
+
 // Request transmits the given data and waits for a response.
 // Implementations of request should be threadsafe and respect the timeout
 // present the on context. The data is expected to already be framed.
-func (h *fHTTPTransport) Request(ctx FContext, _ bool, data []byte) (thrift.TTransport, error) {
+func (h *fHTTPTransport) Request(ctx FContext, data []byte) (thrift.TTransport, error) {
 	if !h.IsOpen() {
 		return nil, h.getClosedConditionError("request:")
 	}

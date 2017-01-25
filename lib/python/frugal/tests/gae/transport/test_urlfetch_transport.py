@@ -46,7 +46,7 @@ class TestFUrlfetchTransport(unittest.TestCase):
             {'foo': 'bar', 'baz': 'qux', 'Content-Length': '20',
              'Content-Type': 'application/x-frugal',
              'Content-Transfer-Encoding': 'base64', 'User-Agent':
-             'Python/FHttpTransport'},
+             'Python/TBaseHttpTransport'},
         )
 
         resp = tr.read(len(response))
@@ -79,7 +79,7 @@ class TestFUrlfetchTransport(unittest.TestCase):
             url, encoded_frame, True, None,
             {'Content-Length': '20', 'Content-Type': 'application/x-frugal',
              'Content-Transfer-Encoding': 'base64', 'User-Agent':
-             'Python/FHttpTransport'},
+             'Python/TBaseHttpTransport'},
         )
 
         resp = tr.read(len(response))
@@ -114,7 +114,7 @@ class TestFUrlfetchTransport(unittest.TestCase):
             url, encoded_frame, False, None,
             {'Content-Length': '20', 'Content-Type': 'application/x-frugal',
              'Content-Transfer-Encoding': 'base64', 'User-Agent':
-             'Python/FHttpTransport'},
+             'Python/TBaseHttpTransport'},
         )
 
     def test_flush_bad_oneway_response(self, mock_urlfetch):
@@ -141,7 +141,7 @@ class TestFUrlfetchTransport(unittest.TestCase):
             url, encoded_frame, False, None,
             {'Content-Length': '20', 'Content-Type': 'application/x-frugal',
              'Content-Transfer-Encoding': 'base64', 'User-Agent':
-             'Python/FHttpTransport'},
+             'Python/TBaseHttpTransport'},
         )
 
     def test_flush_oneway(self, mock_urlfetch):
@@ -166,7 +166,7 @@ class TestFUrlfetchTransport(unittest.TestCase):
             url, encoded_frame, False, None,
             {'Content-Length': '20', 'Content-Type': 'application/x-frugal',
              'Content-Transfer-Encoding': 'base64', 'User-Agent':
-             'Python/FHttpTransport'},
+             'Python/TBaseHttpTransport'},
         )
 
         resp = tr.read(10)

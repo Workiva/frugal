@@ -168,19 +168,32 @@ func (f *fAdapterTransport) close(cause error) error {
 	return nil
 }
 
+// Oneway transmits the given data and doesn't wait for a response.
+// Implementations of oneway should be threadsafe and respect the timeout
+// present on the context.
+func (f *fAdapterTransport) Oneway(ctx FContext, payload []byte) error {
+	errorC := make(chan error, 1)
+	go f.send(payload, errorC, true)
+
+	select {
+	case err := <- errorC:
+		return err
+	case <- time.After(ctx.Timeout()):
+		return thrift.NewTTransportException(thrift.TIMED_OUT, "frugal: request timed out")
+	}
+}
+
 // Request transmits the given data and waits for a response.
 // Implementations of request should be threadsafe and respect the timeout
 // present on the context.
-func (f *fAdapterTransport) Request(ctx FContext, oneway bool, payload []byte) (thrift.TTransport, error) {
+func (f *fAdapterTransport) Request(ctx FContext, payload []byte) (thrift.TTransport, error) {
 	resultC := make(chan []byte, 1)
 	errorC := make(chan error, 1)
 
-	if !oneway {
-		f.registry.Register(ctx, resultC)
-		defer f.registry.Unregister(ctx)
-	}
+	f.registry.Register(ctx, resultC)
+	defer f.registry.Unregister(ctx)
 
-	go f.send(payload, resultC, errorC)
+	go f.send(payload, errorC, false)
 
 	select {
 	case result := <-resultC:
@@ -192,7 +205,9 @@ func (f *fAdapterTransport) Request(ctx FContext, oneway bool, payload []byte) (
 	}
 }
 
-func (f *fAdapterTransport) send(payload []byte, resultC chan []byte, errorC chan error) {
+func (f *fAdapterTransport) send(payload []byte, errorC chan error, oneway bool) {
+	// TODO: does this need to be called in a goroutine?
+	// i.e. can Write() and Flush() block?
 	if _, err := f.transport.Write(payload); err != nil {
 		errorC <- err
 		return
@@ -200,6 +215,12 @@ func (f *fAdapterTransport) send(payload []byte, resultC chan []byte, errorC cha
 	if err := f.transport.Flush(); err != nil {
 		errorC <- err
 		return
+	}
+
+	if oneway {
+		// If it's a oneway, no result will be sent back from the server
+		// so let the goroutine know everything succeeded
+		errorC <- nil
 	}
 }
 

@@ -2,14 +2,15 @@ from nats.io.utils import new_inbox
 from thrift.transport.TTransport import TTransportException
 from tornado import gen
 
-from frugal.tornado.transport import FTornadoTransport
+from frugal import _NATS_MAX_MESSAGE_SIZE
+from frugal.tornado.transport import FAsyncTransport
 
 _NOT_OPEN = 'NATS not connected.'
 _ALREAD_OPEN = 'NATS transport already open.'
 
 
-class FNatsTransport(FTornadoTransport):
-    """FNatsTransport is an extension of FTransport. This is a "stateless"
+class FNatsTransport(FAsyncTransport):
+    """FNatsTransport is an extension of FAsyncTransport. This is a "stateless"
     transport in the sense that there is no connection with a server. A request
     is simply published to a subject and responses are received on another
     subject. This assumes requests/responses fit within a single NATS message.
@@ -22,7 +23,8 @@ class FNatsTransport(FTornadoTransport):
             nats_client: connected instance of nats.io.Client
             subject: subject to publish to
         """
-        super(FNatsTransport, self).__init__()
+        super(FNatsTransport, self).__init__(
+            request_size_limit=_NATS_MAX_MESSAGE_SIZE)
         self._nats_client = nats_client
         self._subject = subject
         self._inbox = inbox or new_inbox()
@@ -50,7 +52,7 @@ class FNatsTransport(FTornadoTransport):
 
     @gen.coroutine
     def _on_message_callback(self, msg):
-        yield self.execute_frame(msg.data)
+        yield self.handle_response(msg.data[4:])
 
     @gen.coroutine
     def close(self):
@@ -62,13 +64,10 @@ class FNatsTransport(FTornadoTransport):
         self._is_open = False
 
     @gen.coroutine
-    def send(self, data):
+    def flush(self, payload):
         """Sends the buffered bytes over NATS"""
-        if not self.is_open():
-            raise TTransportException(TTransportException.NOT_OPEN, _NOT_OPEN)
-
         subject = self._subject
         inbox = self._inbox
-        yield self._nats_client.publish_request(subject, inbox, data)
+        yield self._nats_client.publish_request(subject, inbox, payload)
         # If we don't flush here the ioloop waits for 2 minutes before flushing
         yield self._nats_client.flush()

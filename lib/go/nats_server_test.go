@@ -37,7 +37,7 @@ func TestFStatelessNatsServer(t *testing.T) {
 	proto := protoFactory.GetProtocol(buffer)
 	proto.WriteRequestHeader(ctx)
 	proto.WriteBinary([]byte{1, 2, 3, 4, 5})
-	resultTrans, err := tr.Request(ctx, false, buffer.Bytes())
+	resultTrans, err := tr.Request(ctx, buffer.Bytes())
 	assert.Nil(t, err)
 
 	resultProto := protoFactory.GetProtocol(resultTrans)

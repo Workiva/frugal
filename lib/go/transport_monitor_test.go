@@ -317,7 +317,13 @@ func (m *mockFTransport) AssignOpID(_ FContext) error {
 	return m.Called().Error(0)
 }
 
-func (m *mockFTransport) Request(_ FContext, _ bool, data []byte) (thrift.TTransport, error) {
+func (m *mockFTransport) Oneway(_ FContext, data []byte) error {
+	m.Lock()
+	defer m.Unlock()
+	return m.Called().Error(0)
+}
+
+func (m *mockFTransport) Request(_ FContext, data []byte) (thrift.TTransport, error) {
 	m.Lock()
 	defer m.Unlock()
 	args := m.Called()

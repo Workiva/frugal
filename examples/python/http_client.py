@@ -8,7 +8,7 @@ from thrift.protocol import TBinaryProtocol
 from frugal.context import FContext
 from frugal.protocol import FProtocolFactory
 from frugal.provider import FServiceProvider
-from frugal.transport.http_transport import FHttpTransport
+from frugal.transport.http_transport import THttpTransport
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "gen-py"))
 from v1.music.f_Store import Client as FStoreClient  # noqa
@@ -37,7 +37,7 @@ def main():
     prot_factory = FProtocolFactory(TBinaryProtocol.TBinaryProtocolFactory())
 
     # Create an HTTP transport for the server URL
-    transport = FHttpTransport(URL)
+    transport = THttpTransport(URL)
     transport.open()
 
     # Using the configured transport and protocol, create a client
@@ -60,9 +60,9 @@ def main():
 
 def logging_middleware(next):
     def handler(method, args):
-        print('==== CALLING %s ====', method.__name__)
+        root.info('==== CALLING %s ====', method.__name__)
         ret = next(method, args)
-        print('==== CALLED  %s ====', method.__name__)
+        root.info('==== CALLED  %s ====', method.__name__)
         return ret
     return handler
 

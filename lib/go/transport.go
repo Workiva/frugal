@@ -81,10 +81,15 @@ type FTransport interface {
 	// Close closes the transport.
 	Close() error
 
+	// Oneway transmits the given data and doesn't wait for a response.
+	// Implementations of oneway should be threadsafe and respect the timeout
+	// present on the context.
+	Oneway(ctx FContext, payload []byte) error
+
 	// Request transmits the given data and waits for a response.
 	// Implementations of request should be threadsafe and respect the timeout
-	// present the on context.
-	Request(ctx FContext, oneway bool, payload []byte) (thrift.TTransport, error)
+	// present on the context.
+	Request(ctx FContext, payload []byte) (thrift.TTransport, error)
 
 	// GetRequestSizeLimit returns the maximum number of bytes that can be
 	// transmitted. Returns a non-positive number to indicate an unbounded

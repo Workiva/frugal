@@ -125,37 +125,9 @@ func (a *AsyncIOGenerator) generateClientMethod(method *parser.Method) string {
 	contents += tabtab + fmt.Sprintf("return await self._methods['%s']([ctx%s])\n\n",
 		method.Name, a.generateClientArgs(method.Arguments))
 
-	if method.Oneway {
-		contents += tab + fmt.Sprintf("async def _%s(self, ctx%s):\n", method.Name, a.generateClientArgs(method.Arguments))
-		contents += tabtab + fmt.Sprintf("await self._send_%s(ctx%s)\n\n", method.Name, a.generateClientArgs(method.Arguments))
-		contents += a.generateClientSendMethod(method)
-		return contents
-	}
-
 	contents += tab + fmt.Sprintf("async def _%s(self, ctx%s):\n", method.Name, a.generateClientArgs(method.Arguments))
-	contents += tabtab + "timeout = ctx.timeout / 1000.0\n"
-	contents += tabtab + "future = asyncio.Future()\n"
-	contents += tabtab + "timed_future = asyncio.wait_for(future, timeout)\n"
-	contents += tabtab + fmt.Sprintf("await self._transport.register(ctx, self._recv_%s(ctx, future))\n", method.Name)
-	contents += tabtab + "try:\n"
-	contents += tabtabtab + fmt.Sprintf("await self._send_%s(ctx%s)\n", method.Name, a.generateClientArgs(method.Arguments))
-	contents += tabtabtab + "result = await timed_future\n"
-	contents += tabtab + "except asyncio.TimeoutError:\n"
-	contents += fmt.Sprintf(tabtabtab+"raise FTimeoutException('%s timed out after {} milliseconds'.format(ctx.timeout))\n", method.Name)
-	contents += tabtab + "finally:\n"
-	contents += tabtabtab + "await self._transport.unregister(ctx)\n"
-	contents += tabtab + "return result\n\n"
-	contents += a.generateClientSendMethod(method)
-	contents += a.generateClientRecvMethod(method)
-
-	return contents
-}
-
-func (a *AsyncIOGenerator) generateClientSendMethod(method *parser.Method) string {
-	contents := ""
-	contents += tab + fmt.Sprintf("async def _send_%s(self, ctx%s):\n", method.Name, a.generateClientArgs(method.Arguments))
-	contents += tabtab + "buffer = TMemoryOutputBuffer(self._transport.get_request_size_limit())\n"
-	contents += tabtab + "oprot = self._protocol_factory.get_protocol(buffer)\n"
+	contents += tabtab + "memory_buffer = TMemoryOutputBuffer(self._transport.get_request_size_limit())\n"
+	contents += tabtab + "oprot = self._protocol_factory.get_protocol(memory_buffer)\n"
 	contents += tabtab + "oprot.write_request_headers(ctx)\n"
 	contents += tabtab + fmt.Sprintf("oprot.writeMessageBegin('%s', TMessageType.CALL, 0)\n", parser.LowercaseFirstLetter(method.Name))
 	contents += tabtab + fmt.Sprintf("args = %s_args()\n", method.Name)
@@ -164,47 +136,36 @@ func (a *AsyncIOGenerator) generateClientSendMethod(method *parser.Method) strin
 	}
 	contents += tabtab + "args.write(oprot)\n"
 	contents += tabtab + "oprot.writeMessageEnd()\n"
-	contents += tabtab + "await self._transport.send(buffer.getvalue())\n\n"
 
-	return contents
-}
+	if method.Oneway {
+		contents += tabtab + "await self._transport.oneway(ctx, memory_buffer.getvalue())\n\n"
+		return contents
+	}
+	contents += tabtab + "response_transport = await self._transport.request(ctx, memory_buffer.getvalue())\n\n"
 
-func (a *AsyncIOGenerator) generateClientRecvMethod(method *parser.Method) string {
-	contents := tab + fmt.Sprintf("def _recv_%s(self, ctx, future):\n", method.Name)
-	contents += tabtab + fmt.Sprintf("def %s_callback(transport):\n", method.Name)
-	contents += tabtabtab + "iprot = self._protocol_factory.get_protocol(transport)\n"
-	contents += tabtabtab + "iprot.read_response_headers(ctx)\n"
-	contents += tabtabtab + "_, mtype, _ = iprot.readMessageBegin()\n"
-	contents += tabtabtab + "if mtype == TMessageType.EXCEPTION:\n"
-	contents += tabtabtabtab + "x = TApplicationException()\n"
-	contents += tabtabtabtab + "x.read(iprot)\n"
-	contents += tabtabtabtab + "iprot.readMessageEnd()\n"
-	contents += tabtabtabtab + "if x.type == FApplicationException.RESPONSE_TOO_LARGE:\n"
-	contents += tabtabtabtabtab + "future.set_exception(FMessageSizeException.response(x.message))\n"
-	contents += tabtabtabtabtab + "return\n"
-	contents += tabtabtabtab + "future.set_exception(x)\n"
-	contents += tabtabtabtab + "return\n"
-	contents += tabtabtab + fmt.Sprintf("result = %s_result()\n", method.Name)
-	contents += tabtabtab + "result.read(iprot)\n"
+	contents += tabtab + "iprot = self._protocol_factory.get_protocol(response_transport)\n"
+	contents += tabtab + "iprot.read_response_headers(ctx)\n"
+	contents += tabtab + "_, mtype, _ = iprot.readMessageBegin()\n"
+	contents += tabtab + "if mtype == TMessageType.EXCEPTION:\n"
+	contents += tabtabtab + "x = TApplicationException()\n"
+	contents += tabtabtab + "x.read(iprot)\n"
 	contents += tabtabtab + "iprot.readMessageEnd()\n"
+	contents += tabtabtab + "if x.type == FApplicationException.RESPONSE_TOO_LARGE:\n"
+	contents += tabtabtabtab + "raise FMessageSizeException.response(x.message)\n"
+	contents += tabtabtab + "raise x\n"
+	contents += tabtab + fmt.Sprintf("result = %s_result()\n", method.Name)
+	contents += tabtab + "result.read(iprot)\n"
+	contents += tabtab + "iprot.readMessageEnd()\n"
 	for _, err := range method.Exceptions {
-		contents += tabtabtab + fmt.Sprintf("if result.%s is not None:\n", err.Name)
-		contents += tabtabtabtab + fmt.Sprintf("future.set_exception(result.%s)\n", err.Name)
-		contents += tabtabtabtab + "return\n"
+		contents += tabtab + fmt.Sprintf("if result.%s is not None:\n", err.Name)
+		contents += tabtabtab + fmt.Sprintf("raise result.%s\n", err.Name)
 	}
-	if method.ReturnType == nil {
-		contents += tabtabtab + "future.set_result(None)\n"
-	} else {
-		contents += tabtabtab + "if result.success is not None:\n"
-		contents += tabtabtabtab + "future.set_result(result.success)\n"
-		contents += tabtabtabtab + "return\n"
-		contents += tabtabtab + fmt.Sprintf(
-			"x = TApplicationException(TApplicationException.MISSING_RESULT, \"%s failed: unknown result\")\n", method.Name)
-		contents += tabtabtab + "future.set_exception(x)\n"
-		contents += tabtabtab + "raise x\n"
+	if method.ReturnType != nil {
+		contents += tabtab + "if result.success is not None:\n"
+		contents += tabtabtab + "return result.success\n"
+		contents += tabtab + fmt.Sprintf(
+			"raise TApplicationException(TApplicationException.MISSING_RESULT, \"%s failed: unknown result\")\n\n", method.Name)
 	}
-	contents += tabtab + fmt.Sprintf("return %s_callback\n\n", method.Name)
-
 	return contents
 }
 

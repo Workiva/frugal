@@ -5,6 +5,7 @@ from tornado import concurrent
 from tornado.testing import gen_test, AsyncTestCase
 from thrift.transport.TTransport import TTransportException
 
+from frugal import _NATS_MAX_MESSAGE_SIZE
 from frugal.tornado.transport import FNatsTransport
 
 
@@ -79,13 +80,15 @@ class TestFNatsTransport(AsyncTestCase):
 
     @gen_test
     def test_on_message_callback(self):
-        registry_mock = mock.Mock()
-        self.transport._registry = registry_mock
-
-        data = b'fooobar'
-        msg_mock = mock.Mock(data=data)
-        self.transport._on_message_callback(msg_mock)
-        registry_mock.execute.assert_called_once_with(data[4:])
+        message = mock.Mock()
+        message.data = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        callback = mock.Mock()
+        future = concurrent.Future()
+        future.set_result(None)
+        callback.return_value = future
+        self.transport.handle_response = callback
+        yield self.transport._on_message_callback(message)
+        callback.assert_called_once_with(message.data[4:])
 
     @gen_test
     def test_close_calls_unsubscribe_and_sets_is_open_to_false(self):
@@ -116,15 +119,7 @@ class TestFNatsTransport(AsyncTestCase):
         self.mock_nats_client.unsubscribe.assert_not_called()
 
     @gen_test
-    def test_send_not_open_raises_exception(self):
-        with self.assertRaises(TTransportException) as cm:
-            yield self.transport.send([])
-
-        self.assertEquals(TTransportException.NOT_OPEN, cm.exception.type)
-        self.assertEquals("NATS not connected.", cm.exception.message)
-
-    @gen_test
-    def test_send_publishes_request_to_inbox(self):
+    def test_flush_publishes_request_to_inbox(self):
         self.mock_nats_client.is_connected.return_value = True
         self.transport._is_open = True
 
@@ -136,7 +131,7 @@ class TestFNatsTransport(AsyncTestCase):
         self.mock_nats_client.publish_request.return_value = f
         self.mock_nats_client.flush.return_value = f
 
-        yield self.transport.send(frame_length + data)
+        yield self.transport.flush(frame_length + data)
 
         self.mock_nats_client.publish_request.assert_called_with(
             self.subject,
@@ -144,3 +139,7 @@ class TestFNatsTransport(AsyncTestCase):
             frame_length + data
         )
         self.mock_nats_client.flush.assert_called_with()
+
+    def test_request_size_limit(self):
+        self.assertEqual(_NATS_MAX_MESSAGE_SIZE,
+                         self.transport.get_request_size_limit())

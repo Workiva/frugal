@@ -1662,13 +1662,13 @@ func (g *Generator) generateInternalClientMethod(service *parser.Service, method
 	contents += "\t}\n"
 
 	if method.Oneway {
-		contents += fmt.Sprintf("\t_, err = f.transport.Request(ctx, %v, buffer.Bytes())\n", method.Oneway)
+		contents += "\terr = f.transport.Oneway(ctx, buffer.Bytes())\n"
 		contents += "\treturn\n"
 		contents += "}\n\n"
 		return contents
 	}
 	contents += "\tvar resultTransport thrift.TTransport\n"
-	contents += fmt.Sprintf("\tresultTransport, err = f.transport.Request(ctx, %v, buffer.Bytes())\n", method.Oneway)
+	contents += "\tresultTransport, err = f.transport.Request(ctx, buffer.Bytes())\n"
 	contents += "\tif err != nil {\n"
 	contents += "\t\treturn\n"
 	contents += "\t}\n"

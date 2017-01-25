@@ -1,22 +1,20 @@
-from base64 import b64encode
 from base64 import b64decode
 from io import BytesIO
-from struct import pack_into
 from struct import unpack
 
-from httplib2 import Http
+import requests
+from requests.exceptions import ReadTimeout
 from thrift.transport.TTransport import TTransportException
 
-from frugal.exceptions import FMessageSizeException
-from frugal.transport import TSynchronousTransport
+from frugal.transport.base_http_transport import TBaseHttpTransport
 
 
-class TBaseHttpTransport(TSynchronousTransport):
-    """Base synchronous transport implemented with HTTP."""
+class THttpTransport(TBaseHttpTransport):
+    """Synchronous transport implemented with Requests."""
 
     def __init__(self, url, request_capacity=0, response_capacity=0,
                  headers=None, get_headers=None):
-        """Initialize a new FBaseHttpTransport.
+        """Initialize a new THttpTransport.
 
         Args:
             url: url of the Frugal server.
@@ -28,92 +26,7 @@ class TBaseHttpTransport(TSynchronousTransport):
             get_headers: func which returns dynamic headers per request.
         """
 
-        self._url = url
-        self._wbuff = BytesIO()
-        self._rbuff = BytesIO()
-        self._request_capacity = request_capacity
-        self._response_capacity = response_capacity
-        self._custom_headers = headers
-        self._get_headers = get_headers
-
-    def isOpen(self):
-        return True
-
-    def open(self):
-        pass
-
-    def close(self):
-        pass
-
-    def read(self, sz):
-        return self._rbuff.read(sz)
-
-    def write(self, buf):
-        size = len(buf) + len(self._wbuff.getvalue())
-        if size + 4 > self._request_capacity > 0:
-            self._wbuff = BytesIO()
-            raise FMessageSizeException.request(
-                'Message exceeds {0} bytes, was {1} bytes'.format(
-                    self._request_capacity, size + 4))
-
-        self._wbuff.write(buf)
-
-    def _get_headers_and_body(self):
-        """Return the request headers and body."""
-
-        data = self._wbuff.getvalue()
-        self._wbuff = BytesIO()
-        frame_size = len(data)
-        if frame_size == 0:
-            return None, None
-
-        # Prepend the frame size to the message.
-        buff = bytearray(4)
-        pack_into('!I', buff, 0, frame_size)
-
-        body = b64encode(buff + data)
-
-        headers = {
-            'Content-Type': 'application/x-frugal',
-            'Content-Length': str(len(body)),
-            'Content-Transfer-Encoding': 'base64',
-        }
-
-        if self._response_capacity:
-            headers['x-frugal-payload-limit'] = str(self._response_capacity)
-
-        if self._get_headers:
-            headers.update(self._get_headers())
-
-        if self._custom_headers:
-            for name, value in self._custom_headers.items():
-                headers[name] = value
-
-        if 'User-Agent' not in headers:
-            headers['User-Agent'] = 'Python/FHttpTransport'
-
-        return headers, body
-
-
-class FHttpTransport(TBaseHttpTransport):
-    """Synchronous transport implemented with httplib2."""
-
-    def __init__(self, url, request_capacity=0, response_capacity=0,
-                 headers=None, get_headers=None):
-        """Initialize a new FHttpTransport.
-
-        Args:
-            url: url of the Frugal server.
-            request_capacity: max size allowed to be written in a request. Set
-                              0 for no restriction.
-            response_capacity: max size allowed to be read in a response. Set
-                               0 for no restriction.
-            headers: dict containing static headers.
-            get_headers: func which returns dynamic headers per request.
-        """
-
-        self._http = Http()
-        super(FHttpTransport, self).__init__(
+        super(THttpTransport, self).__init__(
             url, request_capacity=request_capacity,
             response_capacity=response_capacity, headers=headers,
             get_headers=get_headers)
@@ -124,15 +37,26 @@ class FHttpTransport(TBaseHttpTransport):
         if not body:
             return
 
-        resp, resp_body = self._http.request(self._url, method='POST',
-                                             body=body, headers=headers)
-        if resp.status >= 400:
+        timeout = None
+        if self._timeout:
+            # Requests uses timeout in seconds.
+            timeout = self._timeout / 1000.0
+            if timeout <= 0:
+                timeout = None
+
+        try:
+            resp = requests.post(self._url, data=body, headers=headers,
+                                 timeout=timeout)
+        except ReadTimeout:
+            raise TTransportException(TTransportException.TIMED_OUT,
+                                      'Request timed out')
+        if resp.status_code >= 400:
             raise TTransportException(
                 TTransportException.UNKNOWN,
-                'HTTP request failed, returned {0}: {1}'.format(resp.status,
-                                                                resp.reason))
+                'HTTP request failed, returned {0}: {1}'.format(
+                    resp.status_code, resp.reason))
 
-        resp_body = b64decode(resp_body)
+        resp_body = b64decode(resp.content)
         # All responses should be framed with 4 bytes (uint32).
         if len(resp_body) < 4:
             raise TTransportException(TTransportException.UNKNOWN,

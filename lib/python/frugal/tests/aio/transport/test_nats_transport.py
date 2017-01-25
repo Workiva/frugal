@@ -4,6 +4,7 @@ import mock
 from nats.aio.client import Client
 from thrift.transport.TTransport import TTransportException
 
+from frugal import _NATS_MAX_MESSAGE_SIZE
 from frugal.aio.transport import FNatsTransport
 from frugal.tests.aio import utils
 
@@ -72,7 +73,7 @@ class TestFNatsTransport(utils.AsyncIOTestCase):
         future = asyncio.Future()
         future.set_result(None)
         callback.return_value = future
-        self.transport.execute_frame = callback
+        self.transport.handle_response = callback
         await self.transport._on_message_callback(message)
         callback.assert_called_once_with(message.data[4:])
 
@@ -96,14 +97,7 @@ class TestFNatsTransport(utils.AsyncIOTestCase):
         self.mock_nats_client.unsubscribe.assert_called_once_with(235)
 
     @utils.async_runner
-    async def test_send_not_open(self):
-        self.transport._is_open = False
-        with self.assertRaises(TTransportException) as cm:
-            await self.transport.send([])
-        self.assertEqual(TTransportException.NOT_OPEN, cm.exception.type)
-
-    @utils.async_runner
-    async def test_send(self):
+    async def test_flush(self):
         self.transport._is_open = True
         data = bytearray([2, 3, 4, 5, 6, 7])
         data_len = bytearray([0, 0, 0, 6])
@@ -111,10 +105,14 @@ class TestFNatsTransport(utils.AsyncIOTestCase):
         future = asyncio.Future()
         future.set_result(None)
         self.mock_nats_client.publish_request.return_value = future
-        await self.transport.send(frame)
+        await self.transport.flush(frame)
 
         self.mock_nats_client.publish_request.assert_called_once_with(
             self.subject,
             self.inbox,
             frame
         )
+
+    def test_request_size_limit(self):
+        self.assertEqual(_NATS_MAX_MESSAGE_SIZE,
+                         self.transport.get_request_size_limit())

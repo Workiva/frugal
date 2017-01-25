@@ -1,13 +1,18 @@
+import asyncio
 import base64
 
+import async_timeout
 from aiohttp.client import ClientSession
+from thrift.transport.TTransport import TTransportBase
+from thrift.transport.TTransport import TMemoryBuffer
 from thrift.transport.TTransport import TTransportException
 
-from frugal.aio.transport import FRegistryTransport
+from frugal.aio.transport import FTransportBase
+from frugal.context import FContext
 from frugal.exceptions import FMessageSizeException
 
 
-class FHttpTransport(FRegistryTransport):
+class FHttpTransport(FTransportBase):
     """
     FHttpTransport is an FTransport that uses http as the underlying transport.
     This allows messages of arbitrary sizes to be sent and received.
@@ -46,18 +51,23 @@ class FHttpTransport(FRegistryTransport):
         """No-op"""
         pass
 
-    async def send(self, data):
+    async def oneway(self, context: FContext, payload):
         """
-        Write the current buffer over the network and execute the callback set
-        in the registry with the response.
+        Write the current buffer. This transport detects oneway requests via
+        via the payload size on the server response. Therefore, just call
+        through to request.
         """
-        if len(data) > self._max_message_size > 0:
-            raise FMessageSizeException.request(
-                'Message exceeds {0} bytes, was {1} bytes'.format(
-                    self._max_message_size, len(data)))
+        await  self.request(context, payload)
 
-        encoded = base64.b64encode(data)
-        status, text = await self._make_request(encoded)
+    async def request(self, context: FContext, payload) -> TTransportBase:
+        """
+        Write the current buffer payload over the network and return the
+        response.
+        """
+        self._preflight_request_check(payload)
+        encoded = base64.b64encode(payload)
+
+        status, text = await self._make_request(context, encoded)
         if status == 413:
             raise FMessageSizeException.response(
                 'response was too large for the transport')
@@ -82,19 +92,29 @@ class FHttpTransport(FRegistryTransport):
             # One-way method, drop response
             return
 
-        await self.execute_frame(decoded[4:])
+        return TMemoryBuffer(decoded[4:])
 
-    async def _make_request(self, data):
+    async def _make_request(self, context: FContext, payload):
         """
         Helper method to make a request over the network.
 
         Args:
-            data: The data to be sent over the network.
+            payload: The data to be sent over the network.
         Return:
             The status code and body of the response.
+        Throws:
+            TTransportException if the request timed out.
         """
         with ClientSession() as session:
-            async with session.post(self._url,
-                                    data=data,
-                                    headers=self._headers) as response:
-                return response.status, await response.content.read()
+            try:
+                with async_timeout.timeout(context.timeout / 1000):
+                    async with session.post(self._url,
+                                            data=payload,
+                                            headers=self._headers) as response:
+                        return response.status, await response.content.read()
+            except asyncio.TimeoutError:
+                raise TTransportException(
+                    type=TTransportException.TIMED_OUT,
+                    message='request timed out'
+                )
+

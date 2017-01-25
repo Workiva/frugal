@@ -43,12 +43,14 @@ class StoreHandler(Iface):
         album = Album()
         album.ASIN = str(uuid.uuid4())
         album.duration = 12000
+        root.info("bought album {}".format(album))
         return album
 
     def enterAlbumGiveaway(self, ctx, email, name):
         """
         Always return success (true)
         """
+        root.info("{} entered album give away".format(name))
         return True
 
 
