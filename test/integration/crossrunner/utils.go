@@ -11,9 +11,9 @@ import (
 
 const (
 	// Default timeout in seconds for client/server configutions without a defined timeout
-	DefaultTimeout     time.Duration = 7
-	TestFailure                      = 101
-	CrossrunnerFailure               = 102
+	DefaultTimeout     = 7
+	TestFailure        = 101
+	CrossrunnerFailure = 102
 )
 
 // getExpandedConfigs takes a client/server at the language level and the options
@@ -29,7 +29,7 @@ func getExpandedConfigs(options options, test languages) (apps []config) {
 			app.Transport = transport
 			app.Command = append(test.Command, options.Command...)
 			app.Workdir = test.Workdir
-			app.Timeout = DefaultTimeout
+			app.Timeout = DefaultTimeout * time.Second
 			if options.Timeout != 0 {
 				app.Timeout = options.Timeout
 			}

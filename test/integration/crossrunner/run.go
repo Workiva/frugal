@@ -16,7 +16,8 @@ func RunConfig(pair *Pair, port int) {
 	// Get filepaths to write logs to
 	err := createLogs(pair)
 	if err != nil {
-		panic(err)
+		reportCrossrunnerFailure(pair, err)
+		return
 	}
 	defer pair.Client.Logs.Close()
 	defer pair.Server.Logs.Close()
@@ -30,8 +31,7 @@ func RunConfig(pair *Pair, port int) {
 	err = writeFileHeader(pair.Server.Logs, serverCmd, pair.Server.Workdir,
 		pair.Server.Timeout, pair.Client.Timeout)
 	if err != nil {
-		pair.ReturnCode = CrossrunnerFailure
-		pair.Err = err
+		reportCrossrunnerFailure(pair, err)
 		return
 	}
 
@@ -39,8 +39,7 @@ func RunConfig(pair *Pair, port int) {
 	sStartTime := time.Now()
 	err = server.Start()
 	if err != nil {
-		pair.ReturnCode = CrossrunnerFailure
-		pair.Err = err
+		reportCrossrunnerFailure(pair, err)
 		return
 	}
 	// Defer stopping the server to ensure the process is killed on exit
@@ -69,7 +68,7 @@ func RunConfig(pair *Pair, port int) {
 	}
 
 	if total >= stimeout {
-		// TODO: Add timeout error to server log
+		err = writeServerTimeout(pair.Server.Logs, pair.Server.Name)
 		pair.ReturnCode = TestFailure
 		pair.Err = errors.New("Server has not started within the specified timeout")
 		log.Debug(pair.Server.Name + " server not started within specified timeout")
@@ -82,8 +81,7 @@ func RunConfig(pair *Pair, port int) {
 	err = writeFileHeader(pair.Client.Logs, clientCmd, pair.Client.Workdir,
 		pair.Server.Timeout, pair.Client.Timeout)
 	if err != nil {
-		pair.ReturnCode = CrossrunnerFailure
-		pair.Err = err
+		reportCrossrunnerFailure(pair, err)
 		return
 	}
 
@@ -104,31 +102,44 @@ func RunConfig(pair *Pair, port int) {
 
 	select {
 	case <-time.After(pair.Client.Timeout * time.Second):
-		// TODO: Add timeout error to client log
+		// TODO: It's a bit annoying to have this message duplicated in the
+		// unexpected_failures.log. Is there a better way to report this?
+		err = writeClientTimeout(pair, pair.Client.Name)
+		if err != nil {
+			reportCrossrunnerFailure(pair, err)
+			return
+		}
+
 		err = client.Process.Kill()
 		if err != nil {
-			pair.ReturnCode = CrossrunnerFailure
-			pair.Err = err
-			break
+			reportCrossrunnerFailure(pair, err)
+			return
 		}
 		pair.ReturnCode = TestFailure
 		pair.Err = errors.New("Client has not completed within the specified timeout")
 		break
 	case err := <-done:
 		if err != nil {
-			panic(err)
-			pair.ReturnCode = CrossrunnerFailure
-			pair.Err = err
+			reportCrossrunnerFailure(pair, err)
+			return
 		}
 	}
 
 	// write log footers
 	err = writeFileFooter(pair.Client.Logs, time.Since(cStartTime))
 	if err != nil {
-		panic(err)
+		reportCrossrunnerFailure(pair, err)
+		return
 	}
 	err = writeFileFooter(pair.Server.Logs, time.Since(sStartTime))
 	if err != nil {
-		panic(err)
+		reportCrossrunnerFailure(pair, err)
+		return
 	}
+}
+
+func reportCrossrunnerFailure(pair *Pair, err error) {
+	pair.ReturnCode = CrossrunnerFailure
+	pair.Err = err
+	return
 }

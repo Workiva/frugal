@@ -13,7 +13,7 @@
   {
     "name": "go",
     "server": {
-      "delay": 8,
+      "timeout": 8,
       "command": [
         "go/bin/testserver"
       ]
@@ -45,7 +45,7 @@
       "transports": [ "stateless", "http" ]
     },
     "server": {
-      "delay": 15,
+      "timeout": 15,
       "command": [ "/usr/bin/java", "-Djava.security.egd=file:///dev/urandom", "-cp", "cross.jar", "com.workiva.TestServer" ],
       "transports": [ "stateless", "http" ]
     },
@@ -60,7 +60,7 @@
       "command": [ "python", "-u", "tornado_client.py" ]
     },
     "server": {
-      "delay": 7,
+      "timeout": 7,
       "command": [ "python", "-u", "tornado_server.py" ]
     },
     "transports": [ "stateless", "http" ],
@@ -90,7 +90,7 @@
       "command": [ "python", "-u", "vanilla_client.py" ]
     },
     "server": {
-      "delay": 7,
+      "timeout": 7,
       "command": [ "python", "-u", "vanilla_server.py"
       ]
     },

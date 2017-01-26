@@ -59,6 +59,12 @@ func main() {
 		panic(err)
 	}
 
+	// Need to create log directory for Skynet-cli. This isn't an issue on Skynet.
+	if _, err = os.Stat("log"); os.IsNotExist(err) {
+		if err = os.Mkdir("log", 755); err != nil {
+			panic(err)
+		}
+	}
 	// Make log file for unexpected failures
 	failLog := &failures{
 		path: "log/unexpected_failures.log",

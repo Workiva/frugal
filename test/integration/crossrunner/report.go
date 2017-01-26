@@ -61,6 +61,24 @@ func starBreak() string {
 	return fmt.Sprintf("\n\n\n%s%s%s%s\n\n", stars, stars, stars, stars)
 }
 
+func writeClientTimeout(pair *Pair, role string) error {
+	timeout := breakLine()
+	timeout += fmt.Sprintf("%s client exceeded specified timeout", role)
+	_, err := pair.Client.Logs.WriteString(timeout)
+	if err != nil {
+		return err
+	}
+	_, err = pair.Server.Logs.WriteString(timeout)
+	return err
+}
+
+func writeServerTimeout(file *os.File, role string) error {
+	timeout := breakLine()
+	timeout += fmt.Sprintf("%s server has not started within specified timeout", role)
+	_, err := file.WriteString(timeout)
+	return err
+}
+
 // writeFileFooter writes execution time and closes the file
 func writeFileFooter(file *os.File, executionTime time.Duration) error {
 	footer := breakLine()
