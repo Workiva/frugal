@@ -13,7 +13,7 @@ import (
 // failures are added to the unexpected_failures.log.  Each result is logged to
 // the console.
 func RunConfig(pair *Pair, port int) {
-	// Get filepaths to write logs to
+	// Create client/server log files
 	err := createLogs(pair)
 	if err != nil {
 		reportCrossrunnerFailure(pair, err)

@@ -6,7 +6,7 @@ across all supported languages.
 ## To Run:
 ##### In Skynet:
 
-Push to any Smithy enabled Frugal fork.  Skynet will execute tests with using 
+Push to any Smithy enabled Frugal fork.  Skynet will execute tests with using
 the current Frugal branch (not the latest release).
 
 ##### Locally:
@@ -34,15 +34,15 @@ that should be added.
 The Events scope is used for verifying pub/sub.
 
 ##### tests.json
-This json file contains a listing of each supported language, client, server, 
-transport, and protocol, as well as the bash command required to run a 
+This json file contains a listing of each supported language, client, server,
+transport, and protocol, as well as the bash command required to run a
 configuration.
 
 ##### Go cross runner
 The Go cross runner is responsible for parsing the json test definitions,
 determining the valid client/server pairs, running each pair with a unique
 subject, and recording the results.  Test logs are tar'ed in test_logs.tar.gz
-using the format : `clientName-serverName_transport_protocol_role.log`. 
+using the format : `clientName-serverName_transport_protocol_role.log`.
 Failures are added to unexpected_failures.og (both client and server side logs).
 
 ##### Language specific clients/servers
