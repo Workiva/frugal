@@ -266,7 +266,7 @@ func TestNatsPublisherWriteTooLarge(t *testing.T) {
 
 	err = tr.Publish("foo", make([]byte, 1024*1024+1))
 	assert.True(t, IsErrTooLarge(err))
-	assert.Equal(t, TTRANSPORT_REQUEST_TOO_LARGE, err.(thrift.TTransportException).TypeId())
+	assert.Equal(t, TRANSPORT_EXCEPTION_REQUEST_TOO_LARGE, err.(thrift.TTransportException).TypeId())
 }
 
 // Ensures Flush returns an error if the transport is not open.
@@ -282,5 +282,5 @@ func TestNatsPublishNotOpen(t *testing.T) {
 
 	err = tr.Publish("foo", []byte{})
 	trErr := err.(thrift.TTransportException)
-	assert.Equal(t, thrift.NOT_OPEN, trErr.TypeId())
+	assert.Equal(t, TRANSPORT_EXCEPTION_NOT_OPEN, trErr.TypeId())
 }

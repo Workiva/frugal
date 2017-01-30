@@ -78,13 +78,13 @@ func (a *Auditor) Audit(oldFile, newFile string) error {
 
 	a.checkScopes(oldFrugal.Scopes, newFrugal.Scopes)
 
-	a.checkNamespaces(oldFrugal.Thrift.Namespaces, newFrugal.Thrift.Namespaces)
-	a.checkConstants(oldFrugal.Thrift.Constants, newFrugal.Thrift.Constants)
-	a.checkEnums(oldFrugal.Thrift.Enums, newFrugal.Thrift.Enums)
-	a.checkStructLike(oldFrugal.Thrift.Structs, newFrugal.Thrift.Structs)
-	a.checkStructLike(oldFrugal.Thrift.Exceptions, newFrugal.Thrift.Exceptions)
-	a.checkStructLike(oldFrugal.Thrift.Unions, newFrugal.Thrift.Unions)
-	a.checkServices(oldFrugal.Thrift.Services, newFrugal.Thrift.Services)
+	a.checkNamespaces(oldFrugal.Namespaces, newFrugal.Namespaces)
+	a.checkConstants(oldFrugal.Constants, newFrugal.Constants)
+	a.checkEnums(oldFrugal.Enums, newFrugal.Enums)
+	a.checkStructLike(oldFrugal.Structs, newFrugal.Structs)
+	a.checkStructLike(oldFrugal.Exceptions, newFrugal.Exceptions)
+	a.checkStructLike(oldFrugal.Unions, newFrugal.Unions)
+	a.checkServices(oldFrugal.Services, newFrugal.Services)
 
 	if a.logger.ErrorsLogged() {
 		return fmt.Errorf("FAILED: audit of %s against %s", newFile, oldFile)

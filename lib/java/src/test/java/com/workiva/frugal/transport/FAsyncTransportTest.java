@@ -1,9 +1,11 @@
 package com.workiva.frugal.transport;
 
 import com.workiva.frugal.FContext;
+import com.workiva.frugal.exception.FrugalTTransportExceptionType;
 import com.workiva.frugal.protocol.HeaderUtils;
 import com.workiva.frugal.util.ProtocolUtils;
 import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.transport.TTransportException;
 import org.junit.After;
 import org.junit.Before;
@@ -166,7 +168,7 @@ public class FAsyncTransportTest {
                 ProtocolUtils.writeInt((int) FAsyncTransport.getOpId(context), request, 0);
                 tr.request(context, request);
             } catch (TTransportException e) {
-                if (e.getType() != TTransportException.NOT_OPEN) {
+                if (e.getType() != FrugalTTransportExceptionType.NOT_OPEN) {
                     fail();
                 }
             }
@@ -291,6 +293,16 @@ public class FAsyncTransportTest {
         }
         // close the transport
         tr.close();
+    }
+
+    /**
+     * Ensures handleResponse throws TProtocolException if opid format is bad.
+     */
+    @Test(expected = TProtocolException.class)
+    public void testHandleResponseBadOpId() throws TException, UnsupportedEncodingException {
+        FContext ctx = new FContext();
+        ctx.addRequestHeader(FContext.OPID_HEADER, "foo");
+        transport.handleResponse(mockFrame(ctx));
     }
 
     /**

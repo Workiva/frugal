@@ -1,3 +1,4 @@
+from thrift.protocol.TProtocol import TProtocolException
 from thrift.transport.TTransport import TTransportException
 from tornado import gen
 from tornado.concurrent import Future
@@ -5,10 +6,7 @@ from tornado.testing import AsyncTestCase
 from tornado.testing import gen_test
 
 from frugal.context import FContext
-from frugal.exceptions import FException
-from frugal.exceptions import FMessageSizeException
-from frugal.exceptions import FProtocolException
-from frugal.exceptions import FTransportException
+from frugal.exceptions import FrugalTTransportExceptionType
 from frugal.tests import utils
 from frugal.tornado.transport import FAsyncTransport
 
@@ -61,7 +59,8 @@ class TestFAsyncTransport(AsyncTestCase):
         transport = FAsyncTransportImpl(is_open=False)
         with self.assertRaises(TTransportException) as cm:
             yield transport.oneway(ctx, frame)
-        self.assertEqual(TTransportException.NOT_OPEN, cm.exception.type)
+        self.assertEqual(
+            FrugalTTransportExceptionType.NOT_OPEN, cm.exception.type)
         self.assertIsNone(transport._payload)
 
     @gen_test
@@ -70,9 +69,9 @@ class TestFAsyncTransport(AsyncTestCase):
         ctx.timeout = 10
         frame = utils.mock_frame(ctx)
         transport = FAsyncTransportImpl(request_size_limit=1)
-        with self.assertRaises(FMessageSizeException) as cm:
+        with self.assertRaises(TTransportException) as cm:
             yield transport.oneway(ctx, frame)
-        self.assertEqual(FTransportException.REQUEST_TOO_LARGE,
+        self.assertEqual(FrugalTTransportExceptionType.REQUEST_TOO_LARGE,
                          cm.exception.type)
         self.assertIsNone(transport._payload)
 
@@ -84,7 +83,8 @@ class TestFAsyncTransport(AsyncTestCase):
         transport = FAsyncTransportImpl(flush_wait=1)
         with self.assertRaises(TTransportException) as cm:
             yield transport.oneway(ctx, frame)
-        self.assertEqual(TTransportException.TIMED_OUT, cm.exception.type)
+        self.assertEqual(
+            FrugalTTransportExceptionType.TIMED_OUT, cm.exception.type)
         self.assertEqual("oneway timed out", cm.exception.message)
         self.assertEqual(frame, transport._payload)
 
@@ -106,7 +106,8 @@ class TestFAsyncTransport(AsyncTestCase):
         transport = FAsyncTransportImpl(is_open=False)
         with self.assertRaises(TTransportException) as cm:
             yield transport.request(ctx, frame)
-        self.assertEqual(TTransportException.NOT_OPEN, cm.exception.type)
+        self.assertEqual(
+            FrugalTTransportExceptionType.NOT_OPEN, cm.exception.type)
         self.assertEqual(0, len(transport._futures))
         self.assertIsNone(transport._payload)
 
@@ -116,9 +117,9 @@ class TestFAsyncTransport(AsyncTestCase):
         ctx.timeout = 10
         frame = utils.mock_frame(ctx)
         transport = FAsyncTransportImpl(request_size_limit=1)
-        with self.assertRaises(FMessageSizeException) as cm:
+        with self.assertRaises(TTransportException) as cm:
             yield transport.request(ctx, frame)
-        self.assertEqual(FTransportException.REQUEST_TOO_LARGE,
+        self.assertEqual(FrugalTTransportExceptionType.REQUEST_TOO_LARGE,
                          cm.exception.type)
         self.assertEqual(0, len(transport._futures))
         self.assertIsNone(transport._payload)
@@ -128,7 +129,7 @@ class TestFAsyncTransport(AsyncTestCase):
         ctx = FContext("fooid")
         frame = utils.mock_frame(ctx)
         e = TTransportException(
-            type=TTransportException.END_OF_FILE,
+            type=FrugalTTransportExceptionType.END_OF_FILE,
             message="oh no!"
         )
         transport = FAsyncTransportImpl(e=e)
@@ -146,7 +147,8 @@ class TestFAsyncTransport(AsyncTestCase):
         transport = FAsyncTransportImpl(flush_wait=1)
         with self.assertRaises(TTransportException) as cm:
             yield transport.request(ctx, frame)
-        self.assertEqual(TTransportException.TIMED_OUT, cm.exception.type)
+        self.assertEqual(
+            FrugalTTransportExceptionType.TIMED_OUT, cm.exception.type)
         self.assertEqual("request timed out", cm.exception.message)
         self.assertEqual(0, len(transport._futures))
         self.assertEqual(frame, transport._payload)
@@ -159,7 +161,8 @@ class TestFAsyncTransport(AsyncTestCase):
         transport = FAsyncTransportImpl()
         with self.assertRaises(TTransportException) as cm:
             yield transport.request(ctx, frame)
-        self.assertEqual(TTransportException.TIMED_OUT, cm.exception.type)
+        self.assertEqual(
+            FrugalTTransportExceptionType.TIMED_OUT, cm.exception.type)
         self.assertEqual("request timed out", cm.exception.message)
         self.assertEqual(0, len(transport._futures))
         self.assertEqual(frame, transport._payload)
@@ -173,7 +176,8 @@ class TestFAsyncTransport(AsyncTestCase):
         with self.assertRaises(TTransportException) as cm:
             transport.request(ctx, frame),
             yield transport.request(ctx, frame)
-        self.assertEqual(TTransportException.UNKNOWN, cm.exception.type)
+        self.assertEqual(
+            FrugalTTransportExceptionType.UNKNOWN, cm.exception.type)
         self.assertEqual("request already in flight for context",
                          cm.exception.message)
         # We still have one request pending
@@ -192,7 +196,7 @@ class TestFAsyncTransport(AsyncTestCase):
     def test_handle_response_bad_frame(self):
         transport = FAsyncTransport()
 
-        with self.assertRaises(FProtocolException) as cm:
+        with self.assertRaises(TProtocolException) as cm:
             yield transport.handle_response(b"foo")
 
         self.assertEquals("Invalid frame size: 3", str(cm.exception))
@@ -203,7 +207,7 @@ class TestFAsyncTransport(AsyncTestCase):
         frame = bytearray(b'\x00\x00\x00\x00\x00\x80\x01\x00\x02\x00\x00\x00'
                           b'\x08basePing\x00\x00\x00\x00\x00')
 
-        with self.assertRaises(FException) as cm:
+        with self.assertRaises(TProtocolException) as cm:
             yield transport.handle_response(frame)
 
         self.assertEquals("Frame missing op_id", str(cm.exception))

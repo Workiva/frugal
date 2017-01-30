@@ -61,7 +61,7 @@ func TestNatsTransportOpenAlreadyOpen(t *testing.T) {
 
 	err := tr.Open()
 	trErr := err.(thrift.TTransportException)
-	assert.Equal(t, thrift.ALREADY_OPEN, trErr.TypeId())
+	assert.Equal(t, TRANSPORT_EXCEPTION_ALREADY_OPEN, trErr.TypeId())
 }
 
 // Ensures Open subscribes to the right subject and executes received frames.
@@ -109,7 +109,7 @@ func TestNatsTransportWrite(t *testing.T) {
 	buff := make([]byte, 1024*1024+1)
 	_, err := tr.Request(NewFContext(""), buff)
 	assert.True(t, IsErrTooLarge(err))
-	assert.Equal(t, TTRANSPORT_REQUEST_TOO_LARGE, err.(thrift.TTransportException).TypeId())
+	assert.Equal(t, TRANSPORT_EXCEPTION_REQUEST_TOO_LARGE, err.(thrift.TTransportException).TypeId())
 	assert.Equal(t, 0, tr.writeBuffer.Len())
 }
 
@@ -128,7 +128,7 @@ func TestNatsTransportFlushNotOpen(t *testing.T) {
 
 	_, err = tr.Request(nil, []byte{})
 	trErr := err.(thrift.TTransportException)
-	assert.Equal(t, thrift.NOT_OPEN, trErr.TypeId())
+	assert.Equal(t, TRANSPORT_EXCEPTION_NOT_OPEN, trErr.TypeId())
 }
 
 // Ensures Flush returns a NOT_OPEN TTransportException if NATS is not
@@ -148,7 +148,7 @@ func TestNatsTransportFlushNatsDisconnected(t *testing.T) {
 	//err := tr.Send(nil, []byte{})
 	_, err := tr.Request(nil, []byte{})
 	trErr := err.(thrift.TTransportException)
-	assert.Equal(t, thrift.NOT_OPEN, trErr.TypeId())
+	assert.Equal(t, TRANSPORT_EXCEPTION_NOT_OPEN, trErr.TypeId())
 }
 
 // Ensures Flush doesn't send anything to NATS if no data is buffered.
@@ -190,7 +190,7 @@ func TestNatsTransportFlush(t *testing.T) {
 	ctx.SetTimeout(5 * time.Millisecond)
 	_, err = tr.Request(ctx, prependFrameSize(frame))
 	// expect a timeout error because nothing is answering
-	assert.Equal(t, thrift.TIMED_OUT, err.(thrift.TTransportException).TypeId())
+	assert.Equal(t, TRANSPORT_EXCEPTION_TIMED_OUT, err.(thrift.TTransportException).TypeId())
 	conn.Flush()
 	msg, err := sub.NextMsg(5 * time.Millisecond)
 	assert.Nil(t, err)

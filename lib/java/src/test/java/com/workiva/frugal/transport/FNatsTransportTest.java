@@ -1,7 +1,7 @@
 package com.workiva.frugal.transport;
 
 import com.workiva.frugal.FContext;
-import com.workiva.frugal.exception.FMessageSizeException;
+import com.workiva.frugal.exception.FrugalTTransportExceptionType;
 import io.nats.client.AsyncSubscription;
 import io.nats.client.Connection;
 import io.nats.client.Constants;
@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 
 import static com.workiva.frugal.transport.FAsyncTransportTest.mockFrame;
-import static com.workiva.frugal.transport.FNatsTransport.NATS_MAX_MESSAGE_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
@@ -79,7 +78,7 @@ public class FNatsTransportTest {
             transport.open();
             fail("Expected TTransportException");
         } catch (TTransportException e) {
-            assertEquals(TTransportException.ALREADY_OPEN, e.getType());
+            assertEquals(FrugalTTransportExceptionType.ALREADY_OPEN, e.getType());
         }
 
         FTransportClosedCallback mockCallback = mock(FTransportClosedCallback.class);
@@ -89,15 +88,6 @@ public class FNatsTransportTest {
         verify(sub).unsubscribe();
         verify(mockCallback).onClose(null);
         verify(mockQueue).put(mockFrame);
-    }
-
-    @Test(expected = FMessageSizeException.class)
-    public void testFlush_sizeException() throws TTransportException {
-        when(conn.getState()).thenReturn(Constants.ConnState.CONNECTED);
-        AsyncSubscription sub = mock(AsyncSubscription.class);
-        when(conn.subscribe(any(String.class), any(MessageHandler.class))).thenReturn(sub);
-        transport.open();
-        transport.flush(new byte[NATS_MAX_MESSAGE_SIZE + 1]);
     }
 
     @Test

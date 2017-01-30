@@ -1,13 +1,13 @@
 from mock import Mock
 
 from thrift.protocol.TBinaryProtocol import TBinaryProtocolFactory
+from thrift.Thrift import TException
 from thrift.transport.TTransport import TMemoryBuffer
 from tornado.concurrent import Future
 from tornado.testing import AsyncTestCase
 from tornado.testing import gen_test
 
 from frugal.tornado.processor import FBaseProcessor
-from frugal.exceptions import FException
 from frugal.protocol import FProtocolFactory
 from frugal.transport import TMemoryOutputBuffer
 
@@ -18,7 +18,7 @@ class TestFBaseProcessor(AsyncTestCase):
     def test_process_processor_exception(self):
         processor = FBaseProcessor()
         proc = Mock()
-        e = FException('foo bar exception')
+        e = TException(message='foo bar exception')
         proc.process.side_effect = e
         processor.add_to_processor_map("basePing", proc)
         frame = bytearray(

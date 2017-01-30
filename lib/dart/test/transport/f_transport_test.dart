@@ -26,7 +26,7 @@ void main() {
         () async {
       var monitor = new MockTransportMonitor();
       transport.monitor = monitor;
-      transport.errors = [null, new FError.withMessage('reopen failed'), null];
+      transport.errors = [null, new TError(0, 'reopen failed'), null];
 
       var completer = new Completer<Error>();
       var err = new TTransportError();

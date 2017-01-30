@@ -1,5 +1,6 @@
 package com.workiva.frugal.transport;
 
+import com.workiva.frugal.exception.FrugalTTransportExceptionType;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
@@ -53,14 +54,14 @@ public class FAdapterTransport extends FAsyncTransport {
     @Override
     public synchronized void open() throws TTransportException {
         if (isOpen()) {
-            throw new TTransportException(TTransportException.ALREADY_OPEN, "Transport already open");
+            throw new TTransportException(FrugalTTransportExceptionType.ALREADY_OPEN, "Transport already open");
         }
 
         try {
             framedTransport.open();
         } catch (TTransportException e) {
             // It's OK if the underlying transport is already open.
-            if (e.getType() != TTransportException.ALREADY_OPEN) {
+            if (e.getType() != FrugalTTransportExceptionType.ALREADY_OPEN) {
                 throw e;
             }
         }
@@ -106,7 +107,7 @@ public class FAdapterTransport extends FAsyncTransport {
             return true;
         }
         if (cause instanceof TTransportException) {
-            return ((TTransportException) cause).getType() == TTransportException.END_OF_FILE;
+            return ((TTransportException) cause).getType() == FrugalTTransportExceptionType.END_OF_FILE;
         }
         return false;
     }
@@ -133,7 +134,7 @@ public class FAdapterTransport extends FAsyncTransport {
                 try {
                     frame = framedTransport.readFrame();
                 } catch (TTransportException e) {
-                    if (e.getType() == TTransportException.END_OF_FILE) {
+                    if (e.getType() == FrugalTTransportExceptionType.END_OF_FILE) {
                         // EOF indicates remote peer disconnected.
                         close();
                         return;

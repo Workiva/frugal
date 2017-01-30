@@ -18,7 +18,7 @@ abstract class FAsyncTransport extends FTransport {
   Future<Null> oneway(FContext ctx, Uint8List payload) async {
     _preflightRequestCheck(payload);
     await flush(payload).timeout(ctx.timeout, onTimeout: () {
-      throw new TTransportError(TTransportErrorType.TIMED_OUT,
+      throw new TTransportError(FrugalTTransportErrorType.TIMED_OUT,
           'request timed out after ${ctx.timeout}');
     });
   }
@@ -35,8 +35,8 @@ abstract class FAsyncTransport extends FTransport {
     _handlers[ctx._opId] = resultCompleter;
     Completer<Uint8List> closedCompleter = new Completer();
     StreamSubscription<Object> closedSub = onClose.listen((_) {
-      closedCompleter
-          .completeError(new TTransportError(TTransportErrorType.NOT_OPEN));
+      closedCompleter.completeError(
+          new TTransportError(FrugalTTransportErrorType.NOT_OPEN));
     });
 
     try {
@@ -48,7 +48,7 @@ abstract class FAsyncTransport extends FTransport {
           await Future.any([resultFuture, closedCompleter.future]);
       return new TMemoryTransport.fromUint8List(response);
     } on TimeoutException catch (_) {
-      throw new TTransportError(TTransportErrorType.TIMED_OUT,
+      throw new TTransportError(FrugalTTransportErrorType.TIMED_OUT,
           "request timed out after ${ctx.timeout}");
     } finally {
       _handlers.remove(ctx._opId);

@@ -47,7 +47,7 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 }
 
 func (g *Generator) getLibraryName() string {
-	if ns := g.Frugal.Thrift.Namespace(lang); ns != nil {
+	if ns := g.Frugal.Namespace(lang); ns != nil {
 		return parser.LowercaseFirstLetter(toLibraryName(ns.Value))
 	}
 	return parser.LowercaseFirstLetter(g.Frugal.Name)
@@ -78,20 +78,20 @@ func (g *Generator) SetupGenerator(outputDir string) error {
 	contents := ""
 	contents += fmt.Sprintf("\n\nlibrary %s;\n\n", libraryName)
 
-	if len(g.Frugal.Thrift.Constants) > 0 {
+	if len(g.Frugal.Constants) > 0 {
 		constantsName := fmt.Sprintf("%sConstants", snakeToCamel(libraryName))
 		contents += g.createExport(constantsName, false)
 	}
-	for _, s := range g.Frugal.Thrift.Structs {
+	for _, s := range g.Frugal.Structs {
 		contents += g.createExport(s.Name, false)
 	}
-	for _, union := range g.Frugal.Thrift.Unions {
+	for _, union := range g.Frugal.Unions {
 		contents += g.createExport(union.Name, false)
 	}
-	for _, exception := range g.Frugal.Thrift.Exceptions {
+	for _, exception := range g.Frugal.Exceptions {
 		contents += g.createExport(exception.Name, false)
 	}
-	for _, enum := range g.Frugal.Thrift.Enums {
+	for _, enum := range g.Frugal.Enums {
 		contents += g.createExport(enum.Name, true)
 	}
 
@@ -117,7 +117,7 @@ func (g *Generator) TeardownGenerator() error { return nil }
 
 // GetOutputDir returns the output directory for generated files.
 func (g *Generator) GetOutputDir(dir string) string {
-	if namespace := g.Frugal.Thrift.Namespace(lang); namespace != nil {
+	if namespace := g.Frugal.Namespace(lang); namespace != nil {
 		dir = filepath.Join(dir, toLibraryName(namespace.Value))
 	} else {
 		dir = filepath.Join(dir, g.Frugal.Name)
@@ -221,7 +221,7 @@ func (g *Generator) addToPubspec(dir string) error {
 		deps[toLibraryName(name)] = dep{Path: "../" + toLibraryName(name)}
 	}
 
-	namespace := g.Frugal.Thrift.Namespace(lang)
+	namespace := g.Frugal.Namespace(lang)
 	name := g.Frugal.Name
 	if namespace != nil {
 		name = namespace.Value
@@ -273,7 +273,7 @@ func (g *Generator) exportClasses(dir string) error {
 	}
 
 	exports := "\n"
-	for _, service := range g.Frugal.Thrift.Services {
+	for _, service := range g.Frugal.Services {
 		servSrcDir := "src"
 		if _, ok := g.Options["library_prefix"]; ok {
 			servSrcDir = filename
@@ -450,7 +450,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 		return fmt.Sprintf("%d", value)
 	} else if g.Frugal.IsStruct(underlyingType) {
 		var s *parser.Struct
-		for _, potential := range g.Frugal.Thrift.Structs {
+		for _, potential := range g.Frugal.Structs {
 			if underlyingType.Name == potential.Name {
 				s = potential
 				break
@@ -1139,7 +1139,7 @@ func (g *Generator) GenerateThriftImports() string {
 	imports += g.getImportDeclaration(g.getNamespaceOrName())
 
 	// Import includes
-	for _, include := range g.Frugal.Thrift.Includes {
+	for _, include := range g.Frugal.Includes {
 		name := include.Name
 		if namespace := g.Frugal.NamespaceForInclude(filepath.Base(include.Name), lang); namespace != nil {
 			name = namespace.Value
@@ -1353,7 +1353,7 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 		subscribers += tabtabtabtab + "thrift.TProtocolUtil.skip(iprot, thrift.TType.STRUCT);\n"
 		subscribers += tabtabtabtab + "iprot.readMessageEnd();\n"
 		subscribers += tabtabtabtab + "throw new thrift.TApplicationError(\n"
-		subscribers += tabtabtabtab + "thrift.TApplicationErrorType.UNKNOWN_METHOD, tMsg.name);\n"
+		subscribers += tabtabtabtab + "frugal.FrugalTApplicationErrorType.UNKNOWN_METHOD, tMsg.name);\n"
 		subscribers += tabtabtab + "}\n"
 		subscribers += fmt.Sprintf(tabtabtab+"var req = new %s();\n", g.qualifiedTypeName(op.Type))
 		subscribers += tabtabtab + "req.read(iprot);\n"
@@ -1516,8 +1516,8 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	contents += tabtab + "if (msg.type == thrift.TMessageType.EXCEPTION) {\n"
 	contents += tabtabtab + "thrift.TApplicationError error = thrift.TApplicationError.read(iprot);\n"
 	contents += tabtabtab + "iprot.readMessageEnd();\n"
-	contents += tabtabtab + "if (error.type == frugal.FApplicationError.RESPONSE_TOO_LARGE) {\n"
-	contents += tabtabtabtab + "throw new frugal.FMessageSizeError.response(message: error.message);\n"
+	contents += tabtabtab + "if (error.type == frugal.FrugalTApplicationErrorType.RESPONSE_TOO_LARGE) {\n"
+	contents += tabtabtabtab + "throw new thrift.TTransportError(frugal.FrugalTTransportErrorType.RESPONSE_TOO_LARGE, error.message);\n"
 	contents += tabtabtab + "}\n"
 	contents += tabtabtab + "throw error;\n"
 	contents += tabtab + "}\n\n"
@@ -1533,7 +1533,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 		contents += tabtab + "}\n\n"
 		contents += g.generateErrors(method)
 		contents += tabtab + "throw new thrift.TApplicationError(\n"
-		contents += fmt.Sprintf(tabtabtab+"thrift.TApplicationErrorType.MISSING_RESULT, "+
+		contents += fmt.Sprintf(tabtabtab+"frugal.FrugalTApplicationErrorType.MISSING_RESULT, "+
 			"\"%s failed: unknown result\"\n",
 			nameLower)
 		contents += tabtab + ");\n"
@@ -1721,7 +1721,7 @@ func (g *Generator) getImportDeclaration(namespace string) string {
 }
 
 func (g *Generator) getNamespaceOrName() string {
-	namespace := g.Frugal.Thrift.Namespace(lang)
+	namespace := g.Frugal.Namespace(lang)
 	if namespace != nil {
 		return namespace.Value
 	}

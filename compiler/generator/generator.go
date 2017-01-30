@@ -45,7 +45,7 @@ var Languages = LanguageOptions{
 		"generated_annotations": "[undated|suppress] " +
 			"undated: suppress the date at @Generated annotations, " +
 			"suppress: suppress @Generated annotations entirely",
-		"async": "Generate async client code using futures",
+		"async":            "Generate async client code using futures",
 		"boxed_primitives": "Generate primitives as the boxed equivalents",
 	},
 	"dart": Options{
@@ -149,65 +149,42 @@ func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string) err
 		return err
 	}
 
-	// generate thrift
-	if err := o.generateThrift(frugal, outputDir); err != nil {
+	if err := o.GenerateConstantsContents(frugal.Constants); err != nil {
 		return err
 	}
 
-	// generate frugal
-	if err := o.generateFrugal(frugal, outputDir); err != nil {
-		return err
-	}
-
-	return o.TeardownGenerator()
-}
-
-func (o *programGenerator) generateThrift(frugal *parser.Frugal, outputDir string) error {
-	if err := o.GenerateConstantsContents(frugal.Thrift.Constants); err != nil {
-		return err
-	}
-
-	for _, typedef := range frugal.Thrift.Typedefs {
+	for _, typedef := range frugal.Typedefs {
 		if err := o.GenerateTypeDef(typedef); err != nil {
 			return err
 		}
 	}
 
-	for _, enum := range frugal.Thrift.Enums {
+	for _, enum := range frugal.Enums {
 		if err := o.GenerateEnum(enum); err != nil {
 			return err
 		}
 	}
 
-	for _, s := range frugal.Thrift.Structs {
+	for _, s := range frugal.Structs {
 		if err := o.GenerateStruct(s); err != nil {
 			return err
 		}
 	}
 
-	for _, union := range frugal.Thrift.Unions {
+	for _, union := range frugal.Unions {
 		if err := o.GenerateUnion(union); err != nil {
 			return err
 		}
 	}
 
-	for _, exception := range frugal.Thrift.Exceptions {
+	for _, exception := range frugal.Exceptions {
 		if err := o.GenerateException(exception); err != nil {
 			return err
 		}
 	}
 
-	return nil
-}
-
-func (o *programGenerator) generateFrugal(frugal *parser.Frugal, outputDir string) error {
-	// If no frugal definitions, we can return.
-	if !frugal.ContainsFrugalDefinitions() {
-		return nil
-	}
-
 	// Generate services
-	for _, service := range frugal.Thrift.Services {
+	for _, service := range frugal.Services {
 		if err := o.generateServiceFile(service, outputDir); err != nil {
 			return err
 		}
@@ -227,7 +204,8 @@ func (o *programGenerator) generateFrugal(frugal *parser.Frugal, outputDir strin
 			}
 		}
 	}
-	return nil
+
+	return o.TeardownGenerator()
 }
 
 func (o *programGenerator) generateServiceFile(service *parser.Service, outputDir string) error {

@@ -1,6 +1,8 @@
 package com.workiva.frugal.transport;
 
 import com.workiva.frugal.FContext;
+import com.workiva.frugal.exception.FrugalTApplicationExceptionType;
+import com.workiva.frugal.exception.FrugalTTransportExceptionType;
 import com.workiva.frugal.util.ProtocolUtils;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransport;
@@ -63,7 +65,7 @@ public class FAdapterTransportTest {
             tr.open();
             fail("Expected TTransportException");
         } catch (TTransportException e) {
-            assertEquals(TTransportException.ALREADY_OPEN, e.getType());
+            assertEquals(FrugalTTransportExceptionType.ALREADY_OPEN, e.getType());
         }
 
         verify(mockTr).open();
@@ -139,7 +141,7 @@ public class FAdapterTransportTest {
                     System.arraycopy(mockFrame2, 0, buff, 0, mockFrame1.length);
                     return 5;
                 }) // Read frame 2
-                .thenThrow(new TTransportException(TTransportException.END_OF_FILE));
+                .thenThrow(new TTransportException(FrugalTTransportExceptionType.END_OF_FILE));
         Runnable reader = tr.newTransportReader();
 
         reader.run();
@@ -161,7 +163,7 @@ public class FAdapterTransportTest {
         tr.setExecutorFactory(mockExecutorFactory);
         tr.open();
         when(mockTr.isOpen()).thenReturn(true);
-        TTransportException cause = new TTransportException(TTransportException.UNKNOWN, "error");
+        TTransportException cause = new TTransportException(FrugalTApplicationExceptionType.UNKNOWN, "error");
         when(mockTr.readAll(any(byte[].class), any(int.class), any(int.class))).thenThrow(cause);
         Runnable reader = tr.newTransportReader();
 

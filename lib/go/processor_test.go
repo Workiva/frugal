@@ -99,7 +99,7 @@ func TestFBaseProcessorReadError(t *testing.T) {
 	err = processor.Process(proto, proto)
 	assert.Error(t, err)
 	trErr := err.(thrift.TTransportException)
-	assert.Equal(t, int(thrift.UNKNOWN_TRANSPORT_EXCEPTION), int(trErr.TypeId()))
+	assert.Equal(t, int(TRANSPORT_EXCEPTION_UNKNOWN), int(trErr.TypeId()))
 }
 
 // Ensures FBaseProcessor writes an UNKNOWN_METHOD TApplicationException

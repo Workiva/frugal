@@ -1,6 +1,8 @@
 import unittest
 
-from frugal.exceptions import FMessageSizeException
+from thrift.transport.TTransport import TTransportException
+
+from frugal.exceptions import FrugalTTransportExceptionType
 from frugal.transport import TMemoryOutputBuffer
 
 
@@ -19,8 +21,10 @@ class TestTOutputMemoryBuffer(unittest.TestCase):
         self.assertEqual(4, len(self.buffer))
         self.buffer.write(bytearray(6))
         self.assertEqual(10, len(self.buffer))
-        with self.assertRaises(FMessageSizeException):
+        with self.assertRaises(TTransportException) as cm:
             self.buffer.write(bytearray(1))
+        self.assertEqual(FrugalTTransportExceptionType.REQUEST_TOO_LARGE,
+                         cm.exception.type)
         self.assertEqual(4, len(self.buffer))
 
     def test_len(self):

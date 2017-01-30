@@ -1,6 +1,5 @@
 package com.workiva.frugal.transport;
 
-import com.workiva.frugal.exception.FMessageSizeException;
 import io.nats.client.Connection;
 import io.nats.client.Constants;
 import org.apache.thrift.transport.TTransportException;
@@ -90,7 +89,7 @@ public class FNatsPublisherTransportTest {
         transport.publish(topic, payload);
     }
 
-    @Test(expected = FMessageSizeException.class)
+    @Test(expected = TTransportException.class)
     public void testPublishPayloadTooLarge() throws TTransportException {
         when(conn.getState()).thenReturn(Constants.ConnState.CONNECTED);
         byte[] payload = new byte[NATS_MAX_MESSAGE_SIZE + 1];

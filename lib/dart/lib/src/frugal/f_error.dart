@@ -1,60 +1,68 @@
 part of frugal.src.frugal;
 
-/// Generic extension of [TError] used for frugal-specific errors.
-class FError extends TError {
-  /// Create an [FError] with the unknown type and empty message.
-  FError() : super(0, "");
+/// Contains [TApplicationError] types used in frugal instantiated
+/// [TApplicationError]s.
+class FrugalTApplicationErrorType extends TApplicationErrorType {
+  /// Inherited from thrift.
+  static const int UNKNOWN = TApplicationErrorType.UNKNOWN;
 
-  /// Create an [FError] with the unknown type and the given message.
-  FError.withMessage(String message) : super(0, message);
+  /// Inherited from thrift.
+  static const int UNKNOWN_METHOD = TApplicationErrorType.UNKNOWN_METHOD;
 
-  /// Create an [FError] with the given type and message.
-  FError.withType(int type, String message) : super(type, message);
-}
+  /// Inherited from thrift.
+  static const int INVALID_MESSAGE_TYPE =
+      TApplicationErrorType.INVALID_MESSAGE_TYPE;
 
-/// Contains [TApplicationError] constants.
-class FApplicationError extends TApplicationError {
+  /// Inherited from thrift.
+  static const int WRONG_METHOD_NAME = TApplicationErrorType.WRONG_METHOD_NAME;
+
+  /// Inherited from thrift.
+  static const int BAD_SEQUENCE_ID = TApplicationErrorType.BAD_SEQUENCE_ID;
+
+  /// Inherited from thrift.
+  static const int MISSING_RESULT = TApplicationErrorType.MISSING_RESULT;
+
+  /// Inherited from thrift.
+  static const int INTERNAL_ERROR = TApplicationErrorType.INTERNAL_ERROR;
+
+  /// Inherited from thrift.
+  static const int PROTOCOL_ERROR = TApplicationErrorType.PROTOCOL_ERROR;
+
+  /// Inherited from thrift.
+  static const int INVALID_TRANSFORM = TApplicationErrorType.INVALID_TRANSFORM;
+
+  /// Inherited from thrift.
+  static const int INVALID_PROTOCOL = TApplicationErrorType.INVALID_PROTOCOL;
+
+  /// Inherited from thrift.
+  static const int UNSUPPORTED_CLIENT_TYPE =
+      TApplicationErrorType.UNSUPPORTED_CLIENT_TYPE;
+
   /// Indicates the response was too large for the transport.
   static const int RESPONSE_TOO_LARGE = 100;
 }
 
-/// Contains [TTransportError] constants.
-class FTransportError extends TTransportError {
+/// Contains [TTransportError] types used in frugal instantiated
+/// [TTransportError]s.
+class FrugalTTransportErrorType extends TTransportErrorType {
+  /// Inherited from thrift.
+  static const int UNKNOWN = TTransportErrorType.UNKNOWN;
+
+  /// Inherited from thrift.
+  static const int NOT_OPEN = TTransportErrorType.NOT_OPEN;
+
+  /// Inherited from thrift.
+  static const int ALREADY_OPEN = TTransportErrorType.ALREADY_OPEN;
+
+  /// Inherited from thrift.
+  static const int TIMED_OUT = TTransportErrorType.TIMED_OUT;
+
+  /// Inherited from thrift.
+  static const int END_OF_FILE = TTransportErrorType.END_OF_FILE;
+
   /// Indicates the request was too large for the transport.
   static const int REQUEST_TOO_LARGE = 100;
 
   /// Indicates the response was too large for the transport.
   static const int RESPONSE_TOO_LARGE = 101;
-}
-
-/// Indicates a message was too large for a transport to handle.
-class FMessageSizeError extends TTransportError {
-  /// Create an [FMessageSizeError] with the given type and message.
-  FMessageSizeError(int type, String message) : super(type, message);
-
-  /// Create an [FMessageSizeError] indicating the request is too large.
-  FMessageSizeError.request(
-      {String message: "request was too large for the transport"})
-      : super(FTransportError.REQUEST_TOO_LARGE, message);
-
-  /// Create an [FMessageSizeError] indicating the response is too large.
-  FMessageSizeError.response(
-      {String message: "response was too large for the transport"})
-      : super(FTransportError.RESPONSE_TOO_LARGE, message);
-}
-
-/// Indicates a frugal request timed out.
-class FTimeoutError extends FError {
-  /// Create an [FError] with the unknown type and empty message.
-  FTimeoutError() : super();
-
-  /// Create an [FError] with the unknown type and the given message.
-  FTimeoutError.withMessage(String message) : super.withMessage(message);
-}
-
-/// Indicates a problem with an [FProtocol].
-class FProtocolError extends TProtocolError {
-  /// Create an [FError] with the optionally given type and message.
-  FProtocolError([int type = TProtocolErrorType.UNKNOWN, String message = ""])
-      : super(type, message);
 }

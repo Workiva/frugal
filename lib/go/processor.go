@@ -76,7 +76,7 @@ func (f *FBaseProcessor) Process(iprot, oprot *FProtocol) error {
 	if err := iprot.ReadMessageEnd(); err != nil {
 		return err
 	}
-	ex := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, "Unknown function "+name)
+	ex := thrift.NewTApplicationException(APPLICATION_EXCEPTION_UNKNOWN_METHOD, "Unknown function "+name)
 	f.writeMu.Lock()
 	defer f.writeMu.Unlock()
 	if err := oprot.WriteResponseHeader(ctx); err != nil {

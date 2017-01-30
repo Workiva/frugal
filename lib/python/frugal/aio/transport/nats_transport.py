@@ -4,6 +4,7 @@ from thrift.transport.TTransport import TTransportException
 
 from frugal import _NATS_MAX_MESSAGE_SIZE
 from frugal.aio.transport import FAsyncTransport
+from frugal.exceptions import FrugalTTransportExceptionType
 
 
 class FNatsTransport(FAsyncTransport):
@@ -34,11 +35,11 @@ class FNatsTransport(FAsyncTransport):
     async def open(self):
         """Subscribe to the inbox subject."""
         if not self._nats_client.is_connected:
-            raise TTransportException(TTransportException.NOT_OPEN,
+            raise TTransportException(FrugalTTransportExceptionType.NOT_OPEN,
                                       'Nats not connected')
 
         if self.is_open():
-            raise TTransportException(TTransportException.ALREADY_OPEN,
+            raise TTransportException(FrugalTTransportExceptionType.ALREADY_OPEN,
                                       'Transport is already open')
 
         self._sub_id = await self._nats_client.subscribe(

@@ -1,6 +1,6 @@
 package com.workiva.frugal.transport;
 
-import com.workiva.frugal.exception.FMessageSizeException;
+import com.workiva.frugal.exception.FrugalTTransportExceptionType;
 import com.workiva.frugal.util.ProtocolUtils;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
@@ -10,7 +10,7 @@ import java.io.ByteArrayOutputStream;
 /**
  * An implementation of a framed TTransport using a memory buffer and is used exclusively for writing.
  * The size of this buffer is optionally limited. If limited, writes which cause the buffer to exceed
- * its size limit throw an FMessageSizeException.
+ * its size limit throw an TTransportException with code FrugalTTransportExceptionType.REQUEST_TOO_LARGE.
  */
 public class TMemoryOutputBuffer extends TTransport {
 
@@ -69,7 +69,8 @@ public class TMemoryOutputBuffer extends TTransport {
     public void write(byte[] buf, int off, int len) throws TTransportException {
         if (limit > 0 && buffer.size() + len > limit) {
             reset();
-            throw FMessageSizeException.request(String.format("Buffer size reached (%d)", limit));
+            throw new TTransportException(
+                    FrugalTTransportExceptionType.REQUEST_TOO_LARGE, String.format("Buffer size reached (%d)", limit));
         }
         buffer.write(buf, off, len);
     }

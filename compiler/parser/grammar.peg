@@ -83,7 +83,10 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 Grammar <- __ statements:( Statement __ )* (EOF / SyntaxError) {
-    thrift := &Thrift{
+    stmts := toIfaceSlice(statements)
+    frugal := &Frugal{
+        Scopes:         []*Scope{},
+        ParsedIncludes: make(map[string]*Frugal),
         Includes:       []*Include{},
         Namespaces:     []*Namespace{},
         Typedefs:       []*TypeDef{},
@@ -96,49 +99,43 @@ Grammar <- __ statements:( Statement __ )* (EOF / SyntaxError) {
         typedefIndex:   make(map[string]*TypeDef),
         namespaceIndex: make(map[string]*Namespace),
     }
-    stmts := toIfaceSlice(statements)
-    frugal := &Frugal{
-        Thrift:             thrift,
-        Scopes:             []*Scope{},
-        ParsedIncludes:     make(map[string]*Frugal),
-    }
 
     for _, st := range stmts {
         wrapper := st.([]interface{})[0].(*statementWrapper)
         switch v := wrapper.statement.(type) {
         case *Namespace:
-            thrift.Namespaces = append(thrift.Namespaces, v)
-            thrift.namespaceIndex[v.Scope] = v
+            frugal.Namespaces = append(frugal.Namespaces, v)
+            frugal.namespaceIndex[v.Scope] = v
         case *Constant:
             v.Comment = wrapper.comment
-            thrift.Constants = append(thrift.Constants, v)
+            frugal.Constants = append(frugal.Constants, v)
         case *Enum:
             v.Comment = wrapper.comment
-            thrift.Enums = append(thrift.Enums, v)
+            frugal.Enums = append(frugal.Enums, v)
         case *TypeDef:
             v.Comment = wrapper.comment
-            thrift.Typedefs = append(thrift.Typedefs, v)
-            thrift.typedefIndex[v.Name] = v
+            frugal.Typedefs = append(frugal.Typedefs, v)
+            frugal.typedefIndex[v.Name] = v
         case *Struct:
             v.Type = StructTypeStruct
             v.Comment = wrapper.comment
-            thrift.Structs = append(thrift.Structs, v)
+            frugal.Structs = append(frugal.Structs, v)
         case exception:
             strct := (*Struct)(v)
             strct.Type = StructTypeException
             strct.Comment = wrapper.comment
-            thrift.Exceptions = append(thrift.Exceptions, strct)
+            frugal.Exceptions = append(frugal.Exceptions, strct)
         case union:
             strct := unionToStruct(v)
             strct.Type = StructTypeUnion
             strct.Comment = wrapper.comment
-            thrift.Unions = append(thrift.Unions, strct)
+            frugal.Unions = append(frugal.Unions, strct)
         case *Service:
             v.Comment = wrapper.comment
-            v.Thrift = frugal.Thrift
-            thrift.Services = append(thrift.Services, v)
+            v.Frugal = frugal
+            frugal.Services = append(frugal.Services, v)
         case *Include:
-            thrift.Includes = append(thrift.Includes, v)
+            frugal.Includes = append(frugal.Includes, v)
         case *Scope:
             v.Comment = wrapper.comment
             v.Frugal = frugal
@@ -154,7 +151,7 @@ SyntaxError <- . {
     return nil, errors.New("parser: syntax error")
 }
 
-Statement <- docstr:(DocString __)? statement:(ThriftStatement / FrugalStatement) {
+Statement <- docstr:(DocString __)? statement:FrugalStatement {
     wrapper := &statementWrapper{statement: statement}
     if docstr != nil {
         raw := docstr.([]interface{})[0].(string)
@@ -167,7 +164,7 @@ Statement <- docstr:(DocString __)? statement:(ThriftStatement / FrugalStatement
 //                                   THRIFT                                  //
 ///////////////////////////////////////////////////////////////////////////////
 
-ThriftStatement <- Include / Namespace / Const / Enum / TypeDef / Struct / Exception / Union / Service
+FrugalStatement <- Include / Namespace / Const / Enum / TypeDef / Struct / Exception / Union / Service / Scope
 
 Include <- "include" _ file:Literal _ annotations:TypeAnnotations? EOS {
     name := filepath.Base(file.(string))
@@ -472,8 +469,6 @@ ConstMap <- '{' __ values:(ConstValue __ ':' __ ConstValue __ (',' / &'}') __)* 
 ///////////////////////////////////////////////////////////////////////////////
 //                                   FRUGAL                                  //
 ///////////////////////////////////////////////////////////////////////////////
-
-FrugalStatement <- Scope
 
 Scope <- docstr:(DocString __)? "scope" __ name:Identifier __ prefix:Prefix? __ '{' __ operations:(Operation __)* ('}' / EndOfScopeError) _ annotations:TypeAnnotations? EOS {
     ops := operations.([]interface{})

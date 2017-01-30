@@ -219,7 +219,7 @@ func (h *fHTTPTransport) Request(ctx FContext, data []byte) (thrift.TTransport, 
 
 	if h.requestSizeLimit > 0 && len(data) > int(h.requestSizeLimit) {
 		return nil, thrift.NewTTransportException(
-			TTRANSPORT_REQUEST_TOO_LARGE,
+			TRANSPORT_EXCEPTION_REQUEST_TOO_LARGE,
 			fmt.Sprintf("Message exceeds %d bytes, was %d bytes", h.requestSizeLimit, len(data)))
 	}
 
@@ -229,7 +229,7 @@ func (h *fHTTPTransport) Request(ctx FContext, data []byte) (thrift.TTransport, 
 		if strings.HasSuffix(err.Error(), "net/http: request canceled") ||
 			strings.HasSuffix(err.Error(), "net/http: timeout awaiting response headers") ||
 			strings.HasSuffix(err.Error(), "net/http: request canceled while waiting for connection") {
-			return nil, thrift.NewTTransportException(thrift.TIMED_OUT, "frugal: http request timed out")
+			return nil, thrift.NewTTransportException(TRANSPORT_EXCEPTION_TIMED_OUT, "frugal: http request timed out")
 		}
 		return nil, thrift.NewTTransportExceptionFromError(err)
 	}
@@ -301,7 +301,7 @@ func (h *fHTTPTransport) makeRequest(fCtx FContext, requestPayload []byte) ([]by
 
 	// Response too large
 	if response.StatusCode == http.StatusRequestEntityTooLarge {
-		return nil, thrift.NewTTransportException(TTRANSPORT_RESPONSE_TOO_LARGE,
+		return nil, thrift.NewTTransportException(TRANSPORT_EXCEPTION_RESPONSE_TOO_LARGE,
 			"response was too large for the transport")
 	}
 
@@ -317,7 +317,7 @@ func (h *fHTTPTransport) makeRequest(fCtx FContext, requestPayload []byte) ([]by
 
 	// Check bad status code
 	if response.StatusCode >= 300 {
-		return nil, thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION,
+		return nil, thrift.NewTTransportException(TRANSPORT_EXCEPTION_UNKNOWN,
 			fmt.Sprintf("response errored with code %d and message %s",
 				response.StatusCode, body))
 	}
@@ -332,6 +332,6 @@ func (h *fHTTPTransport) makeRequest(fCtx FContext, requestPayload []byte) ([]by
 }
 
 func (h *fHTTPTransport) getClosedConditionError(prefix string) error {
-	return thrift.NewTTransportException(thrift.NOT_OPEN,
+	return thrift.NewTTransportException(TRANSPORT_EXCEPTION_NOT_OPEN,
 		fmt.Sprintf("%s HTTP TTransport not open", prefix))
 }

@@ -66,7 +66,7 @@ func TestAdapterTransportAlreadyOpen(t *testing.T) {
 	assert.Error(err)
 	trErr, ok := err.(thrift.TTransportException)
 	assert.True(ok)
-	assert.Equal(thrift.ALREADY_OPEN, trErr.TypeId())
+	assert.Equal(TRANSPORT_EXCEPTION_ALREADY_OPEN, trErr.TypeId())
 	mockTr.AssertExpectations(t)
 }
 
@@ -173,7 +173,7 @@ func TestAdapterTransportCloseNotOpen(t *testing.T) {
 	assert.Error(err)
 	trErr, ok := err.(thrift.TTransportException)
 	assert.True(ok)
-	assert.Equal(thrift.NOT_OPEN, trErr.TypeId())
+	assert.Equal(TRANSPORT_EXCEPTION_NOT_OPEN, trErr.TypeId())
 }
 
 // Ensures Close returns an error if the underlying transport fails to close and

@@ -1,7 +1,6 @@
 package com.workiva.frugal.transport;
 
 import com.workiva.frugal.FContext;
-import com.workiva.frugal.exception.FMessageSizeException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpStatus;
 import org.apache.http.HttpVersion;
@@ -57,14 +56,14 @@ public class FHttpTransportTest {
         assertTrue(transport.isOpen());
     }
 
-    @Test(expected = FMessageSizeException.class)
+    @Test(expected = TTransportException.class)
     public void testRequestSizeException() throws TTransportException {
         int requestSizeLimit = 1024 * 4;
         transport = new FHttpTransport.Builder(client, url).withRequestSizeLimit(requestSizeLimit).build();
         transport.request(context, new byte[requestSizeLimit + 1]);
     }
 
-    @Test(expected = FMessageSizeException.class)
+    @Test(expected = TTransportException.class)
     public void testOnewaySizeException() throws TTransportException {
         int requestSizeLimit = 1024 * 4;
         transport = new FHttpTransport.Builder(client, url).withRequestSizeLimit(requestSizeLimit).build();
@@ -139,7 +138,7 @@ public class FHttpTransportTest {
         transport.request(context, buff);
     }
 
-    @Test(expected = FMessageSizeException.class)
+    @Test(expected = TTransportException.class)
     public void testSend_responseTooLarge() throws TTransportException, IOException {
         int responseSizeLimit = 1024 * 4;
         transport = new FHttpTransport.Builder(client, url).withResponseSizeLimit(responseSizeLimit).build();

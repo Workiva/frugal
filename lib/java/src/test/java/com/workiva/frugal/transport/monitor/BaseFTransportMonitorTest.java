@@ -1,6 +1,7 @@
 package com.workiva.frugal.transport.monitor;
 
 import com.workiva.frugal.FContext;
+import com.workiva.frugal.exception.FrugalTTransportExceptionType;
 import com.workiva.frugal.transport.FTransport;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
@@ -238,7 +239,7 @@ public class BaseFTransportMonitorTest {
         public void open() throws TTransportException {
             if (errorCount < openErrorCount) {
                 errorCount++;
-                throw new TTransportException(0, "open error");
+                throw new TTransportException(FrugalTTransportExceptionType.UNKNOWN, "open error");
             }
         }
 

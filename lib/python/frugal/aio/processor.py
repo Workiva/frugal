@@ -7,6 +7,8 @@ from thrift.Thrift import TException
 from thrift.Thrift import TMessageType
 from thrift.Thrift import TType
 
+from frugal.exceptions import FrugalTApplicationExceptionType
+
 logger = logging.getLogger(__name__)
 
 
@@ -144,8 +146,9 @@ class FBaseProcessor(FProcessor):
         iprot.skip(TType.STRUCT)
         iprot.readMessageEnd()
 
-        ex = TApplicationException(TApplicationException.UNKNOWN_METHOD,
-                                   "Unknown function: {0}".format(name))
+        ex = TApplicationException(
+            type=FrugalTApplicationExceptionType.UNKNOWN_METHOD,
+            message="Unknown function: {0}".format(name))
 
         async with self._write_lock:
             oprot.write_response_headers(context)

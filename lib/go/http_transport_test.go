@@ -385,7 +385,7 @@ func TestHTTPTransportBadRequest(t *testing.T) {
 	ctx := NewFContext("")
 
 	// Flush
-	expectedErr := thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION,
+	expectedErr := thrift.NewTTransportException(TRANSPORT_EXCEPTION_UNKNOWN,
 		"response errored with code 400 and message bad request bro")
 	_, actualErr := transport.Request(ctx, requestBytes)
 	assert.Equal(actualErr.(thrift.TTransportException).TypeId(), expectedErr.TypeId())
@@ -447,7 +447,7 @@ func TestHTTPTransportRequestTooLarge(t *testing.T) {
 	// Write request
 	_, err := transport.Request(ctx, requestBytes)
 
-	assert.Equal(err.(thrift.TTransportException).TypeId(), TTRANSPORT_REQUEST_TOO_LARGE)
+	assert.Equal(err.(thrift.TTransportException).TypeId(), TRANSPORT_EXCEPTION_REQUEST_TOO_LARGE)
 
 	// Close
 	assert.Nil(transport.Close())
@@ -476,7 +476,7 @@ func TestHTTPTransportResponseTooLarge(t *testing.T) {
 
 	// Flush
 	_, actualErr := transport.Request(ctx, requestBytes)
-	assert.Equal(actualErr.(thrift.TTransportException).TypeId(), TTRANSPORT_RESPONSE_TOO_LARGE)
+	assert.Equal(actualErr.(thrift.TTransportException).TypeId(), TRANSPORT_EXCEPTION_RESPONSE_TOO_LARGE)
 
 	// Close
 	assert.Nil(transport.Close())
@@ -561,7 +561,7 @@ func TestHTTPTransportResponseTimeout(t *testing.T) {
 	ctx := NewFContext("")
 	ctx.SetTimeout(20 * time.Millisecond)
 	_, actualErr := transport.Request(ctx, []byte{})
-	assert.Equal(actualErr.(thrift.TTransportException).TypeId(), thrift.TIMED_OUT)
+	assert.Equal(actualErr.(thrift.TTransportException).TypeId(), TRANSPORT_EXCEPTION_TIMED_OUT)
 
 	assert.Nil(transport.Close())
 }
@@ -581,7 +581,7 @@ func TestHTTPTransportBadURL(t *testing.T) {
 	ctx := NewFContext("")
 
 	// Flush
-	expectedErr := thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION,
+	expectedErr := thrift.NewTTransportException(TRANSPORT_EXCEPTION_UNKNOWN,
 		"Post nobody/home: unsupported protocol scheme \"\"")
 	_, actualErr := transport.Request(ctx, requestBytes)
 	assert.Equal(actualErr.(thrift.TTransportException).TypeId(), expectedErr.TypeId())

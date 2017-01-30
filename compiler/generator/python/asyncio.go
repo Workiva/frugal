@@ -23,9 +23,8 @@ func (a *AsyncIOGenerator) GenerateServiceImports(file *os.File, s *parser.Servi
 
 	imports += "from frugal.aio.processor import FBaseProcessor\n"
 	imports += "from frugal.aio.processor import FProcessorFunction\n"
-	imports += "from frugal.exceptions import FApplicationException\n"
-	imports += "from frugal.exceptions import FMessageSizeException\n"
-	imports += "from frugal.exceptions import FTimeoutException\n"
+	imports += "from frugal.exceptions import FrugalTApplicationExceptionType\n"
+	imports += "from frugal.exceptions import FrugalTTransportExceptionType\n"
 	imports += "from frugal.middleware import Method\n"
 	imports += "from frugal.transport import TMemoryOutputBuffer\n"
 	imports += "from thrift.Thrift import TApplicationException\n"
@@ -51,6 +50,7 @@ func (a *AsyncIOGenerator) GenerateScopeImports(file *os.File, s *parser.Scope) 
 	imports += "from thrift.Thrift import TApplicationException\n"
 	imports += "from thrift.Thrift import TMessageType\n"
 	imports += "from thrift.Thrift import TType\n"
+	imports += "from frugal.exceptions import FrugalTApplicationExceptionType\n"
 	imports += "from frugal.middleware import Method\n"
 	imports += "from frugal.subscription import FSubscription\n"
 	imports += "from frugal.transport import TMemoryOutputBuffer\n\n"
@@ -150,8 +150,8 @@ func (a *AsyncIOGenerator) generateClientMethod(method *parser.Method) string {
 	contents += tabtabtab + "x = TApplicationException()\n"
 	contents += tabtabtab + "x.read(iprot)\n"
 	contents += tabtabtab + "iprot.readMessageEnd()\n"
-	contents += tabtabtab + "if x.type == FApplicationException.RESPONSE_TOO_LARGE:\n"
-	contents += tabtabtabtab + "raise FMessageSizeException.response(x.message)\n"
+	contents += tabtabtab + "if x.type == FrugalTApplicationExceptionType.RESPONSE_TOO_LARGE:\n"
+	contents += tabtabtabtab + "raise TTransportException(type=FrugalTTransportExceptionType.REQUEST_TOO_LARGE, message=x.message)\n"
 	contents += tabtabtab + "raise x\n"
 	contents += tabtab + fmt.Sprintf("result = %s_result()\n", method.Name)
 	contents += tabtab + "result.read(iprot)\n"
@@ -164,7 +164,7 @@ func (a *AsyncIOGenerator) generateClientMethod(method *parser.Method) string {
 		contents += tabtab + "if result.success is not None:\n"
 		contents += tabtabtab + "return result.success\n"
 		contents += tabtab + fmt.Sprintf(
-			"raise TApplicationException(TApplicationException.MISSING_RESULT, \"%s failed: unknown result\")\n\n", method.Name)
+			"raise TApplicationException(FrugalTApplicationExceptionType.MISSING_RESULT, \"%s failed: unknown result\")\n\n", method.Name)
 	}
 	return contents
 }
@@ -257,7 +257,7 @@ func (a *AsyncIOGenerator) generateProcessorFunction(method *parser.Method) stri
 	contents += tabtab + "except Exception as e:\n"
 	if !method.Oneway {
 		contents += tabtabtab + "async with self._lock:\n"
-		contents += tabtabtabtab + fmt.Sprintf("e = _write_application_exception(ctx, oprot, \"%s\", ex_code=TApplicationException.UNKNOWN, message=e.args[0])\n", methodLower)
+		contents += tabtabtabtab + fmt.Sprintf("e = _write_application_exception(ctx, oprot, \"%s\", ex_code=FrugalTApplicationExceptionType.UNKNOWN, message=e.args[0])\n", methodLower)
 	}
 	contents += tabtabtab + "raise e from None\n"
 	if !method.Oneway {
@@ -268,9 +268,12 @@ func (a *AsyncIOGenerator) generateProcessorFunction(method *parser.Method) stri
 		contents += tabtabtabtab + "result.write(oprot)\n"
 		contents += tabtabtabtab + "oprot.writeMessageEnd()\n"
 		contents += tabtabtabtab + "oprot.get_transport().flush()\n"
-		contents += tabtabtab + "except FMessageSizeException as e:\n"
-		contents += tabtabtabtab + fmt.Sprintf(
-			"raise _write_application_exception(ctx, oprot, \"%s\", ex_code=FApplicationException.RESPONSE_TOO_LARGE, message=e.args[0])\n", methodLower)
+		contents += tabtabtab + "except TTransportException as e:\n"
+		contents += tabtabtabtab + "if e.type == FrugalTTransportExceptionType.RESPONSE_TOO_LARGE:\n"
+		contents += tabtabtabtabtab + fmt.Sprintf(
+			"raise _write_application_exception(ctx, oprot, \"%s\", ex_code=FrugalTApplicationExceptionType.RESPONSE_TOO_LARGE, message=e.message)\n", methodLower)
+		contents += tabtabtabtab + "else:\n"
+		contents += tabtabtabtabtab + "raise e\n"
 	}
 	contents += "\n\n"
 
@@ -354,7 +357,7 @@ func (a *AsyncIOGenerator) generateSubscribeMethod(scope *parser.Scope, op *pars
 	method += tabtabtab + "if mname != op:\n"
 	method += tabtabtabtab + "iprot.skip(TType.STRUCT)\n"
 	method += tabtabtabtab + "iprot.readMessageEnd()\n"
-	method += tabtabtabtab + "raise TApplicationException(TApplicationException.UNKNOWN_METHOD)\n"
+	method += tabtabtabtab + "raise TApplicationException(FrugalTApplicationExceptionType.UNKNOWN_METHOD)\n"
 	method += tabtabtab + fmt.Sprintf("req = %s()\n", op.Type.Name)
 	method += tabtabtab + "req.read(iprot)\n"
 	method += tabtabtab + "iprot.readMessageEnd()\n"

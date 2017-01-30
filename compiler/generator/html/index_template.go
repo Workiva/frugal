@@ -21,7 +21,7 @@ const indexTemplate = `
 				<tr>
 					<td><a href="{{ $module.Name }}.html">{{ $module.Name }}</a></td>
 					<td>
-					{{ range $service := $module.Thrift.Services }}
+					{{ range $service := $module.Services }}
 						<a href="{{ $module.Name }}.html#svc_{{ $service.Name }}">{{ $service.Name }}</a><br />
 						<ul>
 						{{ range $service.Methods }}
@@ -41,18 +41,18 @@ const indexTemplate = `
 					{{ end }}
 					</td>
 					<td>
-					{{ range $typedef := $module.Thrift.Typedefs }}
+					{{ range $typedef := $module.Typedefs }}
 						<a href="{{ $module.Name }}.html#typedef_{{ $typedef.Name }}">{{ $typedef.Name }}</a><br />
 					{{ end }}
-					{{ range $enum := $module.Thrift.Enums }}
+					{{ range $enum := $module.Enums }}
 						<a href="{{ $module.Name }}.html#enum_{{ $enum.Name }}">{{ $enum.Name }}</a><br />
 					{{ end }}
-					{{ range $struct := $module.Thrift.DataStructures }}
+					{{ range $struct := $module.DataStructures }}
 						<a href="{{ $module.Name }}.html#struct_{{ $struct.Name }}">{{ $struct.Name }}</a><br />
 					{{ end }}
 					</td>
 					<td>
-					{{ range $const := $module.Thrift.Constants }}
+					{{ range $const := $module.Constants }}
 					    <code><a href="{{ $module.Name }}.html#const_{{ $const.Name }}">{{ $const.Name }}</a></code><br />
 					{{ end }}
 					</td>

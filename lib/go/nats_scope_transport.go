@@ -46,7 +46,7 @@ func NewNatsFPublisherTransport(conn *nats.Conn) FPublisherTransport {
 // Open initializes the transport.
 func (n *fNatsPublisherTransport) Open() error {
 	if n.conn.Status() != nats.CONNECTED {
-		return thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION,
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_UNKNOWN,
 			fmt.Sprintf("frugal: NATS not connected, has status %d", n.conn.Status()))
 	}
 
@@ -60,10 +60,10 @@ func (n *fNatsPublisherTransport) IsOpen() bool {
 
 func (n *fNatsPublisherTransport) getClosedConditionError(prefix string) error {
 	if n.conn.Status() != nats.CONNECTED {
-		return thrift.NewTTransportException(thrift.NOT_OPEN,
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_NOT_OPEN,
 			fmt.Sprintf("%s NATS client not connected (has status code %d)", prefix, n.conn.Status()))
 	}
-	return thrift.NewTTransportException(thrift.NOT_OPEN,
+	return thrift.NewTTransportException(TRANSPORT_EXCEPTION_NOT_OPEN,
 		fmt.Sprintf("%s NATS FPublisherTransport not open", prefix))
 }
 
@@ -87,7 +87,7 @@ func (n *fNatsPublisherTransport) Publish(topic string, data []byte) error {
 
 	if len(data) > natsMaxMessageSize {
 		return thrift.NewTTransportException(
-			TTRANSPORT_REQUEST_TOO_LARGE,
+			TRANSPORT_EXCEPTION_REQUEST_TOO_LARGE,
 			fmt.Sprintf("Message exceeds %d bytes, was %d bytes", natsMaxMessageSize, len(data)))
 	}
 
@@ -153,16 +153,17 @@ func (n *fNatsSubscriberTransport) Subscribe(topic string, callback FAsyncCallba
 	n.openMu.Lock()
 	defer n.openMu.Unlock()
 	if n.conn.Status() != nats.CONNECTED {
-		return thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION,
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_UNKNOWN,
 			fmt.Sprintf("frugal: NATS not connected, has status %d", n.conn.Status()))
 	}
 
 	if n.isSubscribed {
-		return thrift.NewTTransportException(thrift.ALREADY_OPEN, "frugal: NATS transport already open")
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_ALREADY_OPEN,
+			"frugal: NATS transport already open")
 	}
 
 	if topic == "" {
-		return thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION,
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_UNKNOWN,
 			"cannot subscribe to empty subject")
 	}
 
@@ -201,10 +202,10 @@ func (n *fNatsSubscriberTransport) IsSubscribed() bool {
 
 func (n *fNatsSubscriberTransport) getClosedConditionError(prefix string) error {
 	if n.conn.Status() != nats.CONNECTED {
-		return thrift.NewTTransportException(thrift.NOT_OPEN,
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_NOT_OPEN,
 			fmt.Sprintf("%s NATS client not connected (has status code %d)", prefix, n.conn.Status()))
 	}
-	return thrift.NewTTransportException(thrift.NOT_OPEN,
+	return thrift.NewTTransportException(TRANSPORT_EXCEPTION_NOT_OPEN,
 		fmt.Sprintf("%s NATS FSubscriberTransport not open", prefix))
 }
 

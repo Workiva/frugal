@@ -85,7 +85,7 @@ class Headers {
   /// Returns the headers from Frugal frame
   static Map<String, String> decodeFromFrame(Uint8List frame) {
     if (frame.length < 5) {
-      throw new FProtocolError(TProtocolErrorType.INVALID_DATA,
+      throw new TProtocolError(TProtocolErrorType.INVALID_DATA,
           "invalid frame size ${frame.length}");
     }
 
@@ -101,7 +101,7 @@ class Headers {
       var nameSize = _readInt(buff, i);
       i += 4;
       if (i > end || i + nameSize > end) {
-        throw new FProtocolError(
+        throw new TProtocolError(
             TProtocolErrorType.INVALID_DATA, "invalid protocol header name");
       }
       var name = _decoder.convert(buff, i, i + nameSize);
@@ -111,7 +111,7 @@ class Headers {
       var valueSize = _readInt(buff, i);
       i += 4;
       if (i > end || i + valueSize > end) {
-        throw new FProtocolError(
+        throw new TProtocolError(
             TProtocolErrorType.INVALID_DATA, "invalid protocol header value");
       }
       var value = _decoder.convert(buff, i, i + valueSize);
@@ -145,7 +145,7 @@ class Headers {
   // Support more versions when available
   static void _checkVersion(Uint8List frame) {
     if (frame[0] != _v0) {
-      throw new FProtocolError(TProtocolErrorType.BAD_VERSION,
+      throw new TProtocolError(TProtocolErrorType.BAD_VERSION,
           "unsupported header version ${frame[0]}");
     }
   }

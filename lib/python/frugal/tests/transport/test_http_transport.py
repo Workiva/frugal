@@ -6,7 +6,7 @@ from mock import Mock
 from mock import patch
 from thrift.transport.TTransport import TTransportException
 
-from frugal.exceptions import FMessageSizeException
+from frugal.exceptions import FrugalTTransportExceptionType
 from frugal.transport.http_transport import THttpTransport
 
 
@@ -195,7 +195,9 @@ class TestTHttpTransport(unittest.TestCase):
 
         data = b'helloworld'
 
-        with self.assertRaises(FMessageSizeException):
+        with self.assertRaises(TTransportException) as cm:
             tr.write(data)
 
+        self.assertEqual(FrugalTTransportExceptionType.REQUEST_TOO_LARGE,
+                         cm.exception.type)
         self.assertFalse(mock_requests.post.called)

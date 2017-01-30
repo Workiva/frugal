@@ -2,7 +2,9 @@ from base64 import b64encode
 from io import BytesIO
 from struct import pack_into
 
-from frugal.exceptions import FMessageSizeException
+from thrift.transport.TTransport import TTransportException
+
+from frugal.exceptions import FrugalTTransportExceptionType
 from frugal.transport import TSynchronousTransport
 
 
@@ -56,8 +58,9 @@ class TBaseHttpTransport(TSynchronousTransport):
         size = len(buf) + len(self._wbuff.getvalue())
         if size + 4 > self._request_capacity > 0:
             self._wbuff = BytesIO()
-            raise FMessageSizeException.request(
-                'Message exceeds {0} bytes, was {1} bytes'.format(
+            raise TTransportException(
+                type=FrugalTTransportExceptionType.REQUEST_TOO_LARGE,
+                message='Message exceeds {0} bytes, was {1} bytes'.format(
                     self._request_capacity, size + 4))
 
         self._wbuff.write(buf)

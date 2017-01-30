@@ -139,7 +139,7 @@ func (p *TFramedTransport) readFrameHeader() (uint32, error) {
 	}
 	size := binary.BigEndian.Uint32(buf)
 	if size < 0 || size > p.maxLength {
-		return 0, thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION,
+		return 0, thrift.NewTTransportException(TRANSPORT_EXCEPTION_UNKNOWN,
 			fmt.Sprintf("frugal: incorrect frame size (%d)", size))
 	}
 	return size, nil

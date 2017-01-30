@@ -1,7 +1,7 @@
 import logging
 from struct import pack_into, unpack_from
 
-from frugal.exceptions import FProtocolException
+from thrift.protocol.TProtocol import TProtocolException
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +58,8 @@ class _Headers(object):
         version = unpack_from(_UCHAR, buff[:1])[0]
 
         if version is not _V0:
-            ex = FProtocolException(
-                FProtocolException.BAD_VERSION,
+            ex = TProtocolException(
+                TProtocolException.BAD_VERSION,
                 "Wrong Frugal version. Found {0}, wanted {1}.".format(
                     version, _V0)
             )
@@ -76,7 +76,7 @@ class _Headers(object):
     @staticmethod
     def decode_from_frame(frame):
         if len(frame) < 5:
-            ex = FProtocolException(FProtocolException.INVALID_DATA,
+            ex = TProtocolException(TProtocolException.INVALID_DATA,
                                     "Invalid frame size: {}".format(len(frame))
                                     )
             logger.exception(ex)
@@ -85,8 +85,8 @@ class _Headers(object):
         version = unpack_from(_UCHAR, frame[0:1])[0]
 
         if version is not _V0:
-            ex = FProtocolException(
-                FProtocolException.BAD_VERSION,
+            ex = TProtocolException(
+                TProtocolException.BAD_VERSION,
                 "Wrong Frugal version. Found {0}, wanted {1}."
                 .format(version, _V0)
             )
@@ -106,7 +106,7 @@ class _Headers(object):
             i += 4
 
             if i > end or i + name_size > end:
-                ex = FProtocolException(FProtocolException.INVALID_DATA,
+                ex = TProtocolException(TProtocolException.INVALID_DATA,
                                         "invalid protocol header name size: {}"
                                         .format(name_size))
                 logger.exception(ex)
@@ -120,8 +120,8 @@ class _Headers(object):
             i += 4
 
             if i > end or i + val_size > end:
-                ex = FProtocolException(
-                    FProtocolException.INVALID_DATA,
+                ex = TProtocolException(
+                    TProtocolException.INVALID_DATA,
                     "invalid protocol header value size: {}".format(val_size)
                 )
                 logger.exception(ex)

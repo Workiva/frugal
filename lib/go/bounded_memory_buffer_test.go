@@ -21,6 +21,6 @@ func TestTFramedMemoryBufferWrite(t *testing.T) {
 	assert.Equal(t, 94, buff.Len())
 	_, err = buff.Write(make([]byte, 20))
 	assert.True(t, IsErrTooLarge(err))
-	assert.Equal(t, TTRANSPORT_REQUEST_TOO_LARGE, err.(thrift.TTransportException).TypeId())
+	assert.Equal(t, TRANSPORT_EXCEPTION_REQUEST_TOO_LARGE, err.(thrift.TTransportException).TypeId())
 	assert.Equal(t, 4, buff.Len())
 }

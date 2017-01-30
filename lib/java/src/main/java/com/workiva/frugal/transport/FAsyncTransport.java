@@ -1,9 +1,10 @@
 package com.workiva.frugal.transport;
 
 import com.workiva.frugal.FContext;
-import com.workiva.frugal.exception.FException;
+import com.workiva.frugal.exception.FrugalTTransportExceptionType;
 import com.workiva.frugal.protocol.HeaderUtils;
 import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
@@ -91,11 +92,11 @@ public abstract class FAsyncTransport extends FTransport {
             }
 
             if (response == null) {
-                throw new TTransportException(TTransportException.TIMED_OUT, "request: timed out");
+                throw new TTransportException(FrugalTTransportExceptionType.TIMED_OUT, "request: timed out");
             }
 
             if (response == POISON_PILL) {
-                throw new TTransportException(TTransportException.NOT_OPEN,
+                throw new TTransportException(FrugalTTransportExceptionType.NOT_OPEN,
                         "request: transport closed, request canceled");
             }
 
@@ -130,7 +131,7 @@ public abstract class FAsyncTransport extends FTransport {
         try {
             opId = Long.parseLong(headers.get(FContext.OPID_HEADER));
         } catch (NumberFormatException e) {
-            throw new FException("invalid protocol frame: op id not a uint64", e);
+            throw new TProtocolException("invalid protocol frame: op id not a uint64", e);
         }
 
         BlockingQueue<byte[]> queue;

@@ -6,6 +6,7 @@ import requests
 from requests.exceptions import ReadTimeout
 from thrift.transport.TTransport import TTransportException
 
+from frugal.exceptions import FrugalTTransportExceptionType
 from frugal.transport.base_http_transport import TBaseHttpTransport
 
 
@@ -48,26 +49,29 @@ class THttpTransport(TBaseHttpTransport):
             resp = requests.post(self._url, data=body, headers=headers,
                                  timeout=timeout)
         except ReadTimeout:
-            raise TTransportException(TTransportException.TIMED_OUT,
-                                      'Request timed out')
+            raise TTransportException(
+                type=FrugalTTransportExceptionType.TIMED_OUT,
+                message='Request timed out')
         if resp.status_code >= 400:
             raise TTransportException(
-                TTransportException.UNKNOWN,
-                'HTTP request failed, returned {0}: {1}'.format(
+                type=FrugalTTransportExceptionType.UNKNOWN,
+                message='HTTP request failed, returned {0}: {1}'.format(
                     resp.status_code, resp.reason))
 
         resp_body = b64decode(resp.content)
         # All responses should be framed with 4 bytes (uint32).
         if len(resp_body) < 4:
-            raise TTransportException(TTransportException.UNKNOWN,
-                                      'invalid frame size')
+            raise TTransportException(
+                type=FrugalTTransportExceptionType.UNKNOWN,
+                message='invalid frame size')
 
         # If there are only 4 bytes, this needs to be a one-way (i.e. frame
         # size 0)
         if len(resp_body) == 4:
             if unpack('!I', resp_body)[0] != 0:
-                raise TTransportException(TTransportException.UNKNOWN,
-                                          'invalid frame')
+                raise TTransportException(
+                    type=FrugalTTransportExceptionType.UNKNOWN,
+                    message='invalid frame')
 
             # It's a oneway, drop it.
             return

@@ -20,7 +20,7 @@ const moduleTemplate = `
 				<tr>
 					<td>{{ .Name }}</td>
 					<td>
-					{{ range $service := .Thrift.Services }}
+					{{ range $service := .Services }}
 						<a href="#svc_{{ $service.Name }}">{{ $service.Name }}</a><br />
 						<ul>
 						{{ range $service.Methods }}
@@ -40,24 +40,24 @@ const moduleTemplate = `
 					{{ end }}
 					</td>
 					<td>
-					{{ range $typedef := .Thrift.Typedefs }}
+					{{ range $typedef := .Typedefs }}
 						<a href="#typedef_{{ $typedef.Name }}">{{ $typedef.Name }}</a><br />
 					{{ end }}
-					{{ range $enum := .Thrift.Enums }}
+					{{ range $enum := .Enums }}
 						<a href="#enum_{{ $enum.Name }}">{{ $enum.Name }}</a><br />
 					{{ end }}
-					{{ range $struct := .Thrift.DataStructures }}
+					{{ range $struct := .DataStructures }}
 						<a href="#struct_{{ $struct.Name }}">{{ $struct.Name }}</a><br />
 					{{ end }}
 					</td>
 					<td>
-					{{ range $const := .Thrift.Constants }}
+					{{ range $const := .Constants }}
 					    <code><a href="#const_{{ $const.Name }}">{{ $const.Name }}</a></code><br />
 					{{ end }}
 					</td>
 				</tr>
 			</table>
-			{{ if .Thrift.Constants }}
+			{{ if .Constants }}
 			<hr />
 			<h2 id="constants">Constants</h2>
 			<table class="table-bordered table-striped table-condensed">
@@ -66,7 +66,7 @@ const moduleTemplate = `
 					<th>Type</th>
 					<th>Value</th>
 				</tr>
-				{{ range .Thrift.Constants }}
+				{{ range .Constants }}
 				<tr id="const_{{ .Name }}">
 					<td><code>{{ .Name }}</code></td>
 					<td><code>{{ .Type | displayType }}</code></td>
@@ -86,10 +86,10 @@ const moduleTemplate = `
 				{{ end }}
 			</table>
 			{{ end }}
-			{{ if .Thrift.Enums }}
+			{{ if .Enums }}
 			<hr />
 			<h2 id="enumerations">Enumerations</h2>
-			{{ range .Thrift.Enums }}
+			{{ range .Enums }}
 				<div class="definition">
 					<h3 id="enum_{{ .Name }}">Enumeration: {{ .Name }}</h3>
 					{{ if .Comment }}
@@ -115,10 +115,10 @@ const moduleTemplate = `
 				</div>
 			{{ end }}
 			{{ end }}
-			{{ if .Thrift.Typedefs }}
+			{{ if .Typedefs }}
 			<hr />
 			<h2 id="typedefs">Type Declarations</h2>
-			{{ range .Thrift.Typedefs }}
+			{{ range .Typedefs }}
 				<div class="definition">
 					<h3 id="typedef_{{ .Name }}">Typedef: {{ .Name }}</h3>
 					<p>
@@ -135,10 +135,10 @@ const moduleTemplate = `
 				</div>
 			{{ end }}
 			{{ end }}
-			{{ if .Thrift.DataStructures }}
+			{{ if .DataStructures }}
 			<hr />
 			<h2 id="structs">Data Structures</h2>
-			{{ range .Thrift.DataStructures }}
+			{{ range .DataStructures }}
 			<div class="definition">
 				<h3 id="struct_{{ .Name }}">{{ .Type.String | capitalize }}: {{ .Name }}</h3>
 				<table class="table-bordered table-striped table-condensed">
@@ -172,10 +172,10 @@ const moduleTemplate = `
 			</div>
 			{{ end }}
 			{{ end }}
-			{{ if .Thrift.Services }}
+			{{ if .Services }}
 			<hr />
 			<h2 id="services">Services</h2>
-			{{ range $service := .Thrift.Services }}
+			{{ range $service := .Services }}
 			<h3 id="svc_{{ $service.Name }}">Service: {{ $service.Name }}</h3>
 			{{ if $service.Extends }}
 			<div class="extends">

@@ -1,12 +1,13 @@
 import asyncio
 import async_timeout
 
+from thrift.protocol.TProtocol import TProtocolException
 from thrift.transport.TTransport import TMemoryBuffer
 from thrift.transport.TTransport import TTransportException
 
 from frugal.aio.transport import FTransportBase
 from frugal.context import _OPID_HEADER
-from frugal.exceptions import FException
+from frugal.exceptions import FrugalTTransportExceptionType
 from frugal.context import FContext
 from frugal.util.headers import _Headers
 
@@ -30,7 +31,7 @@ class FAsyncTransport(FTransportBase):
                 await self.flush(payload)
         except asyncio.TimeoutError:
             raise TTransportException(
-                type=TTransportException.TIMED_OUT,
+                type=FrugalTTransportExceptionType.TIMED_OUT,
                 message='request timed out'
             ) from None
 
@@ -41,7 +42,7 @@ class FAsyncTransport(FTransportBase):
         async with self._futures_lock:
             if op_id in self._futures:
                 raise TTransportException(
-                    type=TTransportException.UNKNOWN,
+                    type=FrugalTTransportExceptionType.UNKNOWN,
                     message="request already in flight for context"
                 )
             self._futures[op_id] = future
@@ -52,7 +53,7 @@ class FAsyncTransport(FTransportBase):
                 return TMemoryBuffer(await future)
         except asyncio.TimeoutError:
             raise TTransportException(
-                type=TTransportException.TIMED_OUT,
+                type=FrugalTTransportExceptionType.TIMED_OUT,
                 message='request timed out'
             ) from None
         finally:
@@ -76,7 +77,7 @@ class FAsyncTransport(FTransportBase):
         op_id = headers.get(_OPID_HEADER, None)
 
         if not op_id:
-            raise FException("Frame missing op_id")
+            raise TProtocolException(message="Frame missing op_id")
 
         async with self._futures_lock:
             future = self._futures.get(op_id, None)

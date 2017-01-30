@@ -53,13 +53,13 @@ func (f *fAdapterTransport) Open() error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.isOpen {
-		return thrift.NewTTransportException(thrift.ALREADY_OPEN,
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_ALREADY_OPEN,
 			"frugal: transport already open")
 	}
 
 	if err := f.transport.Open(); err != nil {
 		// It's OK if the underlying transport is already open.
-		if e, ok := err.(thrift.TTransportException); !(ok && e.TypeId() == thrift.ALREADY_OPEN) {
+		if e, ok := err.(thrift.TTransportException); !(ok && e.TypeId() == TRANSPORT_EXCEPTION_ALREADY_OPEN) {
 			return err
 		}
 	}
@@ -83,7 +83,7 @@ func (f *fAdapterTransport) readLoop() {
 			default:
 			}
 
-			if err, ok := err.(thrift.TTransportException); ok && err.TypeId() == thrift.END_OF_FILE {
+			if err, ok := err.(thrift.TTransportException); ok && err.TypeId() == TRANSPORT_EXCEPTION_END_OF_FILE {
 				// EOF indicates remote peer disconnected.
 				f.Close()
 				return
@@ -133,7 +133,7 @@ func (f *fAdapterTransport) close(cause error) error {
 	defer f.mu.Unlock()
 
 	if !f.isOpen {
-		return thrift.NewTTransportException(thrift.NOT_OPEN, "Transport not open")
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_NOT_OPEN, "Transport not open")
 	}
 
 	f.closeSignal <- struct{}{}
@@ -176,10 +176,10 @@ func (f *fAdapterTransport) Oneway(ctx FContext, payload []byte) error {
 	go f.send(payload, errorC, true)
 
 	select {
-	case err := <- errorC:
+	case err := <-errorC:
 		return err
-	case <- time.After(ctx.Timeout()):
-		return thrift.NewTTransportException(thrift.TIMED_OUT, "frugal: request timed out")
+	case <-time.After(ctx.Timeout()):
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_TIMED_OUT, "frugal: request timed out")
 	}
 }
 
@@ -201,7 +201,7 @@ func (f *fAdapterTransport) Request(ctx FContext, payload []byte) (thrift.TTrans
 	case err := <-errorC:
 		return nil, err
 	case <-time.After(ctx.Timeout()):
-		return nil, thrift.NewTTransportException(thrift.TIMED_OUT, "frugal: request timed out")
+		return nil, thrift.NewTTransportException(TRANSPORT_EXCEPTION_TIMED_OUT, "frugal: request timed out")
 	}
 }
 

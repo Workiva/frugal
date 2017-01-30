@@ -1,5 +1,6 @@
 import "dart:typed_data";
 import "package:test/test.dart";
+import "package:thrift/thrift.dart";
 
 import "../../lib/src/frugal.dart";
 
@@ -53,7 +54,7 @@ void main() {
     var encodedHeaders = new Uint8List.fromList([0x01]);
     var transport = new TMemoryTransport.fromUint8List(encodedHeaders);
     expect(() => Headers.read(transport),
-        throwsA(new isInstanceOf<FProtocolError>()));
+        throwsA(new isInstanceOf<TProtocolError>()));
   });
 
   test("decodeFromFrame decodes headers from a fixed frame", () {
@@ -92,12 +93,12 @@ void main() {
 
   test("decodFromFrame throws error for bad frame", () {
     expect(() => Headers.decodeFromFrame(new Uint8List(3)),
-        throwsA(new isInstanceOf<FProtocolError>()));
+        throwsA(new isInstanceOf<TProtocolError>()));
   });
 
   test("decodeHeadersFromeFrame throws error for unsupported version", () {
     var encodedHeaders = new Uint8List.fromList([0x01, 0, 0, 0, 0]);
     expect(() => Headers.decodeFromFrame(encodedHeaders),
-        throwsA(new isInstanceOf<FProtocolError>()));
+        throwsA(new isInstanceOf<TProtocolError>()));
   });
 }

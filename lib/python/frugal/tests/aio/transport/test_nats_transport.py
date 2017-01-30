@@ -6,6 +6,7 @@ from thrift.transport.TTransport import TTransportException
 
 from frugal import _NATS_MAX_MESSAGE_SIZE
 from frugal.aio.transport import FNatsTransport
+from frugal.exceptions import FrugalTTransportExceptionType
 from frugal.tests.aio import utils
 
 
@@ -40,7 +41,7 @@ class TestFNatsTransport(utils.AsyncIOTestCase):
 
         with self.assertRaises(TTransportException) as cm:
             await self.transport.open()
-        self.assertEqual(TTransportException.NOT_OPEN, cm.exception.type)
+        self.assertEqual(FrugalTTransportExceptionType.NOT_OPEN, cm.exception.type)
 
     @utils.async_runner
     async def test_open_already_open(self):
@@ -49,7 +50,7 @@ class TestFNatsTransport(utils.AsyncIOTestCase):
 
         with self.assertRaises(TTransportException) as cm:
             await self.transport.open()
-        self.assertEqual(TTransportException.ALREADY_OPEN, cm.exception.type)
+        self.assertEqual(FrugalTTransportExceptionType.ALREADY_OPEN, cm.exception.type)
 
     @utils.async_runner
     async def test_open_subscribes(self):

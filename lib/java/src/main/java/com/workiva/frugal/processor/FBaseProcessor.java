@@ -1,6 +1,7 @@
 package com.workiva.frugal.processor;
 
 import com.workiva.frugal.FContext;
+import com.workiva.frugal.exception.FrugalTApplicationExceptionType;
 import com.workiva.frugal.protocol.FProtocol;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
@@ -49,7 +50,7 @@ public abstract class FBaseProcessor implements FProcessor {
         TProtocolUtil.skip(iprot, TType.STRUCT);
         iprot.readMessageEnd();
         TApplicationException e = new TApplicationException(
-                TApplicationException.UNKNOWN_METHOD, "Unknown function " + message.name);
+                FrugalTApplicationExceptionType.UNKNOWN_METHOD, "Unknown function " + message.name);
         synchronized (WRITE_LOCK) {
             oprot.writeResponseHeader(ctx);
             oprot.writeMessageBegin(new TMessage(message.name, TMessageType.EXCEPTION, 0));

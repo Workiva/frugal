@@ -1,7 +1,6 @@
 import unittest
 
 from frugal.context import FContext, _DEFAULT_TIMEOUT
-from frugal.exceptions import FContextHeaderException
 
 
 class TestContext(unittest.TestCase):
@@ -75,10 +74,10 @@ class TestContext(unittest.TestCase):
 
     def test_cant_set_cid_public_method(self):
         context = FContext(self.correlation_id)
-        self.assertRaises(FContextHeaderException,
-                          context.set_request_header, "_cid", "foo")
+        context.set_request_header("_cid", "foo")
+        self.assertEqual(context.correlation_id, self.correlation_id)
 
     def test_cant_set_opid_public_method(self):
         context = FContext(self.correlation_id)
-        self.assertRaises(FContextHeaderException,
-                          context.set_request_header, "_opid", "foo")
+        context.set_request_header("_opid", "foo")
+        self.assertNotEqual(context.get_request_header("_opid"), "foo")

@@ -76,7 +76,7 @@ void main() {
         await transport.request(null, null);
         fail('Should have thrown an exception');
       } on TTransportError catch (e) {
-        expect(e.type, TTransportErrorType.NOT_OPEN);
+        expect(e.type, FrugalTTransportErrorType.NOT_OPEN);
       }
     });
 
@@ -94,7 +94,7 @@ void main() {
         await transport.request(ctx, frame);
         fail('Should have thrown an exception');
       } on TTransportError catch (e) {
-        expect(e.type, TTransportErrorType.TIMED_OUT);
+        expect(e.type, FrugalTTransportErrorType.TIMED_OUT);
       }
 
       verify(socket.send(frame)).called(1);
@@ -115,7 +115,7 @@ void main() {
         await requestFuture;
         fail('Should have thrown an exception');
       } on TTransportError catch (e) {
-        expect(e.type, TTransportErrorType.NOT_OPEN);
+        expect(e.type, FrugalTTransportErrorType.NOT_OPEN);
       }
     });
 

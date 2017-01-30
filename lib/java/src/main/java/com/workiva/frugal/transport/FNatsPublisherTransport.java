@@ -1,6 +1,6 @@
 package com.workiva.frugal.transport;
 
-import com.workiva.frugal.exception.FMessageSizeException;
+import com.workiva.frugal.exception.FrugalTTransportExceptionType;
 import io.nats.client.Connection;
 import io.nats.client.Constants;
 import org.apache.thrift.transport.TTransportException;
@@ -66,7 +66,7 @@ public class FNatsPublisherTransport implements FPublisherTransport {
     public synchronized void open() throws TTransportException {
         // We only need to check that the NATS client is connected
         if (conn.getState() != Constants.ConnState.CONNECTED) {
-            throw new TTransportException(TTransportException.NOT_OPEN,
+            throw new TTransportException(FrugalTTransportExceptionType.NOT_OPEN,
                     "NATS not connected, has status " + conn.getState());
         }
     }
@@ -92,7 +92,7 @@ public class FNatsPublisherTransport implements FPublisherTransport {
         }
 
         if (payload.length > NATS_MAX_MESSAGE_SIZE) {
-            throw FMessageSizeException.request(
+            throw new TTransportException(FrugalTTransportExceptionType.REQUEST_TOO_LARGE,
                     String.format("Message exceeds %d bytes, was %d bytes",
                             NATS_MAX_MESSAGE_SIZE, payload.length));
         }

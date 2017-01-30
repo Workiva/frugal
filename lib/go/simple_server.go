@@ -81,13 +81,13 @@ func (p *FSimpleServer) accept(client thrift.TTransport) error {
 
 	for {
 		err := processor.Process(iprot, oprot)
-		if err, ok := err.(thrift.TTransportException); ok && err.TypeId() == thrift.END_OF_FILE {
+		if err, ok := err.(thrift.TTransportException); ok && err.TypeId() == TRANSPORT_EXCEPTION_END_OF_FILE {
 			return nil
 		} else if err != nil {
 			logger().Printf("error processing request: %s", err)
 			return err
 		}
-		if err, ok := err.(thrift.TApplicationException); ok && err.TypeId() == thrift.UNKNOWN_METHOD {
+		if err, ok := err.(thrift.TApplicationException); ok && err.TypeId() == APPLICATION_EXCEPTION_UNKNOWN_METHOD {
 			continue
 		}
 	}

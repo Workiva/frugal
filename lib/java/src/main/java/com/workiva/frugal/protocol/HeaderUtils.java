@@ -1,6 +1,5 @@
 package com.workiva.frugal.protocol;
 
-import com.workiva.frugal.exception.FProtocolException;
 import com.workiva.frugal.util.Pair;
 import com.workiva.frugal.util.ProtocolUtils;
 import org.apache.thrift.TException;
@@ -90,7 +89,7 @@ public class HeaderUtils {
 
         // Support more versions when available
         if (buff[0] != V0) {
-            throw new FProtocolException(FProtocolException.BAD_VERSION, "unsupported header version " + buff[0]);
+            throw new TProtocolException(TProtocolException.BAD_VERSION, "unsupported header version " + buff[0]);
         }
 
         // Read size
@@ -112,12 +111,12 @@ public class HeaderUtils {
      */
     public static Map<String, String> decodeFromFrame(byte[] bytes) throws TException {
         if (bytes.length < 5) {
-            throw new FProtocolException(FProtocolException.INVALID_DATA, "invalid frame size " + bytes.length);
+            throw new TProtocolException(TProtocolException.INVALID_DATA, "invalid frame size " + bytes.length);
         }
 
         // Support more versions when available
         if (bytes[0] != V0) {
-            throw new FProtocolException(FProtocolException.BAD_VERSION, "unsupported header version " + bytes[0]);
+            throw new TProtocolException(TProtocolException.BAD_VERSION, "unsupported header version " + bytes[0]);
         }
 
         return readPairs(bytes, 5, ProtocolUtils.readInt(bytes, 1) + 5);
@@ -132,7 +131,7 @@ public class HeaderUtils {
                 int nameSize = ProtocolUtils.readInt(buff, i);
                 i += 4;
                 if (i > end || i + nameSize > end) {
-                    throw new FProtocolException(TProtocolException.INVALID_DATA, "invalid protocol header name");
+                    throw new TProtocolException(TProtocolException.INVALID_DATA, "invalid protocol header name");
                 }
                 byte[] nameBuff = Arrays.copyOfRange(buff, i, nameSize + i);
                 i += nameSize;
@@ -142,7 +141,7 @@ public class HeaderUtils {
                 int valueSize = ProtocolUtils.readInt(buff, i);
                 i += 4;
                 if (i > end || i + valueSize > end) {
-                    throw new FProtocolException(FProtocolException.INVALID_DATA, "invalid protocol header value");
+                    throw new TProtocolException(TProtocolException.INVALID_DATA, "invalid protocol header value");
                 }
                 byte[] valueBuff = Arrays.copyOfRange(buff, i, valueSize + i);
                 i += valueSize;
@@ -150,7 +149,7 @@ public class HeaderUtils {
 
                 headers.put(name, value);
             } catch (IOException e) {
-                throw new TTransportException(FProtocolException.UNKNOWN, "could not read header bytes", e);
+                throw new TTransportException("could not read header bytes", e);
             }
         }
         return headers;

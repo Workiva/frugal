@@ -1,6 +1,5 @@
 package com.workiva.frugal.transport;
 
-import com.workiva.frugal.exception.FMessageSizeException;
 import com.workiva.frugal.util.ProtocolUtils;
 import org.apache.thrift.transport.TTransportException;
 import org.junit.Before;
@@ -47,14 +46,14 @@ public class TMemoryOutputBufferTest {
         assertArrayEquals(framedData, buffer.getWriteBytes());
     }
 
-    @Test(expected = FMessageSizeException.class)
+    @Test(expected = TTransportException.class)
     public void testWrite_sizeException() throws TTransportException {
         assertEquals(4, buffer.size());
         buffer.write(new byte[7]);
         assertEquals(0, buffer.size());
     }
 
-    @Test(expected = FMessageSizeException.class)
+    @Test(expected = TTransportException.class)
     public void testWriteLen_size_Exception() throws TTransportException {
         assertEquals(4, buffer.size());
         buffer.write(new byte[7], 0, 6);

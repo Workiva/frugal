@@ -103,7 +103,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 	contents += "from thrift.Thrift import TType, TMessageType, TException, TApplicationException\n"
 	contents += "from .ttypes import *\n\n"
 
-	for _, include := range g.Frugal.Thrift.Includes {
+	for _, include := range g.Frugal.Includes {
 		namespace := filepath.Base(include.Name)
 		if ns := g.Frugal.NamespaceForInclude(namespace, lang); ns != nil {
 			namespace = ns.Value
@@ -195,7 +195,7 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 		return parser.NonIdentifier, fmt.Sprintf("%d", value)
 	} else if g.Frugal.IsStruct(underlyingType) {
 		var s *parser.Struct
-		for _, potential := range g.Frugal.Thrift.Structs {
+		for _, potential := range g.Frugal.Structs {
 			if underlyingType.Name == potential.Name {
 				s = potential
 				break
@@ -645,7 +645,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 
 // GetOutputDir returns the output directory for generated files.
 func (g *Generator) GetOutputDir(dir string) string {
-	if namespace := g.Frugal.Thrift.Namespace(lang); namespace != nil {
+	if namespace := g.Frugal.Namespace(lang); namespace != nil {
 		path := generator.GetPackageComponents(namespace.Value)
 		dir = filepath.Join(append([]string{dir}, path...)...)
 	} else {
@@ -717,7 +717,7 @@ func (g *Generator) GenerateScopePackage(file *os.File, s *parser.Scope) error {
 func (g *Generator) GenerateTypesImports(file *os.File, isArgsOrResult bool) error {
 	contents := ""
 	contents += "from thrift.Thrift import TType, TMessageType, TException, TApplicationException\n"
-	for _, include := range g.Frugal.Thrift.Includes {
+	for _, include := range g.Frugal.Includes {
 		includeName := g.getPackageNamespace(filepath.Base(include.Name))
 		contents += fmt.Sprintf("import %s.ttypes\n", includeName)
 		contents += fmt.Sprintf("import %s.constants\n", includeName)
@@ -738,7 +738,8 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	imports := "from threading import Lock\n\n"
 
 	imports += "from frugal.middleware import Method\n"
-	imports += "from frugal.exceptions import FApplicationException, FMessageSizeException\n"
+	imports += "from frugal.exceptions import FrugalTApplicationExceptionType\n"
+	imports += "from frugal.exceptions import FrugalTTransportExceptionType\n"
 	imports += "from frugal.processor import FBaseProcessor\n"
 	imports += "from frugal.processor import FProcessorFunction\n"
 	imports += "from thrift.Thrift import TApplicationException\n"
@@ -1047,7 +1048,7 @@ func (g *Generator) generateClientRecvMethod(method *parser.Method) string {
 	contents += tabtabtab + "x.read(self._iprot)\n"
 	contents += tabtabtab + "self._iprot.readMessageEnd()\n"
 	contents += tabtabtab + "if x.type == FApplicationException.RESPONSE_TOO_LARGE:\n"
-	contents += tabtabtabtab + "raise FMessageSizeException.response(x.message)\n"
+	contents += tabtabtabtab + "raise TTransportException(type=FrugalTTransportExceptionType.RESPONSE_TOO_LARGE, message=x.message)\n"
 	contents += tabtabtab + "raise x\n"
 	contents += tabtab + fmt.Sprintf("result = %s_result()\n", method.Name)
 	contents += tabtab + "result.read(self._iprot)\n"
@@ -1063,7 +1064,7 @@ func (g *Generator) generateClientRecvMethod(method *parser.Method) string {
 	contents += tabtab + "if result.success is not None:\n"
 	contents += tabtabtab + "return result.success\n"
 	contents += tabtab + fmt.Sprintf(
-		"x = TApplicationException(TApplicationException.MISSING_RESULT, \"%s failed: unknown result\")\n", method.Name)
+		"x = TApplicationException(FrugalTApplicationExceptionType.MISSING_RESULT, \"%s failed: unknown result\")\n", method.Name)
 	contents += tabtab + "raise x\n\n"
 
 	return contents
@@ -1238,7 +1239,7 @@ func (g *Generator) generateProcessorFunction(method *parser.Method) string {
 	contents += tabtab + "except Exception as e:\n"
 	if !method.Oneway {
 		contents += tabtabtab + "with self._lock:\n"
-		contents += tabtabtabtab + fmt.Sprintf("e = _write_application_exception(ctx, oprot, \"%s\", ex_code=TApplicationException.UNKNOWN, message=e.message)\n", methodLower)
+		contents += tabtabtabtab + fmt.Sprintf("e = _write_application_exception(ctx, oprot, \"%s\", ex_code=FrugalTApplicationExceptionType.UNKNOWN, message=e.message)\n", methodLower)
 	}
 	contents += tabtabtab + "raise e\n"
 	if !method.Oneway {
@@ -1249,9 +1250,12 @@ func (g *Generator) generateProcessorFunction(method *parser.Method) string {
 		contents += tabtabtabtab + "result.write(oprot)\n"
 		contents += tabtabtabtab + "oprot.writeMessageEnd()\n"
 		contents += tabtabtabtab + "oprot.get_transport().flush()\n"
-		contents += tabtabtab + "except FMessageSizeException as e:\n"
-		contents += tabtabtabtab + fmt.Sprintf(
-			"raise _write_application_exception(ctx, oprot, \"%s\", ex_code=FApplicationException.RESPONSE_TOO_LARGE, message=e.args[0])\n", methodLower)
+		contents += tabtabtab + "except TTransportException as e:\n"
+		contents += tabtabtabtab + "if e.type == FrugalTTransportExceptionType.RESPONSE_TOO_LARGE:\n"
+		contents += tabtabtabtabtab + fmt.Sprintf(
+			"raise _write_application_exception(ctx, oprot, \"%s\", ex_code=FrugalTApplicationExceptionType.RESPONSE_TOO_LARGE, message=e.args[0])\n", methodLower)
+		contents += tabtabtabtab + "else:\n"
+		contents += tabtabtabtabtab + "raise e\n"
 	}
 	contents += "\n\n"
 

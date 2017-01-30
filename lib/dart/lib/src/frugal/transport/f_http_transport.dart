@@ -77,22 +77,23 @@ class FHttpTransport extends FTransport {
     try {
       response = await request.post().timeout(ctx.timeout);
     } on StateError catch (ex) {
-      throw new TTransportError(
-          TTransportErrorType.UNKNOWN, 'Malformed request ${ex.toString()}');
+      throw new TTransportError(FrugalTTransportErrorType.UNKNOWN,
+          'Malformed request ${ex.toString()}');
     } on wt.RequestException catch (ex) {
       if (ex.response == null) {
-        throw new TTransportError(TTransportErrorType.UNKNOWN, ex.message);
+        throw new TTransportError(
+            FrugalTTransportErrorType.UNKNOWN, ex.message);
       }
       if (ex.response.status == UNAUTHORIZED) {
-        throw new TTransportError(TTransportErrorType.UNKNOWN,
+        throw new TTransportError(FrugalTTransportErrorType.UNKNOWN,
             'Frugal http request failed - unauthorized ${ex.message}');
       }
       if (ex.response.status == REQUEST_ENTITY_TOO_LARGE) {
-        throw new FMessageSizeError.response();
+        throw new TTransportError(FrugalTTransportErrorType.RESPONSE_TOO_LARGE);
       }
-      throw new TTransportError(TTransportErrorType.UNKNOWN, ex.message);
+      throw new TTransportError(FrugalTTransportErrorType.UNKNOWN, ex.message);
     } on TimeoutException catch (_) {
-      throw new TTransportError(TTransportErrorType.TIMED_OUT,
+      throw new TTransportError(FrugalTTransportErrorType.TIMED_OUT,
           "http request timed out after ${ctx.timeout}");
     }
 
@@ -116,7 +117,7 @@ class FHttpTransport extends FTransport {
       var bData = new ByteData.view(data.buffer);
       if (bData.getUint32(0) != 0) {
         throw new TTransportError(
-            TTransportErrorType.UNKNOWN, "invalid frame size");
+            FrugalTTransportErrorType.UNKNOWN, "invalid frame size");
       }
       return null;
     }

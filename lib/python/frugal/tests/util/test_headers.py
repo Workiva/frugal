@@ -4,8 +4,9 @@ import unittest
 from io import BytesIO
 from struct import unpack_from
 
+from thrift.protocol.TProtocol import TProtocolException
+
 from frugal.context import FContext
-from frugal.exceptions import FProtocolException
 from frugal.util.headers import _Headers
 
 
@@ -29,10 +30,10 @@ class TestHeaders(unittest.TestCase):
     def test_read_throws_bad_version(self):
         buff = bytearray(b'\x01\x00\x00\x00\x00')
 
-        with self.assertRaises(FProtocolException) as cm:
+        with self.assertRaises(TProtocolException) as cm:
             self.headers._read(BytesIO(buff))
 
-        self.assertEqual(FProtocolException.BAD_VERSION, cm.exception.type)
+        self.assertEqual(TProtocolException.BAD_VERSION, cm.exception.type)
         self.assertEqual("Wrong Frugal version. Found 1, wanted 0.",
                          str(cm.exception))
 
@@ -62,19 +63,19 @@ class TestHeaders(unittest.TestCase):
     def test_decode_from_frame_throws_fprotocol_exception_frame_too_short(self):
         frame = bytearray(b'\x00')
 
-        with self.assertRaises(FProtocolException) as cm:
+        with self.assertRaises(TProtocolException) as cm:
             self.headers.decode_from_frame(frame)
 
-        self.assertEqual(FProtocolException.INVALID_DATA, cm.exception.type)
+        self.assertEqual(TProtocolException.INVALID_DATA, cm.exception.type)
         self.assertEqual("Invalid frame size: 1", str(cm.exception))
 
     def test_decode_from_frame_throws_bad_version(self):
         frame = bytearray(b'\x01\x00\x00\x00\x00')
 
-        with self.assertRaises(FProtocolException) as cm:
+        with self.assertRaises(TProtocolException) as cm:
             self.headers.decode_from_frame(frame)
 
-        self.assertEqual(FProtocolException.BAD_VERSION, cm.exception.type)
+        self.assertEqual(TProtocolException.BAD_VERSION, cm.exception.type)
         self.assertEqual("Wrong Frugal version. Found 1, wanted 0.",
                          str(cm.exception))
 
@@ -102,10 +103,10 @@ class TestHeaders(unittest.TestCase):
                          b'\x010\x00\x00\x00\x04_cid\x00\x00\x00\x06corrId')
         size = unpack_from('!I', buff[1:5])[0]
 
-        with self.assertRaises(FProtocolException) as cm:
+        with self.assertRaises(TProtocolException) as cm:
             self.headers._read_pairs(buff, 5, size + 5)
 
-        self.assertEqual(FProtocolException.INVALID_DATA, cm.exception.type)
+        self.assertEqual(TProtocolException.INVALID_DATA, cm.exception.type)
         self.assertEqual("invalid protocol header name size: 32",
                          str(cm.exception))
 
@@ -113,10 +114,10 @@ class TestHeaders(unittest.TestCase):
         buff = bytearray(b'\x00\x00\x00\x00 \x00\x00\x00\x05_opid\x00\x00\x01'
                          b'\x000\x00\x00\x00\x04_cid\x00\x00\x00\x06corrId')
         size = unpack_from('!I', buff[1:5])[0]
-        with self.assertRaises(FProtocolException) as cm:
+        with self.assertRaises(TProtocolException) as cm:
             self.headers._read_pairs(buff, 5, size + 5)
 
-        self.assertEqual(FProtocolException.INVALID_DATA, cm.exception.type)
+        self.assertEqual(TProtocolException.INVALID_DATA, cm.exception.type)
         self.assertEqual("invalid protocol header value size: 256",
                          str(cm.exception))
 

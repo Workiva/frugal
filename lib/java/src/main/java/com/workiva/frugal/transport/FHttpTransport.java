@@ -2,7 +2,7 @@ package com.workiva.frugal.transport;
 
 
 import com.workiva.frugal.FContext;
-import com.workiva.frugal.exception.FMessageSizeException;
+import com.workiva.frugal.exception.FrugalTTransportExceptionType;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -191,7 +191,8 @@ public class FHttpTransport extends FTransport {
         try {
             response = httpClient.execute(request);
         } catch (ConnectTimeoutException | SocketTimeoutException e) {
-            throw new TTransportException(TTransportException.TIMED_OUT, "http request timed out: " + e.getMessage());
+            throw new TTransportException(FrugalTTransportExceptionType.TIMED_OUT,
+                    "http request timed out: " + e.getMessage());
         } catch (IOException e) {
             throw new TTransportException("http request failed: " + e.getMessage());
         }
@@ -200,7 +201,8 @@ public class FHttpTransport extends FTransport {
             // Response too large
             int status = response.getStatusLine().getStatusCode();
             if (status == HttpStatus.SC_REQUEST_TOO_LONG) {
-                throw FMessageSizeException.response("response was too large for the transport");
+                throw new TTransportException(
+                        FrugalTTransportExceptionType.RESPONSE_TOO_LARGE, "response was too large for the transport");
             }
 
             // Decode body

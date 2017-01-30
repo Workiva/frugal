@@ -49,11 +49,12 @@ type fNatsTransport struct {
 // Open subscribes to the configured inbox subject.
 func (f *fNatsTransport) Open() error {
 	if f.conn.Status() != nats.CONNECTED {
-		return thrift.NewTTransportException(thrift.UNKNOWN_TRANSPORT_EXCEPTION,
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_UNKNOWN,
 			fmt.Sprintf("frugal: NATS not connected, has status %d", f.conn.Status()))
 	}
 	if f.sub != nil {
-		return thrift.NewTTransportException(thrift.ALREADY_OPEN, "frugal: NATS transport already open")
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_ALREADY_OPEN,
+			"frugal: NATS transport already open")
 	}
 
 	handler := f.handler
@@ -97,7 +98,7 @@ func (f *fNatsTransport) Close() error {
 func (f *fNatsTransport) checkMessageSize(data []byte) error {
 	if len(data) > natsMaxMessageSize {
 		return thrift.NewTTransportException(
-			TTRANSPORT_REQUEST_TOO_LARGE,
+			TRANSPORT_EXCEPTION_REQUEST_TOO_LARGE,
 			fmt.Sprintf("Message exceeds %d bytes, was %d bytes", natsMaxMessageSize, len(data)))
 	}
 	return nil
@@ -151,7 +152,7 @@ func (f *fNatsTransport) Request(ctx FContext, data []byte) (thrift.TTransport, 
 	case result := <-resultC:
 		return &thrift.TMemoryBuffer{Buffer: bytes.NewBuffer(result)}, nil
 	case <-time.After(ctx.Timeout()):
-		return nil, thrift.NewTTransportException(thrift.TIMED_OUT, "frugal: nats request timed out")
+		return nil, thrift.NewTTransportException(TRANSPORT_EXCEPTION_TIMED_OUT, "frugal: nats request timed out")
 	}
 }
 
@@ -168,9 +169,9 @@ func (f *fNatsTransport) SetMonitor(monitor FTransportMonitor) {
 
 func (f *fNatsTransport) getClosedConditionError(prefix string) error {
 	if f.conn.Status() != nats.CONNECTED {
-		return thrift.NewTTransportException(thrift.NOT_OPEN,
+		return thrift.NewTTransportException(TRANSPORT_EXCEPTION_NOT_OPEN,
 			fmt.Sprintf("%s stateless NATS client not connected (has status code %d)", prefix, f.conn.Status()))
 	}
-	return thrift.NewTTransportException(thrift.NOT_OPEN,
+	return thrift.NewTTransportException(TRANSPORT_EXCEPTION_NOT_OPEN,
 		fmt.Sprintf("%s stateless NATS service TTransport not open", prefix))
 }

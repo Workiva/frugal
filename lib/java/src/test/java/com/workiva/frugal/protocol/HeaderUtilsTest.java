@@ -1,7 +1,7 @@
 package com.workiva.frugal.protocol;
 
-import com.workiva.frugal.exception.FProtocolException;
 import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 import org.junit.Rule;
@@ -106,14 +106,14 @@ public class HeaderUtilsTest {
 
     @Test
     public void testDecodeHeadersFromFrameThrowsFExceptionForBadFrame() throws TException {
-        thrown.expect(FProtocolException.class);
+        thrown.expect(TProtocolException.class);
         thrown.expectMessage("invalid frame size 3");
         HeaderUtils.decodeFromFrame(new byte[3]);
     }
 
     @Test
     public void testDecodeHeadersFromFrameThrowsFExceptionForUnsupportedVersion() throws TException {
-        thrown.expect(FProtocolException.class);
+        thrown.expect(TProtocolException.class);
         thrown.expectMessage("unsupported header version 1");
         HeaderUtils.decodeFromFrame(new byte[]{1, 0, 0, 0, 0});
     }
