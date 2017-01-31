@@ -104,3 +104,24 @@ func TestResponseHeader(t *testing.T) {
 	assert.Equal(t, ctx, ctx.AddResponseHeader(opIDHeader, "1"))
 	assert.Equal(t, "1", ctx.ResponseHeaders()[opIDHeader])
 }
+
+// Ensures AddTag, Tag, and Tags work as expected.
+func TestTags(t *testing.T) {
+	assert := assert.New(t)
+	ctx := NewFContext("")
+	val, ok := ctx.Tag("foo")
+	assert.Nil(val)
+	assert.False(ok)
+	assert.Empty(ctx.Tags())
+	ctx.AddTag("foo", "bar").AddTag("baz", "qux")
+	val, ok = ctx.Tag("foo")
+	assert.Equal("bar", val)
+	assert.True(ok)
+	val, ok = ctx.Tag("baz")
+	assert.Equal("qux", val)
+	assert.True(ok)
+	tags := ctx.Tags()
+	assert.Len(tags, 2)
+	assert.Equal("bar", tags["foo"])
+	assert.Equal("qux", tags["baz"])
+}

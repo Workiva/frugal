@@ -26,13 +26,17 @@ const (
 )
 
 // FContext is the context for a Frugal message. Every RPC has an FContext,
-// which can be used to set request headers, response headers, and the request
-// timeout. The default timeout is five seconds. An FContext is also sent with
-// every publish message which is then received by subscribers.
+// which can be used to set request headers, response headers, tags, and the
+// request timeout. The default timeout is five seconds. An FContext is also
+// sent with every publish message which is then received by subscribers.
 //
 // In addition to headers, the FContext also contains a correlation ID which
 // can be used for distributed tracing purposes. A random correlation ID is
 // generated for each FContext if one is not provided.
+//
+// Unlike headers, tags are not serialized and sent on a request. This means
+// they are only used to propagate values within the process, whereas headers
+// propagate across process boundaries.
 //
 // FContext also plays a key role in Frugal's multiplexing support. A unique,
 // per-request operation ID is set on every FContext before a request is made.
@@ -74,6 +78,18 @@ type FContext interface {
 	// ResponseHeaders returns the response headers map.
 	ResponseHeaders() map[string]string
 
+	// AddTag adds a named tag to the context with the given value. Unlike
+	// headers, tags are not serialized on a request. This means they are only
+	// used to propagate values within the process.
+	AddTag(name string, value interface{}) FContext
+
+	// Tag returns the value for the given tag. The bool value indicates if the
+	// tag is actually set.
+	Tag(name string) (interface{}, bool)
+
+	// Tags returns all of the tags set on the context.
+	Tags() map[string]interface{}
+
 	// SetTimeout sets the request timeout. Default is 5 seconds. Returns the
 	// same FContext to allow for chaining calls.
 	SetTimeout(timeout time.Duration) FContext
@@ -88,6 +104,7 @@ var nextOpID uint64
 type FContextImpl struct {
 	requestHeaders  map[string]string
 	responseHeaders map[string]string
+	tags            map[string]interface{}
 	mu              sync.RWMutex
 }
 
@@ -106,6 +123,7 @@ func NewFContext(correlationID string) FContext {
 			timeoutHeader: strconv.FormatInt(int64(defaultTimeout/time.Millisecond), 10),
 		},
 		responseHeaders: make(map[string]string),
+		tags:            make(map[string]interface{}),
 	}
 
 	opID := atomic.AddUint64(&nextOpID, 1)
@@ -176,6 +194,36 @@ func (c *FContextImpl) ResponseHeaders() map[string]string {
 		headers[name] = value
 	}
 	return headers
+}
+
+// AddTag adds a named tag to the context with the given value. Unlike headers,
+// tags are not serialized on a request. This means they are only used to
+// propagate values within the process.
+func (c *FContextImpl) AddTag(name string, value interface{}) FContext {
+	c.mu.Lock()
+	c.tags[name] = value
+	c.mu.Unlock()
+	return c
+}
+
+// Tag returns the value for the given tag. The bool value indicates if the tag
+// is actually set.
+func (c *FContextImpl) Tag(name string) (interface{}, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	val, ok := c.tags[name]
+	return val, ok
+}
+
+// Tags returns all of the tags set on the context.
+func (c *FContextImpl) Tags() map[string]interface{} {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	tags := make(map[string]interface{}, len(c.tags))
+	for name, value := range c.tags {
+		tags[name] = value
+	}
+	return tags
 }
 
 // SetTimeout sets the request timeout. Default is 5 seconds. Returns the same
