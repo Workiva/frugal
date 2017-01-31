@@ -13,7 +13,7 @@ import (
 )
 
 // a testCase is a pointer to a valid test pair (client/server) and port to run
-// the pair on
+// the pair on.
 type testCase struct {
 	pair *crossrunner.Pair
 	port int
@@ -21,7 +21,7 @@ type testCase struct {
 
 // failures is used to store the unexpected_failures.log file
 // contains a filepath, pointer to the files location, count of total failed
-// configurations, and a mutex for locking
+// configurations, and a mutex for locking.
 type failures struct {
 	path   string
 	file   *os.File

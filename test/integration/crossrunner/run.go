@@ -138,6 +138,8 @@ func RunConfig(pair *Pair, port int) {
 	}
 }
 
+// reportCrossrunnerFailure is used in the error case when something goes wrong
+// in the crossrunner.
 func reportCrossrunnerFailure(pair *Pair, err error) {
 	pair.ReturnCode = CrossrunnerFailure
 	pair.Err = err

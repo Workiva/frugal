@@ -39,7 +39,7 @@ func getExpandedConfigs(options options, test languages) (apps []config) {
 	return apps
 }
 
-// Return next available port
+// GetAvailablePort returns an available port.
 func GetAvailablePort() (int, error) {
 	// Passing 0 allows the OS to select an available port
 	conn, err := net.Listen("tcp", ":0")
@@ -54,7 +54,7 @@ func GetAvailablePort() (int, error) {
 }
 
 // getCommand returns a Cmd struct used to execute a client or server and a
-// nicely formatted string for verbose logging
+// nicely formatted string for verbose loggings
 func getCommand(config config, port int) (cmd *exec.Cmd, formatted string) {
 	var args []string
 

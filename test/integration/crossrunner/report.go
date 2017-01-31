@@ -8,7 +8,7 @@ import (
 )
 
 // createLogs creates client and server log files with the following format:
-// log/clientName-serverName_transport_protocol_role.log
+// log/clientName-serverName_transport_protocol_role.log.
 func createLogs(pair *Pair) (err error) {
 	pair.Client.Logs, err = os.Create(fmt.Sprintf("log/%s-%s_%s_%s_%s.log",
 		pair.Client.Name,
@@ -34,7 +34,7 @@ func createLogs(pair *Pair) (err error) {
 }
 
 // writeFileHeader writes the metadata associated with each run to the header
-// in a LogFile
+// in a LogFile.
 func writeFileHeader(file *os.File, cmd, dir string, delay, timeout time.Duration) error {
 	header := fmt.Sprintf("%s\nExecuting: %s\nDirectory: %s\nServer Timeout: %s\nClient Timeout: %s\n",
 		GetTimestamp(),
@@ -49,13 +49,13 @@ func writeFileHeader(file *os.File, cmd, dir string, delay, timeout time.Duratio
 	return err
 }
 
-// breakLine returns a formatted separator line
+// breakLine returns a formatted separator line.
 func breakLine() string {
 	return fmt.Sprintf("\n==================================================================================\n\n")
 }
 
-// starBreak returns 4 rows of stars
-// Used as a break between pairs in unexpected_failures.log
+// starBreak returns 4 rows of stars.
+// Used as a break between pairs in unexpected_failures.log.
 func starBreak() string {
 	stars := "**********************************************************************************\n"
 	return fmt.Sprintf("\n\n\n%s%s%s%s\n\n", stars, stars, stars, stars)
@@ -79,7 +79,7 @@ func writeServerTimeout(file *os.File, role string) error {
 	return err
 }
 
-// writeFileFooter writes execution time and closes the file
+// writeFileFooter writes execution time and closes the file.
 func writeFileFooter(file *os.File, executionTime time.Duration) error {
 	footer := breakLine()
 	footer += fmt.Sprintf("Test execution took %.2f seconds\n", executionTime.Seconds())
@@ -88,7 +88,7 @@ func writeFileFooter(file *os.File, executionTime time.Duration) error {
 	return err
 }
 
-// GetTimestamp returns the current time
+// GetTimestamp returns the current time.
 func GetTimestamp() string {
 	return time.Now().Format(time.UnixDate)
 }
@@ -135,7 +135,7 @@ func PrintConsoleFooter(failed int, total uint64, runtime time.Duration) {
 }
 
 // Append to failures adds a the client and server logs from a failed
-// configuration to the unexpected_failure.log file
+// configuration to the unexpected_failure.log file.
 func AppendToFailures(failLog string, pair *Pair) (err error) {
 	// Add Header
 	contents := fmt.Sprintf("Client - %s\nServer - %s\nProtocol - %s\nTransport - %s\n",
@@ -166,7 +166,7 @@ func AppendToFailures(failLog string, pair *Pair) (err error) {
 	return err
 }
 
-// GetLogs reads the contents of a file and returns them as a string
+// GetLogs reads the contents of a file and returns them as a string.
 func getFileContents(file string) string {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {

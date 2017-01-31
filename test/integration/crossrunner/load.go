@@ -8,7 +8,7 @@ import (
 )
 
 // client/server level options defined in tests.json
-// this is useful if there is option supported by a client but not a server within a language
+// this is useful if there is option supported by a client but not a server within a language.
 type options struct {
 	Command    []string
 	Transports []string
@@ -16,7 +16,7 @@ type options struct {
 	Timeout    time.Duration
 }
 
-// language level options defined in tests.json
+// language level options defined in tests.json.
 type languages struct { // Example
 	Name       string   // Language name
 	Client     options  // client specific commands, protocols, transports, and timesouts
@@ -27,7 +27,7 @@ type languages struct { // Example
 	Workdir    string   // working directory relative to /test/integration
 }
 
-//  Complete information required to shell out a client or server command
+//  Complete information required to shell out a client or server command.
 type config struct {
 	Name      string
 	Timeout   time.Duration
@@ -38,7 +38,7 @@ type config struct {
 	Logs      *os.File
 }
 
-// Matched client and server commands
+// Matched client and server commands.
 type Pair struct {
 	Client     config
 	Server     config
@@ -54,14 +54,14 @@ func newPair(client, server config) *Pair {
 }
 
 // Load takes a json file of client/server definitions and returns a list of
-// valid client/server pairs
+// valid client/server pairs.
 func Load(jsonFile string) (pairs []*Pair, err error) {
 	bytes, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
 		return nil, err
 	}
 
-	tests := []languages{}
+	var tests []languages
 
 	// Unmarshal json into defined structs
 	if err := json.Unmarshal(bytes, &tests); err != nil {
@@ -69,8 +69,8 @@ func Load(jsonFile string) (pairs []*Pair, err error) {
 	}
 
 	// Create empty lists of client and server configurations
-	clients := []config{}
-	servers := []config{}
+	var clients []config
+	var servers []config
 
 	// Iterate over each language to get all client/server configurations in that language
 	for _, test := range tests {
