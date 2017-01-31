@@ -199,6 +199,18 @@ func (c *FContextImpl) Timeout() time.Duration {
 	return time.Millisecond * time.Duration(timeoutMillis)
 }
 
+// Extract returns a map of the request headers
+func (c *FContextImpl) Extract() map[string] string {
+	return c.RequestHeaders()
+}
+
+// Inject takes a map and adds it key value pairs to the request headers
+func (c *FContextImpl) Inject(ctxMap map[string] string) {
+	for key, val := range ctxMap {
+		c.AddRequestHeader(key, val)
+	}
+}
+
 // setRequestOpID sets the request operation id for context.
 func setRequestOpID(ctx FContext, id uint64) {
 	opIDStr := strconv.FormatUint(id, 10)

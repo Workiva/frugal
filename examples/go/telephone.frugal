@@ -1,0 +1,5 @@
+namespace * telephonegame
+
+service TelephoneGame {
+    string passOnMessage( 1: string message) (auth="false")
+}
