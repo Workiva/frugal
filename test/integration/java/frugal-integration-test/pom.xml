@@ -11,7 +11,7 @@
         <repository>
             <id>workiva-release</id>
             <name>workiva-release</name>
-            <url>http://artifactory.workiva.org/artifactory/workiva-release</url>
+            <url>http://artifactory.workiva.net/artifactory/workiva-release</url>
         </repository>
     </repositories>
 
