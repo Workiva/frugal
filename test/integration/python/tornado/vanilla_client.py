@@ -73,7 +73,7 @@ def test_rpc(client, ctx):
     try:
         client.testOneway(ctx, 1)
     except Exception as e:
-        print("Unexpected error in testOneway() call: {}".format(e))
+        print(u"Unexpected error in testOneway() call: {}".format(e))
         test_failed = True
 
     if test_failed:
@@ -84,9 +84,9 @@ def client_middleware(next):
     def handler(method, args):
         global middleware_called
         middleware_called = True
-        print("{}({}) = ".format(method.im_func.func_name, args[1:]), end="")
+        print(u"{}({}) = ".format(method.im_func.func_name, args[1:]), end="")
         ret = next(method, args)
-        print("{}".format(ret))
+        print(u"{}".format(ret))
         return ret
     return handler
 
