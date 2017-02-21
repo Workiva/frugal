@@ -46,48 +46,6 @@ added.
 When generating go, be aware the frugal go library and the frugal compiler
 have separate dependencies.
 
-## Using the Thrift compiler (DEPRECATED)
-You may use the thrift compiler to generate parts of the internal code used by frugal using the --gen_with_frugal=false flag.
-
-To do so, install Thrift. Dart support has not yet been released for Thrift, so we use a fork for the time-being.
-
-### From Source
-
-Clone the fork
-```bash
-git clone git@github.com:stevenosborne-wf/thrift.git
-cd thrift
-git checkout 0.9.3-wk-3
-```
-
-Configure the install (Note: you make need to install build dependencies)
-```bash
-./bootstrap.sh
-./configure --without-perl --without-php --without-cpp --without-nodejs --enable-libs=no --enable-tests=no --enable-tutorial=no PY_PREFIX="$VIRTUAL_ENV"
-```
-
-Install Thrift
-```
-make
-make install
-```
-
-### From Homebrew
-
-Add the Workiva tap:
-
-```
-brew tap Workiva/workiva git@github.com:Workiva/homebrew-workiva.git
-```
-
-then install Thrift:
-
-```
-brew install Workiva/workiva/thrift
-```
-
-Expect the build to take about 3 minutes.
-
 ## Usage
 
 Define your Frugal file which contains your pub/sub interface, or *scopes*, and
@@ -235,6 +193,16 @@ service FooService {
 }
 ```
 
+### Annotations
+
+Annotations are extra directive in the IDL that can alter the way code is generated.
+Some common annotations are listed below
+
+| Annotation    | Values        | Allowed Places | Description
+| ------------- | ------------- | -------------- | -----------
+| vendor        | Optional location | Namespaces, Includes | See [vendoring includes](#vendoring-includes)
+| deprecated    | Optional description | Service methods | Marks a method as deprecated (if supported by the language) and logs a warning if the method is called.
+
 ### Vendoring Includes
 
 Frugal does not generate code for includes by default. The `-r` flag is
@@ -253,8 +221,8 @@ includes they wish to vendor. The value provided on the include-side `vendor`
 annotation, if any, is ignored.
 
 When an include is annotated with `vendor`, Frugal will skip generating the
-include if `-use-vendor` is set since this flag indicates intention to use the
-vendored code as advertised by the `vendor` annotation.
+include if `use_vendor` language option is set since this flag indicates
+intention to use the vendored code as advertised by the `vendor` annotation.
 
 If no location is specified by the `vendor` annotation, the behavior is defined
 by the language generator.
@@ -280,14 +248,15 @@ service MyService {
 ```
 
 ```
-frugal -r -gen go:package_prefix=github.com/Workiva/my-other-repo/gen-go -use-vendor foo.frugal
+frugal -r -gen go:package_prefix=github.com/Workiva/my-other-repo/gen-go,use_vendor foo.frugal
 ```
 
 When we run the above command to generate `foo.frugal`, Frugal will not
-generate code for `bar.frugal` since `-use-vendor` is set and the "providing"
+generate code for `bar.frugal` since `use_vendor` is set and the "providing"
 IDL has a vendor path set for the Go namespace. Instead, the generated code for
 `foo.frugal` will reference the vendor path specified in `bar.frugal`
 (github.com/Workiva/my-repo/gen-go/bar).
+
 
 ## Thrift Parity
 

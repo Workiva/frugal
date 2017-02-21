@@ -39,6 +39,14 @@ public class FContextTest {
     }
 
     @Test
+    public void testSetCorrelationId() {
+        String correlationId = "abc";
+        FContext ctx = new FContext("blah");
+        ctx.addRequestHeader(FContext.CID_HEADER, correlationId);
+        assertEquals(correlationId, ctx.getCorrelationId());
+    }
+
+    @Test
     public void testRequestHeader() {
         FContext ctx = new FContext();
         assertEquals(ctx, ctx.addRequestHeader("foo", "bar"));

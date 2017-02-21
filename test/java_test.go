@@ -26,8 +26,12 @@ func TestValidJavaWithAsync(t *testing.T) {
 		t.Fatal("Unexpected error", err)
 	}
 
-	fooServicePath := filepath.Join(outputDir, "async", "variety", "java", "FFoo.java")
-	compareFiles(t, "expected/java/variety_async/FFoo.java", fooServicePath)
+	files := []FileComparisonPair{
+		{"expected/java/variety_async/FFoo.java", filepath.Join(outputDir, "async", "variety", "java", "FFoo.java")},
+	}
+
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }
 
 func TestValidJavaFrugalCompiler(t *testing.T) {
@@ -49,45 +53,31 @@ func TestValidJavaFrugalCompiler(t *testing.T) {
 		t.Fatal("Unexpected error", err)
 	}
 
-	awesomeExceptionPath := filepath.Join(outputDir, "variety", "java", "AwesomeException.java")
-	compareFiles(t, "expected/java/variety/AwesomeException.java", awesomeExceptionPath)
-	eventPath := filepath.Join(outputDir, "variety", "java", "Event.java")
-	compareFiles(t, "expected/java/variety/Event.java", eventPath)
-	eventWrapperPath := filepath.Join(outputDir, "variety", "java", "EventWrapper.java")
-	compareFiles(t, "expected/java/variety/EventWrapper.java", eventWrapperPath)
-	itsAnEnumPath := filepath.Join(outputDir, "variety", "java", "ItsAnEnum.java")
-	compareFiles(t, "expected/java/variety/ItsAnEnum.java", itsAnEnumPath)
-	testBasePath := filepath.Join(outputDir, "variety", "java", "TestBase.java")
-	compareFiles(t, "expected/java/variety/TestBase.java", testBasePath)
-	testingDefaultsPath := filepath.Join(outputDir, "variety", "java", "TestingDefaults.java")
-	compareFiles(t, "expected/java/variety/TestingDefaults.java", testingDefaultsPath)
-	testingUnionsPath := filepath.Join(outputDir, "variety", "java", "TestingUnions.java")
-	compareFiles(t, "expected/java/variety/TestingUnions.java", testingUnionsPath)
-	healthConditionPath := filepath.Join(outputDir, "variety", "java", "HealthCondition.java")
-	compareFiles(t, "expected/java/variety/HealthCondition.java", healthConditionPath)
-	varietyConstantsPath := filepath.Join(outputDir, "variety", "java", "varietyConstants.java")
-	compareFiles(t, "expected/java/variety/varietyConstants.java", varietyConstantsPath)
-	testLowercasePath := filepath.Join(outputDir, "variety", "java", "TestLowercase.java")
-	compareFiles(t, "expected/java/variety/TestLowercase.java", testLowercasePath)
-	eventsPublisherPath := filepath.Join(outputDir, "variety", "java", "EventsPublisher.java")
-	compareFiles(t, "expected/java/variety/EventsPublisher.java", eventsPublisherPath)
-	eventsSubscriberPath := filepath.Join(outputDir, "variety", "java", "EventsSubscriber.java")
-	compareFiles(t, "expected/java/variety/EventsSubscriber.java", eventsSubscriberPath)
-	fooPath := filepath.Join(outputDir, "variety", "java", "FFoo.java")
-	compareFiles(t, "expected/java/variety/FFoo.java", fooPath)
+	files := []FileComparisonPair{
+		{"expected/java/variety/AwesomeException.java", filepath.Join(outputDir, "variety", "java", "AwesomeException.java")},
+		{"expected/java/variety/Event.java", filepath.Join(outputDir, "variety", "java", "Event.java")},
+		{"expected/java/variety/EventWrapper.java", filepath.Join(outputDir, "variety", "java", "EventWrapper.java")},
+		{"expected/java/variety/ItsAnEnum.java", filepath.Join(outputDir, "variety", "java", "ItsAnEnum.java")},
+		{"expected/java/variety/TestBase.java", filepath.Join(outputDir, "variety", "java", "TestBase.java")},
+		{"expected/java/variety/TestingDefaults.java", filepath.Join(outputDir, "variety", "java", "TestingDefaults.java")},
+		{"expected/java/variety/TestingUnions.java", filepath.Join(outputDir, "variety", "java", "TestingUnions.java")},
+		{"expected/java/variety/HealthCondition.java", filepath.Join(outputDir, "variety", "java", "HealthCondition.java")},
+		{"expected/java/variety/varietyConstants.java", filepath.Join(outputDir, "variety", "java", "varietyConstants.java")},
+		{"expected/java/variety/TestLowercase.java", filepath.Join(outputDir, "variety", "java", "TestLowercase.java")},
+		{"expected/java/variety/EventsPublisher.java", filepath.Join(outputDir, "variety", "java", "EventsPublisher.java")},
+		{"expected/java/variety/EventsSubscriber.java", filepath.Join(outputDir, "variety", "java", "EventsSubscriber.java")},
+		{"expected/java/variety/FFoo.java", filepath.Join(outputDir, "variety", "java", "FFoo.java")},
 
-	apiExceptionPath := filepath.Join(outputDir, "actual_base", "java", "api_exception.java")
-	compareFiles(t, "expected/java/actual_base/api_exception.java", apiExceptionPath)
-	baseConstantsPath := filepath.Join(outputDir, "actual_base", "java", "baseConstants.java")
-	compareFiles(t, "expected/java/actual_base/baseConstants.java", baseConstantsPath)
-	thingPath := filepath.Join(outputDir, "actual_base", "java", "thing.java")
-	compareFiles(t, "expected/java/actual_base/thing.java", thingPath)
-	baseHealthConditionPath := filepath.Join(outputDir, "actual_base", "java", "base_health_condition.java")
-	compareFiles(t, "expected/java/actual_base/base_health_condition.java", baseHealthConditionPath)
-	baseFooPath := filepath.Join(outputDir, "actual_base", "java", "FBaseFoo.java")
-	compareFiles(t, "expected/java/actual_base/FBaseFoo.java", baseFooPath)
-	nestedThingPath := filepath.Join(outputDir, "actual_base", "java", "nested_thing.java")
-	compareFiles(t, "expected/java/actual_base/nested_thing.java", nestedThingPath)
+		{"expected/java/actual_base/api_exception.java", filepath.Join(outputDir, "actual_base", "java", "api_exception.java")},
+		{"expected/java/actual_base/baseConstants.java", filepath.Join(outputDir, "actual_base", "java", "baseConstants.java")},
+		{"expected/java/actual_base/thing.java", filepath.Join(outputDir, "actual_base", "java", "thing.java")},
+		{"expected/java/actual_base/base_health_condition.java", filepath.Join(outputDir, "actual_base", "java", "base_health_condition.java")},
+		{"expected/java/actual_base/FBaseFoo.java", filepath.Join(outputDir, "actual_base", "java", "FBaseFoo.java")},
+		{"expected/java/actual_base/nested_thing.java", filepath.Join(outputDir, "actual_base", "java", "nested_thing.java")},
+	}
+
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }
 
 func TestValidJavaBoxedPrimitives(t *testing.T) {
@@ -109,8 +99,11 @@ func TestValidJavaBoxedPrimitives(t *testing.T) {
 		t.Fatal("Unexpected error", err)
 	}
 
-	fooPath := filepath.Join(outputDir, "boxed_primitives", "variety", "java", "FFoo.java")
-	compareFiles(t, "expected/java/boxed_primitives/FFoo.java", fooPath)
-	testingDefaultsPath := filepath.Join(outputDir, "boxed_primitives", "variety", "java", "TestingDefaults.java")
-	compareFiles(t, "expected/java/boxed_primitives/TestingDefaults.java", testingDefaultsPath)
+	files := []FileComparisonPair{
+		{"expected/java/boxed_primitives/FFoo.java", filepath.Join(outputDir, "boxed_primitives", "variety", "java", "FFoo.java")},
+		{"expected/java/boxed_primitives/TestingDefaults.java", filepath.Join(outputDir, "boxed_primitives", "variety", "java", "TestingDefaults.java")},
+	}
+
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }

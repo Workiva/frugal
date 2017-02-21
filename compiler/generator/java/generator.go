@@ -2267,7 +2267,8 @@ func (g *Generator) GenerateScopeImports(file *os.File, s *parser.Scope) error {
 	imports += "import java.util.BitSet;\n"
 	imports += "import java.nio.ByteBuffer;\n"
 	imports += "import java.util.Arrays;\n"
-	imports += "import java.util.logging.Logger;\n"
+	imports += "import org.slf4j.Logger;\n"
+	imports += "import org.slf4j.LoggerFactory;\n"
 	imports += "import javax.annotation.Generated;\n"
 
 	_, err := file.WriteString(imports)
@@ -2494,7 +2495,7 @@ func (g *Generator) generateSubscriberClient(scope *parser.Scope) string {
 	subscriber += tab + "public static class Client implements Iface {\n"
 
 	subscriber += fmt.Sprintf(tabtab+"private static final String DELIMITER = \"%s\";\n", globals.TopicDelimiter)
-	subscriber += tabtab + "private static final Logger LOGGER = Logger.getLogger(Client.class.getName());\n\n"
+	subscriber += tabtab + "private static final Logger LOGGER = LoggerFactory.getLogger(Client.class);\n\n"
 
 	subscriber += tabtab + "private final FScopeProvider provider;\n"
 	subscriber += tabtab + "private final ServiceMiddleware[] middleware;\n\n"
@@ -2566,6 +2567,7 @@ func (g *Generator) GenerateService(file *os.File, s *parser.Service) error {
 		contents += g.generatedAnnotation()
 	}
 	contents += fmt.Sprintf("public class F%s {\n\n", s.Name)
+	contents += fmt.Sprintf(tab+"private static final Logger logger = LoggerFactory.getLogger(F%s.class);\n\n", s.Name)
 	contents += g.generateServiceInterface(s)
 	contents += g.generateClient(s)
 	contents += g.generateServer(s)
@@ -2588,9 +2590,24 @@ func (g *Generator) generateServiceInterface(service *parser.Service) string {
 		contents += tab + "public interface Iface {\n\n"
 	}
 	for _, method := range service.Methods {
+		comment := []string{}
 		if method.Comment != nil {
-			contents += g.GenerateBlockComment(method.Comment, tabtab)
+			comment = append(comment, method.Comment...)
 		}
+
+		deprecationValue, deprecated := method.Annotations.Deprecated()
+		if deprecated && deprecationValue != "" {
+			comment = append(comment, fmt.Sprintf("@deprecated %s", deprecationValue))
+		}
+
+		if len(comment) != 0 {
+			contents += g.GenerateBlockComment(comment, tabtab)
+		}
+
+		if deprecated {
+			contents += tabtab+"@Deprecated\n"
+		}
+
 		contents += fmt.Sprintf(tabtab+"public %s %s(FContext ctx%s) %s;\n\n",
 			g.generateReturnValue(method), method.Name, g.generateArgs(method.Arguments, false), g.generateExceptions(method.Exceptions))
 	}
@@ -2677,8 +2694,19 @@ func (g *Generator) generateClient(service *parser.Service) string {
 		if method.Comment != nil {
 			contents += g.GenerateBlockComment(method.Comment, tabtab)
 		}
+
+		_, deprecated := method.Annotations.Deprecated()
+		if deprecated {
+			contents += tabtab+"@Deprecated\n"
+		}
+
 		contents += tabtab + fmt.Sprintf("public %s %s(FContext ctx%s) %s {\n",
 			g.generateReturnValue(method), method.Name, g.generateArgs(method.Arguments, false), g.generateExceptions(method.Exceptions))
+
+		if deprecated {
+			contents += tabtabtab + fmt.Sprintf("logger.warn(\"Call to deprecated function '%s.%s'\");\n", service.Name, method.Name);
+		}
+
 		if method.ReturnType != nil {
 			contents += tabtabtab + fmt.Sprintf("return proxy.%s(%s);\n", method.Name, g.generateClientCallArgs(method.Arguments))
 		} else {
@@ -2891,6 +2919,11 @@ func (g *Generator) generateServer(service *parser.Service) string {
 		contents += tabtab + fmt.Sprintf("private class %s implements FProcessorFunction {\n\n", strings.Title(method.Name))
 
 		contents += tabtabtab + "public void process(FContext ctx, FProtocol iprot, FProtocol oprot) throws TException {\n"
+
+		if _, ok := method.Annotations.Deprecated(); ok {
+			contents += tabtabtabtab + fmt.Sprintf("logger.warn(\"Deprecated function '%s.%s' was called by a client\");\n", service.Name, method.Name)
+		}
+
 		contents += tabtabtabtab + fmt.Sprintf("%s_args args = new %s_args();\n", method.Name, method.Name)
 		contents += tabtabtabtab + "try {\n"
 		contents += tabtabtabtabtab + "args.read(iprot);\n"

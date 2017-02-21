@@ -748,6 +748,7 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	imports += "from frugal.exceptions import TTransportExceptionType\n"
 	imports += "from frugal.processor import FBaseProcessor\n"
 	imports += "from frugal.processor import FProcessorFunction\n"
+	imports += "from frugal.util.deprecate import deprecated\n"
 	imports += "from thrift.Thrift import TApplicationException\n"
 	imports += "from thrift.Thrift import TMessageType\n\n"
 
@@ -1217,6 +1218,9 @@ func (g *Generator) generateProcessorFunction(method *parser.Method) string {
 	contents += tabtab + fmt.Sprintf("super(_%s, self).__init__(handler, lock)\n", method.Name)
 	contents += "\n"
 
+	if _, ok := method.Annotations.Deprecated(); ok {
+		contents += tab + "@deprecated\n"
+	}
 	contents += tab + "def process(self, ctx, iprot, oprot):\n"
 	contents += tabtab + fmt.Sprintf("args = %s_args()\n", method.Name)
 	contents += tabtab + "args.read(iprot)\n"
@@ -1295,10 +1299,21 @@ func (g *Generator) generateMethodSignature(method *parser.Method) string {
 		docstr[0] = "\n" + tabtab + docstr[0]
 		docstr = append(method.Comment, docstr...)
 	}
+
+	deprecationValue, deprecated := method.Annotations.Deprecated()
+	if deprecationValue != "" && deprecated {
+		docstr = append(docstr, "", fmt.Sprintf("deprecated: %s", deprecationValue))
+	}
+
+	if deprecated {
+		contents += tab + "@deprecated\n"
+	}
+
 	contents += tab
 	if getAsyncOpt(g.Options) == asyncio {
 		contents += "async "
 	}
+
 	contents += fmt.Sprintf("def %s(self, ctx%s):\n", method.Name, g.generateClientArgs(method.Arguments))
 	contents += g.generateDocString(docstr, tabtab)
 	return contents

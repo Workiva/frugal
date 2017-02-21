@@ -30,7 +30,7 @@ class TestContext(unittest.TestCase):
 
     def test_op_id(self):
         context = FContext(self.correlation_id)
-        context._set_request_header("_opid", "12345")
+        context.set_request_header("_opid", "12345")
         self.assertEqual(self.correlation_id, context.correlation_id)
         self.assertEqual("12345", context.get_request_header("_opid"))
 
@@ -71,13 +71,3 @@ class TestContext(unittest.TestCase):
         self.assertRaises(TypeError, context.set_response_header, 1, "foo")
         self.assertRaises(TypeError, context.set_response_header, "foo", 3)
         context.set_request_header(u'foo', u'bar')
-
-    def test_cant_set_cid_public_method(self):
-        context = FContext(self.correlation_id)
-        context.set_request_header("_cid", "foo")
-        self.assertEqual(context.correlation_id, self.correlation_id)
-
-    def test_cant_set_opid_public_method(self):
-        context = FContext(self.correlation_id)
-        context.set_request_header("_opid", "foo")
-        self.assertNotEqual(context.get_request_header("_opid"), "foo")
