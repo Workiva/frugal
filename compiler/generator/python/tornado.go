@@ -25,6 +25,7 @@ func (t *TornadoGenerator) GenerateServiceImports(file *os.File, s *parser.Servi
 	imports += "from frugal.tornado.processor import FBaseProcessor\n"
 	imports += "from frugal.tornado.processor import FProcessorFunction\n"
 	imports += "from frugal.transport import TMemoryOutputBuffer\n"
+	imports += "from frugal.util.deprecate import deprecated\n"
 	imports += "from thrift.Thrift import TApplicationException\n"
 	imports += "from thrift.Thrift import TMessageType\n"
 	imports += "from tornado import gen\n"
@@ -156,6 +157,9 @@ func (t *TornadoGenerator) generateProcessorFunction(method *parser.Method) stri
 	contents += "\n"
 
 	contents += tab + "@gen.coroutine\n"
+	if _, ok := method.Annotations.Deprecated(); ok {
+		contents += tab + "@deprecated\n"
+	}
 	contents += tab + "def process(self, ctx, iprot, oprot):\n"
 	contents += tabtab + fmt.Sprintf("args = %s_args()\n", method.Name)
 	contents += tabtab + "args.read(iprot)\n"

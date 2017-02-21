@@ -142,7 +142,7 @@ exception AwesomeException {
  */
 service Foo extends base.BaseFoo {
     /**@ Ping the server. */
-    void Ping(),
+    void Ping() (deprecated="use something else"),
 
     /**@ Blah the server. */
     i64 blah(1:i32 num, 2:string Str, 3:Event event) throws (1:AwesomeException awe, 2:base.api_exception api),

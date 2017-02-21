@@ -18,8 +18,11 @@ func TestValidGoWithAsync(t *testing.T) {
 		t.Fatal("Unexpected error", err)
 	}
 
-	fooServicePath := filepath.Join(outputDir, "async", "variety", "f_foo_service.go")
-	compareFiles(t, "expected/go/variety_async/f_foo_service.txt", fooServicePath)
+	files := []FileComparisonPair{
+		{"expected/go/variety_async/f_foo_service.txt", filepath.Join(outputDir, "async", "variety", "f_foo_service.go")},
+	}
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }
 
 func TestValidGoFrugalCompiler(t *testing.T) {
@@ -34,17 +37,16 @@ func TestValidGoFrugalCompiler(t *testing.T) {
 		t.Fatal("Unexpected error", err)
 	}
 
-	baseFtypesPath := filepath.Join(outputDir, "actual_base", "golang", "f_types.go")
-	compareFiles(t, "expected/go/actual_base/f_types.txt", baseFtypesPath)
-	baseFbasefooPath := filepath.Join(outputDir, "actual_base", "golang", "f_basefoo_service.go")
-	compareFiles(t, "expected/go/actual_base/f_basefoo_service.txt", baseFbasefooPath)
+	files := []FileComparisonPair{
+		{"expected/go/actual_base/f_types.txt", filepath.Join(outputDir, "actual_base", "golang", "f_types.go")},
+		{"expected/go/actual_base/f_basefoo_service.txt", filepath.Join(outputDir, "actual_base", "golang", "f_basefoo_service.go")},
 
-	varietyFtypesPath := filepath.Join(outputDir, "variety", "f_types.go")
-	compareFiles(t, "expected/go/variety/f_types.txt", varietyFtypesPath)
-	varietyFfooPath := filepath.Join(outputDir, "variety", "f_foo_service.go")
-	compareFiles(t, "expected/go/variety/f_foo_service.txt", varietyFfooPath)
-	varietyFeventsScopePath := filepath.Join(outputDir, "variety", "f_events_scope.go")
-	compareFiles(t, "expected/go/variety/f_events_scope.txt", varietyFeventsScopePath)
+		{"expected/go/variety/f_types.txt", filepath.Join(outputDir, "variety", "f_types.go")},
+		{"expected/go/variety/f_foo_service.txt", filepath.Join(outputDir, "variety", "f_foo_service.go")},
+		{"expected/go/variety/f_events_scope.txt", filepath.Join(outputDir, "variety", "f_events_scope.go")},
+	}
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }
 
 // Ensures correct import references are used when -use-vendor is set and the
@@ -60,12 +62,13 @@ func TestValidGoVendor(t *testing.T) {
 		t.Fatal("Unexpected error", err)
 	}
 
-	myScopePath := filepath.Join(outputDir, "include_vendor", "f_myscope_scope.go")
-	compareFiles(t, "expected/go/vendor/f_myscope_scope.txt", myScopePath)
-	myServicePath := filepath.Join(outputDir, "include_vendor", "f_myservice_service.go")
-	compareFiles(t, "expected/go/vendor/f_myservice_service.txt", myServicePath)
-	ftypesPath := filepath.Join(outputDir, "include_vendor", "f_types.go")
-	compareFiles(t, "expected/go/vendor/f_types.txt", ftypesPath)
+	files := []FileComparisonPair{
+		{"expected/go/vendor/f_myscope_scope.txt", filepath.Join(outputDir, "include_vendor", "f_myscope_scope.go")},
+		{"expected/go/vendor/f_myservice_service.txt", filepath.Join(outputDir, "include_vendor", "f_myservice_service.go")},
+		{"expected/go/vendor/f_types.txt", filepath.Join(outputDir, "include_vendor", "f_types.go")},
+	}
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }
 
 // Ensures an error is returned when -use-vendor is set and the vendored
@@ -95,6 +98,9 @@ func TestValidGoVendorNamespaceTargetGenerate(t *testing.T) {
 		t.Fatal("Unexpected error", err)
 	}
 
-	ftypesPath := filepath.Join(outputDir, "vendor_namespace", "f_types.go")
-	compareFiles(t, "expected/go/vendor_namespace/f_types.txt", ftypesPath)
+	files := []FileComparisonPair{
+		{"expected/go/vendor_namespace/f_types.txt", filepath.Join(outputDir, "vendor_namespace", "f_types.go")},
+	}
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }
