@@ -80,7 +80,7 @@ def main():
 
         # start healthcheck so the test runner knows the server is running
         thread.start_new_thread(healthcheck, (port, ))
-        print("Starting {} server...".format(args.transport_type))
+        print(u"Starting {} server...".format(args.transport_type))
         yield server.serve()
 
     elif args.transport_type == "http":
@@ -89,7 +89,7 @@ def main():
 
         server = Application([(r'/', FHttpHandler, factories)])
 
-        print("Starting {} server...".format(args.transport_type))
+        print(u"Starting {} server...".format(args.transport_type))
         server.listen(port)
 
     else:
@@ -107,7 +107,7 @@ def main():
 
     @gen.coroutine
     def response_handler(context, event):
-        print("received {} : {}".format(context, event))
+        print(u"received {} : {}".format(context, event))
         preamble = context.get_request_header(PREAMBLE_HEADER)
         if preamble is None or preamble == "":
             logging.error("Client did not provide preamble header")
@@ -121,7 +121,7 @@ def main():
         global publisher
         global port
         yield publisher.publish_EventCreated(response_context, preamble, ramble, "response", "{}".format(port), response_event)
-        print("Published event={}".format(response_event))
+        print(u"Published event={}".format(response_event))
 
     subscriber = EventsSubscriber(provider)
     yield subscriber.subscribe_EventCreated("*", "*", "call", "{}".format(args.port), response_handler)

@@ -153,7 +153,7 @@ class EventsSubscriber(object):
                 iprot.skip(TType.STRUCT)
                 iprot.readMessageEnd()
                 raise TApplicationException(TApplicationExceptionType.UNKNOWN_METHOD)
-            req = iprot.readString()
+            req = iprot.readString().decode('utf-8')
             iprot.readMessageEnd()
             try:
                 method([ctx, req])

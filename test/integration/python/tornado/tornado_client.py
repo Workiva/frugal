@@ -58,7 +58,7 @@ def main():
     elif args.transport_type == "http":
         transport = FHttpTransport("http://localhost:" + str(args.port))
     else:
-        print("Unknown transport type: {}".format(args.transport_type))
+        print(u"Unknown transport type: {}".format(args.transport_type))
         sys.exit(1)
 
     try:
@@ -76,7 +76,7 @@ def main():
 
     global middleware_called
     if not middleware_called:
-        print("Client middleware never invoked")
+        print(u"Client middleware never invoked")
         exit(1)
 
     # Cleanup after tests
@@ -95,7 +95,7 @@ def test_pub_sub(nats_client, protocol_factory, port):
     yield publisher.open()
 
     def subscribe_handler(context, event):
-        print("Response received {}".format(event))
+        print(u"Response received {}".format(event))
         global response_received
         if context:
             response_received = True
@@ -110,7 +110,7 @@ def test_pub_sub(nats_client, protocol_factory, port):
     context = FContext("Call")
     context.set_request_header(PREAMBLE_HEADER, preamble)
     context.set_request_header(RAMBLE_HEADER, ramble)
-    print("Publishing...")
+    print(u"Publishing...")
     publisher.publish_EventCreated(context, preamble, ramble, "call", "{}".format(port), event)
 
     # Loop with sleep interval. Fail if not received within 3 seconds
@@ -124,7 +124,7 @@ def test_pub_sub(nats_client, protocol_factory, port):
             total_time += interval
 
     if not response_received:
-        print("Pub/Sub response timed out!")
+        print(u"Pub/Sub response timed out!")
         exit(1)
 
     yield publisher.close()
@@ -142,7 +142,6 @@ def test_rpc(client, ctx):
         args = vals['args']
         expected_result = vals['expected_result']
         result = None
-
         try:
             if args:
                 result = yield method(ctx, *args)
@@ -158,7 +157,7 @@ def test_rpc(client, ctx):
     try:
         client.testOneway(ctx, seconds)
     except Exception as e:
-        print("Unexpected error in testOneway() call: {}".format(e))
+        print(u"Unexpected error in testOneway() call: {}".format(e))
         test_failed = True
 
     if test_failed:
@@ -169,7 +168,7 @@ def client_middleware(next):
     def handler(method, args):
         global middleware_called
         middleware_called = True
-        print("{}({}) = ".format(method.im_func.func_name, args[1:]), end="")
+        print(u"{}({}) = ".format(method.im_func.func_name, args[1:]), end="")
         ret = next(method, args)
         ret.add_done_callback(log_future)
         return ret
@@ -178,9 +177,9 @@ def client_middleware(next):
 
 def log_future(future):
     try:
-        print("{}".format(future.result()))
+        print(u"{}".format(future.result()))
     except Exception as ex:
-        print("{}".format(ex))
+        print(u"{}".format(ex))
 
 
 if __name__ == '__main__':

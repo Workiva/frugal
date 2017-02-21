@@ -58,7 +58,9 @@ def check_for_failure(actual, expected):
     elif expected != actual:
         failed = True
     if failed:
-        print("Unexpected result, expected:\n{e}\n but received:\n{a} ".format(
-            e=expected, a=actual))
+        print("Unexpected result, expected:")
+        print(expected)
+        print("but received")
+        print(actual)
 
     return failed

@@ -53,7 +53,7 @@ class thing(object):
                     iprot.skip(ftype)
             elif fid == 2:
                 if ftype == TType.STRING:
-                    self.a_string = iprot.readString()
+                    self.a_string = iprot.readString().decode('utf-8')
                 else:
                     iprot.skip(ftype)
             else:
@@ -71,7 +71,7 @@ class thing(object):
             oprot.writeFieldEnd()
         if self.a_string is not None:
             oprot.writeFieldBegin('a_string', TType.STRING, 2)
-            oprot.writeString(self.a_string)
+            oprot.writeString(self.a_string.encode('utf-8'))
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
