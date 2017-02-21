@@ -42,6 +42,7 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 
 // SetupGenerator initializes globals the generator needs, like the types file.
 func (g *Generator) SetupGenerator(outputDir string) error {
+	g.generateConstants = true
 	t, err := g.GenerateFile("", outputDir, generator.TypeFile)
 	if err != nil {
 		return err
@@ -1074,6 +1075,7 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	} else {
 		imports += "\t\"github.com/Workiva/frugal/lib/go\"\n"
 	}
+	imports += "\t\"github.com/Sirupsen/logrus\"\n"
 
 	pkgPrefix := g.Options[packagePrefixOption]
 	includes, err := s.ReferencedIncludes()
@@ -1093,7 +1095,8 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	imports += "// (needed to ensure safety because of naive import list construction.)\n"
 	imports += "var _ = thrift.ZERO\n"
 	imports += "var _ = fmt.Printf\n"
-	imports += "var _ = bytes.Equal"
+	imports += "var _ = bytes.Equal\n"
+	imports += "var _ = logrus.DebugLevel"
 
 	_, err = file.WriteString(imports)
 	return err
@@ -1461,6 +1464,11 @@ func (g *Generator) generateServiceInterface(service *parser.Service) string {
 		if method.Comment != nil {
 			contents += g.GenerateInlineComment(method.Comment, "\t")
 		}
+
+		if _, ok := method.Annotations.Deprecated(); ok {
+			contents += "\t// Deprecated\n"
+		}
+
 		contents += fmt.Sprintf("\t%s(ctx frugal.FContext%s) %s\n",
 			snakeToCamel(method.Name), g.generateInterfaceArgs(method.Arguments),
 			g.generateReturnArgs(method))
@@ -1604,8 +1612,22 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	if method.Comment != nil {
 		contents += g.GenerateInlineComment(method.Comment, "")
 	}
+
+	deprecationValue, deprecated := method.Annotations.Deprecated()
+	if deprecated {
+		if deprecationValue != "" {
+			deprecationValue = ": " + deprecationValue
+		}
+		contents += fmt.Sprintf("// Deprecated%s\n", deprecationValue)
+	}
+
 	contents += fmt.Sprintf("func (f *F%sClient) %s(ctx frugal.FContext%s) %s {\n",
 		servTitle, nameTitle, g.generateInputArgs(method.Arguments), g.generateReturnArgs(method))
+
+	if deprecated {
+		contents += fmt.Sprintf("\tlogrus.Warn(\"Call to deprecated function '%s.%s'\")\n", service.Name, nameTitle)
+	}
+
 	contents += fmt.Sprintf("\tret := f.methods[\"%s\"].Invoke(%s)\n", nameLower, g.generateClientArgs(method))
 	numReturn := "2"
 	if method.ReturnType == nil {
@@ -1805,6 +1827,11 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 	contents += "}\n\n"
 
 	contents += fmt.Sprintf("func (p *%sF%s) Process(ctx frugal.FContext, iprot, oprot *frugal.FProtocol) error {\n", servLower, nameTitle)
+
+	if _, ok := method.Annotations.Deprecated(); ok {
+		contents += fmt.Sprintf("\tlogrus.Warn(\"Deprecated function '%s.%s' was called by a client\")\n", service.Name, nameTitle)
+	}
+
 	contents += fmt.Sprintf("\targs := %s%sArgs{}\n", servTitle, nameTitle)
 	contents += "\tvar err error\n"
 	contents += "\tif err = args.Read(iprot); err != nil {\n"

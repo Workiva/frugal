@@ -27,6 +27,7 @@ func (a *AsyncIOGenerator) GenerateServiceImports(file *os.File, s *parser.Servi
 	imports += "from frugal.exceptions import TTransportExceptionType\n"
 	imports += "from frugal.middleware import Method\n"
 	imports += "from frugal.transport import TMemoryOutputBuffer\n"
+	imports += "from frugal.util.deprecate import deprecated\n"
 	imports += "from thrift.Thrift import TApplicationException\n"
 	imports += "from thrift.Thrift import TMessageType\n"
 
@@ -229,6 +230,9 @@ func (a *AsyncIOGenerator) generateProcessorFunction(method *parser.Method) stri
 	contents += tabtab + fmt.Sprintf("super(_%s, self).__init__(handler, lock)\n", method.Name)
 	contents += "\n"
 
+	if _, ok := method.Annotations.Deprecated(); ok {
+		contents += tab + "@deprecated\n"
+	}
 	contents += tab + "async def process(self, ctx, iprot, oprot):\n"
 	contents += tabtab + fmt.Sprintf("args = %s_args()\n", method.Name)
 	contents += tabtab + "args.read(iprot)\n"

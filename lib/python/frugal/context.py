@@ -107,17 +107,11 @@ class FContext(object):
         Throws:
             TypeError: if user passes non-string for key or value.
         """
-        if key in (_OPID_HEADER, _CID_HEADER):
-            return self
-
-        self._set_request_header(key, value)
-        return self
-
-    def _set_request_header(self, key, value):
         self._check_string(key)
         self._check_string(value)
 
         self._request_headers[key] = value
+        return self
 
     def get_response_headers(self):
         return copy(self._response_headers)
@@ -140,17 +134,11 @@ class FContext(object):
         Raises:
             TypeError: if user passes non-string for key or value.
         """
-        if key in (_OPID_HEADER, _CID_HEADER):
-            return self
-
-        self._set_response_header(key, value)
-        return self
-
-    def _set_response_header(self, key, value):
         self._check_string(key)
         self._check_string(value)
 
         self._response_headers[key] = value
+        return self
 
     def get_timeout(self):
         return int(self._request_headers.get(_TIMEOUT_HEADER))

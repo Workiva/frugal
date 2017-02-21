@@ -114,9 +114,6 @@ public class FContext {
      * @return FContext
      */
     public FContext addRequestHeader(String name, String value) {
-        if (CID_HEADER.equals(name)) {
-            return this;
-        }
         requestHeaders.put(name, value);
         return this;
     }

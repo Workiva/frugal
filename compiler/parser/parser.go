@@ -23,6 +23,9 @@ const (
 	// If no location is specified by the "vendor" annotation, the behavior is
 	// defined by the language generator.
 	VendorAnnotation = "vendor"
+
+	// DeprecatedAnnotation is the annotation to mark a service method as deprecated.
+	DeprecatedAnnotation = "deprecated"
 )
 
 // ParseFrugal parses the given Frugal file into its semantic representation.

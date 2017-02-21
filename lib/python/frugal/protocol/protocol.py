@@ -53,13 +53,13 @@ class FProtocol(TProtocolDecorator, object):
         context = FContext()
 
         for key, value in headers.items():
-            context._set_request_header(key, value)
+            context.set_request_header(key, value)
 
         op_id = headers[_OPID_HEADER]
         context._set_response_op_id(op_id)
         cid = context.correlation_id
         if cid:
-            context._set_response_header(_CID_HEADER, cid)
+            context.set_response_header(_CID_HEADER, cid)
         return context
 
     def read_response_headers(self, context):
@@ -72,4 +72,4 @@ class FProtocol(TProtocolDecorator, object):
         headers = _Headers._read(self.get_transport())
 
         for key, value in headers.items():
-            context._set_response_header(key, value)
+            context.set_response_header(key, value)

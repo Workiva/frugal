@@ -6,9 +6,8 @@ across all supported languages.
 ## To Run:
 ##### In Skynet:
 
-Push to any Smithy enabled Frugal fork.  Skynet will execute tests with both
-Frugal and Thrift code generation, using the current Frugal branch (not the
-latest release).
+Push to any Smithy enabled Frugal fork.  Skynet will execute tests with using
+the current Frugal branch (not the latest release).
 
 ##### Locally:
 Setup [skynet-cli](https://github.com/workiva/skynet-cli) and run `skynet run
@@ -20,8 +19,8 @@ tests using Frugal code generation.
 ### General Overview
 The major components of this test suite include:
 * frugalTest.frugal IDL file
-* test definitions in tests.json / tests_gen_with_thrift.json
-* python cross runner
+* test definitions in tests.json
+* Go cross runner
 * language specific clients/servers
 
 ##### frugalTest.frugal
@@ -34,20 +33,17 @@ that should be added.
 
 The Events scope is used for verifying pub/sub.
 
-##### tests.json / tests_gen_with_thrift.json
-These json files contain a listing of each supported language, client,
-server, transport, and protocol, as well as the bash command required to run
-a configuration.  As the names suggest, tests.json is for testing Frugal
-generated code and tests_gen_with_thrift.json is used with --gen_with_thrift
-generation option.
+##### tests.json
+This json file contains a listing of each supported language, client, server,
+transport, and protocol, as well as the bash command required to run a
+configuration.
 
-##### Python cross runner
-The python cross runner is recycled from Thrift (with very minor
-modifications) and is responsible for parsing the json test definitions,
+##### Go cross runner
+The Go cross runner is responsible for parsing the json test definitions,
 determining the valid client/server pairs, running each pair with a unique
-subject, and recording the results.  Successful tests are tar'ed into
-successful_tests.tar.gz. Failures are added to unexpected_failures.txt (both
-client and server side logs).
+subject, and recording the results.  Test logs are tar'ed in test_logs.tar.gz
+using the format : `clientName-serverName_transport_protocol_role.log`.
+Failures are added to unexpected_failures.og (both client and server side logs).
 
 ##### Language specific clients/servers
 Each client/server:

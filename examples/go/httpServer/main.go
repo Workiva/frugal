@@ -27,7 +27,10 @@ func main() {
 	// Start the server using the configured processor, and protocol
 	mux := http.NewServeMux()
 	mux.HandleFunc("/frugal", frugal.NewFrugalHandlerFunc(processor, fProtocolFactory))
-	httpHandler := cors.Default().Handler(mux)
+	corsOptions := cors.Options{
+		AllowedHeaders: []string{"Content-Transfer-Encoding"},
+	}
+	httpHandler := cors.New(corsOptions).Handler(mux)
 
 	fmt.Println("Starting the http server...")
 	log.Fatal(http.ListenAndServe(":9090", httpHandler))

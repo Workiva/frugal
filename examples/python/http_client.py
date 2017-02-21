@@ -26,7 +26,7 @@ ch.setFormatter(formatter)
 root.addHandler(ch)
 
 
-URL = 'http://localhost:9090'
+URL = 'http://localhost:9090/frugal'
 
 
 def main():

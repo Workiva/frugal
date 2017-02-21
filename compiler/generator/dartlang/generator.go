@@ -179,6 +179,7 @@ func (g *Generator) addToPubspec(dir string) error {
 	pubFilePath := filepath.Join(dir, "pubspec.yaml")
 
 	deps := map[interface{}]interface{}{
+		"logging": "^0.11.2",
 		"thrift": dep{
 			Hosted:  hostedDep{Name: "thrift", URL: "https://pub.workiva.org"},
 			Version: "^0.0.6",
@@ -1170,6 +1171,7 @@ func (g *Generator) GenerateThriftImports() string {
 func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) error {
 	imports := "import 'dart:async';\n\n"
 	imports += "import 'dart:typed_data' show Uint8List;\n"
+	imports += "import 'package:logging/logging.dart' as logging;\n"
 	imports += "import 'package:thrift/thrift.dart' as thrift;\n"
 	imports += "import 'package:frugal/frugal.dart' as frugal;\n\n"
 	// import included packages
@@ -1272,7 +1274,9 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 		if op.Comment != nil {
 			publishers += g.GenerateInlineComment(op.Comment, tab+"/")
 		}
+
 		publishers += fmt.Sprintf(tab+"Future publish%s(frugal.FContext ctx, %s%s req) {\n", op.Name, args, g.getDartTypeFromThriftType(op.Type))
+
 		publishers += fmt.Sprintf(tabtab+"return this._methods['%s']([ctx, %sreq]);\n", op.Name, argsWithoutTypes)
 		publishers += tab + "}\n\n"
 
@@ -1360,6 +1364,7 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 		subscribers += fmt.Sprintf(tabtab+"frugal.FMethod method = new frugal.FMethod(on%s, '%s', 'subscribe%s', this._middleware);\n",
 			op.Type.ParamName(), strings.Title(scope.Name), op.Type.ParamName())
 		subscribers += fmt.Sprintf(tabtab+"callback%s(thrift.TTransport transport) {\n", op.Name)
+
 		subscribers += tabtabtab + "var iprot = protocolFactory.getProtocol(transport);\n"
 		subscribers += tabtabtab + "var ctx = iprot.readRequestHeader();\n"
 		subscribers += tabtabtab + "var tMsg = iprot.readMessageBegin();\n"
@@ -1410,6 +1415,11 @@ func (g *Generator) generateInterface(service *parser.Service) string {
 		if method.Comment != nil {
 			contents += g.GenerateInlineComment(method.Comment, tab+"/")
 		}
+
+		if _, ok := method.Annotations.Deprecated(); ok {
+			contents += tab + "@deprecated\n"
+		}
+
 		contents += fmt.Sprintf(tab+"Future%s %s(frugal.FContext ctx%s);\n",
 			g.generateReturnArg(method), parser.LowercaseFirstLetter(method.Name), g.generateInputArgs(method.Arguments))
 	}
@@ -1445,6 +1455,7 @@ func (g *Generator) generateClient(service *parser.Service) string {
 		contents += fmt.Sprintf("class F%sClient implements F%s {\n",
 			servTitle, servTitle)
 	}
+	contents += fmt.Sprintf(tab + "static final logging.Logger _log = new logging.Logger('%s');\n", servTitle)
 	contents += tab + "Map<String, frugal.FMethod> _methods;\n\n"
 
 	if service.Extends != "" {
@@ -1479,14 +1490,29 @@ func (g *Generator) generateClient(service *parser.Service) string {
 
 func (g *Generator) generateClientMethod(service *parser.Service, method *parser.Method) string {
 	nameLower := parser.LowercaseFirstLetter(method.Name)
-
 	contents := ""
+
 	if method.Comment != nil {
 		contents += g.GenerateInlineComment(method.Comment, tab+"/")
 	}
+
+	deprecationValue, deprecated := method.Annotations.Deprecated()
+	if deprecated {
+		if deprecationValue != "" {
+			contents += fmt.Sprintf(tab+"@Deprecated(\"%s\")\n", deprecationValue)
+		} else {
+			contents += tab + "@deprecated\n"
+		}
+	}
+
 	// Generate wrapper method
 	contents += fmt.Sprintf(tab+"Future%s %s(frugal.FContext ctx%s) {\n",
 		g.generateReturnArg(method), nameLower, g.generateInputArgs(method.Arguments))
+
+	if deprecated {
+		contents += fmt.Sprintf(tabtab+"_log.warning(\"Call to deprecated function '%s.%s'\");\n", service.Name, nameLower)
+	}
+
 	contents += fmt.Sprintf(tabtab+"return this._methods['%s']([ctx%s]) as Future%s;\n",
 		nameLower, g.generateInputArgsWithoutTypes(method.Arguments), g.generateReturnArg(method))
 	contents += fmt.Sprintf(tab + "}\n\n")

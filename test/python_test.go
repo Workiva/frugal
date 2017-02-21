@@ -19,23 +19,20 @@ func TestValidPython(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	varietyConstantsPath := filepath.Join(outputDir, "variety", "python", "constants.py")
-	compareFiles(t, "expected/python/variety/constants.py", varietyConstantsPath)
-	varietyFtypesPath := filepath.Join(outputDir, "variety", "python", "ttypes.py")
-	compareFiles(t, "expected/python/variety/ttypes.py", varietyFtypesPath)
-	eventsPublisherPath := filepath.Join(outputDir, "variety", "python", "f_Events_publisher.py")
-	compareFiles(t, "expected/python/variety/f_Events_publisher.py", eventsPublisherPath)
-	eventsSubscriberPath := filepath.Join(outputDir, "variety", "python", "f_Events_subscriber.py")
-	compareFiles(t, "expected/python/variety/f_Events_subscriber.py", eventsSubscriberPath)
-	fooServicePath := filepath.Join(outputDir, "variety", "python", "f_Foo.py")
-	compareFiles(t, "expected/python/variety/f_Foo.py", fooServicePath)
+	files := []FileComparisonPair{
+		{"expected/python/variety/constants.py", filepath.Join(outputDir, "variety", "python", "constants.py")},
+		{"expected/python/variety/ttypes.py", filepath.Join(outputDir, "variety", "python", "ttypes.py")},
+		{"expected/python/variety/f_Events_publisher.py", filepath.Join(outputDir, "variety", "python", "f_Events_publisher.py")},
+		{"expected/python/variety/f_Events_subscriber.py", filepath.Join(outputDir, "variety", "python", "f_Events_subscriber.py")},
+		{"expected/python/variety/f_Foo.py", filepath.Join(outputDir, "variety", "python", "f_Foo.py")},
 
-	baseConstantsPath := filepath.Join(outputDir, "actual_base", "python", "constants.py")
-	compareFiles(t, "expected/python/actual_base/constants.py", baseConstantsPath)
-	baseFtypesPath := filepath.Join(outputDir, "actual_base", "python", "ttypes.py")
-	compareFiles(t, "expected/python/actual_base/ttypes.py", baseFtypesPath)
-	baseFooPath := filepath.Join(outputDir, "actual_base", "python", "f_BaseFoo.py")
-	compareFiles(t, "expected/python/actual_base/f_BaseFoo.py", baseFooPath)
+		{"expected/python/actual_base/constants.py", filepath.Join(outputDir, "actual_base", "python", "constants.py")},
+		{"expected/python/actual_base/ttypes.py", filepath.Join(outputDir, "actual_base", "python", "ttypes.py")},
+		{"expected/python/actual_base/f_BaseFoo.py", filepath.Join(outputDir, "actual_base", "python", "f_BaseFoo.py")},
+	}
+
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }
 
 func TestValidPythonTornado(t *testing.T) {
@@ -50,23 +47,20 @@ func TestValidPythonTornado(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	varietyConstantsPath := filepath.Join(outputDir, "tornado", "variety", "python", "constants.py")
-	compareFiles(t, "expected/python.tornado/variety/constants.py", varietyConstantsPath)
-	varietyFtypesPath := filepath.Join(outputDir, "tornado", "variety", "python", "ttypes.py")
-	compareFiles(t, "expected/python.tornado/variety/ttypes.py", varietyFtypesPath)
-	eventsPublisherPath := filepath.Join(outputDir, "tornado", "variety", "python", "f_Events_publisher.py")
-	compareFiles(t, "expected/python.tornado/variety/f_Events_publisher.py", eventsPublisherPath)
-	eventsSubscriberPath := filepath.Join(outputDir, "tornado", "variety", "python", "f_Events_subscriber.py")
-	compareFiles(t, "expected/python.tornado/variety/f_Events_subscriber.py", eventsSubscriberPath)
-	fooServicePath := filepath.Join(outputDir, "tornado", "variety", "python", "f_Foo.py")
-	compareFiles(t, "expected/python.tornado/variety/f_Foo.py", fooServicePath)
+	files := []FileComparisonPair{
+		{"expected/python.tornado/variety/constants.py", filepath.Join(outputDir, "tornado", "variety", "python", "constants.py")},
+		{"expected/python.tornado/variety/ttypes.py", filepath.Join(outputDir, "tornado", "variety", "python", "ttypes.py")},
+		{"expected/python.tornado/variety/f_Events_publisher.py", filepath.Join(outputDir, "tornado", "variety", "python", "f_Events_publisher.py")},
+		{"expected/python.tornado/variety/f_Events_subscriber.py", filepath.Join(outputDir, "tornado", "variety", "python", "f_Events_subscriber.py")},
+		{"expected/python.tornado/variety/f_Foo.py", filepath.Join(outputDir, "tornado", "variety", "python", "f_Foo.py")},
 
-	baseConstantsPath := filepath.Join(outputDir, "tornado", "actual_base", "python", "constants.py")
-	compareFiles(t, "expected/python.tornado/actual_base/constants.py", baseConstantsPath)
-	baseFtypesPath := filepath.Join(outputDir, "tornado", "actual_base", "python", "ttypes.py")
-	compareFiles(t, "expected/python.tornado/actual_base/ttypes.py", baseFtypesPath)
-	baseFooPath := filepath.Join(outputDir, "tornado", "actual_base", "python", "f_BaseFoo.py")
-	compareFiles(t, "expected/python.tornado/actual_base/f_BaseFoo.py", baseFooPath)
+		{"expected/python.tornado/actual_base/constants.py", filepath.Join(outputDir, "tornado", "actual_base", "python", "constants.py")},
+		{"expected/python.tornado/actual_base/ttypes.py", filepath.Join(outputDir, "tornado", "actual_base", "python", "ttypes.py")},
+		{"expected/python.tornado/actual_base/f_BaseFoo.py", filepath.Join(outputDir, "tornado", "actual_base", "python", "f_BaseFoo.py")},
+	}
+
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }
 
 func TestValidPythonAsyncIO(t *testing.T) {
@@ -81,23 +75,20 @@ func TestValidPythonAsyncIO(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	varietyConstantsPath := filepath.Join(outputDir, "asyncio", "variety", "python", "constants.py")
-	compareFiles(t, "expected/python.asyncio/variety/constants.py", varietyConstantsPath)
-	varietyFtypesPath := filepath.Join(outputDir, "asyncio", "variety", "python", "ttypes.py")
-	compareFiles(t, "expected/python.asyncio/variety/ttypes.py", varietyFtypesPath)
-	eventsPublisherPath := filepath.Join(outputDir, "asyncio", "variety", "python", "f_Events_publisher.py")
-	compareFiles(t, "expected/python.asyncio/variety/f_Events_publisher.py", eventsPublisherPath)
-	eventsSubscriberPath := filepath.Join(outputDir, "asyncio", "variety", "python", "f_Events_subscriber.py")
-	compareFiles(t, "expected/python.asyncio/variety/f_Events_subscriber.py", eventsSubscriberPath)
-	fooServicePath := filepath.Join(outputDir, "asyncio", "variety", "python", "f_Foo.py")
-	compareFiles(t, "expected/python.asyncio/variety/f_Foo.py", fooServicePath)
+	files := []FileComparisonPair{
+		{"expected/python.asyncio/variety/constants.py", filepath.Join(outputDir, "asyncio", "variety", "python", "constants.py")},
+		{"expected/python.asyncio/variety/ttypes.py", filepath.Join(outputDir, "asyncio", "variety", "python", "ttypes.py")},
+		{"expected/python.asyncio/variety/f_Events_publisher.py", filepath.Join(outputDir, "asyncio", "variety", "python", "f_Events_publisher.py")},
+		{"expected/python.asyncio/variety/f_Events_subscriber.py", filepath.Join(outputDir, "asyncio", "variety", "python", "f_Events_subscriber.py")},
+		{"expected/python.asyncio/variety/f_Foo.py", filepath.Join(outputDir, "asyncio", "variety", "python", "f_Foo.py")},
 
-	baseConstantsPath := filepath.Join(outputDir, "asyncio", "actual_base", "python", "constants.py")
-	compareFiles(t, "expected/python.asyncio/actual_base/constants.py", baseConstantsPath)
-	baseFtypesPath := filepath.Join(outputDir, "asyncio", "actual_base", "python", "ttypes.py")
-	compareFiles(t, "expected/python.asyncio/actual_base/ttypes.py", baseFtypesPath)
-	baseFooPath := filepath.Join(outputDir, "asyncio", "actual_base", "python", "f_BaseFoo.py")
-	compareFiles(t, "expected/python.asyncio/actual_base/f_BaseFoo.py", baseFooPath)
+		{"expected/python.asyncio/actual_base/constants.py", filepath.Join(outputDir, "asyncio", "actual_base", "python", "constants.py")},
+		{"expected/python.asyncio/actual_base/ttypes.py", filepath.Join(outputDir, "asyncio", "actual_base", "python", "ttypes.py")},
+		{"expected/python.asyncio/actual_base/f_BaseFoo.py", filepath.Join(outputDir, "asyncio", "actual_base", "python", "f_BaseFoo.py")},
+	}
+
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }
 
 func TestPythonPackagePrefix(t *testing.T) {
@@ -112,12 +103,14 @@ func TestPythonPackagePrefix(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	fFooPath := filepath.Join(outputDir, "service_inheritance", "f_Foo.py")
-	compareFiles(t, "expected/python/package_prefix/f_Foo.py", fFooPath)
-	ttypesPath := filepath.Join(outputDir, "service_inheritance", "ttypes.py")
-	compareFiles(t, "expected/python/package_prefix/ttypes.py", ttypesPath)
-	constantsPath := filepath.Join(outputDir, "service_inheritance", "constants.py")
-	compareFiles(t, "expected/python/package_prefix/constants.py", constantsPath)
+	files := []FileComparisonPair{
+		{"expected/python/package_prefix/f_Foo.py", filepath.Join(outputDir, "service_inheritance", "f_Foo.py")},
+		{"expected/python/package_prefix/ttypes.py", filepath.Join(outputDir, "service_inheritance", "ttypes.py")},
+		{"expected/python/package_prefix/constants.py", filepath.Join(outputDir, "service_inheritance", "constants.py")},
+	}
+
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }
 
 func TestPythonExtendServiceSameFile(t *testing.T) {
@@ -131,8 +124,11 @@ func TestPythonExtendServiceSameFile(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	basePingerPath := filepath.Join(outputDir, "service_extension_same_file", "python", "f_BasePinger.py")
-	compareFiles(t, "expected/python.asyncio/service_extension_same_file/f_BasePinger.py", basePingerPath)
-	pingerPath := filepath.Join(outputDir, "service_extension_same_file", "python", "f_Pinger.py")
-	compareFiles(t, "expected/python.asyncio/service_extension_same_file/f_Pinger.py", pingerPath)
+	files := []FileComparisonPair{
+		{"expected/python.asyncio/service_extension_same_file/f_BasePinger.py", filepath.Join(outputDir, "service_extension_same_file", "python", "f_BasePinger.py")},
+		{"expected/python.asyncio/service_extension_same_file/f_Pinger.py", filepath.Join(outputDir, "service_extension_same_file", "python", "f_Pinger.py")},
+	}
+
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
 }
