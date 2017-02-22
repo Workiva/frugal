@@ -6,6 +6,7 @@ export FRUGAL_HOME=$GOPATH/src/github.com/Workiva/frugal
 
 # Dart Dependencies
 cd $FRUGAL_HOME/test/integration/dart/test_client
+rm -rf .packages packages
 pub upgrade
 
 # Try pub get and ignore failures - it will fail on any release

@@ -925,7 +925,7 @@ class blah_args(object):
                     iprot.skip(ftype)
             elif fid == 2:
                 if ftype == TType.STRING:
-                    self.Str = iprot.readString()
+                    self.Str = iprot.readString().decode('utf-8')
                 else:
                     iprot.skip(ftype)
             elif fid == 3:
@@ -949,7 +949,7 @@ class blah_args(object):
             oprot.writeFieldEnd()
         if self.Str is not None:
             oprot.writeFieldBegin('Str', TType.STRING, 2)
-            oprot.writeString(self.Str)
+            oprot.writeString(self.Str.encode('utf-8'))
             oprot.writeFieldEnd()
         if self.event is not None:
             oprot.writeFieldBegin('event', TType.STRUCT, 3)
@@ -1086,7 +1086,7 @@ class oneWay_args(object):
                     (_, _, elem42) = iprot.readMapBegin()
                     for _ in range(elem42):
                         elem44 = iprot.readI32()
-                        elem43 = iprot.readString()
+                        elem43 = iprot.readString().decode('utf-8')
                         self.req[elem44] = elem43
                     iprot.readMapEnd()
                 else:
@@ -1109,7 +1109,7 @@ class oneWay_args(object):
             oprot.writeMapBegin(TType.I32, TType.STRING, len(self.req))
             for elem46, elem45 in self.req.items():
                 oprot.writeI32(elem46)
-                oprot.writeString(elem45)
+                oprot.writeString(elem45.encode('utf-8'))
             oprot.writeMapEnd()
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
@@ -1158,7 +1158,7 @@ class bin_method_args(object):
                     iprot.skip(ftype)
             elif fid == 2:
                 if ftype == TType.STRING:
-                    self.Str = iprot.readString()
+                    self.Str = iprot.readString().decode('utf-8')
                 else:
                     iprot.skip(ftype)
             else:
@@ -1176,7 +1176,7 @@ class bin_method_args(object):
             oprot.writeFieldEnd()
         if self.Str is not None:
             oprot.writeFieldBegin('Str', TType.STRING, 2)
-            oprot.writeString(self.Str)
+            oprot.writeString(self.Str.encode('utf-8'))
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()

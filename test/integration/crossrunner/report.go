@@ -88,6 +88,19 @@ func writeFileFooter(file *os.File, executionTime time.Duration) error {
 	return err
 }
 
+// WriteCustomData writes any string to a file.
+func WriteCustomData(file string, info string) error {
+	f, err := os.OpenFile(file, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := f.WriteString(info); err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetTimestamp returns the current time.
 func GetTimestamp() string {
 	return time.Now().Format(time.UnixDate)
@@ -108,8 +121,10 @@ func PrintPairResult(pair *Pair) {
 	var result string
 	if pair.ReturnCode == 0 {
 		result = "success"
-	} else {
+	} else if pair.ReturnCode == CrossrunnerFailure {
 		// Colorize failures red - this probably only works in Linux
+		result = "\x1b[31;1mCROSSRUNNER FAILURE\x1b[37;1m"
+	} else {
 		result = "\x1b[31;1mFAILURE\x1b[37;1m"
 	}
 

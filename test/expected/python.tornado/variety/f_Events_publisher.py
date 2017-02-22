@@ -130,7 +130,7 @@ class EventsPublisher(object):
         oprot = self._protocol_factory.get_protocol(buffer)
         oprot.write_request_headers(ctx)
         oprot.writeMessageBegin(op, TMessageType.CALL, 0)
-        oprot.writeString(req)
+        oprot.writeString(req.encode('utf-8'))
         oprot.writeMessageEnd()
         yield self._transport.publish(topic, buffer.getvalue())
 

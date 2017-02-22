@@ -16,6 +16,7 @@ func RunConfig(pair *Pair, port int) {
 	var err error
 	// Create client/server log files
 	if err = createLogs(pair); err != nil {
+		log.Debugf("Failed to create logs for % client and %s server", pair.Client.Name, pair.Server.Name)
 		reportCrossrunnerFailure(pair, err)
 		return
 	}
@@ -31,6 +32,7 @@ func RunConfig(pair *Pair, port int) {
 
 	if err = writeFileHeader(pair.Server.Logs, serverCmd, pair.Server.Workdir,
 		pair.Server.Timeout, pair.Client.Timeout); err != nil {
+		log.Debugf("Failed to write header to %", pair.Server.Logs.Name())
 		reportCrossrunnerFailure(pair, err)
 		return
 	}
@@ -38,6 +40,7 @@ func RunConfig(pair *Pair, port int) {
 	// start the server
 	sStartTime := time.Now()
 	if err = server.Start(); err != nil {
+		log.Debugf("Failed to start %s server", pair.Server.Name)
 		reportCrossrunnerFailure(pair, err)
 		return
 	}
@@ -67,6 +70,7 @@ func RunConfig(pair *Pair, port int) {
 
 	if total >= stimeout {
 		if err = writeServerTimeout(pair.Server.Logs, pair.Server.Name); err != nil {
+			log.Debugf("Failed to write server timeout to %s", pair.Server.Logs.Name)
 			reportCrossrunnerFailure(pair, err)
 			return
 		}
@@ -81,6 +85,7 @@ func RunConfig(pair *Pair, port int) {
 	// write client log header
 	if err = writeFileHeader(pair.Client.Logs, clientCmd, pair.Client.Workdir,
 		pair.Server.Timeout, pair.Client.Timeout); err != nil {
+		log.Debugf("Failed to write header to %s", pair.Client.Logs.Name())
 		reportCrossrunnerFailure(pair, err)
 		return
 	}
@@ -91,6 +96,7 @@ func RunConfig(pair *Pair, port int) {
 	cStartTime := time.Now()
 
 	if err = client.Start(); err != nil {
+		log.Debugf("Failed to start %s client", pair.Client.Name)
 		pair.ReturnCode = TestFailure
 		pair.Err = err
 	}
@@ -104,11 +110,14 @@ func RunConfig(pair *Pair, port int) {
 		// TODO: It's a bit annoying to have this message duplicated in the
 		// unexpected_failures.log. Is there a better way to report this?
 		if err = writeClientTimeout(pair, pair.Client.Name); err != nil {
+			log.Debugf("Failed to write timeout error to %s", pair.Client.Logs.Name())
+
 			reportCrossrunnerFailure(pair, err)
 			return
 		}
 
 		if err = client.Process.Kill(); err != nil {
+			log.Infof("Error killing %s", pair.Client.Name)
 			reportCrossrunnerFailure(pair, err)
 			return
 		}
@@ -117,17 +126,20 @@ func RunConfig(pair *Pair, port int) {
 		break
 	case err := <-done:
 		if err != nil {
-			reportCrossrunnerFailure(pair, err)
-			return
+			log.Debugf("Error in %s client", pair.Client.Name)
+			pair.ReturnCode = TestFailure
+			pair.Err = err
 		}
 	}
 
 	// write log footers
 	if err = writeFileFooter(pair.Client.Logs, time.Since(cStartTime)); err != nil {
+		log.Debugf("Failed to write footer to %s", pair.Client.Logs.Name())
 		reportCrossrunnerFailure(pair, err)
 		return
 	}
 	if err = writeFileFooter(pair.Server.Logs, time.Since(sStartTime)); err != nil {
+		log.Debugf("Failed to write footer to %s", pair.Client.Logs.Name())
 		reportCrossrunnerFailure(pair, err)
 		return
 	}

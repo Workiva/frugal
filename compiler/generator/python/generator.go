@@ -157,7 +157,9 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 			return parser.NonIdentifier, strings.Title(fmt.Sprintf("%v", value))
 		case "i8", "byte", "i16", "i32", "i64", "double":
 			return parser.NonIdentifier, fmt.Sprintf("%v", value)
-		case "string", "binary":
+		case "string":
+			return parser.NonIdentifier, fmt.Sprintf("%s", strconv.Quote(value.(string)))
+		case "binary":
 			return parser.NonIdentifier, fmt.Sprintf("%s", strconv.Quote(value.(string)))
 		case "list", "set":
 			contents := ""
@@ -453,18 +455,18 @@ func (g *Generator) generateValidate(s *parser.Struct) string {
 	if s.Type != parser.StructTypeUnion {
 		for _, field := range s.Fields {
 			if field.Modifier == parser.Required {
-				contents += fmt.Sprintf(tabtab + "if self.%s is None:\n", field.Name)
-				contents += fmt.Sprintf(tabtabtab + "raise TProtocol.TProtocolException(type=TProtocol.TProtocolException.INVALID_DATA, message='Required field %s is unset!')\n", field.Name)
+				contents += fmt.Sprintf(tabtab+"if self.%s is None:\n", field.Name)
+				contents += fmt.Sprintf(tabtabtab+"raise TProtocol.TProtocolException(type=TProtocol.TProtocolException.INVALID_DATA, message='Required field %s is unset!')\n", field.Name)
 			}
 		}
 	} else {
 		contents += tabtab + "set_fields = 0\n"
 		for _, field := range s.Fields {
-			contents += fmt.Sprintf(tabtab + "if self.%s is not None:\n", field.Name)
+			contents += fmt.Sprintf(tabtab+"if self.%s is not None:\n", field.Name)
 			contents += tabtabtab + "set_fields += 1\n"
 		}
 		contents += tabtab + "if set_fields != 1:\n"
-		contents += fmt.Sprintf(tabtabtab+"raise TProtocol.TProtocolException(type=TProtocol.TProtocolException.INVALID_DATA, message='The union did not have exactly one field set, {} were set'.format(set_fields))\n")
+		contents += fmt.Sprintf(tabtabtab + "raise TProtocol.TProtocolException(type=TProtocol.TProtocolException.INVALID_DATA, message='The union did not have exactly one field set, {} were set'.format(set_fields))\n")
 	}
 
 	contents += tabtab + "return\n\n"
@@ -534,6 +536,10 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 	if first {
 		prefix = "self."
 	}
+	decodeCall := ".decode('utf-8')"
+	if isPy3(g.Options) {
+		decodeCall = ""
+	}
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	isEnum := g.Frugal.IsEnum(underlyingType)
 	if underlyingType.IsPrimitive() || isEnum {
@@ -550,7 +556,12 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 				panic("unknown type: " + underlyingType.Name)
 			}
 		}
-		contents += fmt.Sprintf(ind+"%s%s = iprot.read%s()\n", prefix, field.Name, thriftType)
+		switch underlyingType.Name {
+		case "string":
+			contents += fmt.Sprintf(ind+"%s%s = iprot.read%s()%s\n", prefix, field.Name, thriftType, decodeCall)
+		default:
+			contents += fmt.Sprintf(ind+"%s%s = iprot.read%s()\n", prefix, field.Name, thriftType)
+		}
 	} else if g.Frugal.IsStruct(underlyingType) {
 		g.qualifiedTypeName(underlyingType)
 		contents += fmt.Sprintf(ind+"%s%s = %s()\n", prefix, field.Name, g.qualifiedTypeName(underlyingType))
@@ -599,6 +610,10 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 	if first {
 		prefix = "self."
 	}
+	encodeCall := ".encode('utf-8')"
+	if isPy3(g.Options) {
+		encodeCall = ""
+	}
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	isEnum := g.Frugal.IsEnum(underlyingType)
 	if underlyingType.IsPrimitive() || isEnum {
@@ -615,7 +630,12 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 				panic("unknown type: " + underlyingType.Name)
 			}
 		}
-		contents += fmt.Sprintf(ind+"oprot.write%s(%s%s)\n", thriftType, prefix, field.Name)
+		switch underlyingType.Name {
+		case "string":
+			contents += fmt.Sprintf(ind+"oprot.write%s(%s%s%s)\n", thriftType, prefix, field.Name, encodeCall)
+		default:
+			contents += fmt.Sprintf(ind+"oprot.write%s(%s%s)\n", thriftType, prefix, field.Name)
+		}
 	} else if g.Frugal.IsStruct(underlyingType) {
 		contents += fmt.Sprintf(ind+"%s%s.write(oprot)\n", prefix, field.Name)
 	} else if underlyingType.IsContainer() {
@@ -1426,4 +1446,11 @@ func getAsyncOpt(options map[string]string) concurrencyModel {
 		return asyncio
 	}
 	return synchronous
+}
+
+func isPy3(options map[string]string) bool {
+	if _, ok := options["asyncio"]; ok {
+		return true
+	}
+	return false
 }

@@ -13,6 +13,7 @@ image: drydock-prod.workiva.net/workiva/messaging-docker-images:119185
 
 env:
   - IN_SKYNET_CLI=true
+  - PYTHONIOENCODING=utf-8
 
 scripts:
   - ./scripts/skynet/run_cross_skynet.sh
@@ -43,6 +44,9 @@ contact: messaging@workiva.com
 
 # https://dev.webfilings.org/zuul/release/368066
 image: drydock-prod.workiva.net/workiva/messaging-docker-images:119185
+
+env:
+  - PYTHONIOENCODING=utf-8
 
 scripts:
   - ./scripts/skynet/run_cross_skynet.sh

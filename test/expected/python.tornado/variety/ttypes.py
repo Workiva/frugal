@@ -201,7 +201,7 @@ class Event(object):
                     iprot.skip(ftype)
             elif fid == 2:
                 if ftype == TType.STRING:
-                    self.Message = iprot.readString()
+                    self.Message = iprot.readString().decode('utf-8')
                 else:
                     iprot.skip(ftype)
             else:
@@ -219,7 +219,7 @@ class Event(object):
             oprot.writeFieldEnd()
         if self.Message is not None:
             oprot.writeFieldBegin('Message', TType.STRING, 2)
-            oprot.writeString(self.Message)
+            oprot.writeString(self.Message.encode('utf-8'))
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -369,12 +369,12 @@ class TestingDefaults(object):
                     iprot.skip(ftype)
             elif fid == 5:
                 if ftype == TType.STRING:
-                    self.thing = iprot.readString()
+                    self.thing = iprot.readString().decode('utf-8')
                 else:
                     iprot.skip(ftype)
             elif fid == 6:
                 if ftype == TType.STRING:
-                    self.thing2 = iprot.readString()
+                    self.thing2 = iprot.readString().decode('utf-8')
                 else:
                     iprot.skip(ftype)
             elif fid == 7:
@@ -447,8 +447,8 @@ class TestingDefaults(object):
                     self.a_map = {}
                     (_, _, elem8) = iprot.readMapBegin()
                     for _ in range(elem8):
-                        elem10 = iprot.readString()
-                        elem9 = iprot.readString()
+                        elem10 = iprot.readString().decode('utf-8')
+                        elem9 = iprot.readString().decode('utf-8')
                         self.a_map[elem10] = elem9
                     iprot.readMapEnd()
                 else:
@@ -490,11 +490,11 @@ class TestingDefaults(object):
             oprot.writeFieldEnd()
         if self.thing is not None:
             oprot.writeFieldBegin('thing', TType.STRING, 5)
-            oprot.writeString(self.thing)
+            oprot.writeString(self.thing.encode('utf-8'))
             oprot.writeFieldEnd()
         if self.thing2 is not None:
             oprot.writeFieldBegin('thing2', TType.STRING, 6)
-            oprot.writeString(self.thing2)
+            oprot.writeString(self.thing2.encode('utf-8'))
             oprot.writeFieldEnd()
         if self.listfield is not None:
             oprot.writeFieldBegin('listfield', TType.LIST, 7)
@@ -548,8 +548,8 @@ class TestingDefaults(object):
             oprot.writeFieldBegin('a_map', TType.MAP, 16)
             oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.a_map))
             for elem16, elem15 in self.a_map.items():
-                oprot.writeString(elem16)
-                oprot.writeString(elem15)
+                oprot.writeString(elem16.encode('utf-8'))
+                oprot.writeString(elem15.encode('utf-8'))
             oprot.writeMapEnd()
             oprot.writeFieldEnd()
         if self.status is not None:
@@ -718,7 +718,7 @@ class EventWrapper(object):
                     iprot.skip(ftype)
             elif fid == 10:
                 if ftype == TType.STRING:
-                    self.typedefOfTypedef = iprot.readString()
+                    self.typedefOfTypedef = iprot.readString().decode('utf-8')
                 else:
                     iprot.skip(ftype)
             else:
@@ -787,7 +787,7 @@ class EventWrapper(object):
             oprot.writeFieldEnd()
         if self.typedefOfTypedef is not None:
             oprot.writeFieldBegin('typedefOfTypedef', TType.STRING, 10)
-            oprot.writeString(self.typedefOfTypedef)
+            oprot.writeString(self.typedefOfTypedef.encode('utf-8'))
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -853,7 +853,7 @@ class TestingUnions(object):
                     iprot.skip(ftype)
             elif fid == 2:
                 if ftype == TType.STRING:
-                    self.aString = iprot.readString()
+                    self.aString = iprot.readString().decode('utf-8')
                 else:
                     iprot.skip(ftype)
             elif fid == 3:
@@ -872,7 +872,7 @@ class TestingUnions(object):
                     (_, _, elem37) = iprot.readMapBegin()
                     for _ in range(elem37):
                         elem39 = iprot.readI32()
-                        elem38 = iprot.readString()
+                        elem38 = iprot.readString().decode('utf-8')
                         self.Requests[elem39] = elem38
                     iprot.readMapEnd()
                 else:
@@ -897,7 +897,7 @@ class TestingUnions(object):
             oprot.writeFieldEnd()
         if self.aString is not None:
             oprot.writeFieldBegin('aString', TType.STRING, 2)
-            oprot.writeString(self.aString)
+            oprot.writeString(self.aString.encode('utf-8'))
             oprot.writeFieldEnd()
         if self.someotherthing is not None:
             oprot.writeFieldBegin('someotherthing', TType.I32, 3)
@@ -912,7 +912,7 @@ class TestingUnions(object):
             oprot.writeMapBegin(TType.I32, TType.STRING, len(self.Requests))
             for elem41, elem40 in self.Requests.items():
                 oprot.writeI32(elem41)
-                oprot.writeString(elem40)
+                oprot.writeString(elem40.encode('utf-8'))
             oprot.writeMapEnd()
             oprot.writeFieldEnd()
         if self.bin_field_in_union is not None:
@@ -984,7 +984,7 @@ class AwesomeException(TException):
                     iprot.skip(ftype)
             elif fid == 2:
                 if ftype == TType.STRING:
-                    self.Reason = iprot.readString()
+                    self.Reason = iprot.readString().decode('utf-8')
                 else:
                     iprot.skip(ftype)
             else:
@@ -1002,7 +1002,7 @@ class AwesomeException(TException):
             oprot.writeFieldEnd()
         if self.Reason is not None:
             oprot.writeFieldBegin('Reason', TType.STRING, 2)
-            oprot.writeString(self.Reason)
+            oprot.writeString(self.Reason.encode('utf-8'))
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import argparse
 import sys
 
@@ -58,6 +56,7 @@ def test_rpc(client, ctx):
         method = getattr(client, rpc)
         args = vals['args']
         expected_result = vals['expected_result']
+        ctx = FContext(rpc)
         result = None
 
         try:
@@ -84,9 +83,10 @@ def client_middleware(next):
     def handler(method, args):
         global middleware_called
         middleware_called = True
-        print("{}({}) = ".format(method.im_func.func_name, args[1:]), end="")
+        print(u"{}({}) = ".format(method.im_func.func_name,
+                                  handle_string_encoding(args[1:]), end=""))
         ret = next(method, args)
-        print("{}".format(ret))
+        print(u"{}".format(handle_string_encoding(ret)))
         return ret
     return handler
 

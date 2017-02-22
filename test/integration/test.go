@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 	"sync"
@@ -61,7 +62,8 @@ func main() {
 
 	// Need to create log directory for Skynet-cli. This isn't an issue on Skynet.
 	if _, err = os.Stat("log"); os.IsNotExist(err) {
-		if err = os.Mkdir("log", 755); err != nil {
+		if err = os.Mkdir("log", 0755); err != nil {
+			log.Info("Unable to create 'log' directory")
 			panic(err)
 		}
 	}
@@ -70,6 +72,7 @@ func main() {
 		path: "log/unexpected_failures.log",
 	}
 	if file, err := os.Create(failLog.path); err != nil {
+		log.Info("Unable to create 'unexpected_failures.log'")
 		panic(err)
 	} else {
 		failLog.file = file
@@ -90,19 +93,30 @@ func main() {
 				wg.Add(1)
 				// Run each configuration
 				crossrunner.RunConfig(task.pair, task.port)
+				errorLog := "\n"
 				// Check return code
-				if task.pair.ReturnCode == crossrunner.TestFailure {
+				if task.pair.ReturnCode != 0 {
+					if task.pair.ReturnCode == crossrunner.CrossrunnerFailure {
+						// If there was a crossrunner failure, add logs to the client
+						errorLog += "***** CROSSRUNNER FAILURE *****\n"
+					} else {
+						errorLog += "***** TEST FAILURE *****\n"
+					}
+					// Add error to client logs
+					errorLog += fmt.Sprintf("%s\n", task.pair.Err.Error())
+					if err := crossrunner.WriteCustomData(task.pair.Client.Logs.Name(), errorLog); err != nil {
+						log.Infof("Failed to append crossrunner failure to %s", task.pair.Client.Logs.Name())
+						panic(err)
+					}
 					// if failed, add to the failed count
 					failLog.mu.Lock()
 					failLog.failed += 1
 					// copy the logs to the unexpected_failures.log file
 					if err := crossrunner.AppendToFailures(failLog.path, task.pair); err != nil {
+						log.Infof("Failed to copy %s and %s to 'unexpected_failures.log'", task.pair.Client.Logs.Name(), task.pair.Server.Logs.Name())
 						panic(err)
 					}
 					failLog.mu.Unlock()
-				} else if task.pair.ReturnCode == crossrunner.CrossrunnerFailure {
-					// If there was a crossrunner failure, fail immediately
-					panic(task.pair.Err)
 				}
 				// Print configuration results to console
 				crossrunner.PrintPairResult(task.pair)

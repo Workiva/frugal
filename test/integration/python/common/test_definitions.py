@@ -16,7 +16,7 @@ def rpc_test_definitions():
 
     tests['testVoid'] = dict(args=None, expected_result=None)
 
-    thing = "thing"
+    thing = u"thing\u2016"
     tests['testString'] = dict(args=[thing], expected_result=thing)
 
     tests['testBool'] = dict(args=[True], expected_result=True)
@@ -52,7 +52,7 @@ def rpc_test_definitions():
     dictionary = {1: 2, 3: 4, 5: 42}
     tests['testMap'] = dict(args=[dictionary], expected_result=dictionary)
 
-    string_map = {"a": "2", "b": "blah", "some": "thing"}
+    string_map = {u"\u2018a\u2019": u"\u20182\u2019", u"\u2018b\u2019": u"\u2018blah\u2019", u"\u2018kraken\u2019": u"\u2018thing\u2019"}
     tests['testStringMap'] = dict(args=[string_map], expected_result=string_map)
 
     set = {1, 2, 2, 42}
@@ -80,14 +80,14 @@ def rpc_test_definitions():
     insanity.userMap = {Numberz.FIVE: 5, Numberz.EIGHT: 8}
     insanity.xtructs = [truck1, truck2]
     expected_result = {1:
-                     {2: Insanity(
-                         xtructs=[Xtruct(string_thing='Goodbye4', byte_thing=4, i32_thing=4, i64_thing=4),
-                                  Xtruct(string_thing='Hello2', byte_thing=2, i32_thing=2, i64_thing=2)],
-                         userMap={8: 8, 5: 5}),
-                      3: Insanity(
-                         xtructs=[Xtruct(string_thing='Goodbye4', byte_thing=4, i32_thing=4, i64_thing=4),
-                                  Xtruct(string_thing='Hello2', byte_thing=2, i32_thing=2, i64_thing=2)],
-                         userMap={8: 8, 5: 5})}, 2: {}}
+        {2: Insanity(
+            xtructs=[Xtruct(string_thing='Goodbye4', byte_thing=4, i32_thing=4, i64_thing=4),
+                     Xtruct(string_thing='Hello2', byte_thing=2, i32_thing=2, i64_thing=2)],
+            userMap={8: 8, 5: 5}),
+            3: Insanity(
+                xtructs=[Xtruct(string_thing='Goodbye4', byte_thing=4, i32_thing=4, i64_thing=4),
+                         Xtruct(string_thing='Hello2', byte_thing=2, i32_thing=2, i64_thing=2)],
+                userMap={8: 8, 5: 5})}, 2: {}}
     tests['testInsanity'] = dict(args=[insanity], expected_result=expected_result)
 
     multi = Xtruct()

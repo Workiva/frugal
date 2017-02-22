@@ -72,7 +72,7 @@
     "name": "py:asyncio",
     "client": {
       "timeout": 7,
-      "command": [ "python3.5", "-u", "client.py" ]
+      "command": ["python3.5", "-u", "client.py" ]
     },
     "server": {
       "timeout": 7,
@@ -87,12 +87,11 @@
     "name": "py:vanilla",
     "client": {
       "timeout": 7,
-      "command": [ "python", "-u", "vanilla_client.py" ]
+      "command": [  "python", "-u", "vanilla_client.py" ]
     },
     "server": {
       "timeout": 7,
-      "command": [ "python", "-u", "vanilla_server.py"
-      ]
+      "command": [ "python", "-u", "vanilla_server.py" ]
     },
     "transports": [ "http" ], 
     "sockets": [ "ip" ],

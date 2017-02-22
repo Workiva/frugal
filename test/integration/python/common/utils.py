@@ -58,7 +58,21 @@ def check_for_failure(actual, expected):
     elif expected != actual:
         failed = True
     if failed:
-        print("Unexpected result, expected:\n{e}\n but received:\n{a} ".format(
-            e=expected, a=actual))
+        if sys.version_info[0] == 3:
+            print("Unexpected result, expected:\n{e}\n but received:\n{a} ".format(
+                e=expected, a=actual))
+        if sys.version_info[0] == 2:
+            print("Unexpected result, expected:\n{e}\n but received:\n{a} ".format(
+                e=handle_string_encoding(expected), a=handle_string_encoding(actual)))
 
     return failed
+
+
+def handle_string_encoding(thing):
+    if sys.version_info[0] == 2 and isinstance(thing, unicode):
+        return thing.encode('ascii', 'ignore')
+    else:
+        try:
+            return thing.decode()
+        except:
+            return thing
