@@ -64,6 +64,7 @@ func (p *eventsPublisher) PublishEventCreated(ctx frugal.FContext, user string, 
 }
 
 func (p *eventsPublisher) publishEventCreated(ctx frugal.FContext, user string, req *Event) error {
+	ctx.AddRequestHeader("_topic_user", user)
 	op := "EventCreated"
 	prefix := fmt.Sprintf("foo.%s.", user)
 	topic := fmt.Sprintf("%sEvents%s%s", prefix, delimiter, op)
@@ -96,6 +97,7 @@ func (p *eventsPublisher) PublishSomeInt(ctx frugal.FContext, user string, req i
 }
 
 func (p *eventsPublisher) publishSomeInt(ctx frugal.FContext, user string, req int64) error {
+	ctx.AddRequestHeader("_topic_user", user)
 	op := "SomeInt"
 	prefix := fmt.Sprintf("foo.%s.", user)
 	topic := fmt.Sprintf("%sEvents%s%s", prefix, delimiter, op)
@@ -128,6 +130,7 @@ func (p *eventsPublisher) PublishSomeStr(ctx frugal.FContext, user string, req s
 }
 
 func (p *eventsPublisher) publishSomeStr(ctx frugal.FContext, user string, req string) error {
+	ctx.AddRequestHeader("_topic_user", user)
 	op := "SomeStr"
 	prefix := fmt.Sprintf("foo.%s.", user)
 	topic := fmt.Sprintf("%sEvents%s%s", prefix, delimiter, op)
@@ -160,6 +163,7 @@ func (p *eventsPublisher) PublishSomeList(ctx frugal.FContext, user string, req 
 }
 
 func (p *eventsPublisher) publishSomeList(ctx frugal.FContext, user string, req []map[ID]*Event) error {
+	ctx.AddRequestHeader("_topic_user", user)
 	op := "SomeList"
 	prefix := fmt.Sprintf("foo.%s.", user)
 	topic := fmt.Sprintf("%sEvents%s%s", prefix, delimiter, op)

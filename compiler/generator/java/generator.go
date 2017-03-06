@@ -2393,6 +2393,12 @@ func (g *Generator) generatePublisherClient(scope *parser.Scope) string {
 			publisher += g.GenerateBlockComment(op.Comment, tabtabtab)
 		}
 		publisher += fmt.Sprintf(tabtabtab+"public void publish%s(FContext ctx, %s%s req) throws TException {\n", op.Name, args, g.getJavaTypeFromThriftType(op.Type))
+
+		// Inject the prefix variables into the FContext to send
+		for _, prefixVar := range scope.Prefix.Variables {
+			publisher += fmt.Sprintf(tabtabtabtab+"ctx.addRequestHeader(\"_topic_%s\", %s);\n", prefixVar, prefixVar)
+		}
+
 		publisher += tabtabtabtab + fmt.Sprintf("String op = \"%s\";\n", op.Name)
 		publisher += tabtabtabtab + fmt.Sprintf("String prefix = %s;\n", generatePrefixStringTemplate(scope))
 		publisher += tabtabtabtab + "String topic = String.format(\"%s" + strings.Title(scope.Name) + "%s%s\", prefix, DELIMITER, op);\n"

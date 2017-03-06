@@ -71,6 +71,7 @@ class EventsPublisher(object):
         await self._methods['publish_EventCreated']([ctx, user, req])
 
     async def _publish_EventCreated(self, ctx, user, req):
+        ctx.set_request_header('_topic_user', user)
         op = 'EventCreated'
         prefix = 'foo.{}.'.format(user)
         topic = '{}Events{}{}'.format(prefix, self._DELIMITER, op)
@@ -93,6 +94,7 @@ class EventsPublisher(object):
         await self._methods['publish_SomeInt']([ctx, user, req])
 
     async def _publish_SomeInt(self, ctx, user, req):
+        ctx.set_request_header('_topic_user', user)
         op = 'SomeInt'
         prefix = 'foo.{}.'.format(user)
         topic = '{}Events{}{}'.format(prefix, self._DELIMITER, op)
@@ -115,6 +117,7 @@ class EventsPublisher(object):
         await self._methods['publish_SomeStr']([ctx, user, req])
 
     async def _publish_SomeStr(self, ctx, user, req):
+        ctx.set_request_header('_topic_user', user)
         op = 'SomeStr'
         prefix = 'foo.{}.'.format(user)
         topic = '{}Events{}{}'.format(prefix, self._DELIMITER, op)
@@ -137,6 +140,7 @@ class EventsPublisher(object):
         await self._methods['publish_SomeList']([ctx, user, req])
 
     async def _publish_SomeList(self, ctx, user, req):
+        ctx.set_request_header('_topic_user', user)
         op = 'SomeList'
         prefix = 'foo.{}.'.format(user)
         topic = '{}Events{}{}'.format(prefix, self._DELIMITER, op)

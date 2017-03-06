@@ -939,6 +939,10 @@ func (g *Generator) generatePublishMethod(scope *parser.Scope, op *parser.Operat
 		method += "async "
 	}
 	method += fmt.Sprintf("def _publish_%s(self, ctx, %sreq):\n", op.Name, args)
+	// Inject the prefix variables into the FContext to send
+	for _, prefixVar := range scope.Prefix.Variables {
+		method += fmt.Sprintf(tabtab+"ctx.set_request_header('_topic_%s', %s)\n", prefixVar, prefixVar)
+	}
 	method += tabtab + fmt.Sprintf("op = '%s'\n", op.Name)
 	method += tabtab + fmt.Sprintf("prefix = %s\n", generatePrefixStringTemplate(scope))
 	method += tabtab + fmt.Sprintf("topic = '{}%s{}{}'.format(prefix, self._DELIMITER, op)\n", scope.Name)

@@ -46,6 +46,7 @@ class EventsPublisher {
   }
 
   Future _publishEventCreated(frugal.FContext ctx, String user, t_variety.Event req) async {
+    ctx.addRequestHeader('_topic_user', user);
     var op = "EventCreated";
     var prefix = "foo.${user}.";
     var topic = "${prefix}Events${delimiter}${op}";
@@ -65,6 +66,7 @@ class EventsPublisher {
   }
 
   Future _publishSomeInt(frugal.FContext ctx, String user, int req) async {
+    ctx.addRequestHeader('_topic_user', user);
     var op = "SomeInt";
     var prefix = "foo.${user}.";
     var topic = "${prefix}Events${delimiter}${op}";
@@ -84,6 +86,7 @@ class EventsPublisher {
   }
 
   Future _publishSomeStr(frugal.FContext ctx, String user, String req) async {
+    ctx.addRequestHeader('_topic_user', user);
     var op = "SomeStr";
     var prefix = "foo.${user}.";
     var topic = "${prefix}Events${delimiter}${op}";
@@ -103,6 +106,7 @@ class EventsPublisher {
   }
 
   Future _publishSomeList(frugal.FContext ctx, String user, List<Map<int, t_variety.Event>> req) async {
+    ctx.addRequestHeader('_topic_user', user);
     var op = "SomeList";
     var prefix = "foo.${user}.";
     var topic = "${prefix}Events${delimiter}${op}";

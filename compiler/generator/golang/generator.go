@@ -1293,6 +1293,11 @@ func (g *Generator) generateInternalPublishMethod(scope *parser.Scope, op *parse
 
 	publisher += fmt.Sprintf("func (p *%sPublisher) publish%s(ctx frugal.FContext, %sreq %s) error {\n",
 		scopeLower, op.Name, args, g.getGoTypeFromThriftType(op.Type))
+	// Inject the prefix variables into the FContext to send
+	for _, prefixVar := range scope.Prefix.Variables {
+		publisher += fmt.Sprintf("\tctx.AddRequestHeader(\"_topic_%s\", %s)\n", prefixVar, prefixVar)
+	}
+
 	publisher += fmt.Sprintf("\top := \"%s\"\n", op.Name)
 	publisher += fmt.Sprintf("\tprefix := %s\n", generatePrefixStringTemplate(scope))
 	publisher += "\ttopic := fmt.Sprintf(\"%s" + scopeTitle + "%s%s\", prefix, delimiter, op)\n"

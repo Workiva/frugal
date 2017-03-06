@@ -142,6 +142,7 @@ public class EventsPublisher {
 			 * This is a docstring.
 			 */
 			public void publishEventCreated(FContext ctx, String user, Event req) throws TException {
+				ctx.addRequestHeader("_topic_user", user);
 				String op = "EventCreated";
 				String prefix = String.format("foo.%s.", user);
 				String topic = String.format("%sEvents%s%s", prefix, DELIMITER, op);
@@ -156,6 +157,7 @@ public class EventsPublisher {
 
 
 			public void publishSomeInt(FContext ctx, String user, long req) throws TException {
+				ctx.addRequestHeader("_topic_user", user);
 				String op = "SomeInt";
 				String prefix = String.format("foo.%s.", user);
 				String topic = String.format("%sEvents%s%s", prefix, DELIMITER, op);
@@ -171,6 +173,7 @@ public class EventsPublisher {
 
 
 			public void publishSomeStr(FContext ctx, String user, String req) throws TException {
+				ctx.addRequestHeader("_topic_user", user);
 				String op = "SomeStr";
 				String prefix = String.format("foo.%s.", user);
 				String topic = String.format("%sEvents%s%s", prefix, DELIMITER, op);
@@ -186,6 +189,7 @@ public class EventsPublisher {
 
 
 			public void publishSomeList(FContext ctx, String user, java.util.List<java.util.Map<Long, Event>> req) throws TException {
+				ctx.addRequestHeader("_topic_user", user);
 				String op = "SomeList";
 				String prefix = String.format("foo.%s.", user);
 				String topic = String.format("%sEvents%s%s", prefix, DELIMITER, op);

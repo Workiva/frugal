@@ -1282,6 +1282,11 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 
 		publishers += fmt.Sprintf(tab+"Future _publish%s(frugal.FContext ctx, %s%s req) async {\n", op.Name, args, g.getDartTypeFromThriftType(op.Type))
 
+		// Inject the prefix variables into the FContext to send
+		for _, prefixVar := range scope.Prefix.Variables {
+			publishers += fmt.Sprintf(tabtab + "ctx.addRequestHeader('_topic_%s', %s);\n", prefixVar, prefixVar)
+		}
+
 		publishers += tabtab + fmt.Sprintf("var op = \"%s\";\n", op.Name)
 		publishers += tabtab + fmt.Sprintf("var prefix = \"%s\";\n", generatePrefixStringTemplate(scope))
 		publishers += tabtab + "var topic = \"${prefix}" + strings.Title(scope.Name) + "${delimiter}${op}\";\n"
