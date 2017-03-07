@@ -16,6 +16,17 @@ Smithy build artifacts whereas the 'cross-local' configuration does not
 require these to execute the test suite.  'cross-local' will only execute
 tests using Frugal code generation.
 
+### Debugging
+Errors are reported to unexpected_failures.log (under "Artifacts" on a Skynet
+run, or under "Test Artifacts" at the end of the logs in skynet-cli).  This log
+will enable you to see exactly where tests are failing.  The logs also contain
+the directory and command that was used to run each configuration near the
+top of the pair. These commands can be used in local debugging - no need to run
+skynet-cli or push a new commit.  _Note: If you do not run the test suite, you
+will need to manually take care of setup, such as re-generating code, before
+executing. You will also need to have gnats running locally._
+
+
 ### General Overview
 The major components of this test suite include:
 * frugalTest.frugal IDL file
@@ -69,6 +80,12 @@ For publish/subscribe testing, servers are set up as a subscriber and publish
 an acknowledgement upon receipt of a publish.  Clients act as a publisher
 (subscribing to the acknowledgement) and verify that an acknowledgement is
 returned after publishing.
+
+### Contributing
+Follow Frugal's contribution [guidelines](https://github.com/Workiva/frugal/blob/master/CONTRIBUTING.md).
+Any tests that are added should be added to all languages (where applicable).
+
+
 
 ### Known Issues
 
