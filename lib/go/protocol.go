@@ -146,6 +146,11 @@ func (f *FProtocol) ReadResponseHeader(ctx FContext) error {
 	}
 
 	for name, value := range headers {
+		// Don't want to overwrite the opid header we set for a
+		// propagated response
+		if name == opIDHeader {
+			continue
+		}
 		ctx.AddResponseHeader(name, value)
 	}
 
