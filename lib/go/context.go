@@ -84,6 +84,10 @@ type FContext interface {
 
 var nextOpID uint64
 
+func getNextOpID() string {
+	return strconv.FormatUint(atomic.AddUint64(&nextOpID, 1), 10)
+}
+
 // FContextImpl is an implementation of FContext.
 type FContextImpl struct {
 	requestHeaders  map[string]string
@@ -102,14 +106,12 @@ func NewFContext(correlationID string) FContext {
 	ctx := &FContextImpl{
 		requestHeaders: map[string]string{
 			cidHeader:     correlationID,
-			opIDHeader:    "0",
+			opIDHeader:    getNextOpID(),
 			timeoutHeader: strconv.FormatInt(int64(defaultTimeout/time.Millisecond), 10),
 		},
 		responseHeaders: make(map[string]string),
 	}
 
-	opID := atomic.AddUint64(&nextOpID, 1)
-	setRequestOpID(ctx, opID)
 	return ctx
 }
 

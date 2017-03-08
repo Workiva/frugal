@@ -107,6 +107,12 @@ func (f *FProtocol) ReadRequestHeader() (FContext, error) {
 	}
 
 	for name, value := range headers {
+		if name == opIDHeader {
+			// Put a new opid in the request headers so this context
+			// can be used/propagated on the receiver
+			ctx.AddRequestHeader(name, getNextOpID())
+			continue
+		}
 		ctx.AddRequestHeader(name, value)
 	}
 
