@@ -82,6 +82,15 @@ type FContext interface {
 	Timeout() time.Duration
 }
 
+func Clone(ctx FContext) FContext {
+	clone := &FContextImpl{
+		requestHeaders: ctx.RequestHeaders(),
+		responseHeaders: ctx.ResponseHeaders(),
+	}
+	clone.requestHeaders[opIDHeader] = getNextOpID()
+	return clone
+}
+
 var nextOpID uint64
 
 func getNextOpID() string {
