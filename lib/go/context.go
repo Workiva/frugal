@@ -82,6 +82,8 @@ type FContext interface {
 	Timeout() time.Duration
 }
 
+// Clone performs a deep copy of an FContext while handling opids correctly.
+// TODO 3.0 consider adding this to the FContext interface.
 func Clone(ctx FContext) FContext {
 	clone := &FContextImpl{
 		requestHeaders: ctx.RequestHeaders(),

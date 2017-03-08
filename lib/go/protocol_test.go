@@ -53,6 +53,7 @@ func TestReadRequestHeader(t *testing.T) {
 	transport := &thrift.TMemoryBuffer{Buffer: bytes.NewBuffer(frugalFrame)}
 	proto := &FProtocol{tProtocolFactory.GetProtocol(transport)}
 
+
 	ctx, err := proto.ReadRequestHeader()
 	assert.Nil(err)
 	assert.Equal(frugalHeaders[cidHeader], ctx.CorrelationID())
@@ -61,13 +62,13 @@ func TestReadRequestHeader(t *testing.T) {
 	assert.Equal(frugalHeaders[cidHeader], cid)
 	opid, err := getOpID(ctx)
 	assert.Nil(err)
-	assert.Equal(uint64(0), opid)
+	assert.NotEqual(uint64(0), opid)
 	val, ok := ctx.RequestHeader("hello")
 	assert.True(ok)
 	assert.Equal(frugalHeaders["hello"], val)
 }
 
-// Ensures ReadRequestHeader correctly reads frugal response headers from the
+// Ensures ReadResponseHeader correctly reads frugal response headers from the
 // protocol.
 func TestReadResponseHeader(t *testing.T) {
 	assert := assert.New(t)
@@ -139,7 +140,17 @@ func TestWriteReadRequestHeader(t *testing.T) {
 	assert.Equal("123", ctx.CorrelationID())
 	opid, err := getOpID(ctx)
 	assert.Nil(err)
-	assert.Equal(origOpID, opid)
+
+	// The opid sent on the request headers and the opid received on the
+	// request headers should be different to allow propagation
+	assert.NotEqual(origOpID, opid)
+
+	// The opid in the response headers should match the opid originally
+	// sent on the request headers
+	respOpIDStr, ok := ctx.ResponseHeader(opIDHeader)
+	respOpIDUint, err := strconv.ParseUint(respOpIDStr, 10, 64)
+	assert.Nil(err)
+	assert.Equal(origOpID, respOpIDUint)
 }
 
 // Ensures WriteResponseHeader properly encodes header bytes and
@@ -167,7 +178,7 @@ func TestWriteReadResponseHeader(t *testing.T) {
 	assert.Equal("123", ctx.CorrelationID())
 	opid, ok := ctx.ResponseHeader(opIDHeader)
 	assert.Nil(err)
-	assert.Equal(strconv.FormatUint(origOpID, 10), opid)
+	assert.Equal("", opid)
 }
 
 // Ensures readHeader returns an error if there are not enough frame bytes to
