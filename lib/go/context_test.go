@@ -104,3 +104,26 @@ func TestResponseHeader(t *testing.T) {
 	assert.Equal(t, ctx, ctx.AddResponseHeader(opIDHeader, "1"))
 	assert.Equal(t, "1", ctx.ResponseHeaders()[opIDHeader])
 }
+
+// Ensures Clone properly copies the FContext headers while assigning a new
+// opid.
+func TestFContextClone(t *testing.T) {
+	ctx := NewFContext("some-id")
+	ctx.AddRequestHeader("foo", "bar")
+	cloned := Clone(ctx)
+	ctxHeaders := ctx.RequestHeaders()
+	clonedHeaders := cloned.RequestHeaders()
+
+	// Should not have the same opid
+	assert.NotEqual(t, ctxHeaders["_opid"], clonedHeaders["_opid"])
+
+	// Everything else should be the same
+	delete(ctxHeaders, "_opid")
+	delete(clonedHeaders, "_opid")
+	assert.Equal(t, ctxHeaders, clonedHeaders)
+
+	// Modifying the originals headers shouldn't affect the clone
+	ctx.AddRequestHeader("baz", "qux")
+	_, ok := cloned.RequestHeader("baz")
+	assert.False(t, ok)
+}
