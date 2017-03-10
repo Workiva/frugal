@@ -163,8 +163,9 @@ class FContext(object):
         """
         Performs a deep copy of an FContext while handling opids correctly.
 
-        :return: A new instance of FContext with identical headers,
-                 with the exception of _opid.
+        Returns:
+            A new instance of FContext with identical headers, with the
+            exception of _opid.
         """
         copied = FContext()
         copied._request_headers = self.get_request_headers()
