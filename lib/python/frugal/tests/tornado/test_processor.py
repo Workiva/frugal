@@ -7,6 +7,7 @@ from tornado.concurrent import Future
 from tornado.testing import AsyncTestCase
 from tornado.testing import gen_test
 
+from frugal.context import _OPID_HEADER
 from frugal.tornado.processor import FBaseProcessor
 from frugal.protocol import FProtocolFactory
 from frugal.transport import TMemoryOutputBuffer
@@ -72,6 +73,6 @@ class TestFBaseProcessor(AsyncTestCase):
         yield processor.process(iprot, oprot)
         assert(proc.process.call_args)
         args, _ = proc.process.call_args
-        assert(args[0]._get_op_id() == 1)
+        self.assertEqual(args[0].get_response_header(_OPID_HEADER), '1')
         assert(args[1] == iprot)
         assert(args[2] == oprot)

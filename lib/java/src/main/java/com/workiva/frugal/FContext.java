@@ -232,10 +232,10 @@ public class FContext implements Cloneable {
 
     @Override
     public FContext clone() throws CloneNotSupportedException {
-        FContext clone = (FContext) super.clone();
-        clone.requestHeaders = this.getRequestHeaders();
-        clone.responseHeaders = this.getResponseHeaders();
-        clone.addRequestHeader(OPID_HEADER, getNextOpId());
-        return clone;
+        FContext cloned = (FContext) super.clone();
+        cloned.requestHeaders = this.getRequestHeaders();
+        cloned.responseHeaders = this.getResponseHeaders();
+        cloned.addRequestHeader(OPID_HEADER, getNextOpId());
+        return cloned;
     }
 }

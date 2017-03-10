@@ -1,6 +1,6 @@
 import unittest
 
-from frugal.context import FContext, _DEFAULT_TIMEOUT
+from frugal.context import FContext, _DEFAULT_TIMEOUT, _OPID_HEADER
 
 
 class TestContext(unittest.TestCase):
@@ -71,3 +71,23 @@ class TestContext(unittest.TestCase):
         self.assertRaises(TypeError, context.set_response_header, 1, "foo")
         self.assertRaises(TypeError, context.set_response_header, "foo", 3)
         context.set_request_header(u'foo', u'bar')
+
+    def test_copy(self):
+        ctx = FContext()
+        ctx.set_request_header('foo', 'bar')
+        copied = ctx.copy()
+        ctxHeaders = ctx.get_request_headers()
+        copiedHeaders = copied.get_request_headers()
+
+        # Should not have the same opid
+        self.assertNotEqual(ctxHeaders[_OPID_HEADER], copiedHeaders[_OPID_HEADER])
+
+        # Everything else should be the same
+        del ctxHeaders[_OPID_HEADER]
+        del copiedHeaders[_OPID_HEADER]
+        self.assertEqual(ctxHeaders, copiedHeaders)
+
+        # Modifying the originals headers shouldn't affect the clone
+        ctx.set_request_header('baz', 'qux')
+        self.assertIsNone(copied.get_request_header('baz'))
+

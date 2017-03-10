@@ -3,7 +3,7 @@ import sys
 from thrift.protocol.TProtocolDecorator import TProtocolDecorator
 from thrift.protocol.TCompactProtocol import CLEAR, TCompactProtocol
 
-from frugal.context import FContext, _OPID_HEADER, _CID_HEADER
+from frugal.context import FContext, _OPID_HEADER, _CID_HEADER, _getNextOpID
 from frugal.util.headers import _Headers
 
 _V0 = 0
@@ -84,6 +84,10 @@ class FProtocol(TProtocolDecorator, object):
 
         op_id = headers[_OPID_HEADER]
         context._set_response_op_id(op_id)
+        # Put a new opid in the request headers so this context an be
+        # used/propagated on the receiver
+        context.set_request_header(_OPID_HEADER, _getNextOpID())
+
         cid = context.correlation_id
         if cid:
             context.set_response_header(_CID_HEADER, cid)
@@ -99,6 +103,10 @@ class FProtocol(TProtocolDecorator, object):
         headers = _Headers._read(self.get_transport())
 
         for key, value in headers.items():
+            # Don't want to overwrite the opid header we set for a propagated
+            # response
+            if key == _OPID_HEADER:
+                continue
             context.set_response_header(key, value)
 
     @_state_reset_decorator

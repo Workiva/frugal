@@ -5,6 +5,7 @@ from thrift.protocol.TBinaryProtocol import TBinaryProtocolFactory
 from thrift.Thrift import TException
 from thrift.transport.TTransport import TMemoryBuffer
 
+from frugal.context import _OPID_HEADER
 from frugal.processor import FBaseProcessor
 from frugal.protocol import FProtocolFactory
 from frugal.transport import TMemoryOutputBuffer
@@ -65,7 +66,7 @@ class TestFBaseProcessor(unittest.TestCase):
         processor.process(iprot, oprot)
         assert(proc.process.call_args)
         args, _ = proc.process.call_args
-        assert(args[0]._get_op_id() == 1)
+        self.assertEqual(args[0].get_response_header(_OPID_HEADER), '1')
         assert(args[1] == iprot)
         assert(args[2] == oprot)
 

@@ -19,7 +19,15 @@ class TestFProtocol(unittest.TestCase):
 
         ctx = self.protocol.read_request_headers()
 
-        self.assertEqual(0, ctx._get_op_id())
+        # The opid sent on the request headers and the opid received on the
+        # request headers should be different to allow propagation
+        self.assertNotEqual(
+            headers[_OPID_HEADER], ctx.get_request_header(_OPID_HEADER))
+
+        # The opid in the response headers should match the opid originally
+        # sent on the request headers
+        self.assertEqual(
+            headers[_OPID_HEADER], ctx.get_response_header(_OPID_HEADER))
         self.assertEqual("someid", ctx.get_response_header(_CID_HEADER))
 
     @mock.patch('frugal.protocol.protocol._Headers._read')
@@ -31,7 +39,8 @@ class TestFProtocol(unittest.TestCase):
 
         self.protocol.read_response_headers(context)
 
-        self.assertEqual("0", context.get_response_header(_OPID_HEADER))
+        # Ensure the opid is not set when the response headers are read in
+        self.assertIsNone(context.get_response_header(_OPID_HEADER))
         self.assertEqual("someid", context.get_response_header("_cid"))
 
     @mock.patch('frugal.protocol.protocol._Headers._write_to_bytearray')
