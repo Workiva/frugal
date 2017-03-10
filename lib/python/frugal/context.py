@@ -17,7 +17,7 @@ _DEFAULT_TIMEOUT = 5 * 1000
 _OP_ID = 0
 
 
-def _getNextOpID():
+def _get_next_op_id():
     global _OP_ID
     _OP_ID += 1
     return str(_OP_ID)
@@ -60,7 +60,7 @@ class FContext(object):
         self._request_headers[_TIMEOUT_HEADER] = str(timeout)
 
         # Take the current op id and increment the counter
-        self._request_headers[_OPID_HEADER] = _getNextOpID()
+        self._request_headers[_OPID_HEADER] = _get_next_op_id()
 
     @property
     def correlation_id(self):
@@ -169,7 +169,7 @@ class FContext(object):
         copied = FContext()
         copied._request_headers = self.get_request_headers()
         copied._response_headers = self.get_response_headers()
-        copied._request_headers[_OPID_HEADER] = _getNextOpID()
+        copied._request_headers[_OPID_HEADER] = _get_next_op_id()
         return copied
 
     def _check_string(self, string):
