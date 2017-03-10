@@ -6,6 +6,7 @@ import (
 	"log"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
@@ -13,12 +14,11 @@ import (
 	"github.com/Workiva/frugal/lib/go"
 	"github.com/Workiva/frugal/test/integration/go/common"
 	"github.com/Workiva/frugal/test/integration/go/gen/frugaltest"
-	"strings"
 )
 
 var host = flag.String("host", "localhost", "Host to connect")
 var port = flag.Int64("port", 9090, "Port number to connect")
-var transport = flag.String("transport", "stateless", "Transport: stateless, stateful, stateless-stateful, http")
+var transport = flag.String("transport", "stateless", "Transport: stateless, http")
 var protocol = flag.String("protocol", "binary", "Protocol: binary, compact, json")
 
 func main() {
@@ -65,6 +65,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatal("Unexpected error in TestVoid() call: ", err)
 	}
 
+	ctx = frugal.NewFContext("TestString")
 	thing, err := client.TestString(ctx, "thing")
 	if err != nil {
 		log.Fatal("Unexpected error in TestString() call: ", err)
@@ -73,6 +74,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestString() result, expected 'thing' got '%s' ", thing)
 	}
 
+	ctx = frugal.NewFContext("TestBool")
 	bl, err := client.TestBool(ctx, true)
 	if err != nil {
 		log.Fatal("Unexpected error in TestBool() call: ", err)
@@ -89,6 +91,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestBool() result expected false, got %t ", bl)
 	}
 
+	ctx = frugal.NewFContext("TestByte")
 	b, err := client.TestByte(ctx, 42)
 	if err != nil {
 		log.Fatal("Unexpected error in TestByte() call: ", err)
@@ -97,6 +100,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestByte() result expected 42, got %d ", b)
 	}
 
+	ctx = frugal.NewFContext("TestI32")
 	i32, err := client.TestI32(ctx, 4242)
 	if err != nil {
 		log.Fatal("Unexpected error in TestI32() call: ", err)
@@ -105,6 +109,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestI32() result expected 4242, got %d ", i32)
 	}
 
+	ctx = frugal.NewFContext("TestI64")
 	i64, err := client.TestI64(ctx, 424242)
 	if err != nil {
 		log.Fatal("Unexpected error in TestI64() call: ", err)
@@ -113,6 +118,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestI64() result expected 424242, got %d ", i64)
 	}
 
+	ctx = frugal.NewFContext("TestDouble")
 	d, err := client.TestDouble(ctx, 42.42)
 	if err != nil {
 		log.Fatal("Unexpected error in TestDouble() call: ", err)
@@ -125,6 +131,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	// https://github.com/Workiva/frugal/issues/412
 	// Using 400 for now, will change back to 42 (101010) once the Thrift fix is implemented
 	// TODO: Change back to 42
+	ctx = frugal.NewFContext("TestBinary")
 	binary, err := client.TestBinary(ctx, []byte(strconv.Itoa(400)))
 	if err != nil {
 		log.Fatal("Unexpected error in TestBinary call: ", err)
@@ -138,6 +145,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	xs.ByteThing = 42
 	xs.I32Thing = 4242
 	xs.I64Thing = 424242
+	ctx = frugal.NewFContext("TestStruct")
 	xsret, err := client.TestStruct(ctx, xs)
 	if err != nil {
 		log.Fatal("Unexpected error in TestStruct() call: ", err)
@@ -148,6 +156,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 
 	x2 := frugaltest.NewXtruct2()
 	x2.StructThing = xs
+	ctx = frugal.NewFContext("TestNest")
 	x2ret, err := client.TestNest(ctx, x2)
 	if err != nil {
 		log.Fatal("Unexpected error in TestNest() call: ", err)
@@ -157,6 +166,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	}
 
 	m := map[int32]int32{1: 2, 3: 4, 5: 42}
+	ctx = frugal.NewFContext("TestMap")
 	mret, err := client.TestMap(ctx, m)
 	if err != nil {
 		log.Fatal("Unexpected error in TestMap() call: ", err)
@@ -166,6 +176,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	}
 
 	sm := map[string]string{"a": "2", "b": "blah", "some": "thing"}
+	ctx = frugal.NewFContext("TestStringMap")
 	smret, err := client.TestStringMap(ctx, sm)
 	if err != nil {
 		log.Fatal("Unexpected error in TestStringMap() call: ", err)
@@ -175,6 +186,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	}
 
 	s := map[int32]bool{1: true, 2: true, 42: true}
+	ctx = frugal.NewFContext("TestSet")
 	sret, err := client.TestSet(ctx, s)
 	if err != nil {
 		log.Fatal("Unexpected error in TestSet() call: ", err)
@@ -184,6 +196,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 	}
 
 	l := []int32{1, 2, 42}
+	ctx = frugal.NewFContext("TestList")
 	lret, err := client.TestList(ctx, l)
 	if err != nil {
 		log.Fatal("Unexpected error in TestList() call: ", err)
@@ -192,6 +205,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestSet() result expected %#v, got %#v ", l, lret)
 	}
 
+	ctx = frugal.NewFContext("TestEnum")
 	eret, err := client.TestEnum(ctx, frugaltest.Numberz_TWO)
 	if err != nil {
 		log.Fatal("Unexpected error in TestEnum() call: ", err)
@@ -200,6 +214,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestEnum() result expected %#v, got %#v ", frugaltest.Numberz_TWO, eret)
 	}
 
+	ctx = frugal.NewFContext("TestTypedef")
 	tret, err := client.TestTypedef(ctx, frugaltest.UserId(42))
 	if err != nil {
 		log.Fatal("Unexpected error in TestTypedef() call: ", err)
@@ -208,6 +223,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestTypedef() result expected %#v, got %#v ", frugaltest.UserId(42), tret)
 	}
 
+	ctx = frugal.NewFContext("TestMapMap")
 	mapmap, err := client.TestMapMap(ctx, 42)
 	if err != nil {
 		log.Fatal("Unexpected error in TestMapMap() call: ", err)
@@ -216,6 +232,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestMapMap() result expected %#v, got %#v ", rmapmap, mapmap)
 	}
 
+	ctx = frugal.NewFContext("TestUppercaseMethod")
 	upper, err := client.TestUppercaseMethod(ctx, true)
 	if err != nil {
 		log.Fatal("Unexpected error in TestUppercaseMethod() call: ", err)
@@ -243,6 +260,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		truck1,
 		truck2,
 	}
+	ctx = frugal.NewFContext("TestInsanity")
 	insanity, err := client.TestInsanity(ctx, crazy)
 	if err != nil {
 		log.Fatal("Unexpected error in TestInsanity() call: ", err)
@@ -258,6 +276,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 			insanity[1][3])
 	}
 
+	ctx = frugal.NewFContext("TestMulti")
 	xxsret, err := client.TestMulti(ctx, 42, 4242, 424242, map[int16]string{1: "blah", 2: "thing"}, frugaltest.Numberz_EIGHT, frugaltest.UserId(24))
 	if err != nil {
 		log.Fatal("Unexpected error in TestMulti() call: ", err)
@@ -266,6 +285,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestMulti() result expected %#v, got %#v ", xxs, xxsret)
 	}
 
+	ctx = frugal.NewFContext("TestException")
 	err = client.TestException(ctx, "Xception")
 	if err == nil {
 		log.Fatal("Expecting exception in TestException() call")
@@ -274,13 +294,7 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestException() result expected %#v, got %#v ", xcept, err)
 	}
 
-	// TODO: Need to handle the test case where an untyped exception is thrown. Handle reopening the transport after frugal freaks out.
-	// err = client.TestException(ctx, "TException") // This is closing the transport
-	// _, ok := err.(thrift.TApplicationException)
-	// if err == nil || !ok {
-	// 	log.Fatalf("Unexpected TestException() result expected ApplicationError, got %#v ", err)
-	// }
-
+	ctx = frugal.NewFContext("TestMultiException")
 	ign, err := client.TestMultiException(ctx, "Xception", "ignoreme")
 	if ign != nil || err == nil {
 		log.Fatal("Expecting exception in TestMultiException() call")
@@ -289,18 +303,21 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestMultiException() %#v ", err)
 	}
 
+	ctx = frugal.NewFContext("TestUncaughtException")
 	err = client.TestUncaughtException(ctx)
 	e, ok := err.(thrift.TApplicationException)
 	if !ok || e.TypeId() != frugal.APPLICATION_EXCEPTION_INTERNAL_ERROR || !strings.Contains(e.Error(), "An uncaught error") {
 		log.Fatalf("TestUncheckedTApplicationException expected TApplicationException with typeID=%v, got %v.\n Got error=%v", frugal.APPLICATION_EXCEPTION_INTERNAL_ERROR, e.TypeId(), e.Error())
 	}
 
+	ctx = frugal.NewFContext("TestUncheckedTApplicationException")
 	err = client.TestUncheckedTApplicationException(ctx)
 	e, ok = err.(thrift.TApplicationException)
 	if !ok || e.TypeId() != 400 || !strings.Contains(e.Error(), "Unchecked TApplicationException") {
 		log.Fatalf("TestUncheckedTApplicationException expected TApplicationException with typeID=%v, got %v.\n Got error=%v", 400, e.TypeId(), e.Error())
 	}
 
+	ctx = frugal.NewFContext("TestMultiException")
 	ign, err = client.TestMultiException(ctx, "Xception2", "ignoreme")
 	if ign != nil || err == nil {
 		log.Fatal("Expecting exception in TestMultiException() call")
@@ -310,6 +327,55 @@ func callEverything(client *frugaltest.FFrugalTestClient) {
 		log.Fatalf("Unexpected TestMultiException() %#v ", err)
 	}
 
+	// Only check message size exceptions with NATS transports
+	if *transport != "http" {
+		// Request at the 1mb limit
+		request := make([]byte, 1024 * 1024)
+		ctx = frugal.NewFContext("TestRequestTooLarge")
+		err = client.TestRequestTooLarge(ctx, request)
+		switch e := err.(type){
+		case thrift.TTransportException:
+			if e.TypeId() != 100{
+				log.Fatalf("Unexpected error code %v",
+					e.TypeId())
+			}
+			log.Println("TApplicationException")
+		default:
+			log.Fatalf("Unexpected TestRequestTooLarge() %v", e)
+		}
+
+		// Request 4 bytes less than the 1mb limit
+		request = make([]byte, 1024 * 1024 - 4)
+		ctx = frugal.NewFContext("TestRequestAlmostTooLarge")
+		err = client.TestRequestAlmostTooLarge(ctx, request)
+		switch e := err.(type){
+		case thrift.TTransportException:
+			if e.TypeId() != 100{
+				log.Fatalf("Unexpected error code %v",
+					e.TypeId())
+			}
+			log.Println("TApplicationException")
+		default:
+			log.Fatalf("Unexpected TestRequestTooLarge() %v", e)
+		}
+
+		request = make([]byte, 4)
+		ctx = frugal.NewFContext("TestResponseTooLarge")
+		response, err := client.TestResponseTooLarge(ctx, request)
+		switch e := err.(type){
+		case thrift.TTransportException:
+			if e.TypeId() != 101{
+				log.Fatalf("Unexpected error  %v",
+				e)
+			}
+			log.Println("TApplicationException")
+		default:
+			log.Fatalf("Unexpected TestRequestTooLarge() %v",
+				response)
+		}
+	}
+
+	ctx = frugal.NewFContext("TestOneway")
 	err = client.TestOneway(ctx, 1)
 	if err != nil {
 		log.Fatal("Unexpected error in TestOneway() call: ", err)

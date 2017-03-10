@@ -7,7 +7,7 @@ from frugal.exceptions import TTransportExceptionType
 from frugal.tornado.transport import FAsyncTransport
 
 _NOT_OPEN = 'NATS not connected.'
-_ALREAD_OPEN = 'NATS transport already open.'
+_ALREADY_OPEN = 'NATS transport already open.'
 
 
 class FNatsTransport(FAsyncTransport):
@@ -45,7 +45,7 @@ class FNatsTransport(FAsyncTransport):
 
         elif self.is_open():
             already_open = TTransportExceptionType.ALREADY_OPEN
-            raise TTransportException(already_open, _ALREAD_OPEN)
+            raise TTransportException(already_open, _ALREADY_OPEN)
 
         cb = self._on_message_callback
         inbox = self._inbox

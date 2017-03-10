@@ -1,10 +1,10 @@
+import six, sys
 import time
 
 from thrift.Thrift import TApplicationException
+from thrift.transport.TTransport import TTransportException
 
 from frugal_test.f_FrugalTest import Iface, Xtruct, Xception, Xception2
-
-from common.utils import *
 
 
 class FrugalTestHandler(Iface):
@@ -136,8 +136,25 @@ class FrugalTestHandler(Iface):
             r.string_thing = arg1
             return r
 
+    def testRequestTooLarge(self, ctx, request):
+        raise SizeError("testRequestTooLarge should never be successfully called")
+        return
+
+    def testRequestAlmostTooLarge(self, ctx, request):
+        raise SizeError("testRequestAlmostTooLarge should never be successfully called")
+        return
+
+    def testResponseTooLarge(self, ctx, request):
+        print("test_response_too_large({})".format(request))
+        response = six.binary_type(b'\x00' * 1024 * 1024)
+        return response
+
     def testOneway(self, ctx, seconds):
         print("test_oneway({}): Sleeping...".format(seconds))
         time.sleep(seconds/1000)
         print("testOneway({}): done sleeping!".format(seconds))
         return
+
+
+class SizeError(Exception):
+    pass

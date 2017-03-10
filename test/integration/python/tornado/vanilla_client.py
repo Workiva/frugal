@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import argparse
 import sys
 
@@ -38,7 +40,7 @@ def main():
 
     # Scope generation is not currently supported with vanilla python
     # TODO: Add Pub/Sub test once scopes are supported
-    test_rpc(client, ctx)
+    test_rpc(client, ctx, args.transport_type)
 
     global middleware_called
     if not middleware_called:
@@ -48,11 +50,11 @@ def main():
     transport.close()
 
 
-def test_rpc(client, ctx):
+def test_rpc(client, ctx, transport):
     test_failed = False
 
     # Iterate over all expected RPC results
-    for rpc, vals in rpc_test_definitions().items():
+    for rpc, vals in rpc_test_definitions(transport).items():
         method = getattr(client, rpc)
         args = vals['args']
         expected_result = vals['expected_result']

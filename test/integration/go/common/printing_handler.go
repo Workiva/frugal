@@ -8,6 +8,7 @@ import (
 
 	"github.com/Workiva/frugal/lib/go"
 	. "github.com/Workiva/frugal/test/integration/go/gen/frugaltest"
+	"log"
 )
 
 var PrintingHandler = &printingHandler{}
@@ -178,6 +179,33 @@ func (p *printingHandler) TestUncaughtException(ctx frugal.FContext) (err error)
 func (p *printingHandler) TestUncheckedTApplicationException(ctx frugal.FContext) (err error) {
 	return thrift.NewTApplicationException(400, "Unchecked TApplicationException")
 
+}
+
+// TestRequestTooLarge
+// Only used for testing with NATS.
+// This case should never be hit because the client should encounter a
+// message size error.
+func(p *printingHandler) TestRequestTooLarge(ctx frugal.FContext, request []byte) (err error) {
+	log.Fatal("TestRequestTooLarge should never be successfully called.")
+	return
+}
+
+// TestRequestAlmostTooLarge
+// Only used for testing with NATS.
+// This case should never be hit because the client should encounter a
+// message size error.
+func(p *printingHandler) TestRequestAlmostTooLarge(ctx frugal.FContext, request []byte) (err error) {
+	log.Fatal("TestRequestAlmostTooLarge should never be succeessfully called.")
+	return
+}
+
+// TestResponseTooLarge
+// Only used for testing with NATS.
+// Takes a []btye that is under the 1mb limit and returns with a message that is
+// over the 1mb limit.
+func(p *printingHandler) TestResponseTooLarge (ctx frugal.FContext, request []byte) (response []byte, err error) {
+	response = make([]byte, 1024*1024)
+	return response, nil
 }
 
 // TestMultiException

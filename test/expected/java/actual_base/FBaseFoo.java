@@ -192,7 +192,7 @@ public class FBaseFoo {
 						oprot.writeMessageEnd();
 						oprot.getTransport().flush();
 					} catch (TTransportException e) {
-						if (e.getType() == TTransportExceptionType.RESPONSE_TOO_LARGE) {
+						if (e.getType() == TTransportExceptionType.REQUEST_TOO_LARGE) {
 							writeApplicationException(ctx, oprot, TApplicationExceptionType.RESPONSE_TOO_LARGE, "basePing", "response too large: " + e.getMessage());
 						} else {
 							throw e;

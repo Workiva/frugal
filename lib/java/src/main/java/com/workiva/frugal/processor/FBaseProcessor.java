@@ -99,6 +99,10 @@ public abstract class FBaseProcessor implements FProcessor {
     protected static TApplicationException writeApplicationException(FContext ctx, FProtocol oprot, int type,
                                                                      String method, String message) throws TException {
         TApplicationException x = new TApplicationException(type, message);
+
+        // TODO: upgrade to thrift 0.10 and include
+        // https://github.com/apache/thrift/commit/1d4a4393c9a9396ec76c3ba674e0d6a65fe39cc1
+        oprot.reset();
         oprot.writeResponseHeader(ctx);
         oprot.writeMessageBegin(new TMessage(method, TMessageType.EXCEPTION, 0));
         x.write(oprot);

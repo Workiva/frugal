@@ -2987,7 +2987,7 @@ func (g *Generator) generateServer(service *parser.Service) string {
 		contents += tabtabtabtabtabtab + "oprot.writeMessageEnd();\n"
 		contents += tabtabtabtabtabtab + "oprot.getTransport().flush();\n"
 		contents += tabtabtabtabtab + "} catch (TTransportException e) {\n"
-		contents += tabtabtabtabtabtab + "if (e.getType() == TTransportExceptionType.RESPONSE_TOO_LARGE) {\n"
+		contents += tabtabtabtabtabtab + "if (e.getType() == TTransportExceptionType.REQUEST_TOO_LARGE) {\n"
 		contents += tabtabtabtabtabtabtab + fmt.Sprintf(
 			"writeApplicationException(ctx, oprot, TApplicationExceptionType.RESPONSE_TOO_LARGE, \"%s\", \"response too large: \" + e.getMessage());\n",
 			methodLower)

@@ -25,14 +25,10 @@ import com.workiva.frugal.middleware.ServiceMiddleware;
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.provider.FScopeProvider;
-import com.workiva.frugal.server.FDefaultNettyHttpProcessor;
-import com.workiva.frugal.server.FNatsServer;
-import com.workiva.frugal.server.FNettyHttpHandler;
-import com.workiva.frugal.server.FNettyHttpProcessor;
-import com.workiva.frugal.server.FServer;
-import com.workiva.frugal.transport.FPublisherTransportFactory;
+import com.workiva.frugal.server.*;
 import com.workiva.frugal.transport.FNatsPublisherTransport;
 import com.workiva.frugal.transport.FNatsSubscriberTransport;
+import com.workiva.frugal.transport.FPublisherTransportFactory;
 import com.workiva.frugal.transport.FSubscriberTransportFactory;
 import frugal.test.Event;
 import frugal.test.EventsPublisher;
@@ -59,6 +55,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.workiva.utils.PREAMBLE_HEADER;
+import static com.workiva.utils.RAMBLE_HEADER;
+import static com.workiva.utils.whichProtocolFactory;
+
 
 public class TestServer {
 
@@ -68,8 +68,8 @@ public class TestServer {
         try {
             // default testing parameters, overwritten in Python runner
             int port = 9090;
-            String transport_type = "stateless";
             String protocol_type = "binary";
+            String transport_type = "stateless";
 
             try {
                 for (String arg : args) {
@@ -95,7 +95,7 @@ public class TestServer {
                 System.exit(1);
             }
 
-            TProtocolFactory protocolFactory = utils.whichProtocolFactory(protocol_type);
+            TProtocolFactory protocolFactory = whichProtocolFactory(protocol_type);
             FProtocolFactory fProtocolFactory = new FProtocolFactory(protocolFactory);
 
             ConnectionFactory cf = new ConnectionFactory("nats://localhost:4222");
@@ -110,7 +110,8 @@ public class TestServer {
             // Start subscriber for pub/sub test
             new Subscriber(fProtocolFactory, port).run();
 
-            FFrugalTest.Iface handler = new FrugalTestHandler();
+            // Hand the transport to the handler
+            FFrugalTest.Iface handler = new com.workiva.FrugalTestHandler();
             CountDownLatch called = new CountDownLatch(1);
             FFrugalTest.Processor processor = new FFrugalTest.Processor(handler, new ServerMiddleware(called));
             FServer server = null;
@@ -129,7 +130,7 @@ public class TestServer {
             // Start a healthcheck server for the cross language tests
             if (transport_type.equals("stateless")) {
                 try {
-                    new HealthCheck(port);
+                    new com.workiva.HealthCheck(port);
                 } catch (IOException e) {
                     System.out.println(e.getMessage());
                 }
@@ -195,7 +196,7 @@ public class TestServer {
                 b.group(bossGroup, workerGroup)
                         .channel(NioServerSocketChannel.class)
                         .handler(new LoggingHandler(LogLevel.INFO))
-                        .childHandler(new NettyHttpInitializer(handlerFactory));
+                        .childHandler(new com.workiva.NettyHttpInitializer(handlerFactory));
 
                 Channel ch = b.bind(port).sync().channel();
 
@@ -280,12 +281,12 @@ public class TestServer {
                         EventsPublisher.Iface publisher = new EventsPublisher.Client(provider);
                         try {
                             publisher.open();
-                            String preamble = context.getRequestHeader(utils.PREAMBLE_HEADER);
+                            String preamble = context.getRequestHeader(PREAMBLE_HEADER);
                             if (preamble == null || "".equals(preamble)) {
                                 System.out.println("Client did not provide preamble header");
                                 return;
                             }
-                            String ramble = context.getRequestHeader(utils.RAMBLE_HEADER);
+                            String ramble = context.getRequestHeader(RAMBLE_HEADER);
                             if (ramble == null || "".equals(ramble)) {
                                 System.out.println("Client did not provide ramble header");
                                 return;

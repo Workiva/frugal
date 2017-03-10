@@ -1,10 +1,15 @@
-from frugal_test.ttypes import Xception, Insanity, Xception2, Event
+import six
+
+from frugal.exceptions import TTransportExceptionType
+
+from frugal_test.ttypes import Xception, Insanity, Xception2
 from frugal_test.f_FrugalTest import Xtruct, Xtruct2, Numberz
 
 from thrift.Thrift import TApplicationException
+from thrift.transport.TTransport import TTransportException
 
 
-def rpc_test_definitions():
+def rpc_test_definitions(transport):
     """
     Defines and returns shared tests for all python frugal implementations.
 
@@ -123,5 +128,25 @@ def rpc_test_definitions():
         args=[],
         expected_result=e
     )
+
+    # Only check message size exceptions with NATS transports
+    if transport != "http":
+        e = TTransportException(TTransportExceptionType.REQUEST_TOO_LARGE)
+        tests['testRequestTooLarge'] = dict(
+            args=[six.binary_type(b'\x00' * 1024 * 1024)],
+            expected_result=e
+        )
+
+        e = TTransportException(TTransportExceptionType.REQUEST_TOO_LARGE)
+        tests['testRequestAlmostTooLarge'] = dict(
+            args=[six.binary_type(b'\x00' * (1024 * 1024 - 1))],
+            expected_result=e
+        )
+
+        e = TTransportException(TTransportExceptionType.RESPONSE_TOO_LARGE)
+        tests['testResponseTooLarge'] = dict(
+            args=[six.binary_type(b'0' * 4)],
+            expected_result=e
+        )
 
     return tests

@@ -292,4 +292,9 @@ public class FProtocol extends TProtocol {
     public ByteBuffer readBinary() throws TException {
         return wrapped.readBinary();
     }
+
+    @Override
+    public void reset() {
+        wrapped.reset();
+    }
 }

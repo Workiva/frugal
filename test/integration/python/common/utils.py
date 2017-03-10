@@ -5,6 +5,7 @@ from thrift.protocol.TBinaryProtocol import TBinaryProtocolFactory
 from thrift.protocol.TJSONProtocol import TJSONProtocolFactory
 from thrift.protocol.TCompactProtocol import TCompactProtocolFactory
 from thrift.Thrift import TApplicationException
+from thrift.transport.TTransport import TTransportException
 from frugal.protocol import FProtocolFactory
 
 PREAMBLE_HEADER = "preamble"
@@ -52,6 +53,12 @@ def check_for_failure(actual, expected):
             if sys.version_info[0] == 3 and actual.message.find(expected.message) == -1 or actual.type != expected.type:
                 failed = True
             if sys.version_info[0] == 2 and actual._message.find(expected._message) == -1 or actual.type != expected.type:
+                failed = True
+        except Exception:
+            failed = True
+    elif isinstance(expected, TTransportException):
+        try:
+            if actual.type != expected.type:
                 failed = True
         except Exception:
             failed = True

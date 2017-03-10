@@ -3,6 +3,7 @@ import struct
 
 from thrift.Thrift import TApplicationException
 from thrift.transport.TTransport import TMemoryBuffer
+from thrift.transport.TTransport import TTransportException
 from tornado import gen
 
 from frugal import _NATS_MAX_MESSAGE_SIZE
