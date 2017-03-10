@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>
  * This object is not thread-safe.
  */
-public class FContext {
+public class FContext implements Cloneable {
 
     /**
      * To ensure every new FContext gets a unique opid, use an atomic, incrementing integer.
@@ -73,7 +73,7 @@ public class FContext {
      */
     public FContext(String correlationId) {
         requestHeaders.put(CID_HEADER, correlationId);
-        requestHeaders.put(OPID_HEADER, Long.toString(NEXT_OP_ID.incrementAndGet()));
+        requestHeaders.put(OPID_HEADER, getNextOpId());
         requestHeaders.put(TIMEOUT_HEADER, Long.toString(DEFAULT_TIMEOUT));
 
     }
@@ -88,6 +88,16 @@ public class FContext {
         headers.computeIfAbsent(CID_HEADER, k -> generateCorrelationId());
         headers.computeIfAbsent(TIMEOUT_HEADER, k -> Long.toString(DEFAULT_TIMEOUT));
         return new FContext(headers, new HashMap<>());
+    }
+
+    /**
+     * Returns a new unique opid. Should not be used by consumers outside of
+     * frugal.
+     *
+     * @return A new unique opid.
+     */
+    public static String getNextOpId() {
+        return Long.toString(NEXT_OP_ID.getAndIncrement());
     }
 
     private static String generateCorrelationId() {
@@ -218,5 +228,14 @@ public class FContext {
      */
     public void setTimeout(long timeout) {
         requestHeaders.put(TIMEOUT_HEADER, Long.toString(timeout));
+    }
+
+    @Override
+    public FContext clone() throws CloneNotSupportedException {
+        FContext clone = (FContext) super.clone();
+        clone.requestHeaders = this.getRequestHeaders();
+        clone.responseHeaders = this.getResponseHeaders();
+        clone.addRequestHeader(OPID_HEADER, getNextOpId());
+        return clone;
     }
 }

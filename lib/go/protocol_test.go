@@ -176,8 +176,9 @@ func TestWriteReadResponseHeader(t *testing.T) {
 	assert.True(ok)
 	assert.Equal("bar", header)
 	assert.Equal("123", ctx.CorrelationID())
+	// Ensure the opid is not set when the response headers are read in
 	opid, ok := ctx.ResponseHeader(opIDHeader)
-	assert.Nil(err)
+	assert.False(ok)
 	assert.Equal("", opid)
 }
 

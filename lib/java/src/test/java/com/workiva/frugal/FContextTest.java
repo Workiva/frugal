@@ -101,4 +101,25 @@ public class FContextTest {
         assertEquals("10000", ctx.getRequestHeader(FContext.TIMEOUT_HEADER));
     }
 
+    @Test
+    public void testClone() throws CloneNotSupportedException {
+        FContext ctx = new FContext();
+        ctx.addRequestHeader("foo", "bar");
+        FContext cloned = ctx.clone();
+        Map<String, String> ctxHeaders = ctx.getRequestHeaders();
+        Map<String, String> clonedHeaders = cloned.getRequestHeaders();
+
+        // Should not have the same opid
+        assertNotEquals(ctxHeaders.get(FContext.OPID_HEADER), clonedHeaders.get(FContext.OPID_HEADER));
+
+        // Everything else should be the same
+        ctxHeaders.remove(FContext.OPID_HEADER);
+        clonedHeaders.remove(FContext.OPID_HEADER);
+        assertEquals(ctxHeaders, clonedHeaders);
+
+        // Modifying the originals headers shouldn't affect the clone
+        ctx.addRequestHeader("baz", "qux");
+        String value = cloned.getRequestHeader("baz");
+        assertNull(value);
+    }
 }

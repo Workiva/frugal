@@ -11,6 +11,7 @@ import org.apache.thrift.protocol.TSet;
 import org.apache.thrift.protocol.TStruct;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import static com.workiva.frugal.FContext.CID_HEADER;
 import static com.workiva.frugal.FContext.OPID_HEADER;
@@ -53,6 +54,9 @@ public class FProtocol extends TProtocol {
         FContext ctx = FContext.withRequestHeaders(HeaderUtils.read(wrapped.getTransport()));
         // Put op id in response headers
         ctx.addResponseHeader(OPID_HEADER, ctx.getRequestHeader(OPID_HEADER));
+        // Put a new op id in the request headers so this context can be
+        // used/propagated by the receiver.
+        ctx.addRequestHeader(OPID_HEADER, FContext.getNextOpId());
         String cid = ctx.getCorrelationId();
         if (cid != null && !cid.isEmpty()) {
             ctx.addResponseHeader(CID_HEADER, cid);
@@ -77,7 +81,11 @@ public class FProtocol extends TProtocol {
      * @throws TException an error occurred while reading the headers
      */
     public void readResponseHeader(FContext context) throws TException {
-        context.addResponseHeaders(HeaderUtils.read(wrapped.getTransport()));
+        Map<String, String> headers = HeaderUtils.read(wrapped.getTransport());
+        // Don't want to overwrite the opid header we set for a propagated
+        // response.
+        headers.remove(FContext.OPID_HEADER);
+        context.addResponseHeaders(headers);
     }
 
     @Override
