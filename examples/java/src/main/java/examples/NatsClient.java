@@ -29,13 +29,16 @@ public class NatsClient {
         ConnectionFactory cf = new ConnectionFactory(ConnectionFactory.DEFAULT_URL);
         Connection conn = cf.createConnection();
 
-        // Create and open a new transport that uses NATS for sending data.
+        // Create a new transport that uses NATS for sending data.
         // The NATS transport will communicate using the music-service topic.
         FTransport transport = FNatsTransport.of(conn, NatsServer.SERVICE_SUBJECT);
-        transport.open();
+
+        // Create an FServiceProvider and open it.
+        FServiceProvider provider = new FServiceProvider(transport, protocolFactory);
+        provider.open();
 
         // Create a new client for the music store
-        FStore.Client storeClient = new FStore.Client(new FServiceProvider(transport, protocolFactory));
+        FStore.Client storeClient = new FStore.Client(provider);
 
         // Request to buy an album
         Album album = storeClient.buyAlbum(new FContext("corr-id-1"), "ASIN-1290AIUBOA89", "ACCOUNT-12345");
@@ -44,8 +47,8 @@ public class NatsClient {
         // Enter the contest
         storeClient.enterAlbumGiveaway(new FContext("corr-id-2"), "kevin@workiva.com", "Kevin");
 
-        // Close the transport
-        transport.close();
+        // Close the provider
+        provider.close();
 
         // Close the NATS client
         conn.close();

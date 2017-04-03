@@ -3,6 +3,7 @@ package com.workiva.frugal.provider;
 import com.workiva.frugal.middleware.ServiceMiddleware;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.transport.FTransport;
+import org.apache.thrift.transport.TTransportException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,10 +26,26 @@ public class FServiceProvider {
     }
 
     public FServiceProvider(FTransport transport, FProtocolFactory protocolFactory,
-                            ServiceMiddleware ...middleware) {
+                            ServiceMiddleware... middleware) {
         this.transport = transport;
         this.protocolFactory = protocolFactory;
         this.middleware = Arrays.asList(middleware);
+    }
+
+    /**
+     * Open the FServiceProvider so it can be used by a client.
+     *
+     * @throws TTransportException if opening the transport failed
+     */
+    public void open() throws TTransportException {
+        transport.open();
+    }
+
+    /**
+     * Close the FServiceProvider and dispose the transport.
+     */
+    public void close() {
+        transport.close();
     }
 
     /**
