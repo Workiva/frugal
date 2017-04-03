@@ -1,6 +1,7 @@
 package frugal
 
 import (
+	"errors"
 	"sync"
 	"testing"
 
@@ -85,4 +86,36 @@ func TestScopeProviderNew(t *testing.T) {
 	mockPublisherTransportFactory.AssertExpectations(t)
 	mockSubscriberTransportFactory.AssertExpectations(t)
 	mockTProtocolFactory.AssertExpectations(t)
+}
+
+func TestFServiceProviderOpen(t *testing.T) {
+	tr := new(mockFTransport)
+	provider := NewFServiceProvider(tr, nil)
+	tr.On("Open").Return(nil)
+	assert.NoError(t, provider.Open())
+	tr.AssertExpectations(t)
+}
+
+func TestFServiceProviderOpenError(t *testing.T) {
+	tr := new(mockFTransport)
+	provider := NewFServiceProvider(tr, nil)
+	tr.On("Open").Return(errors.New("error"))
+	assert.Error(t, provider.Open())
+	tr.AssertExpectations(t)
+}
+
+func TestFServiceProviderClose(t *testing.T) {
+	tr := new(mockFTransport)
+	provider := NewFServiceProvider(tr, nil)
+	tr.On("Close").Return(nil)
+	assert.NoError(t, provider.Close())
+	tr.AssertExpectations(t)
+}
+
+func TestFServiceProviderCloseError(t *testing.T) {
+	tr := new(mockFTransport)
+	provider := NewFServiceProvider(tr, nil)
+	tr.On("Close").Return(errors.New("error"))
+	assert.Error(t, provider.Close())
+	tr.AssertExpectations(t)
 }

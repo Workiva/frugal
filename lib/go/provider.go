@@ -62,6 +62,16 @@ func NewFServiceProvider(transport FTransport, protocolFactory *FProtocolFactory
 	}
 }
 
+// Open the FServiceProvider so it can be used by a client.
+func (f *FServiceProvider) Open() error {
+	return f.transport.Open()
+}
+
+// Close the FServiceProvider and dispose the transport.
+func (f *FServiceProvider) Close() error {
+	return f.transport.Close()
+}
+
 // GetTransport returns the contained FTransport.
 func (f *FServiceProvider) GetTransport() FTransport {
 	return f.transport

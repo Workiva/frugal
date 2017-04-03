@@ -27,14 +27,14 @@ func main() {
 	// Create a NATS transport listening on the music-service topic.
 	// Configured with own inbox
 	natsT := frugal.NewFNatsTransport(conn, "music-service", "service-inbox")
-	defer natsT.Close()
-	if err := natsT.Open(); err != nil {
-		panic(err)
-	}
 
 	// Create a ServiceProvider to wrap the transport and protocol factory.
 	// This can be used to create multiple clients.
 	provider := frugal.NewFServiceProvider(natsT, fProtocolFactory)
+	if err := provider.Open(); err != nil {
+		panic(err)
+	}
+	defer provider.Close()
 
 	// Create a client using NATS to send messages with our desired
 	// protocol

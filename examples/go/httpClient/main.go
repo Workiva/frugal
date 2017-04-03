@@ -19,14 +19,14 @@ func main() {
 
 	// Create an HTTP transport listening
 	httpTransport := frugal.NewFHTTPTransportBuilder(&http.Client{}, "http://localhost:9090/frugal").Build()
-	defer httpTransport.Close()
-	if err := httpTransport.Open(); err != nil {
-		panic(err)
-	}
 
 	// Create a provider with the transport and protocol factory. The provider
 	// can be used to create multiple Clients.
 	provider := frugal.NewFServiceProvider(httpTransport, fProtocolFactory)
+	if err := provider.Open(); err != nil {
+		panic(err)
+	}
+	defer provider.Close()
 
 	// Create a client used to send messages with our desired protocol.  You
 	// can also pass middleware in here if you only want it to intercept calls
