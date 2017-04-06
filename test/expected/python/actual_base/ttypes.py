@@ -10,7 +10,7 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol, TProtocol
 
 
-class base_health_condition(object):
+class base_health_condition(int):
     PASS = 1
     WARN = 2
     FAIL = 3

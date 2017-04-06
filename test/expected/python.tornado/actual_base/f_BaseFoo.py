@@ -125,8 +125,8 @@ class _basePing(FProcessorFunction):
                 return
         except Exception as e:
             with (yield self._lock.acquire()):
-                e = _write_application_exception(ctx, oprot, "basePing", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
-            raise e
+                _write_application_exception(ctx, oprot, "basePing", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
+            raise
         with (yield self._lock.acquire()):
             try:
                 oprot.write_response_headers(ctx)

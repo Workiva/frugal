@@ -18,7 +18,7 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol, TProtocol
 
 
-class HealthCondition(object):
+class HealthCondition(int):
     PASS = 1
     WARN = 2
     FAIL = 3
@@ -38,7 +38,7 @@ class HealthCondition(object):
         "UNKNOWN": 4,
     }
 
-class ItsAnEnum(object):
+class ItsAnEnum(int):
     FIRST = 2
     SECOND = 3
     THIRD = 4
@@ -455,12 +455,12 @@ class TestingDefaults(object):
                     iprot.skip(ftype)
             elif fid == 17:
                 if ftype == TType.I32:
-                    self.status = iprot.readI32()
+                    self.status = HealthCondition(iprot.readI32())
                 else:
                     iprot.skip(ftype)
             elif fid == 18:
                 if ftype == TType.I32:
-                    self.base_status = iprot.readI32()
+                    self.base_status = base.base_health_condition(iprot.readI32())
                 else:
                     iprot.skip(ftype)
             else:
@@ -700,7 +700,7 @@ class EventWrapper(object):
                     self.Enums = []
                     (_, elem28) = iprot.readListBegin()
                     for _ in range(elem28):
-                        elem29 = iprot.readI32()
+                        elem29 = ItsAnEnum(iprot.readI32())
                         self.Enums.append(elem29)
                     iprot.readListEnd()
                 else:

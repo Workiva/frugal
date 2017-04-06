@@ -528,8 +528,8 @@ class _Ping(FProcessorFunction):
                 return
         except Exception as e:
             with (yield self._lock.acquire()):
-                e = _write_application_exception(ctx, oprot, "ping", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
-            raise e
+                _write_application_exception(ctx, oprot, "ping", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
+            raise
         with (yield self._lock.acquire()):
             try:
                 oprot.write_response_headers(ctx)
@@ -568,8 +568,8 @@ class _blah(FProcessorFunction):
                 return
         except Exception as e:
             with (yield self._lock.acquire()):
-                e = _write_application_exception(ctx, oprot, "blah", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
-            raise e
+                _write_application_exception(ctx, oprot, "blah", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
+            raise
         with (yield self._lock.acquire()):
             try:
                 oprot.write_response_headers(ctx)
@@ -602,7 +602,7 @@ class _oneWay(FProcessorFunction):
                 _write_application_exception(ctx, oprot, "oneWay", exception=ex)
                 return
         except Exception as e:
-            raise e
+            raise
 
 
 class _bin_method(FProcessorFunction):
@@ -626,8 +626,8 @@ class _bin_method(FProcessorFunction):
                 return
         except Exception as e:
             with (yield self._lock.acquire()):
-                e = _write_application_exception(ctx, oprot, "bin_method", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
-            raise e
+                _write_application_exception(ctx, oprot, "bin_method", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
+            raise
         with (yield self._lock.acquire()):
             try:
                 oprot.write_response_headers(ctx)
@@ -662,8 +662,8 @@ class _param_modifiers(FProcessorFunction):
                 return
         except Exception as e:
             with (yield self._lock.acquire()):
-                e = _write_application_exception(ctx, oprot, "param_modifiers", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
-            raise e
+                _write_application_exception(ctx, oprot, "param_modifiers", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
+            raise
         with (yield self._lock.acquire()):
             try:
                 oprot.write_response_headers(ctx)
@@ -698,8 +698,8 @@ class _underlying_types_test(FProcessorFunction):
                 return
         except Exception as e:
             with (yield self._lock.acquire()):
-                e = _write_application_exception(ctx, oprot, "underlying_types_test", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
-            raise e
+                _write_application_exception(ctx, oprot, "underlying_types_test", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
+            raise
         with (yield self._lock.acquire()):
             try:
                 oprot.write_response_headers(ctx)
@@ -734,8 +734,8 @@ class _getThing(FProcessorFunction):
                 return
         except Exception as e:
             with (yield self._lock.acquire()):
-                e = _write_application_exception(ctx, oprot, "getThing", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
-            raise e
+                _write_application_exception(ctx, oprot, "getThing", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
+            raise
         with (yield self._lock.acquire()):
             try:
                 oprot.write_response_headers(ctx)
@@ -770,8 +770,8 @@ class _getMyInt(FProcessorFunction):
                 return
         except Exception as e:
             with (yield self._lock.acquire()):
-                e = _write_application_exception(ctx, oprot, "getMyInt", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
-            raise e
+                _write_application_exception(ctx, oprot, "getMyInt", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
+            raise
         with (yield self._lock.acquire()):
             try:
                 oprot.write_response_headers(ctx)
@@ -806,8 +806,8 @@ class _use_subdir_struct(FProcessorFunction):
                 return
         except Exception as e:
             with (yield self._lock.acquire()):
-                e = _write_application_exception(ctx, oprot, "use_subdir_struct", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
-            raise e
+                _write_application_exception(ctx, oprot, "use_subdir_struct", ex_code=TApplicationExceptionType.INTERNAL_ERROR, message=e.message)
+            raise
         with (yield self._lock.acquire()):
             try:
                 oprot.write_response_headers(ctx)

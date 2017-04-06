@@ -132,7 +132,7 @@ class FBaseProcessor(FProcessor):
         if processor_function:
             try:
                 processor_function.process(context, iprot, oprot)
-            except TException:
+            except Exception:
                 # Don't raise an exception because the server should still send
                 # a response to the client.
                 logging.exception(
