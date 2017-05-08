@@ -49,7 +49,7 @@ production systems. However, it has several key problems.
 
 - RPC-only: Thrift has limited support for asynchronous messaging patterns, and
   even asynchronous RPC is largely language-dependent and susceptible to the
-  head-of-line blocking and out-of-order response problems. 
+  head-of-line blocking and out-of-order response problems.
 
 ## Frugal Features
 
