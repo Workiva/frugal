@@ -1,7 +1,9 @@
 package compiler
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,6 +27,7 @@ type Options struct {
 	DryRun  bool   // Do not generate code
 	Recurse bool   // Generate includes
 	Verbose bool   // Verbose mode
+	JSON    bool   // Json dump of the frugal model
 }
 
 // Compile parses the Frugal IDL and generates code for it, returning an error
@@ -48,6 +51,9 @@ func Compile(options Options) error {
 	frugal, err := parseFrugal(absFile)
 	if err != nil {
 		return err
+	}
+	if options.JSON {
+		return generateJSON(frugal)
 	}
 
 	return generateFrugal(frugal)
@@ -82,6 +88,18 @@ func generateFrugal(f *parser.Frugal) error {
 		return err
 	}
 
+	return nil
+}
+
+func generateJSON(f *parser.Frugal) error {
+	b, err := json.Marshal(f)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(filepath.Join(globals.Out, f.Name+".json"), b, 0644)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
