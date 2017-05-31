@@ -8,6 +8,7 @@ from thrift.Thrift import TMessageType
 from thrift.Thrift import TType
 
 from frugal.exceptions import TApplicationExceptionType
+from frugal.protocol import FProtocol, FUniversalProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +126,10 @@ class FBaseProcessor(FProcessor):
         """
         context = iprot.read_request_headers()
         name, _, _ = iprot.readMessageBegin()
+
+        # If the input protocol is a FUniversalProtocol, build the response protocol based on the requested protocol
+        if isinstance(iprot, FProtocol) and isinstance(iprot._wrapped_protocol, FUniversalProtocol):
+            oprot = FProtocol(iprot.oprot_factory(oprot.trans))
 
         processor_function = self._processor_function_map.get(name)
 
