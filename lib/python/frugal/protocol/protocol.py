@@ -243,10 +243,14 @@ class FUniversalProtocol(TProtocolBase):
 
         self.prot = None  # Not determined until initialize_protocol() / readMessageBegin()
         self.trans = trans
-        self.prot_kwargs = kwargs.copy()
 
-        self.binary_protocol = TBinaryProtocolFactory(**self.prot_kwargs).getProtocol(trans)
-        self.compact_protocol = TCompactProtocolFactory(**self.prot_kwargs).getProtocol(trans)
+        self.binary_kwargs = kwargs.copy()
+        kwargs.pop('strictRead', None)
+        kwargs.pop('strictWrite', None)
+        self.compact_kwargs = kwargs.copy()
+
+        self.binary_protocol = TBinaryProtocolFactory(**self.binary_kwargs).getProtocol(trans)
+        self.compact_protocol = TCompactProtocolFactory(**self.compact_kwargs).getProtocol(trans)
         self.json_protocol = TJSONProtocolFactory().getProtocol(trans)
 
     def oprot_factory(self, trans):
@@ -255,9 +259,9 @@ class FUniversalProtocol(TProtocolBase):
             self.initialize_protocol()
 
         if isinstance(self.prot, TBinaryProtocol):
-            return TBinaryProtocolFactory(**self.prot_kwargs).getProtocol(trans)
+            return TBinaryProtocolFactory(**self.binary_kwargs).getProtocol(trans)
         elif isinstance(self.prot, TCompactProtocol):
-            return TCompactProtocolFactory(**self.prot_kwargs).getProtocol(trans)
+            return TCompactProtocolFactory(**self.compact_kwargs).getProtocol(trans)
         elif isinstance(self.prot, TJSONProtocol):
             return TJSONProtocolFactory().getProtocol(trans)
 
@@ -403,5 +407,3 @@ class FUniversalProtocol(TProtocolBase):
 
     def readBinary(self):
         return self.prot.readBinary()
-
-
