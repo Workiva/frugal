@@ -53,7 +53,7 @@ func Compile(options Options) error {
 		return err
 	}
 	if options.JSON {
-		return generateJSON(frugal)
+		return generateSemVerAudit(frugal)
 	}
 
 	return generateFrugal(frugal)
@@ -100,6 +100,187 @@ func generateJSON(f *parser.Frugal) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+type semVer struct {
+	Exports    []*export `json:"exports"`
+	BaseBranch string    `json:"base_branch"`
+	BaseCommit string    `json:"base_commit"`
+	BuildID    string    `json:"build_id"`
+	HeadBranch string    `json:"head_branch"`
+	HeadCommit string    `json:"head_commit"`
+	Language   string    `json:"language"`
+	Pull       string    `json:"pull"`
+	Repo       string    `json:"repo"`
+	Version    string    `json:"version"`
+}
+
+type export struct {
+	Key       string  `json:"key"`
+	ParentKey string  `json:"parent_key"`
+	Type      string  `json:"type"`
+	Grammer   grammer `json:"grammer"`
+	Meta      meta    `json:"meta"`
+}
+
+type grammer struct {
+	Signature string      `json:"signature"`
+	G         interface{} `json:"stuff"`
+}
+
+type meta struct {
+	Line int64  `json:"line"`
+	URI  string `json:"uri"`
+}
+
+func generateSemVerAudit(f *parser.Frugal) error {
+	var exp []*export
+	var e *export
+	for _, c := range f.Constants {
+		e = &export{
+			Key:     c.Name,
+			Type:    f.UnderlyingType(c.Type).Name,
+			Grammer: grammer{Signature: "derp", G: c.Value},
+		}
+		exp = append(exp, e)
+	}
+
+	for _, c := range f.Enums {
+		e = &export{
+			Key:  c.Name,
+			Type: "Enum",
+		}
+		exp = append(exp, e)
+		for _, v := range c.Values {
+			e = &export{
+				Key:       v.Name,
+				ParentKey: c.Name,
+				Type:      "int",
+				Grammer:   grammer{Signature: "derp", G: v.Value},
+			}
+			exp = append(exp, e)
+		}
+	}
+
+	for _, c := range f.Exceptions {
+		e = &export{
+			Key:  c.Name,
+			Type: c.Type.String(),
+		}
+		exp = append(exp, e)
+		for _, field := range c.Fields {
+			e = &export{
+				Key:       field.Name,
+				ParentKey: c.Name,
+				Type:      f.UnderlyingType(field.Type).Name,
+				Grammer:   grammer{Signature: field.Modifier.String(), G: field.Default},
+			}
+			exp = append(exp, e)
+		}
+	}
+
+	for _, c := range f.Includes {
+		e = &export{
+			Key:     c.Name,
+			Type:    "Includes",
+			Grammer: grammer{Signature: "derp", G: c.Value},
+		}
+		exp = append(exp, e)
+	}
+
+	for _, c := range f.Namespaces {
+		e = &export{
+			Key:     c.Value,
+			Type:    "Namespace",
+			Grammer: grammer{Signature: "derp", G: c.Value},
+		}
+		exp = append(exp, e)
+	}
+
+	// TODO recursive for this
+	for k, v := range f.ParsedIncludes {
+		e = &export{
+			Key:  k,
+			Type: v.Name,
+		}
+		exp = append(exp, e)
+	}
+
+	// TODO recursive for this
+	for _, c := range f.Scopes {
+		e = &export{
+			Key:  c.Name,
+			Type: "Scope",
+		}
+		exp = append(exp, e)
+	}
+
+	// TODO recursive for this
+	for _, c := range f.Services {
+		e = &export{
+			Key:  c.Name,
+			Type: "Service",
+		}
+		exp = append(exp, e)
+	}
+
+	for _, c := range f.Structs {
+		e = &export{
+			Key:     c.Name,
+			Type:    "Struct",
+			Grammer: grammer{Signature: "derp", G: c.Type.String()},
+		}
+		exp = append(exp, e)
+		for _, field := range c.Fields {
+			e = &export{
+				Key:       field.Name,
+				ParentKey: c.Name,
+				Type:      f.UnderlyingType(field.Type).Name,
+				Grammer:   grammer{Signature: field.Modifier.String(), G: field.Default},
+			}
+			exp = append(exp, e)
+		}
+	}
+
+	for _, c := range f.Typedefs {
+		e = &export{
+			Key:     c.Name,
+			Type:    "Typedef",
+			Grammer: grammer{Signature: "derp", G: f.UnderlyingType(c.Type).Name},
+		}
+		exp = append(exp, e)
+	}
+
+	for _, c := range f.Unions {
+		e = &export{
+			Key:     c.Name,
+			Type:    "Union",
+			Grammer: grammer{Signature: "derp", G: c.Type.String()},
+		}
+		exp = append(exp, e)
+		for _, field := range c.Fields {
+			e = &export{
+				Key:       field.Name,
+				ParentKey: c.Name,
+				Type:      f.UnderlyingType(field.Type).Name,
+				Grammer:   grammer{Signature: field.Modifier.String(), G: field.Default},
+			}
+			exp = append(exp, e)
+		}
+	}
+
+	semver := &semVer{Exports: exp, Repo: "foobar"}
+	b, err := json.MarshalIndent(semver, "", "    ")
+	fmt.Println(len(b))
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(filepath.Join(globals.Out, f.Name+"_SEMVER.json"), b, 0644)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
