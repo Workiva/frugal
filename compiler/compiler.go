@@ -117,16 +117,82 @@ type semVer struct {
 }
 
 type export struct {
-	Key       string  `json:"key"`
-	ParentKey string  `json:"parent_key"`
-	Type      string  `json:"type"`
-	Grammer   grammer `json:"grammer"`
-	Meta      meta    `json:"meta"`
+	Key       string      `json:"key"`
+	ParentKey string      `json:"parent_key"`
+	Type      string      `json:"type"`
+	Grammer   interface{} `json:"grammer"`
+	Meta      meta        `json:"meta"`
 }
 
-type grammer struct {
-	Signature string      `json:"signature"`
-	G         interface{} `json:"stuff"`
+// ############## GRAMMER ##############
+type varGrammer struct {
+	sig
+	Getter bool   `json:"getter"`
+	Setter bool   `json:"setter"`
+	Type   string `json:"type"`
+}
+
+type funcGrammer struct {
+	sig
+	Parameters params `json:"parameters"` // Ordered
+	ReturnType string `json:"return_type"`
+}
+
+type enumGrammer struct {
+	sig
+	values []string `json:"values"`
+}
+
+type typeDefGrammer struct {
+	sig
+	ReturnType string `json:"return_type"`
+	Parameters params `json:"parameters"`
+}
+
+type classGrammer struct {
+	sig
+	Extends    []string `json:"extends"`
+	Mixins     []string `json:"mixins"`
+	Implements []string `json:"implements"`
+}
+
+// For both named and default constructors (default just has null for sig.Name)
+type constructorGrammer struct {
+	sig
+	Parameters params `json:"parameters"`
+}
+
+type fieldGrammer struct {
+	sig
+	Getter bool   `json:"getter"`
+	Setter bool   `json:"setter"`
+	Static bool   `json:"static"`
+	Type   string `json:"type"`
+}
+
+type methodGrammer struct {
+	// Signature  string `json:"signature"`
+	// Name       string `json:"name"`
+	// Parameters params `json:"parameters"`
+	// ReturnType string `json:"return_type"`
+	funcGrammer
+	Static bool `json:"static"`
+}
+
+// ############## INTERNALS TO GRAMMER ##############
+type sig struct {
+	Signature string `json:"signature"`
+	Name      string `json:"name"`
+}
+
+type params struct {
+	Named      []string   `json:"named"`      // Maintain order with positional
+	Positional []position `json:"positional"` // Maintain order with named
+}
+
+type position struct {
+	Required bool   `json:"required"`
+	Type     string `json:"type"`
 }
 
 type meta struct {
@@ -134,142 +200,113 @@ type meta struct {
 	URI  string `json:"uri"`
 }
 
-func generateSemVerAudit(f *parser.Frugal) error {
-	var exp []*export
+func getConstants(f *parser.Frugal) (exp []*export) {
 	var e *export
+	// Constant maps to variable grammer in semver audit service
 	for _, c := range f.Constants {
 		e = &export{
 			Key:     c.Name,
 			Type:    f.UnderlyingType(c.Type).Name,
-			Grammer: grammer{Signature: "derp", G: c.Value},
+			Grammer: varGrammer{},
 		}
 		exp = append(exp, e)
 	}
+	return exp
+}
 
+func getEnums(f *parser.Frugal) (exp []*export) {
+	var e *export
+	// Eums
 	for _, c := range f.Enums {
 		e = &export{
 			Key:  c.Name,
-			Type: "Enum",
+			Type: "enum",
 		}
-		exp = append(exp, e)
+		var g enumGrammer
 		for _, v := range c.Values {
-			e = &export{
-				Key:       v.Name,
-				ParentKey: c.Name,
-				Type:      "int",
-				Grammer:   grammer{Signature: "derp", G: v.Value},
-			}
-			exp = append(exp, e)
+			g.Name = v.Name
 		}
-	}
-
-	for _, c := range f.Exceptions {
-		e = &export{
-			Key:  c.Name,
-			Type: c.Type.String(),
-		}
-		exp = append(exp, e)
-		for _, field := range c.Fields {
-			e = &export{
-				Key:       field.Name,
-				ParentKey: c.Name,
-				Type:      f.UnderlyingType(field.Type).Name,
-				Grammer:   grammer{Signature: field.Modifier.String(), G: field.Default},
-			}
-			exp = append(exp, e)
-		}
-	}
-
-	for _, c := range f.Includes {
-		e = &export{
-			Key:     c.Name,
-			Type:    "Includes",
-			Grammer: grammer{Signature: "derp", G: c.Value},
-		}
+		e.Grammer = g
 		exp = append(exp, e)
 	}
+	return exp
+}
 
-	for _, c := range f.Namespaces {
-		e = &export{
-			Key:     c.Value,
-			Type:    "Namespace",
-			Grammer: grammer{Signature: "derp", G: c.Value},
-		}
-		exp = append(exp, e)
-	}
-
-	// TODO recursive for this
-	for k, v := range f.ParsedIncludes {
-		e = &export{
-			Key:  k,
-			Type: v.Name,
-		}
-		exp = append(exp, e)
-	}
-
-	// TODO recursive for this
+func getScopes(f *parser.Frugal) (exp []*export) {
+	var e *export
+	// TODO Scopes map to ??? []enum maybe...
 	for _, c := range f.Scopes {
 		e = &export{
 			Key:  c.Name,
-			Type: "Scope",
+			Type: "scope",
 		}
 		exp = append(exp, e)
 	}
+	return exp
+}
 
-	// TODO recursive for this
+func getServices(f *parser.Frugal) (exp []*export) {
+	var e *export
+	// TODO Services map to ?? []methods maybe...
 	for _, c := range f.Services {
 		e = &export{
 			Key:  c.Name,
-			Type: "Service",
+			Type: "service",
 		}
 		exp = append(exp, e)
 	}
+	return exp
+}
 
-	for _, c := range f.Structs {
+func getStructs(structs []*parser.Struct) (exp []*export) {
+	var e *export
+	var g classGrammer
+	// Struct maps to class grammer in semver audit service
+	for _, c := range structs {
 		e = &export{
-			Key:     c.Name,
-			Type:    "Struct",
-			Grammer: grammer{Signature: "derp", G: c.Type.String()},
+			Key:  c.Name,
+			Type: "class",
 		}
-		exp = append(exp, e)
 		for _, field := range c.Fields {
-			e = &export{
-				Key:       field.Name,
-				ParentKey: c.Name,
-				Type:      f.UnderlyingType(field.Type).Name,
-				Grammer:   grammer{Signature: field.Modifier.String(), G: field.Default},
-			}
-			exp = append(exp, e)
+			g.Name = field.Name
 		}
+		e.Grammer = g
+		exp = append(exp, e)
 	}
+	return exp
+}
 
+func getTypeDefs(f *parser.Frugal) (exp []*export) {
+	var e *export
 	for _, c := range f.Typedefs {
 		e = &export{
-			Key:     c.Name,
-			Type:    "Typedef",
-			Grammer: grammer{Signature: "derp", G: f.UnderlyingType(c.Type).Name},
+			Key:  c.Name,
+			Type: "typedef",
 		}
+		var g typeDefGrammer
+		g.Name = c.Name
+		e.Grammer = g
 		exp = append(exp, e)
 	}
+	return exp
+}
 
-	for _, c := range f.Unions {
-		e = &export{
-			Key:     c.Name,
-			Type:    "Union",
-			Grammer: grammer{Signature: "derp", G: c.Type.String()},
-		}
-		exp = append(exp, e)
-		for _, field := range c.Fields {
-			e = &export{
-				Key:       field.Name,
-				ParentKey: c.Name,
-				Type:      f.UnderlyingType(field.Type).Name,
-				Grammer:   grammer{Signature: field.Modifier.String(), G: field.Default},
-			}
-			exp = append(exp, e)
-		}
-	}
+func generateSemVerAudit(f *parser.Frugal) error {
+	// Build all the exported things in semver audit service from parsed frugal model
+	var exp []*export
 
+	exp = append(exp, getScopes(f)...)
+	// TODO NAMESPACES?? current frugal audit does check namespaces
+	exp = append(exp, getConstants(f)...)
+	exp = append(exp, getEnums(f)...)
+
+	exp = append(exp, getServices(f)...)
+	exp = append(exp, getStructs(f.Structs)...)
+	exp = append(exp, getStructs(f.Exceptions)...)
+	exp = append(exp, getStructs(f.Unions)...)
+	// exp = append(exp, getTypeDefs(f)...) As long as we use core types can we avoid this? it's not in frugal audit right now
+
+	// Create semver object and serialize to json
 	semver := &semVer{Exports: exp, Repo: "foobar"}
 	b, err := json.MarshalIndent(semver, "", "    ")
 	fmt.Println(len(b))
