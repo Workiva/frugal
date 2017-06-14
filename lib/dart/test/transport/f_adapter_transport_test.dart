@@ -38,6 +38,12 @@ void main() {
       transport = new FAdapterTransport(socketTransport);
     });
 
+    tearDown(() {
+      stateStream.close();
+      errorStream.close();
+      messageStream.close();
+    });
+
     test('oneway happy path', () async {
       when(socket.isClosed).thenReturn(true);
       when(socket.open()).thenReturn(new Future.value());

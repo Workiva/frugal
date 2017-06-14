@@ -21,4 +21,4 @@ dependencies:
     hosted:
       name: thrift
       url: https://pub.workiva.org
-    version: ^0.0.6
+    version: ^0.0.7
