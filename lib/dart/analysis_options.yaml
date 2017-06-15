@@ -1,7 +1,7 @@
 analyzer:
   exclude:
     - test/**
-    - tool/dev.dart
+    - tool/**
   strong-mode: true
 
 linter:

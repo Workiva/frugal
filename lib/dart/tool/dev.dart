@@ -1,9 +1,10 @@
 library tool.dev;
 
+import 'dart:async';
 import 'package:dart_dev/dart_dev.dart'
     show Environment, dev, TestRunnerConfig, config;
 
-main(List<String> args) async {
+Future main(List<String> args) async {
   // https://github.com/Workiva/dart_dev
 
   var directories = ['lib/', 'test/', 'tool/'];

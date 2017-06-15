@@ -19,6 +19,6 @@ pub run dart_dev test
 pub run dart_dev coverage --no-html
 
 pub run dart_dev format --check
-pub run dart_dev analyze
+pub run dart_dev analyze --fatal-lints
 
 $FRUGAL_HOME/scripts/smithy/codecov.sh $FRUGAL_HOME/lib/dart/coverage/coverage.lcov dartlibrarytest
