@@ -1,13 +1,10 @@
 analyzer:
   exclude:
-    - test/internal/f_obj_to_json_test.dart
-    - tool/dev.dart
+    - test/**
+    - tool/**
   strong-mode: true
 
 linter:
-  exclude:
-    - test/internal/f_obj_to_json_test.dart
-    - tool/dev.dart
   rules:
     # Error Rules
     - avoid_empty_else
@@ -21,6 +18,8 @@ linter:
     - unrelated_type_equality_checks
     - valid_regexps
     - comment_references
+    - cancel_subscriptions
+    - close_sinks
 
     # Style Rules
     - always_declare_return_types

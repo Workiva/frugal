@@ -6,19 +6,13 @@ import 'package:test/test.dart';
 import 'package:thrift/thrift.dart';
 import 'package:mockito/mockito.dart';
 
-/**
- * Returns a mock message frame.
- */
-
 void main() {
   group('FTransport', () {
     int requestSizeLimit = 5;
     _FTransportImpl transport;
-    FContext context;
 
     setUp(() {
       transport = new _FTransportImpl(requestSizeLimit);
-      context = new FContext();
     });
 
     test(
@@ -49,10 +43,6 @@ void main() {
       verify(monitor.onReopenSucceeded()).called(1);
     });
   });
-}
-
-void _callback(TTransport transport) {
-  return;
 }
 
 class _FTransportImpl extends FTransport {
