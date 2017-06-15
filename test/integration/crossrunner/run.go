@@ -7,12 +7,13 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"os/exec"
 )
 
 // RunConfig runs a client against a server.  Client/Server logs are created and
 // failures are added to the unexpected_failures.log.  Each result is logged to
 // the console.
-func RunConfig(pair *Pair, port int) {
+func RunConfig(pair *Pair, port int, getCommand func(config Config, port int) (cmd *exec.Cmd, formatted string)) {
 	var err error
 	// Create client/server log files
 	if err = createLogs(pair); err != nil {

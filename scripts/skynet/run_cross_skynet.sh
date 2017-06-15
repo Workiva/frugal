@@ -32,7 +32,7 @@ go run scripts/skynet/cross/cross_setup.go
 # without cleaning up
 cd ${FRUGAL_HOME}/test/integration
 
-if go run test.go --tests tests.json --outDir log; then
+if go run main.go tests.json log; then
     /testing/scripts/skynet/test_cleanup.sh
 else
     /testing/scripts/skynet/test_cleanup.sh

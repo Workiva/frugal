@@ -35,7 +35,7 @@ type languages struct { // Example
 }
 
 //  Complete information required to shell out a client or server command.
-type config struct {
+type Config struct {
 	Name      string
 	Timeout   time.Duration
 	Transport string
@@ -47,13 +47,13 @@ type config struct {
 
 // Matched client and server commands.
 type Pair struct {
-	Client     config
-	Server     config
+	Client     Config
+	Server     Config
 	ReturnCode int
 	Err        error
 }
 
-func newPair(client, server config) *Pair {
+func newPair(client, server Config) *Pair {
 	return &Pair{
 		Client: client,
 		Server: server,
@@ -76,8 +76,8 @@ func Load(jsonFile string) (pairs []*Pair, err error) {
 	}
 
 	// Create empty lists of client and server configurations
-	var clients []config
-	var servers []config
+	var clients []Config
+	var servers []Config
 
 	// Iterate over each language to get all client/server configurations in that language
 	for _, test := range tests {
@@ -88,7 +88,7 @@ func Load(jsonFile string) (pairs []*Pair, err error) {
 		test.Client.Protocols = append(test.Client.Protocols, test.Protocols...)
 		test.Server.Protocols = append(test.Server.Protocols, test.Protocols...)
 
-		// Get expanded list of clients/servers, using both language and config level options
+		// Get expanded list of clients/servers, using both language and Config level options
 		clients = append(clients, getExpandedConfigs(test.Client, test)...)
 		servers = append(servers, getExpandedConfigs(test.Server, test)...)
 	}
@@ -109,8 +109,8 @@ func Load(jsonFile string) (pairs []*Pair, err error) {
 
 // getExpandedConfigs takes a client/server at the language level and the options
 // associated with that client/server and returns a list of unique configs.
-func getExpandedConfigs(options options, test languages) (apps []config) {
-	app := new(config)
+func getExpandedConfigs(options options, test languages) (apps []Config) {
+	app := new(Config)
 
 	// Loop through each transport and protocol to construct expanded list
 	for _, transport := range options.Transports {

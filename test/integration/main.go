@@ -1,14 +1,28 @@
-package crossrunner
+package main
 
 import (
-	"fmt"
+	"flag"
+
+	"github.com/Workiva/frugal/test/integration/crossrunner"
 	"os/exec"
+	"fmt"
 	"strings"
 )
 
-// getCommand returns a Cmd struct used to execute a client or server and a
-// nicely formatted string for verbose loggings
-func getCommand(config config, port int) (cmd *exec.Cmd, formatted string) {
+func main() {
+	// These are properly configured for Frugal.
+	var testDefinitions = flag.String("tests", "tests.json", "Location of json test definitions")
+	var outDir = flag.String("outDir", "log", "Output directory of crossrunner logs")
+
+	flag.Parse()
+
+	if err := crossrunner.Run(testDefinitions, outDir, getCommand); err != nil {
+		panic(err)
+	}
+
+}
+
+func getCommand(config crossrunner.Config, port int) (cmd *exec.Cmd, formatted string) {
 
 	command := config.Command[0]
 
