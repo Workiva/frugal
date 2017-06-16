@@ -56,6 +56,36 @@ type FSubscriberTransport interface {
 	IsSubscribed() bool
 }
 
+type FUnifiedPublisherTransportFactory interface {
+	GetTransport() FUnifiedPublisherTransport
+}
+
+type FUnifiedPublisherTransport interface {
+	Open() error
+
+	Close() error
+
+	IsOpen() bool
+
+	GetPublishSizeLimit() uint
+
+	PublishEphemeral(string, []byte) error
+
+	PublishDurable(string, *string, []byte) error
+}
+
+type FUnifiedSubscriberTransportFactory interface {
+	GetTransport() FUnifiedSubscriberTransport
+}
+
+type FUnifiedSubscriberTransport interface {
+	Subscribe(string, FAsyncCallback) error
+
+	Unsubscribe() error
+
+	IsSubscribed() bool
+}
+
 // FDurablePublisherTransportFactory produces FDurablePublisherTransports and is
 // typically used by an FDurableScopeProvider.
 type FDurablePublisherTransportFactory interface {

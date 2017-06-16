@@ -43,6 +43,45 @@ func (p *FScopeProvider) GetMiddleware() []ServiceMiddleware {
 	return middleware
 }
 
+type FUnifiedScopeProvider struct {
+	publisherTransportFactory  FUnifiedPublisherTransportFactory
+	subscriberTransportFactory FUnifiedSubscriberTransportFactory
+	protocolFactory            *FProtocolFactory
+	middleware                 []ServiceMiddleware
+}
+
+// NewFScopeProvider creates a new FScopeProvider using the given factories.
+func NewFUnifiedScopeProvider(pub FUnifiedPublisherTransportFactory, sub FUnifiedSubscriberTransportFactory,
+prot *FProtocolFactory, middleware ...ServiceMiddleware) *FUnifiedScopeProvider {
+	return &FUnifiedScopeProvider{
+		publisherTransportFactory:  pub,
+		subscriberTransportFactory: sub,
+		protocolFactory:            prot,
+		middleware:                 middleware,
+	}
+}
+
+// NewPublisher returns a new FPublisherTransport and FProtocol used by
+// scope publishers.
+func (p *FUnifiedScopeProvider) NewPublisher() (FUnifiedPublisherTransport, *FProtocolFactory) {
+	transport := p.publisherTransportFactory.GetTransport()
+	return transport, p.protocolFactory
+}
+
+// NewSubscriber returns a new FSubscriberTransport and FProtocolFactory used by
+// scope subscribers.
+func (p *FUnifiedScopeProvider) NewSubscriber() (FUnifiedSubscriberTransport, *FProtocolFactory) {
+	transport := p.subscriberTransportFactory.GetTransport()
+	return transport, p.protocolFactory
+}
+
+// GetMiddleware returns the ServiceMiddleware stored on this FScopeProvider.
+func (p *FUnifiedScopeProvider) GetMiddleware() []ServiceMiddleware {
+	middleware := make([]ServiceMiddleware, len(p.middleware))
+	copy(middleware, p.middleware)
+	return middleware
+}
+
 type FDurableScopeProvider struct {
 	publisherTransportFactory  FDurablePublisherTransportFactory
 	subscriberTransportFactory FDurableSubscriberTransportFactory
