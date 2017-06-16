@@ -325,6 +325,52 @@ func TestHTTPTransportLifecycle(t *testing.T) {
 	assert.Nil(transport.Close())
 }
 
+// Ensures custom headers can be written to the request
+func TestHTTPRequestHeaders(t *testing.T) {
+	assert := assert.New(t)
+	// Setup test data
+	requestBytes := []byte("Hello from the other side")
+	framedRequestBytes := prependFrameSize(requestBytes)
+	responseBytes := []byte("I must've called a thousand times")
+	f := make([]byte, 4)
+	binary.BigEndian.PutUint32(f, uint32(len(responseBytes)))
+	framedResponse := append(f, responseBytes...)
+
+	// Setup test server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(r.Header.Get(contentTypeHeader), frugalContentType)
+		assert.Equal(r.Header.Get(contentTransferEncodingHeader), base64Encoding)
+		assert.Equal(r.Header.Get(acceptHeader), frugalContentType)
+		assert.Equal(r.Header.Get("foo"), "bar")
+
+		respStr := base64.StdEncoding.EncodeToString(framedResponse)
+		w.Write([]byte(respStr))
+	}))
+
+	customRequestHeaders := make(map[string]string, 1)
+	customRequestHeaders["foo"] = "bar"
+	// Instantiate http transport
+	transport := NewFHTTPTransportBuilder(&http.Client{}, ts.URL).withRequestHeaders(customRequestHeaders).Build().(*fHTTPTransport)
+
+	// Open
+	assert.Nil(transport.Open())
+
+	// Create a context to use
+	ctx := NewFContext("")
+
+	// Flush before actually writing - make sure everything is fine
+	_, err := transport.Request(ctx, []byte{0, 0, 0, 0})
+	assert.Nil(err)
+
+	// Flush
+	result, err := transport.Request(ctx, framedRequestBytes)
+	assert.Nil(err)
+	assert.Equal(responseBytes, result.(*thrift.TMemoryBuffer).Bytes())
+
+	// Close
+	assert.Nil(transport.Close())
+}
+
 // Ensures the transport handles one-way functions correctly
 func TestHTTPTransportOneway(t *testing.T) {
 	assert := assert.New(t)
@@ -339,7 +385,7 @@ func TestHTTPTransportOneway(t *testing.T) {
 		w.Write([]byte(respStr))
 	}))
 
-	// Instantiate http transpor
+	// Instantiate http transport
 	transport := NewFHTTPTransportBuilder(&http.Client{}, ts.URL).Build().(*fHTTPTransport)
 	frameC := make(chan []byte, 1)
 
