@@ -2,12 +2,13 @@
 
 set -exo pipefail
 
+go env
+
+# Test deps
+go get github.com/Sirupsen/logrus
+go get github.com/stretchr/testify/assert
+
 mkdir -p /go/src/github.com/Workiva/
-
-# Move godeps to gopath for both library and binary
-cp -r /testing/Godeps/_workspace/* $GOPATH/
-cp -r /testing/lib/go/Godeps/_workspace/* $GOPATH/
-
 
 # Symlink frugal to gopath - this allows skynet-cli editing for interactive/directmount
 ln -s /testing/ /go/src/github.com/Workiva/frugal
@@ -23,7 +24,5 @@ else
     godep go install
 fi
 
-
 # Start gnatsd
 gnatsd &
-
