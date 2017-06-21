@@ -251,7 +251,7 @@ type Service struct {
 	Extends     string
 	Methods     []*Method
 	Annotations Annotations
-	Frugal      *Frugal // Pointer back to containing Frugal
+	Frugal      *Frugal `json:"-"` // Pointer back to containing Frugal
 }
 
 // ExtendsInclude returns the name of the include this service extends from, if
@@ -515,7 +515,7 @@ type Operation struct {
 	Name        string
 	Type        *Type
 	Annotations Annotations
-	Scope       *Scope // Pointer back to containing Scope
+	Scope       *Scope `json:"-"` // Pointer back to containing Scope
 }
 
 // ScopePrefix is the string prefix prepended to a pub/sub topic. The string
@@ -539,7 +539,7 @@ type Scope struct {
 	Prefix      *ScopePrefix
 	Operations  []*Operation
 	Annotations Annotations
-	Frugal      *Frugal // Pointer back to containing Frugal
+	Frugal      *Frugal `json:"-"` // Pointer back to containing Frugal
 }
 
 // ReferencedIncludes returns a slice containing the referenced includes which

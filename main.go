@@ -20,6 +20,7 @@ var (
 	out     string
 	delim   string
 	audit   string
+	json    bool
 	recurse bool
 	verbose bool
 	version bool
@@ -69,10 +70,16 @@ func main() {
 			Name:        "version",
 			Usage:       "print the version",
 			Destination: &version,
-		}, cli.StringFlag{
+		},
+		cli.StringFlag{
 			Name:        "audit",
 			Usage:       "frugal file to run audit against",
 			Destination: &audit,
+		},
+		cli.BoolFlag{
+			Name:        "json",
+			Usage:       "generate json file containing models",
+			Destination: &json,
 		},
 	}
 
@@ -93,7 +100,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if gen == "" && audit == "" {
+		if gen == "" && audit == "" && !json {
 			fmt.Println("No output language specified")
 			fmt.Printf("Usage: %s [options] file\n\n", app.Name)
 			fmt.Printf("Use %s -help for a list of options\n", app.Name)
@@ -106,6 +113,7 @@ func main() {
 			Delim:   delim,
 			Recurse: recurse,
 			Verbose: verbose,
+			JSON:    json,
 		}
 
 		// Handle panics for graceful error messages.

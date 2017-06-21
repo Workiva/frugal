@@ -1,7 +1,9 @@
 package compiler
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,6 +27,7 @@ type Options struct {
 	DryRun  bool   // Do not generate code
 	Recurse bool   // Generate includes
 	Verbose bool   // Verbose mode
+	JSON    bool   // Json dump of the frugal model
 }
 
 // Compile parses the Frugal IDL and generates code for it, returning an error
@@ -48,6 +51,9 @@ func Compile(options Options) error {
 	frugal, err := parseFrugal(absFile)
 	if err != nil {
 		return err
+	}
+	if options.JSON {
+		return generateSemVerAudit(frugal)
 	}
 
 	return generateFrugal(frugal)
@@ -79,6 +85,236 @@ func generateFrugal(f *parser.Frugal) error {
 
 	// The parsed frugal contains everything needed to generate
 	if err := generateFrugalRec(f, g, true, lang); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func generateJSON(f *parser.Frugal) error {
+	b, err := json.Marshal(f)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(filepath.Join(globals.Out, f.Name+".json"), b, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type semVer struct {
+	Exports    []*export `json:"exports"`
+	BaseBranch string    `json:"base_branch"`
+	BaseCommit string    `json:"base_commit"`
+	BuildID    string    `json:"build_id"`
+	HeadBranch string    `json:"head_branch"`
+	HeadCommit string    `json:"head_commit"`
+	Language   string    `json:"language"`
+	Pull       string    `json:"pull"`
+	Repo       string    `json:"repo"`
+	Version    string    `json:"version"`
+}
+
+type export struct {
+	Key       string      `json:"key"`
+	ParentKey string      `json:"parent_key"`
+	Type      string      `json:"type"`
+	Grammer   interface{} `json:"grammer"`
+	Meta      meta        `json:"meta"`
+}
+
+// ############## GRAMMER ##############
+type varGrammer struct {
+	sig
+	Getter bool   `json:"getter"`
+	Setter bool   `json:"setter"`
+	Type   string `json:"type"`
+}
+
+type funcGrammer struct {
+	sig
+	Parameters params `json:"parameters"` // Ordered
+	ReturnType string `json:"return_type"`
+}
+
+type enumGrammer struct {
+	sig
+	values []string `json:"values"`
+}
+
+type typeDefGrammer struct {
+	sig
+	ReturnType string `json:"return_type"`
+	Parameters params `json:"parameters"`
+}
+
+type classGrammer struct {
+	sig
+	Extends    []string `json:"extends"`
+	Mixins     []string `json:"mixins"`
+	Implements []string `json:"implements"`
+}
+
+// For both named and default constructors (default just has null for sig.Name)
+type constructorGrammer struct {
+	sig
+	Parameters params `json:"parameters"`
+}
+
+type fieldGrammer struct {
+	sig
+	Getter bool   `json:"getter"`
+	Setter bool   `json:"setter"`
+	Static bool   `json:"static"`
+	Type   string `json:"type"`
+}
+
+type methodGrammer struct {
+	// Signature  string `json:"signature"`
+	// Name       string `json:"name"`
+	// Parameters params `json:"parameters"`
+	// ReturnType string `json:"return_type"`
+	funcGrammer
+	Static bool `json:"static"`
+}
+
+// ############## INTERNALS TO GRAMMER ##############
+type sig struct {
+	Signature string `json:"signature"`
+	Name      string `json:"name"`
+}
+
+type params struct {
+	Named      []string   `json:"named"`      // Maintain order with positional
+	Positional []position `json:"positional"` // Maintain order with named
+}
+
+type position struct {
+	Required bool   `json:"required"`
+	Type     string `json:"type"`
+}
+
+type meta struct {
+	Line int64  `json:"line"`
+	URI  string `json:"uri"`
+}
+
+func getConstants(f *parser.Frugal) (exp []*export) {
+	var e *export
+	// Constant maps to variable grammer in semver audit service
+	for _, c := range f.Constants {
+		e = &export{
+			Key:     c.Name,
+			Type:    f.UnderlyingType(c.Type).Name,
+			Grammer: varGrammer{},
+		}
+		exp = append(exp, e)
+	}
+	return exp
+}
+
+func getEnums(f *parser.Frugal) (exp []*export) {
+	var e *export
+	// Eums
+	for _, c := range f.Enums {
+		e = &export{
+			Key:  c.Name,
+			Type: "enum",
+		}
+		var g enumGrammer
+		for _, v := range c.Values {
+			g.Name = v.Name
+		}
+		e.Grammer = g
+		exp = append(exp, e)
+	}
+	return exp
+}
+
+func getScopes(f *parser.Frugal) (exp []*export) {
+	var e *export
+	// TODO Scopes map to ??? []enum maybe...
+	for _, c := range f.Scopes {
+		e = &export{
+			Key:  c.Name,
+			Type: "scope",
+		}
+		exp = append(exp, e)
+	}
+	return exp
+}
+
+func getServices(f *parser.Frugal) (exp []*export) {
+	var e *export
+	// TODO Services map to ?? []methods maybe...
+	for _, c := range f.Services {
+		e = &export{
+			Key:  c.Name,
+			Type: "service",
+		}
+		exp = append(exp, e)
+	}
+	return exp
+}
+
+func getStructs(structs []*parser.Struct) (exp []*export) {
+	var e *export
+	var g classGrammer
+	// Struct maps to class grammer in semver audit service
+	for _, c := range structs {
+		e = &export{
+			Key:  c.Name,
+			Type: "class",
+		}
+		for _, field := range c.Fields {
+			g.Name = field.Name
+		}
+		e.Grammer = g
+		exp = append(exp, e)
+	}
+	return exp
+}
+
+func getTypeDefs(f *parser.Frugal) (exp []*export) {
+	var e *export
+	for _, c := range f.Typedefs {
+		e = &export{
+			Key:  c.Name,
+			Type: "typedef",
+		}
+		var g typeDefGrammer
+		g.Name = c.Name
+		e.Grammer = g
+		exp = append(exp, e)
+	}
+	return exp
+}
+
+func generateSemVerAudit(f *parser.Frugal) error {
+	// Build all the exported things in semver audit service from parsed frugal model
+	var exp []*export
+
+	exp = append(exp, getScopes(f)...)
+	// TODO NAMESPACES?? current frugal audit does check namespaces
+	exp = append(exp, getConstants(f)...)
+	exp = append(exp, getEnums(f)...)
+
+	exp = append(exp, getServices(f)...)
+	exp = append(exp, getStructs(f.Structs)...)
+	exp = append(exp, getStructs(f.Exceptions)...)
+	exp = append(exp, getStructs(f.Unions)...)
+	// exp = append(exp, getTypeDefs(f)...) As long as we use core types can we avoid this? it's not in frugal audit right now
+
+	// Create semver object and serialize to json
+	semver := &semVer{Exports: exp, Repo: "foobar"}
+	b, err := json.MarshalIndent(semver, "", "    ")
+	fmt.Println(len(b))
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(filepath.Join(globals.Out, f.Name+"_SEMVER.json"), b, 0644)
+	if err != nil {
 		return err
 	}
 
