@@ -114,6 +114,8 @@ type T2String T1String
 type HealthCondition int64
 
 const (
+	// This docstring gets added to the generated code because it
+	// has the @ sign.
 	HealthCondition_PASS    HealthCondition = 1
 	HealthCondition_WARN    HealthCondition = 2
 	HealthCondition_FAIL    HealthCondition = 3

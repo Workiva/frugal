@@ -2,6 +2,8 @@
 // DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 
 class HealthCondition {
+  /// This docstring gets added to the generated code because it
+  /// has the @ sign.
   static const int PASS = 1;
   static const int WARN = 2;
   static const int FAIL = 3;

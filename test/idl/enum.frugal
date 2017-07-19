@@ -1,6 +1,10 @@
 namespace dart enum.dart
 
 enum testing_enums {
+    /**@
+     * This docstring gets added to the generated code because it
+     * has the @ sign.
+     */
     one = 45,
     two = 3,
     Three = 76,

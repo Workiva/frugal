@@ -2,6 +2,8 @@
 // DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 
 enum testing_enums {
+  /// This docstring gets added to the generated code because it
+  /// has the @ sign.
   one,
   two,
   Three,

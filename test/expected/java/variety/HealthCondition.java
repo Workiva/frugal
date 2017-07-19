@@ -11,6 +11,10 @@ import java.util.HashMap;
 import org.apache.thrift.TEnum;
 
 public enum HealthCondition implements org.apache.thrift.TEnum {
+	/**
+	 * This docstring gets added to the generated code because it
+	 * has the @ sign.
+	 */
 	PASS(1),
 	WARN(2),
 	FAIL(3),

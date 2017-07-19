@@ -225,6 +225,9 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 		contents += g.generateDocString(enum.Comment, tab)
 	}
 	for _, value := range enum.Values {
+		if value.Comment != nil {
+			contents += g.generateDocString(value.Comment, tab)
+		}
 		contents += fmt.Sprintf(tab+"%s = %d\n", value.Name, value.Value)
 	}
 	contents += "\n"

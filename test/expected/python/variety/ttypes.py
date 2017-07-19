@@ -19,6 +19,10 @@ from thrift.protocol import TBinaryProtocol, TProtocol
 
 
 class HealthCondition(int):
+    """
+    This docstring gets added to the generated code because it
+    has the @ sign.
+    """
     PASS = 1
     WARN = 2
     FAIL = 3

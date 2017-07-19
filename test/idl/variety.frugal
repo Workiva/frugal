@@ -56,6 +56,10 @@ struct TestLowercase {
 }
 
 enum HealthCondition {
+    /**@
+     * This docstring gets added to the generated code because it
+     * has the @ sign.
+     */
     PASS = 1,
     WARN = 2,
     FAIL = 3,

@@ -344,6 +344,9 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 		if idx == len(enum.Values)-1 {
 			terminator = ";"
 		}
+		if value.Comment != nil {
+			contents += g.GenerateBlockComment(value.Comment, tab)
+		}
 		contents += fmt.Sprintf(tab+"%s(%d)%s\n", value.Name, value.Value, terminator)
 	}
 	contents += "\n"
