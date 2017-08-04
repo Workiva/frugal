@@ -85,7 +85,7 @@ public class FNatsSubscriberTransport implements FSubscriberTransport {
 
     @Override
     public boolean isSubscribed() {
-        return conn.getState() == Constants.ConnState.CONNECTED && sub != null;
+        return conn.getState() == Constants.ConnState.CONNECTED && sub != null && sub.isValid();
     }
 
     @Override
@@ -116,6 +116,9 @@ public class FNatsSubscriberTransport implements FSubscriberTransport {
 
     @Override
     public synchronized void unsubscribe() {
+        if (sub == null) {
+            return;
+        }
         try {
             sub.unsubscribe();
         } catch (IOException e) {

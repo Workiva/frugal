@@ -71,6 +71,12 @@ public class FNatsSubscriberTransportTest {
         Handler handler = new Handler();
         transport.subscribe(topic, handler);
 
+        // Nats subscription not yet valid
+        when(mockSub.isValid()).thenReturn(false);
+        assertFalse(transport.isSubscribed());
+
+        // All good now
+        when(mockSub.isValid()).thenReturn(true);
         assertTrue(transport.isSubscribed());
         assertEquals(mockSub, transport.sub);
 
@@ -113,6 +119,7 @@ public class FNatsSubscriberTransportTest {
 
         Handler handler = new Handler();
         transport.subscribe(topic, handler);
+        when(mockSub.isValid()).thenReturn(true);
 
         assertTrue(transport.isSubscribed());
         assertEquals(mockSub, transport.sub);
@@ -143,6 +150,8 @@ public class FNatsSubscriberTransportTest {
         transport.unsubscribe();
         verify(mockSub).unsubscribe();
         assertFalse(transport.isSubscribed());
+        // Make sure unsubscribe doesn't throw an error when called again
+        transport.unsubscribe();
     }
 
     @Test
