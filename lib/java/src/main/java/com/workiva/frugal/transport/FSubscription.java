@@ -30,6 +30,15 @@ public final class FSubscription {
     }
 
     /**
+     * Queries whether the subscription is active.
+     *
+     * @return True if the subscription is active.
+     */
+    boolean isSubscribed() {
+        return transport != null && transport.isSubscribed();
+    }
+
+    /**
      * Get the subscription topic.
      *
      * @return subscription topic.
