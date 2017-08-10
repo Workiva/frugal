@@ -1,7 +1,14 @@
 import unittest
 import mock
 
-from frugal.protocol.protocol import FProtocol
+from thrift.protocol.TProtocol import TProtocolException
+from thrift.protocol.TBinaryProtocol import TBinaryProtocol
+from thrift.protocol.TCompactProtocol import TCompactProtocol
+from thrift.protocol.TJSONProtocol import TJSONProtocol
+from thrift.transport.THttpClient import THttpClient
+from thrift.transport.TTransport import TMemoryBuffer
+
+from frugal.protocol import FProtocol, FUniversalProtocol, FUniversalProtocolFactory
 from frugal.context import FContext, _OPID_HEADER, _CID_HEADER
 
 
@@ -118,3 +125,215 @@ class TestFProtocol(unittest.TestCase):
 
         self.mock_wrapped_protocol.readStructEnd.assert_called_with()
 
+
+class TestFUniversalProtocolFactory(unittest.TestCase):
+    def test_getProtocolUnsupported(self):
+        trans = THttpClient('http://example.com', 8080, 'foo')
+        factory = FUniversalProtocolFactory()
+        self.assertRaises(ValueError, factory.getProtocol, trans)
+
+    def test_getProtocol(self):
+        trans = TMemoryBuffer()
+        factory = FUniversalProtocolFactory()
+        prot = factory.getProtocol(trans, strictRead=True,strictWrite=False,
+                                   string_length_limit=1, container_length_limit=123)
+
+        self.assertIsInstance(prot.binary_protocol, TBinaryProtocol)
+        self.assertIsInstance(prot.compact_protocol, TCompactProtocol)
+        self.assertIsInstance(prot.json_protocol, TJSONProtocol)
+
+        self.assertEqual(trans, prot.binary_protocol.trans)
+        self.assertEqual(trans, prot.compact_protocol.trans)
+        self.assertEqual(trans, prot.json_protocol.trans)
+
+        self.assertTrue(prot.binary_protocol.strictRead)
+        self.assertFalse(prot.binary_protocol.strictWrite)
+        self.assertEqual(prot.binary_protocol.string_length_limit, 1)
+        self.assertEqual(prot.binary_protocol.container_length_limit, 123)
+        self.assertEqual(prot.compact_protocol.string_length_limit, 1)
+        self.assertEqual(prot.compact_protocol.container_length_limit, 123)
+
+
+class TestFUniversalProtocol(unittest.TestCase):
+    def setUp(self):
+        self.trans = TMemoryBuffer()
+        self.factory = FUniversalProtocolFactory()
+        self.tuple = ('name', 1, 2)
+
+    @mock.patch('thrift.protocol.TBinaryProtocol.TBinaryProtocol.readByte')
+    @mock.patch('thrift.protocol.TBinaryProtocol.TBinaryProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TCompactProtocol.TCompactProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TJSONProtocol.TJSONProtocol.readMessageBegin')
+    def test_readMessageBeginParsingBinary(self, mock_json, mock_compact, mock_binary, mock_byte):
+        mock_binary.return_value = self.tuple
+        mock_compact.side_effect = TProtocolException()
+        mock_json.side_effect = TProtocolException()
+        mock_byte.return_value = 0xff
+
+        # With strictRead = False, binary should be attempted last
+        prot = self.factory.getProtocol(self.trans, strictRead=False)
+        name, ttype, seqid = prot.readMessageBegin()
+
+        self.assertIsInstance(prot.prot, TBinaryProtocol)
+        self.assertTrue(mock_compact.called)
+        self.assertTrue(mock_json.called)
+        self.assertTrue(mock_binary.called)
+        self.assertEqual(name, self.tuple[0])
+        self.assertEqual(ttype, self.tuple[1])
+        self.assertEqual(seqid, self.tuple[2])
+
+        self.assertEqual(mock_byte.return_value, prot.readByte())
+
+        mock_compact.reset_mock()
+        mock_binary.reset_mock()
+        mock_json.reset_mock()
+
+        # With strictRead = True, binary should now be attempted first
+        prot = self.factory.getProtocol(self.trans, strictRead=True)
+        name, ttype, seqid = prot.readMessageBegin()
+
+        self.assertIsInstance(prot.prot, TBinaryProtocol)
+        self.assertTrue(prot.prot.strictRead)
+        self.assertFalse(mock_compact.called)
+        self.assertFalse(mock_json.called)
+        self.assertTrue(mock_binary.called)
+        self.assertEqual(name, self.tuple[0])
+        self.assertEqual(ttype, self.tuple[1])
+        self.assertEqual(seqid, self.tuple[2])
+
+        self.assertEqual(mock_byte.return_value, prot.readByte())
+
+    @mock.patch('thrift.protocol.TCompactProtocol.TCompactProtocol.readByte')
+    @mock.patch('thrift.protocol.TBinaryProtocol.TBinaryProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TCompactProtocol.TCompactProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TJSONProtocol.TJSONProtocol.readMessageBegin')
+    def test_readMessageBeginParsingCompact(self, mock_json, mock_compact, mock_binary, mock_byte):
+        mock_binary.side_effect = TProtocolException()
+        mock_compact.return_value = self.tuple
+        mock_json.side_effect = TProtocolException()
+        mock_byte.return_value = 0xff
+
+        prot = self.factory.getProtocol(self.trans)
+        name, ttype, seqid = prot.readMessageBegin()
+
+        self.assertIsInstance(prot.prot, TCompactProtocol)
+        self.assertFalse(mock_binary.called)
+        self.assertTrue(mock_compact.called)
+        self.assertFalse(mock_json.called)
+        self.assertEqual(name, self.tuple[0])
+        self.assertEqual(ttype, self.tuple[1])
+        self.assertEqual(seqid, self.tuple[2])
+
+        self.assertEqual(mock_byte.return_value, prot.readByte())
+
+    @mock.patch('thrift.protocol.TJSONProtocol.TJSONProtocol.readByte')
+    @mock.patch('thrift.protocol.TBinaryProtocol.TBinaryProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TCompactProtocol.TCompactProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TJSONProtocol.TJSONProtocol.readMessageBegin')
+    def test_readMessageBeginParsingJSON(self, mock_json, mock_compact, mock_binary, mock_byte):
+        mock_binary.side_effect = TProtocolException()
+        mock_compact.side_effect = TProtocolException()
+        mock_json.return_value = self.tuple
+        mock_byte.return_value = 0xff
+
+        prot = self.factory.getProtocol(self.trans)
+        name, ttype, seqid = prot.readMessageBegin()
+
+        self.assertIsInstance(prot.prot, TJSONProtocol)
+        self.assertTrue(mock_compact.called)
+        self.assertTrue(mock_json.called)
+        self.assertFalse(mock_binary.called)
+        self.assertEqual(name, self.tuple[0])
+        self.assertEqual(ttype, self.tuple[1])
+        self.assertEqual(seqid, self.tuple[2])
+
+        self.assertEqual(mock_byte.return_value, prot.readByte())
+
+    @mock.patch('thrift.protocol.TBinaryProtocol.TBinaryProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TCompactProtocol.TCompactProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TJSONProtocol.TJSONProtocol.readMessageBegin')
+    def test_readMessageBeginParsingUnknown(self, mock_json, mock_compact, mock_binary):
+        mock_binary.side_effect = TProtocolException()
+        mock_compact.side_effect = TProtocolException()
+        mock_json.side_effect = TProtocolException()
+
+        prot = self.factory.getProtocol(self.trans)
+        self.assertRaises(TProtocolException, prot.readMessageBegin)
+        self.assertTrue(mock_binary.called)
+        self.assertTrue(mock_compact.called)
+        self.assertTrue(mock_json.called)
+
+    @mock.patch('thrift.protocol.TJSONProtocol.TJSONProtocol.readByte')
+    @mock.patch('thrift.protocol.TBinaryProtocol.TBinaryProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TCompactProtocol.TCompactProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TJSONProtocol.TJSONProtocol.readMessageBegin')
+    def test_oprot_factoryBinary(self, mock_json, mock_compact, mock_binary, mock_byte):
+        mock_binary.return_value = self.tuple
+        mock_compact.side_effect = TProtocolException()
+        mock_json.side_effect = TProtocolException()
+        mock_byte.return_value = 0xff
+
+        prot = self.factory.getProtocol(self.trans)
+        prot.initialize_protocol()
+        self.assertIsInstance(prot.prot, TBinaryProtocol)
+        self.assertEqual(prot.trans, self.trans)
+
+        otrans = TMemoryBuffer()
+        oprot = prot.oprot_factory(otrans)
+        self.assertIsInstance(oprot, TBinaryProtocol)
+        self.assertEquals(prot.trans, self.trans)
+
+        # Test without a already configured protocol
+        prot.prot = None
+        oprot = prot.oprot_factory(otrans)
+        self.assertIsInstance(oprot, TBinaryProtocol)
+
+    @mock.patch('thrift.protocol.TJSONProtocol.TJSONProtocol.readByte')
+    @mock.patch('thrift.protocol.TBinaryProtocol.TBinaryProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TCompactProtocol.TCompactProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TJSONProtocol.TJSONProtocol.readMessageBegin')
+    def test_oprot_factoryCompact(self, mock_json, mock_compact, mock_binary, mock_byte):
+        mock_binary.side_effect = TProtocolException()
+        mock_compact.return_value = self.tuple
+        mock_json.side_effect = TProtocolException()
+        mock_byte.return_value = 0xff
+
+        prot = self.factory.getProtocol(self.trans)
+        prot.initialize_protocol()
+        self.assertIsInstance(prot.prot, TCompactProtocol)
+        self.assertEqual(prot.trans, self.trans)
+
+        otrans = TMemoryBuffer()
+        oprot = prot.oprot_factory(otrans)
+        self.assertIsInstance(oprot, TCompactProtocol)
+        self.assertEquals(prot.trans, self.trans)
+
+        # Test without a already configured protocol
+        prot.prot = None
+        oprot = prot.oprot_factory(otrans)
+        self.assertIsInstance(oprot, TCompactProtocol)
+
+    @mock.patch('thrift.protocol.TJSONProtocol.TJSONProtocol.readByte')
+    @mock.patch('thrift.protocol.TBinaryProtocol.TBinaryProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TCompactProtocol.TCompactProtocol.readMessageBegin')
+    @mock.patch('thrift.protocol.TJSONProtocol.TJSONProtocol.readMessageBegin')
+    def test_oprot_factoryJSON(self, mock_json, mock_compact, mock_binary, mock_byte):
+        mock_binary.side_effect = TProtocolException()
+        mock_compact.side_effect = TProtocolException()
+        mock_json.return_value = self.tuple
+        mock_byte.return_value = 0xff
+
+        prot = self.factory.getProtocol(self.trans)
+        prot.initialize_protocol()
+        self.assertIsInstance(prot.prot, TJSONProtocol)
+        self.assertEqual(prot.trans, self.trans)
+
+        otrans = TMemoryBuffer()
+        oprot = prot.oprot_factory(otrans)
+        self.assertIsInstance(oprot, TJSONProtocol)
+        self.assertEquals(prot.trans, self.trans)
+
+        # Test without a already configured protocol
+        prot.prot = None
+        oprot = prot.oprot_factory(otrans)
+        self.assertIsInstance(oprot, TJSONProtocol)

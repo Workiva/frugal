@@ -1,4 +1,6 @@
-from frugal.protocol import FProtocol
+from thrift.protocol.TProtocol import TProtocolFactory
+
+from frugal.protocol import FProtocol, FUniversalProtocol
 
 
 class FProtocolFactory(object):
@@ -22,3 +24,8 @@ class FProtocolFactory(object):
             FProtocol wrapping the TTransport.
         """
         return FProtocol(self._t_protocol_factory.getProtocol(transport))
+
+
+class FUniversalProtocolFactory(TProtocolFactory):
+    def getProtocol(self, trans, **kwargs):
+        return FUniversalProtocol(trans, **kwargs)
