@@ -4,8 +4,8 @@ target/
 *.iml
 .idea
 .vscode
-*.pyc
 py3env
+.vscode
 
 
 # Do not commit the following directories created by pub.

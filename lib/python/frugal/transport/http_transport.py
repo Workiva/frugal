@@ -1,3 +1,14 @@
+# Copyright 2017 Workiva
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from base64 import b64decode
 from io import BytesIO
 from struct import unpack
@@ -11,11 +22,14 @@ from frugal.transport.base_http_transport import TBaseHttpTransport
 
 
 class THttpTransport(TBaseHttpTransport):
-    """Synchronous transport implemented with Requests."""
+    """
+    Synchronous transport implemented with Requests.
+    """
 
     def __init__(self, url, request_capacity=0, response_capacity=0,
                  headers=None, get_headers=None):
-        """Initialize a new THttpTransport.
+        """
+        Initialize a new THttpTransport.
 
         Args:
             url: url of the Frugal server.
@@ -82,4 +96,3 @@ class THttpTransport(TBaseHttpTransport):
             return
 
         self._rbuff = BytesIO(resp_body[4:])
-

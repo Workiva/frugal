@@ -1,5 +1,17 @@
+# Copyright 2017 Workiva
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import logging
-from struct import pack_into, unpack_from
+from struct import pack_into
+from struct import unpack_from
 
 from thrift.protocol.TProtocol import TProtocolException
 
@@ -17,7 +29,8 @@ class _Headers(object):
 
     @staticmethod
     def _write_to_bytearray(headers):
-        """Writes a given dictionary to a bytearray object and returns it
+        """
+        Writes a given dictionary to a bytearray object and returns it
         TODO : Point to Protocol doc in the repo
 
         Args:
@@ -75,6 +88,9 @@ class _Headers(object):
 
     @staticmethod
     def decode_from_frame(frame):
+        """
+        Decode a frugal message from a frame.
+        """
         if len(frame) < 5:
             ex = TProtocolException(TProtocolException.INVALID_DATA,
                                     "Invalid frame size: {}".format(len(frame))
@@ -133,5 +149,3 @@ class _Headers(object):
             parsed_headers[name.decode('utf8')] = val.decode('utf8')
 
         return parsed_headers
-
-

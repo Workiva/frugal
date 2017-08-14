@@ -1,3 +1,14 @@
+# Copyright 2017 Workiva
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from base64 import b64encode
 from base64 import b64decode
 import logging
@@ -13,12 +24,14 @@ logger = logging.getLogger(__name__)
 
 
 class FHttpServer(FServer):
-    """Simple FServer implementation using HTTP. This is merely a reference
+    """
+    Simple FServer implementation using HTTP. This is merely a reference
     implementation and is not production-ready.
     """
 
     def __init__(self, processor, address, proto_factory):
-        """Initialize an FHttpServer.
+        """
+        Initialize an FHttpServer.
 
         Args:
             processor: FProcessor used to process requests.
@@ -28,7 +41,14 @@ class FHttpServer(FServer):
         """
 
         class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+            """
+            Request handler implements a frugal HTTP handler.
+            """
+
             def do_POST(self):
+                """
+                do_POST implements POST method on a frugal server.
+                """
                 length = self.headers.getheader('Content-Length')
                 payload = b64decode(self.rfile.read(int(length)))
                 response_limit = int(self.headers.getheader(
@@ -36,7 +56,7 @@ class FHttpServer(FServer):
 
                 if len(payload) <= 4:
                     logging.exception(
-                        'Invalid request frame length {}'.format(len(payload)))
+                        'Invalid request frame length %s', len(payload))
                     self.send_response(400)
                     self.end_headers()
                     return
@@ -81,4 +101,3 @@ class FHttpServer(FServer):
 
     def stop(self):
         self._httpd.socket.close()
-

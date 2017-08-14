@@ -1,3 +1,14 @@
+# Copyright 2017 Workiva
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from base64 import b64decode
 from io import BytesIO
 from struct import unpack
@@ -9,7 +20,9 @@ from frugal.transport.base_http_transport import TBaseHttpTransport
 
 
 class TUrlfetchTransport(TBaseHttpTransport):
-    """Synchronous transport implemented with urlfetch."""
+    """
+    Synchronous transport implemented with urlfetch.
+    """
 
     def __init__(self, url, headers=None, get_headers=None):
         """Initialize a new FUrlfetchTransport.
@@ -25,7 +38,8 @@ class TUrlfetchTransport(TBaseHttpTransport):
                                                  get_headers=get_headers)
 
     def set_timeout(self, timeout):
-        """Set the request timeout.
+        """
+        Set the request timeout.
 
         Args:
             timeout: request timeout in milliseconds.
@@ -42,24 +56,23 @@ class TUrlfetchTransport(TBaseHttpTransport):
         resp = _urlfetch(self._url, body, self._url.startswith('https://'),
                          self._timeout, headers)
 
-        if resp.status_code >= 400:
-            raise TTransportException(
-                TTransportExceptionType.UNKNOWN,
-                'urlfetch request failed, returned {0}'.format(
-                    resp.status_code))
+        code = resp.status_code
+        if code >= 400:
+            msg = 'urlfetch request failed, returned {0}'.format(code)
+            raise TTransportException(TTransportExceptionType.UNKNOWN, msg)
 
         resp_body = b64decode(resp.content)
         # All responses should be framed with 4 bytes (uint32).
         if len(resp_body) < 4:
-            raise TTransportException(TTransportExceptionType.UNKNOWN,
-                                      'invalid frame size')
+            msg = 'Invalid frame size.'
+            raise TTransportException(TTransportExceptionType.UNKNOWN, msg)
 
         # If there are only 4 bytes, this needs to be a one-way (i.e. frame
         # size 0)
         if len(resp_body) == 4:
             if unpack('!I', resp_body)[0] != 0:
-                raise TTransportException(TTransportExceptionType.UNKNOWN,
-                                          'invalid frame')
+                msg = 'invalid frame'
+                raise TTransportException(TTransportExceptionType.UNKNOWN, msg)
 
             # It's a oneway, drop it.
             return
@@ -78,4 +91,3 @@ def _urlfetch(url, body, validate_certificate, timeout, headers):
         )
     except DeadlineExceededError:
         raise TTransportException(type=TTransportExceptionType.TIMED_OUT)
-

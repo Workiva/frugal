@@ -1,3 +1,14 @@
+# Copyright 2017 Workiva
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from thrift.transport.TTransport import TTransportBase
 from thrift.transport.TTransport import TTransportException
 
@@ -14,6 +25,8 @@ class FTransport(object):
     """
     def __init__(self, request_size_limit=0):
         """
+        Initialize the transport optionally passing a request size limit.
+
         Args:
             request_size_limit: The maximum request payload size for this
                                 transport. A non-positive number indicates
@@ -22,15 +35,21 @@ class FTransport(object):
         self._request_size_limit = request_size_limit
 
     def open(self):
-        """Open the transport."""
+        """
+        Open the transport.
+        """
         raise NotImplementedError('You must override this')
 
     def close(self):
-        """Close the transport."""
+        """
+        Close the transport.
+        """
         raise NotImplementedError('You must override this')
 
     def is_open(self):
-        """Return True if the transport is open, False otherwise."""
+        """
+        Return True if the transport is open, False otherwise.
+        """
         raise NotImplementedError('You must override this')
 
     def set_monitor(self, monitor):
@@ -94,15 +113,16 @@ class FTransport(object):
 
 
 class TSynchronousTransport(TTransportBase, object):
-    """TSynchronousTransport is a Thrift TTransport for services which make
+    """
+    TSynchronousTransport is a Thrift TTransport for services which make
     synchronous requests.
     """
 
     def set_timeout(self, timeout):
-        """Set the request timeout.
+        """
+        Set the request timeout.
 
         Args:
             timeout: request timeout in milliseconds.
         """
         pass
-

@@ -25,6 +25,12 @@ deps-asyncio:
 sniffer:
 	sniffer -x--with-doctest -x--logging-level=ERROR -x--with-coverage -x--cover-package=frugal
 
+flake8-py2:
+	flake8 --exclude=tests,frugal/aio
+
+flake8-py3:
+	flake8 --exclude=tests,frugal/tornado
+
 unit-py2:
 	nosetests --exclude-dir=frugal/aio --exclude-dir=frugal/tests/aio --logging-level=ERROR --with-coverage --cover-package=frugal
 

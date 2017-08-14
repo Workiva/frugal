@@ -1,3 +1,14 @@
+# Copyright 2017 Workiva
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import uuid
 from copy import copy
 from frugal import _IS_PY2
@@ -17,13 +28,9 @@ _DEFAULT_TIMEOUT = 5 * 1000
 _OP_ID = 0
 
 
-def _get_next_op_id():
-    global _OP_ID
-    _OP_ID += 1
-    return str(_OP_ID)
-
 class FContext(object):
-    """FContext is the context for a Frugal message. Every RPC has an FContext,
+    """
+    FContext is the context for a Frugal message. Every RPC has an FContext,
     which can be used to set request headers, response headers, and the request
     timeout. The default timeout is five seconds. An FContext is also sent with
     every publish message which is then received by subscribers.
@@ -44,7 +51,8 @@ class FContext(object):
     """
 
     def __init__(self, correlation_id=None, timeout=_DEFAULT_TIMEOUT):
-        """Initialize FContext.
+        """
+        Initialize FContext.
 
         Args:
             correlation_id: string identifier for distributed tracing purposes.
@@ -64,15 +72,16 @@ class FContext(object):
 
     @property
     def correlation_id(self):
-        """Return the correlation id for the FContext.
-           This is used for distributed tracing purposes.
         """
-
+        Return the correlation id for the FContext. This is used for
+        distributed tracing purposes.
+        """
         return self._request_headers.get(_CID_HEADER)
 
     def _get_op_id(self):
-        """Return an int operation id for the FContext.  This is a unique long
-        per operation.  This is protected as operation ids are an internal
+        """
+        Return an int operation id for the FContext.  This is a unique long
+        per operation. This is protected as operation ids are an internal
         implementation detail.
         """
 
@@ -85,18 +94,22 @@ class FContext(object):
         self._response_headers[_OPID_HEADER] = op_id
 
     def get_request_headers(self):
-        """Returns request headers for this FConext."""
+        """
+        Returns request headers for this FConext.
+        """
         return copy(self._request_headers)
 
     def get_request_header(self, key):
-        """Returns request header for the specified key from the request
+        """
+        Returns request header for the specified key from the request
         headers dict.
         """
 
         return self._request_headers.get(key)
 
     def set_request_header(self, key, value):
-        """Set a string key value pair in the request headers dictionary.
+        """
+        Set a string key value pair in the request headers dictionary.
         Return the same FContext to allow for call chaining. Changing the
         op ID or correlation ID is disallowed.
 
@@ -123,7 +136,8 @@ class FContext(object):
         return self._response_headers.get(key)
 
     def set_response_header(self, key, value):
-        """Set a string key value pair in the response headers dictionary.
+        """
+        Set a string key value pair in the response headers dictionary.
         Return the same FContext to allow for call chaining. Changing the
         op ID or correlation ID is disallowed.
 
@@ -144,17 +158,35 @@ class FContext(object):
         return self
 
     def get_timeout(self):
+        """
+        Get the timeout for the FContext.
+        """
         return int(self._request_headers.get(_TIMEOUT_HEADER))
 
     def set_timeout(self, timeout):
+        """
+        Sets the timeout for the FContext.
+
+        Args:
+            timeout: number of seconds
+        """
         self._request_headers[_TIMEOUT_HEADER] = str(timeout)
 
     @property
     def timeout(self):
+        """
+        Get the timeout for the FContext.
+        """
         return int(self._request_headers.get(_TIMEOUT_HEADER))
 
     @timeout.setter
     def timeout(self, timeout):
+        """
+        Sets the timeout for the FContext.
+
+        Args:
+            timeout: number of seconds
+        """
         # TODO: check the type of timeout
         self._request_headers[_TIMEOUT_HEADER] = str(timeout)
         return self
@@ -175,7 +207,7 @@ class FContext(object):
 
     def _check_string(self, string):
         if _IS_PY2 and not \
-                (isinstance(string, str) or isinstance(string, unicode)):
+                (isinstance(string, str) or isinstance(string, unicode)):  # noqa: F821,E501
             raise TypeError("Value should either be a string or unicode.")
         if not _IS_PY2 and not \
                 (isinstance(string, str) or isinstance(string, bytes)):
@@ -184,3 +216,8 @@ class FContext(object):
     def _generate_cid(self):
         return uuid.uuid4().hex
 
+
+def _get_next_op_id():
+    global _OP_ID
+    _OP_ID += 1
+    return str(_OP_ID)

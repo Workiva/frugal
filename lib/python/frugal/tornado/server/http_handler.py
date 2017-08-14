@@ -1,3 +1,14 @@
+# Copyright 2017 Workiva
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import base64
 import logging
 
@@ -33,8 +44,9 @@ class FHttpHandler(RequestHandler):
 
         # check for response size limit
         response_limit = 0
-        if self.request.headers.get('x-frugal-payload-limit') is not None:
-            response_limit = int(self.request.headers['x-frugal-payload-limit'])
+        limit_header_name = "x-frugal-payload-limit"
+        if self.request.headers.get(limit_header_name) is not None:
+            response_limit = int(self.request.headers[limit_header_name])
 
         # decode payload and process
         payload = base64.b64decode(self.request.body)
@@ -51,7 +63,7 @@ class FHttpHandler(RequestHandler):
         except TApplicationException:
             # Continue so the exception is sent to the client
             pass
-        except Exception as e:
+        except Exception:
             self.send_error(status_code=400)
             return
 

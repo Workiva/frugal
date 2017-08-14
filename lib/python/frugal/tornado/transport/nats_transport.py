@@ -1,3 +1,14 @@
+# Copyright 2017 Workiva
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from nats.io.utils import new_inbox
 from thrift.transport.TTransport import TTransportException
 from tornado import gen
@@ -11,14 +22,16 @@ _ALREADY_OPEN = 'NATS transport already open.'
 
 
 class FNatsTransport(FAsyncTransport):
-    """FNatsTransport is an extension of FAsyncTransport. This is a "stateless"
+    """
+    FNatsTransport is an extension of FAsyncTransport. This is a "stateless"
     transport in the sense that there is no connection with a server. A request
     is simply published to a subject and responses are received on another
     subject. This assumes requests/responses fit within a single NATS message.
     """
 
     def __init__(self, nats_client, subject, inbox=""):
-        """Create a new instance of FNatsTransport
+        """
+        Create a new instance of FNatsTransport
 
         Args:
             nats_client: connected instance of nats.io.Client
@@ -37,7 +50,9 @@ class FNatsTransport(FAsyncTransport):
 
     @gen.coroutine
     def open(self):
-        """Subscribes to the configured inbox subject"""
+        """
+        Subscribes to the configured inbox subject.
+        """
         if not self._nats_client.is_connected:
             raise TTransportException(
                 type=TTransportExceptionType.NOT_OPEN,
@@ -59,7 +74,9 @@ class FNatsTransport(FAsyncTransport):
 
     @gen.coroutine
     def close(self):
-        """Unsubscribes from the inbox subject"""
+        """
+        Unsubscribes from the inbox subject
+        """
         if not self._sub_id:
             return
         yield self._nats_client.flush()
@@ -68,7 +85,9 @@ class FNatsTransport(FAsyncTransport):
 
     @gen.coroutine
     def flush(self, payload):
-        """Sends the buffered bytes over NATS"""
+        """
+        Sends the buffered bytes over NATS
+        """
         subject = self._subject
         inbox = self._inbox
         yield self._nats_client.publish_request(subject, inbox, payload)

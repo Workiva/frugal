@@ -1,3 +1,14 @@
+# Copyright 2017 Workiva
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from base64 import b64encode
 from io import BytesIO
 from struct import pack_into
@@ -9,11 +20,14 @@ from frugal.transport import TSynchronousTransport
 
 
 class TBaseHttpTransport(TSynchronousTransport):
-    """Base synchronous transport implemented with HTTP."""
+    """
+    Base synchronous transport implemented with HTTP.
+    """
 
     def __init__(self, url, request_capacity=0, response_capacity=0,
                  headers=None, get_headers=None):
-        """Initialize a new FBaseHttpTransport.
+        """
+        Initialize a new FBaseHttpTransport.
 
         Args:
             url: url of the Frugal server.
@@ -35,7 +49,8 @@ class TBaseHttpTransport(TSynchronousTransport):
         self._timeout = None
 
     def set_timeout(self, timeout):
-        """Set the request timeout.
+        """
+        Set the request timeout.
 
         Args:
             timeout: request timeout in milliseconds.
@@ -66,7 +81,8 @@ class TBaseHttpTransport(TSynchronousTransport):
         self._wbuff.write(buf)
 
     def _get_headers_and_body(self):
-        """Return the request headers and body.
+        """
+        Return the request headers and body.
 
         Returns:
             headers dict and base64-encoded body string.
@@ -104,4 +120,3 @@ class TBaseHttpTransport(TSynchronousTransport):
             headers['User-Agent'] = 'Python/TBaseHttpTransport'
 
         return headers, body
-
