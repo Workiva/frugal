@@ -25,4 +25,4 @@ environment:
 homepage: https://github.com/Workiva/frugal/lib/dart
 name: frugal
 publish_to: https://pub.workiva.org
-version: 2.8.0
+version: 2.8.1
