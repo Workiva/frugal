@@ -24,5 +24,5 @@ environment:
   sdk: '>=1.13.0 <2.0.0'
 homepage: https://github.com/Workiva/frugal/lib/dart
 name: frugal
-publish_to: https://pub.workiva.org
+documentation:
 version: 2.8.1
