@@ -1,0 +1,32 @@
+# codecov inherits bot from team, do not add bot to this yml
+codecov:
+  url: "https://codecov.workiva.net"
+
+coverage:
+  precision: 3
+  round: down
+  range: "60...90"
+
+  status:
+    project:
+      dartlibrarytest:
+        flags: dartlibrarytest
+        target: 60%
+      java_library:
+        flags: java_library
+        target: 50%
+      golibrary:
+        flags: golibrary
+        target: 60%
+      python_three:
+        flags: python_three
+        target: 60%
+      python_two:
+        flags: python_two
+        target: 60%
+
+    patch: no
+
+comment:
+  layout: "header, diff, changes, sunburst, uncovered, tree"
+  behavior: default

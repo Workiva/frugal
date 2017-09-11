@@ -1,0 +1,4 @@
+exception InvalidData {
+    1: i32 code,
+    2: string why
+}

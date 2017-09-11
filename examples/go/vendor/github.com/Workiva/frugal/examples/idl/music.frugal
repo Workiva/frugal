@@ -1,0 +1,76 @@
+// The wildcard (*) namespace means that the same namespace is used for
+// all languages. Namespace declarations must be listed before any
+// services, types or constants are declared.
+
+// It is a good idea to place all of your interface definitions in a
+// descriptive namespace. Specifying a namespace keeps all of the names
+// created in your IDL out of the global scope when you generate code in
+// most languages, reducing the opportunity for name collisions.
+namespace * v1.music
+
+// Enums create a new type with a discrete set of possible values, usually
+// more naturally described with human language rather than integers.
+enum PerfRightsOrg {
+    ASCAP = 1
+    BMI = 2
+    SESAC = 3
+    Other = 4
+}
+
+// Typedefs allow a new type to be created from a preexisting type.
+typedef double Minutes
+
+// Frugal structs are used to define new types represented by a packaged
+// group of fields. Conceptually, structs are the tool used to represent
+// messages, objects, records and any other grouping needed by an
+// interface.
+
+/**@ Comments (with an @ symbol) will be added to generated code. */
+struct Track {
+    1: string title
+    2: string artist
+    3: string publisher
+    4: string composer
+    5: Minutes duration
+    6: PerfRightsOrg pro
+}
+
+/**@
+ * The IDL provides set, list, and map types for representing collections
+ * of data.  Our Album struct contains a list of Tracks.
+ */
+struct Album {
+    1: list<Track> tracks
+    2: Minutes duration
+    3: string ASIN
+}
+
+/**@
+ * Exceptions are converted to the native format for each compiled
+ * language.
+ */
+exception PurchasingError {
+    1: string       message
+    2: i16          error_code
+}
+
+/**@
+ * Services are the API for client and server interaction.
+ * Users can buy an album or enter a giveaway for a free album.
+ */
+service Store {
+    Album buyAlbum( 1: string ASIN, 2: string acct ) throws (1: PurchasingError error)
+    // The deprecated annotation will mark a service method as deprecated.
+    bool enterAlbumGiveaway( 1: string email, 2: string name ) (deprecated="use something else")
+}
+
+/**@
+ * Scopes are a Frugal extension to the IDL for declaring PubSub
+ * semantics. Subscribers to this scope will be notified if they win a contest.
+ * Scopes must have a prefix.
+ */
+scope AlbumWinners prefix v1.music {
+    ContestStart: list<Album>
+    TimeLeft: Minutes
+    Winner: Album
+}

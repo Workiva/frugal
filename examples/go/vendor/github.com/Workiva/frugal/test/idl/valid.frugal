@@ -1,0 +1,67 @@
+# This is a comment.
+
+namespace java foo
+
+include "excepts.frugal"
+include "validStructs.frugal"
+include "ValidTypes.frugal"
+
+/**@
+ * This is a docstring.
+ */
+struct Thing {
+    1: i32 bar ( presence = "required" );
+    2: i32 baz ( presence = "required", cpp.use_pointer = "", );
+    3: i32 qux;
+}(
+    cpp.type = "DenseFoo",
+    python.type = "DenseFoo",
+    java.final = "",
+    annotation.without.value,
+)
+
+/** This is not a docstring. */
+struct Stuff {}
+
+typedef i32 ( foo = "bar" ) Int ( baz = "qux" )
+
+// Exception
+exception InvalidOperation {
+    1: i32 whatOp ( foo="bar" ),
+    2: string why
+} (foo = "bar")
+
+// This is a service. It has the same name as a scope. And that's ok.
+/**@ This is a service docstring. */
+service Blah {
+    /**@ Use this to ping the server. */
+    void ping() ( foo = "bar" ),
+    /**@ Use this to tell the server how you feel. */
+    i64 bleh(1:Thing one, 2:Stuff Two, 3:list<Int> custom_ints) throws (1: InvalidOperation oops, 2: excepts.InvalidData err2),
+
+    validStructs.Thing getThing(),
+    ValidTypes.MyInt getMyInt(),
+} (a.b="c")
+
+// This is a scope
+/**@ And this is a scope docstring. */
+scope Foo prefix foo.bar.{baz}.qux {
+
+    /**@ This is an operation docstring. */
+    Foo: Thing ( foo = "bar" ), // This is an operation.
+    Bar: Stuff,
+} (a.b="c")
+
+// This is a weirdly formatted scope, but it's still valid! And it has
+// the same name as a service. And that's ok.
+scope
+                blah
+{
+DoStuff :   Thing}
+
+
+// This scope is commented-out.
+//scope Baz {
+//    Blah: Stuff
+//}
+

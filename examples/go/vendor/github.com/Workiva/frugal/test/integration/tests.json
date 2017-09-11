@@ -1,0 +1,93 @@
+[
+    {
+    "name": "dart",
+    "client": {
+      "timeout": 15,
+      "transports": [ "http" ],
+      "protocols": [ "binary", "compact", "json" ],
+      "command": [ "dart", "test_client/bin/main.dart" ]
+    },
+    "workdir": "dart"
+  },
+  {
+    "name": "go",
+    "server": {
+      "timeout": 8,
+      "command": [
+        "go/bin/testserver"
+      ]
+    },
+    "client": {
+      "timeout": 8,
+      "command": [
+        "go/bin/testclient"
+      ]
+    },
+    "transports": [
+      "stateless",
+      "http"
+    ],
+    "protocols": [
+      "binary",
+      "compact",
+      "json"
+    ]
+  },
+   {
+    "name": "java",
+    "client": {
+      "timeout": 20,
+      "command": [ "/usr/bin/java", "-Djava.security.egd=file:///dev/urandom", "-cp", "cross.jar", "com.workiva.TestClient" ],
+      "transports": [ "stateless", "http" ]
+    },
+    "server": {
+      "timeout": 15,
+      "command": [ "/usr/bin/java", "-Djava.security.egd=file:///dev/urandom", "-cp", "cross.jar", "com.workiva.TestServer" ],
+      "transports": [ "stateless", "http" ]
+    },
+    "protocols": [ "binary", "compact", "json" ],
+    "workdir": "java/frugal-integration-test"
+  },
+  {
+    "name": "py:tornado",
+    "client": {
+      "timeout": 7,
+      "command": [ "python", "-u", "tornado_client.py" ]
+    },
+    "server": {
+      "timeout": 7,
+      "command": [ "python", "-u", "tornado_server.py" ]
+    },
+    "transports": [ "stateless", "http" ],
+    "protocols": [ "binary", "compact", "json" ],
+    "workdir": "python/tornado"
+  },
+  {
+    "name": "py:asyncio",
+    "client": {
+      "timeout": 7,
+      "command": ["python3.5", "-u", "client.py" ]
+    },
+    "server": {
+      "timeout": 7,
+      "command": [ "python3.5", "-u", "server.py" ]
+    },
+    "transports": [ "stateless", "http" ],
+    "protocols": [ "binary", "compact", "json" ],
+    "workdir": "python/asyncio"
+  },
+  {
+    "name": "py:vanilla",
+    "client": {
+      "timeout": 7,
+      "command": [  "python", "-u", "vanilla_client.py" ]
+    },
+    "server": {
+      "timeout": 7,
+      "command": [ "python", "-u", "vanilla_server.py" ]
+    },
+    "transports": [ "http" ], 
+    "protocols": [ "binary", "compact", "json" ],
+    "workdir": "python/tornado"
+  }
+]

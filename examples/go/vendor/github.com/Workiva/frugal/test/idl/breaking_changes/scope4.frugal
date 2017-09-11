@@ -1,0 +1,35 @@
+# Remove scope entirely
+
+namespace java foo
+
+
+/**@
+ * This is a docstring.
+ */
+struct Thing {}
+
+/** This is not a docstring. */
+struct Stuff {}
+
+typedef i32 Int
+
+// Exception
+exception InvalidOperation {
+    1: i32 whatOp,
+    2: string why
+}
+
+// This is a scope
+/**@ And this is a scope docstring. */
+scope Foo prefix foo.bar.{baz}.{biz}.qux.que {
+
+    /**@ This is an operation docstring. */
+    Foo: Thing // This is an operation.
+    Bar: Stuff
+}
+
+// This is a weirdly formatted scope, but it's still valid!
+scope
+                blah
+{
+DoStuff :   Thing}

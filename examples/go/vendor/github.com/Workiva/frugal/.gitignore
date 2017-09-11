@@ -1,0 +1,61 @@
+test/out
+test/idl/constants.thrift
+target/
+*.iml
+.idea
+.vscode
+py3env
+.vscode
+
+
+# Do not commit the following directories created by pub.
+.buildlog
+.pub/
+build/
+packages
+.packages
+
+# Or the files created by dart2js.
+*.dart.js
+*.js_
+*.js.deps
+*.js.map
+
+# Or the lock
+pubspec.lock
+
+# Or dart coverage, docs, and test runner files, for that matter
+lib/dart/coverage
+lib/dart/doc
+lib/dart/test/generated_runner_test.dart
+
+# Ignore generated code and cross results
+skynet.Dockerfile
+
+# python specific
+.python_version
+*.pyc
+.coverage
+.build/
+.ropeproject/
+coverage_html/
+unit_tests.xml
+lib/python/frugal.egg-info/
+lib/python/frugalc
+lib/python/dist
+Library/
+
+# Integration tests
+artifacts/
+test/integration/log/*
+test/integration/*/gen*
+test/integration/go/bin/*
+test/integration/java/frugal-integration-test/cross.jar
+test/integration/java/frugal-integration-test/gen-java
+test/integration/java/frugal-integration-test/*.jar
+test/integration/python/tornado/gen-py
+test/integration/python/tornado/gen_py_tornado
+test/integration/python/asyncio/gen_py_asyncio
+
+# Cross-compiled code
+pkg/

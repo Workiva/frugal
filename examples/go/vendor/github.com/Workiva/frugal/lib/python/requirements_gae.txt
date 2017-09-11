@@ -1,0 +1,3 @@
+webapp2==2.5.2
+
+-r requirements.txt

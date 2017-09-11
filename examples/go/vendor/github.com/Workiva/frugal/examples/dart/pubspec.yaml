@@ -1,0 +1,18 @@
+dependencies:
+  frugal:
+    hosted:
+      name: frugal
+      url: https://pub.workiva.org
+    version: ^2.9.0
+  logging: ^0.11.2
+  thrift:
+    hosted:
+      name: thrift
+      url: https://pub.workiva.org
+    version: ^0.0.5
+  v1_music:
+    path: gen-dart/v1_music
+environment:
+  sdk: ^1.12.0
+name: client_example
+version: 0.0.1

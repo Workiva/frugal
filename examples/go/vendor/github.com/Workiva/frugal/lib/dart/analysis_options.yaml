@@ -1,0 +1,58 @@
+analyzer:
+  exclude:
+    - test/**
+    - tool/**
+  strong-mode: true
+
+linter:
+  rules:
+    # Error Rules
+    - avoid_empty_else
+    - control_flow_in_finally
+    - empty_statements
+    - hash_and_equals
+    - iterable_contains_unrelated_type
+    - list_remove_unrelated_type
+    - test_types_in_equals
+    - throw_in_finally
+    - unrelated_type_equality_checks
+    - valid_regexps
+    - comment_references
+    - cancel_subscriptions
+    - close_sinks
+
+    # Style Rules
+    - always_declare_return_types
+    - annotate_overrides
+    - avoid_as
+    - avoid_init_to_null
+    - avoid_return_types_on_setters
+    - await_only_futures
+    - camel_case_types
+    - empty_catches
+    - empty_constructor_bodies
+    - implementation_imports
+    - library_names
+    - library_prefixes
+    - non_constant_identifier_names
+    - only_throw_errors
+    - overridden_fields
+    - package_prefixed_library_names
+    - prefer_is_not_empty
+    - slash_for_doc_comments
+    - sort_constructors_first
+    - sort_unnamed_constructors_first
+    - super_goes_last
+    - type_annotate_public_apis
+    - type_init_formals
+    - unawaited_futures
+    - unnecessary_brace_in_string_interp
+    - unnecessary_getters_setters
+    - package_api_docs
+    - public_member_api_docs
+
+    # This rule forces overly verbose declaration of variables.
+    #- always_specify_types
+
+    # Pub Rules
+    - package_names

@@ -1,0 +1,9 @@
+namespace py service_extension_same_file.python
+
+service BasePinger {
+    void basePing()
+}
+
+service Pinger extends BasePinger {
+    void ping()
+}

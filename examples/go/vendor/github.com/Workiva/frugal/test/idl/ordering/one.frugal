@@ -1,0 +1,5 @@
+
+
+struct One {
+    1:list<bool> some_field,
+}

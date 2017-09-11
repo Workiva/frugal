@@ -1,0 +1,11 @@
+struct Thing {
+    1: i32 bar,
+}
+
+scope Foo {
+    Boo: Thing 
+}
+
+scope foo {
+    Bar: Thing 
+}

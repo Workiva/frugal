@@ -1,0 +1,12 @@
+
+include "base.frugal"
+
+const i32 const_int = base.const_i32_from_base;
+
+struct new_thing {
+    1:base.thing wrapped_thing,
+}
+
+service Foo extends base.BaseFoo {
+    base.thing get_thing(1:base.thing the_thing),
+}

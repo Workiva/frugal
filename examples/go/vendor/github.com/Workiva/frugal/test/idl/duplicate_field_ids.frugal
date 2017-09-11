@@ -1,0 +1,6 @@
+
+struct Foo {
+    1:i32 thing1,
+    2:i64 thing2,
+    1:string thing3,
+}

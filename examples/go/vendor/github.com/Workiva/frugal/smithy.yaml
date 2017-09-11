@@ -1,0 +1,43 @@
+project: frugal
+language: golang
+
+# https://dev.webfilings.org/zuul/release/461082
+runner_image: drydock-prod.workiva.net/workiva/messaging-docker-images:180641
+
+script:
+    - ./scripts/smithy.sh
+    # Print out all the test logs as their own section in the smithy report view
+    - cat $SMITHY_ROOT/test_results/smithy_dart.sh_out.txt
+    - cat $SMITHY_ROOT/test_results/smithy_go.sh_out.txt
+    - cat $SMITHY_ROOT/test_results/smithy_generator.sh_out.txt
+    - cat $SMITHY_ROOT/test_results/smithy_python.sh_out.txt
+    - cat $SMITHY_ROOT/test_results/smithy_java.sh_out.txt
+
+env:
+    - FRUGAL_HOME=/smithy-builder/builds/Workiva/frugal/cache/GO/src/github.com/Workiva/frugal # $GOPATH/src/github.com/Workiva/frugal
+    - SMITHY_ROOT=/smithy-builder/builds/Workiva/frugal/workspace
+    - CODECOV_TOKEN='d88d0bbe-b5f0-4dce-92ae-a110aa028ddb'
+
+artifacts:
+    artifactory:
+        - frugal-*.jar
+    release:
+        - /frugal
+    go_library:
+        - goLib.tar.gz
+    pub:
+        - frugal.pub.tgz
+    pypi:
+        - frugal-*.tar.gz
+    test_results:
+        - test_results/*
+
+    # RM needs to track our dependencies in python for compliance reasons
+    # This uploads our pip dependencies for both python2/python3 so that they
+    # can be audited.
+    
+    # These names are hard coded into RM console - do not change them without
+    # verifying they are changed in Rosie as well
+    build:
+        - python2_pip_deps.txt
+        - python3_pip_deps.txt

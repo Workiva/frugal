@@ -1,0 +1,11 @@
+include "vendor_namespace.frugal" (vendor)
+include "excepts.frugal"
+
+
+service MyService {
+    vendor_namespace.Item getItem() throws (1:excepts.InvalidData d)
+}
+
+scope MyScope {
+    newItem: vendor_namespace.Item
+}

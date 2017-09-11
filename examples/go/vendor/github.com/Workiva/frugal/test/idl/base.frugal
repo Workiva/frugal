@@ -1,0 +1,29 @@
+namespace java actual_base.java
+namespace go actual_base.golang
+namespace dart actual_base.dart
+namespace py actual_base.python
+
+exception api_exception {}
+
+
+service BaseFoo {
+    void basePing()
+}
+
+const i32 const_i32_from_base = 582;
+
+struct thing {
+    1: i32 an_id,
+    2: string a_string
+}
+
+struct nested_thing {
+    1: list<thing> things,
+}
+
+enum base_health_condition {
+    PASS = 1,
+    WARN = 2,
+    FAIL = 3,
+    UNKNOWN = 4
+}

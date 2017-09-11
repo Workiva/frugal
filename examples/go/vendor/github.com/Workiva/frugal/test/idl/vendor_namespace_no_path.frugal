@@ -1,0 +1,4 @@
+namespace go vendor_namespace
+namespace dart vendor_namespace
+
+struct Item {}
