@@ -1,7 +1,7 @@
 project: frugal
 language: golang
 
-runner_image: drydock-prod.workiva.net/workiva/messaging-docker-images:208164
+runner_image: drydock-prod.workiva.net/workiva/messaging-docker-images:210905
 
 script:
     - ./scripts/smithy.sh
