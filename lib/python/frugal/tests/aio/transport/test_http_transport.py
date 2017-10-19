@@ -38,7 +38,7 @@ class TestFHttpTransport(utils.AsyncIOTestCase):
             request_capacity=self.request_capacity,
             response_capacity=self.response_capacity,
             additional_headers={
-                "X-Cloud-Trace-Headers": "test header"
+                "extra-header": "test header"
             }
         )
         self.make_request_mock = mock.Mock()
@@ -99,7 +99,7 @@ class TestFHttpTransport(utils.AsyncIOTestCase):
         self.assertEqual(request_args[1], base64.b64encode(request_frame))
 
     @utils.async_runner
-    async def test_request_google_cloud_header(self):
+    async def test_request_additional_header(self):
         request_data = bytearray([4, 5, 6, 7, 8, 9, 10, 11, 13, 12, 3])
         request_frame = bytearray([0, 0, 0, 11]) + request_data
 
@@ -117,7 +117,6 @@ class TestFHttpTransport(utils.AsyncIOTestCase):
         self.assertEqual(response_data, response_transport.getvalue())
         self.assertTrue(self.make_request_mock.called)
         print(response_transport)
-        #  long
         print(response_transport.getheaders())
         request_args = self.make_request_mock.call_args[0]
         self.assertEqual(request_args[0], ctx)
