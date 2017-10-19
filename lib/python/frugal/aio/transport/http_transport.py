@@ -28,7 +28,8 @@ class FHttpTransport(FTransportBase):
     FHttpTransport is an FTransport that uses http as the underlying transport.
     This allows messages of arbitrary sizes to be sent and received.
     """
-    def __init__(self, url, request_capacity=0, response_capacity=0):
+    def __init__(self, url, request_capacity=0, response_capacity=0,
+                 additional_headers=None):
         """
         Create an HTTP transport.
 
@@ -38,6 +39,9 @@ class FHttpTransport(FTransportBase):
                               request. Set to 0 for no size restrictions.
             response_capacity: The maximum size allowed to be read in a
                                response. Set to 0 for no size restrictions
+            additional_headers: Additional headers to be appended onto
+                                the request. Set to None by default, expects
+                                a dict of key-value pairs
         """
         super().__init__(request_capacity)
         self._url = url
@@ -49,6 +53,10 @@ class FHttpTransport(FTransportBase):
         }
         if response_capacity > 0:
             self._headers['x-frugal-payload-limit'] = str(response_capacity)
+        # append additional provided headers
+        if additional_headers is not None:
+            for header, value in additional_headers.items():
+                self._headers[header] = str(value)
 
     def is_open(self):
         """Always returns True"""

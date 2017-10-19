@@ -33,8 +33,17 @@ class TestFHttpTransport(utils.AsyncIOTestCase):
             request_capacity=self.request_capacity,
             response_capacity=self.response_capacity
         )
+        self.transport_headers = FHttpTransport(
+            self.url,
+            request_capacity=self.request_capacity,
+            response_capacity=self.response_capacity,
+            additional_headers={
+                "X-Cloud-Trace-Headers": "test header"
+            }
+        )
         self.make_request_mock = mock.Mock()
         self.transport._make_request = self.make_request_mock
+        self.transport_headers._make_request = self.make_request_mock
 
         self.headers = {
             'content-type': 'application/x-frugal',
@@ -85,6 +94,30 @@ class TestFHttpTransport(utils.AsyncIOTestCase):
 
         self.assertEqual(response_data, response_transport.getvalue())
         self.assertTrue(self.make_request_mock.called)
+        request_args = self.make_request_mock.call_args[0]
+        self.assertEqual(request_args[0], ctx)
+        self.assertEqual(request_args[1], base64.b64encode(request_frame))
+
+    @utils.async_runner
+    async def test_request_google_cloud_header(self):
+        request_data = bytearray([4, 5, 6, 7, 8, 9, 10, 11, 13, 12, 3])
+        request_frame = bytearray([0, 0, 0, 11]) + request_data
+
+        response_data = bytearray([23, 24, 25, 26, 27, 28, 29])
+        response_frame = bytearray([0, 0, 0, 7]) + response_data
+        response_encoded = base64.b64encode(response_frame)
+        response_future = Future()
+        response_future.set_result((200, response_encoded))
+        self.make_request_mock.return_value = response_future
+
+        ctx = FContext()
+        response_transport = await self.transport_headers.request(
+            ctx, request_frame)
+
+        self.assertEqual(response_data, response_transport.getvalue())
+        self.assertTrue(self.make_request_mock.called)
+        print(response_transport)
+        print(response_transport.getheaders())
         request_args = self.make_request_mock.call_args[0]
         self.assertEqual(request_args[0], ctx)
         self.assertEqual(request_args[1], base64.b64encode(request_frame))
