@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 class FHttpTransport(FTransportBase):
-    def __init__(self, url, request_capacity=0, response_capacity=0):
+    def __init__(self, url, request_capacity=0, response_capacity=0,
+                 additional_headers=None):
         """
         Create an HTTP transport.
 
@@ -37,6 +38,8 @@ class FHttpTransport(FTransportBase):
                               request. Set to 0 for no size restrictions.
             response_capacity: The maximum size allowed to be read in a
                                response. Set to 0 for no size restrictions.
+            additional_headers: Additional headers to be appended onto
+                                the request.
         """
         super(FHttpTransport, self).__init__(
             request_size_limit=request_capacity)
@@ -51,6 +54,11 @@ class FHttpTransport(FTransportBase):
         }
         if response_capacity > 0:
             self._headers['x-frugal-payload-limit'] = str(response_capacity)
+
+        # append additional provided headers
+        if additional_headers is not None:
+            for header, value in additional_headers.iteritems():
+                self._headers[header] = str(value)
 
         self._execute = None
 
