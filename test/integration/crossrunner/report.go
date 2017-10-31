@@ -22,8 +22,9 @@ import (
 
 // createLogs creates client and server log files with the following format:
 // log/clientName-serverName_transport_protocol_role.log.
-func createLogs(pair *Pair) (err error) {
-	pair.Client.Logs, err = os.Create(fmt.Sprintf("log/%s-%s_%s_%s_%s.log",
+func createLogs(pair *Pair, port int) (err error) {
+	pair.Client.Logs, err = os.Create(fmt.Sprintf("log/p%d-c\"%s\"-s\"%s\"_%s_%s_%s.log",
+		port,
 		pair.Client.Name,
 		pair.Server.Name,
 		pair.Client.Protocol,
@@ -33,7 +34,8 @@ func createLogs(pair *Pair) (err error) {
 		return err
 	}
 
-	pair.Server.Logs, err = os.Create(fmt.Sprintf("log/%s-%s_%s_%s_%s.log",
+	pair.Server.Logs, err = os.Create(fmt.Sprintf("log/p%d-c\"%s\"-s\"%s\"_%s_%s_%s.log",
+		port,
 		pair.Client.Name,
 		pair.Server.Name,
 		pair.Server.Protocol,
@@ -129,25 +131,31 @@ func PrintConsoleHeader() {
 	fmt.Print(breakLine())
 }
 
-// PrintPairResult prints a formatted pair result to the console.
-func PrintPairResult(pair *Pair) {
+// ResultString returns a formatted result
+func ResultString(returnCode int) string {
 	var result string
-	if pair.ReturnCode == 0 {
+	if returnCode == 0 {
 		result = "success"
-	} else if pair.ReturnCode == CrossrunnerFailure {
+	} else if returnCode == CrossrunnerFailure {
 		// Colorize failures red - this probably only works in Linux
 		result = "\x1b[31;1mCROSSRUNNER FAILURE\x1b[37;1m"
 	} else {
 		result = "\x1b[31;1mFAILURE\x1b[37;1m"
 	}
+	return result
+}
 
-	fmt.Printf("%-35s%-15s%-25s%-20s\n",
-		fmt.Sprintf("%s-%s",
+// PrintPairResult prints a formatted pair result to the console.
+func PrintPairResult(pair *Pair, port int) {
+	result := ResultString(pair.ReturnCode)
+
+	fmt.Printf("%-48s%-15s%-25s%-20s %-10d\n",
+		fmt.Sprintf("c:%s-s:%s",
 			pair.Client.Name,
 			pair.Server.Name),
 		pair.Client.Protocol,
 		pair.Client.Transport,
-		result)
+		result, port)
 }
 
 // PrintConsoleFooter writes the metadata associated with the test suite to the console.

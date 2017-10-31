@@ -6,6 +6,8 @@ target/
 .vscode
 py3env
 .vscode
+vendor/
+ser.tar
 
 
 # Do not commit the following directories created by pub.
@@ -56,6 +58,11 @@ test/integration/java/frugal-integration-test/*.jar
 test/integration/python/tornado/gen-py
 test/integration/python/tornado/gen_py_tornado
 test/integration/python/asyncio/gen_py_asyncio
+
+# test reports
+unit_tests_py2.xml
+unit_tests_std_py2.xml
+unit_tests_py3.xml
 
 # Cross-compiled code
 pkg/

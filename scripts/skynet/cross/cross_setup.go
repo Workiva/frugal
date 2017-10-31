@@ -1,14 +1,15 @@
 package main
 
 import (
-	"os/exec"
-	"sync"
-	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"sync"
+
+	log "github.com/Sirupsen/logrus"
 )
 
-func main(){
+func main() {
 
 	setupScriptDir := "scripts/skynet/cross/"
 	setupScripts := []string{"setup_dart.sh", "setup_go.sh", "setup_python.sh", "setup_java.sh"}
@@ -25,10 +26,10 @@ func main(){
 
 }
 
-func runSetupScript(script string, scriptDir string, wg *sync.WaitGroup){
+func runSetupScript(script string, scriptDir string, wg *sync.WaitGroup) {
 	fullScript := scriptDir + script
 	log.Info("Running setup script:", script)
-	out, err := exec.Command("sh", fullScript).CombinedOutput();
+	out, err := exec.Command("sh", fullScript).CombinedOutput()
 
 	if err != nil {
 		log.Errorf("Script '%s' failed with output:%s", script, out)
@@ -49,7 +50,7 @@ func runSetupScript(script string, scriptDir string, wg *sync.WaitGroup){
 
 }
 
-func writeFile(logFile string, commandData []byte) (error) {
+func writeFile(logFile string, commandData []byte) error {
 
 	return ioutil.WriteFile(logFile, commandData, 0644)
 

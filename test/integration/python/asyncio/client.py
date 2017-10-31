@@ -51,7 +51,7 @@ async def main():
     elif args.transport_type == "http":
         # Set request and response capacity to 1mb
         max_size = 1048576
-        transport = FHttpTransport("http://localhost:{port}".format(
+        transport = FHttpTransport("http://127.0.0.1:{port}".format(
             port=args.port), request_capacity=max_size,
             response_capacity=max_size)
     else:

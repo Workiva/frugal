@@ -16,6 +16,7 @@ package frugal
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"testing"
 	"time"
 
@@ -46,7 +47,7 @@ func runServer(opts *server.Options) *server.Server {
 
 	end := time.Now().Add(10 * time.Second)
 	for time.Now().Before(end) {
-		addr := s.GetListenEndpoint()
+		addr := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
 		if addr == "" {
 			time.Sleep(10 * time.Millisecond)
 			// Retry. We might take a little while to open a connection.

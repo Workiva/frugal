@@ -21,13 +21,9 @@ before_install:
   - mkvirtualenv py2 && make deps-tornado deps-gae
   - mkvirtualenv py3 -p $(which python3) && make deps-asyncio
 
-install:
-  - go get github.com/tools/godep
-  - cd $TRAVIS_BUILD_DIR && godep restore
-
 script:
-  - cd $TRAVIS_BUILD_DIR && godep go test ./test -race
-  - cd $TRAVIS_BUILD_DIR/lib/go && godep go test -race
+  - cd $TRAVIS_BUILD_DIR && go test ./test -race
+  - cd $TRAVIS_BUILD_DIR/lib/go && go test -race
   - cd $TRAVIS_BUILD_DIR/lib/python
   - workon py2 && make xunit-py2 flake8-py2
   - workon py3 && make xunit-py3 flake8-py3

@@ -1,4 +1,3 @@
-multidict==1.1.0
 six==1.10.0
 thrift==0.10.0
 requests==2.12.5

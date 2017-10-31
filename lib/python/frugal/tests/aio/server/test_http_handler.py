@@ -12,8 +12,9 @@
 import base64
 import mock
 
-from aiohttp import test_utils, CIMultiDict
+from aiohttp import test_utils
 from aiohttp.streams import StreamReader
+from multidict import CIMultiDict
 from thrift.protocol import TBinaryProtocol
 
 from frugal.protocol import FProtocolFactory

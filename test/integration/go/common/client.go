@@ -33,6 +33,44 @@ func init() {
 	flag.BoolVar(&debugClientProtocol, "debug_client_protocol", false, "turn client protocol trace on")
 }
 
+func StartHTTPClient(
+	host string,
+	port int64,
+	transport string,
+	protocol string,
+	clientMiddlewareCalled chan bool) (client *frugaltest.FFrugalTestClient, err error) {
+
+	var protocolFactory thrift.TProtocolFactory
+	switch protocol {
+	case "compact":
+		protocolFactory = thrift.NewTCompactProtocolFactory()
+	case "simplejson":
+		protocolFactory = thrift.NewTSimpleJSONProtocolFactory()
+	case "json":
+		protocolFactory = thrift.NewTJSONProtocolFactory()
+	case "binary":
+		protocolFactory = thrift.NewTBinaryProtocolFactoryDefault()
+	default:
+		return nil, fmt.Errorf("Invalid protocol specified %s", protocol)
+	}
+
+	fProtocolFactory := frugal.NewFProtocolFactory(protocolFactory)
+
+	// RPC client
+	var trans frugal.FTransport
+	switch transport {
+	case "http":
+		// Set request and response capacity to 1mb
+		maxSize := uint(1048576)
+		trans = frugal.NewFHTTPTransportBuilder(&http.Client{}, fmt.Sprintf("http://localhost:%d", port)).WithRequestSizeLimit(maxSize).WithResponseSizeLimit(maxSize).Build()
+	default:
+		return nil, fmt.Errorf("Invalid transport specified %s", transport)
+	}
+
+	client = frugaltest.NewFFrugalTestClient(frugal.NewFServiceProvider(trans, fProtocolFactory), clientLoggingMiddleware(clientMiddlewareCalled))
+	return
+}
+
 func StartClient(
 	host string,
 	port int64,

@@ -19,20 +19,22 @@ import (
 	"net/http"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"os/exec"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // RunConfig runs a client against a server.  Client/Server logs are created and
 // failures are added to the unexpected_failures.log.  Each result is logged to
 // the console.
-func RunConfig(pair *Pair, port int, getCommand func(config Config, port int) (cmd *exec.Cmd, formatted string)) {
+
+func RunConfig(pair *Pair, port int, getCommand func(config Config, port int) (cmd *exec.Cmd, formatted string)) (time.Duration, time.Duration) {
 	var err error
 	// Create client/server log files
-	if err = createLogs(pair); err != nil {
+	if err = createLogs(pair, port); err != nil {
 		log.Debugf("Failed to create logs for % client and %s server", pair.Client.Name, pair.Server.Name)
 		reportCrossrunnerFailure(pair, err)
-		return
+		return 0, 0
 	}
 	defer pair.Client.Logs.Close()
 	defer pair.Server.Logs.Close()
@@ -40,6 +42,15 @@ func RunConfig(pair *Pair, port int, getCommand func(config Config, port int) (c
 	// Get server and client command structs
 	server, serverCmd := getCommand(pair.Server, port)
 	client, clientCmd := getCommand(pair.Client, port)
+	goHTTPClient := Config{
+		Name:      "GoGoClient",
+		Timeout:   time.Second * 7,
+		Transport: "http",
+		Protocol:  pair.Client.Protocol,
+		Command:   []string{"go/bin/testclientbasic"},
+		Logs:      pair.Client.Logs,
+	}
+	goClient, goClientCmd := getCommand(goHTTPClient, port)
 
 	// write server log header
 	log.Debug(serverCmd)
@@ -48,15 +59,16 @@ func RunConfig(pair *Pair, port int, getCommand func(config Config, port int) (c
 		pair.Server.Timeout, pair.Client.Timeout); err != nil {
 		log.Debugf("Failed to write header to %s", pair.Server.Logs.Name())
 		reportCrossrunnerFailure(pair, err)
-		return
+		return 0, 0
 	}
 
 	// start the server
 	sStartTime := time.Now()
+	address := fmt.Sprintf(":%d", port)
 	if err = server.Start(); err != nil {
 		log.Debugf("Failed to start %s server", pair.Server.Name)
 		reportCrossrunnerFailure(pair, err)
-		return
+		return 0, 0
 	}
 	// Defer stopping the server to ensure the process is killed on exit
 	defer func() {
@@ -86,14 +98,14 @@ func RunConfig(pair *Pair, port int, getCommand func(config Config, port int) (c
 		if err = writeServerTimeout(pair.Server.Logs, pair.Server.Name); err != nil {
 			log.Debugf("Failed to write server timeout to %s", pair.Server.Logs.Name)
 			reportCrossrunnerFailure(pair, err)
-			return
+			return 0, 0
 		}
 		pair.ReturnCode = TestFailure
 		pair.Err = errors.New("Server has not started within the specified timeout")
 		log.Debug(pair.Server.Name + " server not started within specified timeout")
 		// Even though the healthcheck server hasn't started, the process has.
 		// Process is killed in the deferred function above
-		return
+		return 0, 0
 	}
 
 	// write client log header
@@ -101,13 +113,55 @@ func RunConfig(pair *Pair, port int, getCommand func(config Config, port int) (c
 		pair.Server.Timeout, pair.Client.Timeout); err != nil {
 		log.Debugf("Failed to write header to %s", pair.Client.Logs.Name())
 		reportCrossrunnerFailure(pair, err)
-		return
+		return 0, 0
+	}
+
+	cStartTime := time.Now()
+
+	// if http, start basic go client
+	if pair.Client.Transport == "http" && pair.Client.Protocol == "json" {
+
+		done := make(chan error, 1)
+		log.Infof("Go sidekick: %s\n", goClientCmd)
+
+		if err = goClient.Start(); err != nil {
+			log.Infof("GO Failed to start %s client. port: %s", goHTTPClient.Name, address)
+			log.Errorf("Go Sidekick start: %s port: %s", err, address)
+		}
+
+		go func() {
+			done <- goClient.Wait()
+		}()
+
+		select {
+		case <-time.After(7 * time.Second):
+			if err = writeClientTimeout(pair, goHTTPClient.Name); err != nil {
+				log.Debugf("GO Failed to write timeout error to %s. port: %s", pair.Client.Logs.Name(), address)
+				log.Errorf("Go Sidekick timeout: %s. port: %s", err, address)
+				return 0, 0
+			}
+
+			if err = goClient.Process.Kill(); err != nil {
+				log.Infof("GO Error killing %s. port: %s", goHTTPClient.Name, address)
+				log.Errorf("Go Sidekick kill: %s. port: %s", err, address)
+				return 0, 0
+			}
+			pair.ReturnCode = TestFailure
+			pair.Err = fmt.Errorf("GO sidekick Client has not completed within the specified timeout. port: %s", address)
+			break
+		case err := <-done:
+			if err != nil {
+				log.Debugf("Go Error in %s client. port: %s", goHTTPClient.Name, address)
+				log.Errorf("Go Sidekick done: %s. port: %s", err, address)
+			} else {
+				log.Infof("Go Sidekick success done port: %s", address)
+			}
+		}
 	}
 
 	// start client
 	done := make(chan error, 1)
 	log.Debug(clientCmd)
-	cStartTime := time.Now()
 
 	if err = client.Start(); err != nil {
 		log.Debugf("Failed to start %s client", pair.Client.Name)
@@ -127,13 +181,13 @@ func RunConfig(pair *Pair, port int, getCommand func(config Config, port int) (c
 			log.Debugf("Failed to write timeout error to %s", pair.Client.Logs.Name())
 
 			reportCrossrunnerFailure(pair, err)
-			return
+			return 0, 0
 		}
 
 		if err = client.Process.Kill(); err != nil {
 			log.Infof("Error killing %s", pair.Client.Name)
 			reportCrossrunnerFailure(pair, err)
-			return
+			return 0, 0
 		}
 		pair.ReturnCode = TestFailure
 		pair.Err = errors.New("Client has not completed within the specified timeout")
@@ -147,16 +201,19 @@ func RunConfig(pair *Pair, port int, getCommand func(config Config, port int) (c
 	}
 
 	// write log footers
-	if err = writeFileFooter(pair.Client.Logs, time.Since(cStartTime)); err != nil {
+	clientDuration := time.Since(cStartTime)
+	serverDuration := time.Since(sStartTime)
+	if err = writeFileFooter(pair.Client.Logs, clientDuration); err != nil {
 		log.Debugf("Failed to write footer to %s", pair.Client.Logs.Name())
 		reportCrossrunnerFailure(pair, err)
-		return
+		return 0, 0
 	}
-	if err = writeFileFooter(pair.Server.Logs, time.Since(sStartTime)); err != nil {
+	if err = writeFileFooter(pair.Server.Logs, serverDuration); err != nil {
 		log.Debugf("Failed to write footer to %s", pair.Client.Logs.Name())
 		reportCrossrunnerFailure(pair, err)
-		return
+		return 0, 0
 	}
+	return clientDuration, serverDuration
 }
 
 // reportCrossrunnerFailure is used in the error case when something goes wrong
