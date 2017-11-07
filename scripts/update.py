@@ -50,7 +50,7 @@ def update_compiler(version, root):
         f.write(s)
     # Install the binary with the updated version
     os.chdir(root)
-    if call(['godep', 'go', 'install']) != 0:
+    if call(['go', 'install']) != 0:
         raise Exception('installing frugal binary failed')
 
 

@@ -3,31 +3,23 @@ dist: trusty
 group: deprecated-2017Q3
 language: go
 
-env:
-  - TWINE_USERNAME=messaging
-  - TWINE_REPOSITORY=pypi
-  - TWINE_REPOSITORY_URL=https://upload.pypi.org/latest/
-
 before_install:
   - sudo sh -c 'curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -'
   - sudo sh -c 'curl https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
   - mkdir $HOME/.virtuanenvs && echo "export WORKON_HOME=$HOME/.virtualenvs" >> $HOME/.bashrc
   - sudo add-apt-repository -y ppa:openjdk-r/ppa
   - sudo apt-get update -qq
-  - sudo apt-get -y install python3-pip python-dev build-essential virtualenvwrapper openjdk-8-jdk maven dart
-  - pip install -U setuptools virtualenv virtualenvwrapper
+  - sudo apt-get -qqy install python3-pip python-dev build-essential virtualenvwrapper openjdk-8-jdk maven dart
+  - pip install -U virtualenv virtualenvwrapper 
   - echo "source /etc/bash_completion.d/virtualenvwrapper" >> $HOME/.bashrc && source $HOME/.bashrc
   - cd $TRAVIS_BUILD_DIR/lib/python
   - mkvirtualenv py2 && make deps-tornado deps-gae
   - mkvirtualenv py3 -p $(which python3) && make deps-asyncio
-
-install:
-  - go get github.com/tools/godep
-  - cd $TRAVIS_BUILD_DIR && godep restore
+  - curl https://glide.sh/get | sh
 
 script:
-  - cd $TRAVIS_BUILD_DIR && godep go test ./test -race
-  - cd $TRAVIS_BUILD_DIR/lib/go && godep go test -race
+  - cd $TRAVIS_BUILD_DIR && go test ./test -race
+  - cd $TRAVIS_BUILD_DIR/lib/go && glide install && go test -race
   - cd $TRAVIS_BUILD_DIR/lib/python
   - workon py2 && make xunit-py2 flake8-py2
   - workon py3 && make xunit-py3 flake8-py3
@@ -47,6 +39,9 @@ notifications:
 
 env:
   global:
+  - TWINE_USERNAME=messaging
+  - TWINE_REPOSITORY=pypi
+  - TWINE_REPOSITORY_URL=https://upload.pypi.org/latest/
   # GPG_KEY_NAME
   - secure: QLfcf8lFmF67UAAr/Du7H2KWGV7yeSpueoZC2B9X9Fq8XH5Iv+CPR14miw2YWQjCrlGEo2WeMrUIo0Auz8xQsKCrQe69o7+mwpz79Z60RbzMqRSSUZgnnctwcNQLOsOmfZfElC7DFnL0r/dESsKZ9oMbsTFehQMtSL0dkQGEAiOP0IiAhwdx6a82D8pJemCX66a+e/I/lLZVrypR3HFmOyDNAs6Avpau0eUb28rHaV3iJTK4QvQm/U3ybwdXa0Bt5OacBbjVd9qZKy1dLeMABnhKu/e5Ue1q754pulBnovLItSZ1lTJBNCx64wxpMj/aB+msxDSUUr0sDHiET14Mu3pZS8WzitU2eXRQ84NEt77Ui5OjmLZuHnNjaLy5u0kpNGnL1zmirjFI6MqxOdehdeeAKYS//AZJ/lUe8vxVxxWMqNUtgKIZdl/dHjq4Y163aKpDBsbsrxohq3TiuJiZxIZQ6J8rgULymRfh9Gx83FJAHk4SSwSljrgTqYFmqi+eoPZ/BdxFka2WkxJULb5D9Zv91gw/fNxt1Fy3UtsSaWmpJBFpOO/C6nzqYvu+9aOs3S7pUgm6LeYwLIpsFu6Lw9NAfoYGvx+CvQNDEKlowlBnN6uyfjpU4QEWqZWDgoTUp3bw3NLk8KCSGhwTI8PzGJcs2WS4L4yJsysP98+5D8k=
   # GPG_PASSPHRASE

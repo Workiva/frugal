@@ -1,0 +1,10 @@
+package: github.com/Workiva/frugal/test/integration
+import:
+- package: git.apache.org/thrift.git
+  version: 0.10.0
+  subpackages:
+  - lib/go/thrift
+- package: github.com/Sirupsen/logrus
+  version: v1.0.3
+- package: github.com/nats-io/go-nats
+  version: v1.3.0

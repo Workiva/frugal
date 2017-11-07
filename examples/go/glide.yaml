@@ -1,0 +1,16 @@
+package: github.com/Workiva/frugal/examples/go
+import:
+- package: git.apache.org/thrift.git
+  version: ~0.10.0
+  subpackages:
+  - lib/go/thrift
+- package: github.com/Sirupsen/logrus
+  version: ~1.0.3
+- package: github.com/Workiva/frugal
+  version: ~2.9.1
+  subpackages:
+  - lib/go
+- package: github.com/nats-io/go-nats
+  version: ~1.3.0
+- package: github.com/rs/cors
+  version: ~1.2.0

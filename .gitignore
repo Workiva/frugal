@@ -45,6 +45,12 @@ lib/python/frugalc
 lib/python/dist
 Library/
 
+# Go lib specific
+lib/go/vendor
+lib/go/glide.lock
+examples/go/vendor
+examples/go/glide.lock
+
 # Integration tests
 artifacts/
 test/integration/log/*

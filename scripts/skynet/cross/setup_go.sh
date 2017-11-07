@@ -4,9 +4,15 @@ set -ex
 
 export FRUGAL_HOME=$GOPATH/src/github.com/Workiva/frugal
 
-cd ${FRUGAL_HOME}
+if [ ! -e "$FRUGAL_HOME/lib/go/glide.lock" ]; then
+    cd $FRUGAL_HOME/lib/go && glide install
+fi
+
+cd $FRUGAL_HOME
 
 # Create Go binaries
 rm -rf test/integration/go/bin/*
-godep go build -o test/integration/go/bin/testclient test/integration/go/src/bin/testclient/main.go
-godep go build -o test/integration/go/bin/testserver test/integration/go/src/bin/testserver/main.go
+cd test/integration/go
+glide install
+go build -o bin/testclient src/bin/testclient/main.go
+go build -o bin/testserver src/bin/testserver/main.go

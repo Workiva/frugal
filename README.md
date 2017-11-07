@@ -36,7 +36,6 @@ added.
 ### From Source
 
 1.  Install [go](https://golang.org/doc/install) and setup [`GOPATH`](https://github.com/golang/go/wiki/GOPATH).
-1.  Install [godep](https://github.com/tools/godep).
 1.  Get the frugal source code
 
     ```bash
@@ -51,10 +50,10 @@ added.
     $ git clone git@github.com:Workiva/frugal.git
     ```
 
-1.  Install frugal with godep
+1.  Install frugal
     ```bash
     $ cd $GOPATH/src/github.com/Workiva/frugal
-    $ godep go install
+    $ go install
     ```
 
 When generating go, be aware the frugal go library and the frugal compiler
