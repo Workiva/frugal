@@ -1248,7 +1248,8 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	publisher += "\t\tprotocolFactory:  protocolFactory,\n"
 	publisher += "\t\tmethods:   methods,\n"
 	publisher += "\t}\n"
-	publisher += "\tmiddleware = append(middleware, provider.GetMiddleware()...)\n"
+	publisher += "\tmiddleware = append(provider.GetInnerMiddleware(), middleware...)\n"
+	publisher += "\tmiddleware = append(middleware, provider.GetOuterMiddleware()...)\n"
 	for _, op := range scope.Operations {
 		publisher += fmt.Sprintf("\tmethods[\"publish%s\"] = frugal.NewMethod(publisher, publisher.publish%s, \"publish%s\", middleware)\n",
 			op.Name, op.Name, op.Name)
@@ -1405,13 +1406,15 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 
 	subscriber += fmt.Sprintf("func New%sSubscriber(provider *frugal.FScopeProvider, middleware ...frugal.ServiceMiddleware) %sSubscriber {\n",
 		scopeCamel, scopeCamel)
-	subscriber += "\tmiddleware = append(middleware, provider.GetMiddleware()...)\n"
+	subscriber += "\tmiddleware = append(provider.GetInnerMiddleware(), middleware...)\n"
+	subscriber += "\tmiddleware = append(middleware, provider.GetOuterMiddleware()...)\n"
 	subscriber += fmt.Sprintf("\treturn &%sSubscriber{provider: provider, middleware: middleware}\n", scopeLower)
 	subscriber += "}\n\n"
 
 	subscriber += fmt.Sprintf("func New%sErrorableSubscriber(provider *frugal.FScopeProvider, middleware ...frugal.ServiceMiddleware) %sErrorableSubscriber {\n",
 		scopeCamel, scopeCamel)
-	subscriber += "\tmiddleware = append(middleware, provider.GetMiddleware()...)\n"
+	subscriber += "\tmiddleware = append(provider.GetInnerMiddleware(), middleware...)\n"
+	subscriber += "\tmiddleware = append(middleware, provider.GetOuterMiddleware()...)\n"
 	subscriber += fmt.Sprintf("\treturn &%sSubscriber{provider: provider, middleware: middleware}\n", scopeLower)
 	subscriber += "}\n\n"
 
@@ -1599,7 +1602,8 @@ func (g *Generator) generateClient(service *parser.Service) string {
 	contents += "\t\tprotocolFactory: provider.GetProtocolFactory(),\n"
 	contents += "\t\tmethods:         methods,\n"
 	contents += "\t}\n"
-	contents += "\tmiddleware = append(middleware, provider.GetMiddleware()...)\n"
+	contents += "\tmiddleware = append(provider.GetInnerMiddleware(), middleware...)\n"
+	contents += "\tmiddleware = append(middleware, provider.GetOuterMiddleware()...)\n"
 	for _, method := range service.Methods {
 		name := parser.LowercaseFirstLetter(method.Name)
 		contents += fmt.Sprintf("\tmethods[\"%s\"] = frugal.NewMethod(client, client.%s, \"%s\", middleware)\n", name, name, name)

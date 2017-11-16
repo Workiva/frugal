@@ -21,7 +21,8 @@ type FScopeProvider struct {
 	publisherTransportFactory  FPublisherTransportFactory
 	subscriberTransportFactory FSubscriberTransportFactory
 	protocolFactory            *FProtocolFactory
-	middleware                 []ServiceMiddleware
+	outerMiddleware            []ServiceMiddleware
+	innerMiddleware            []ServiceMiddleware
 }
 
 // NewFScopeProvider creates a new FScopeProvider using the given factories.
@@ -31,7 +32,21 @@ func NewFScopeProvider(pub FPublisherTransportFactory, sub FSubscriberTransportF
 		publisherTransportFactory:  pub,
 		subscriberTransportFactory: sub,
 		protocolFactory:            prot,
-		middleware:                 middleware,
+		outerMiddleware:            middleware,
+		innerMiddleware:            []ServiceMiddleware{},
+	}
+}
+
+// NewFScopeProvider2
+// TODO better name
+func NewFScopeProvider2(pub FPublisherTransportFactory, sub FSubscriberTransportFactory,
+	prot *FProtocolFactory, outerMiddleware []ServiceMiddleware, innerMiddleware []ServiceMiddleware) *FScopeProvider {
+	return &FScopeProvider{
+		publisherTransportFactory: pub,
+		subscriberTransportFactory: sub,
+		protocolFactory: prot,
+		outerMiddleware: outerMiddleware,
+		innerMiddleware: innerMiddleware,
 	}
 }
 
@@ -50,9 +65,22 @@ func (p *FScopeProvider) NewSubscriber() (FSubscriberTransport, *FProtocolFactor
 }
 
 // GetMiddleware returns the ServiceMiddleware stored on this FScopeProvider.
+// DEPRECATED: replaced by GetOuterMiddleware() for more specificity
 func (p *FScopeProvider) GetMiddleware() []ServiceMiddleware {
-	middleware := make([]ServiceMiddleware, len(p.middleware))
-	copy(middleware, p.middleware)
+	return p.GetMiddleware()
+}
+
+// GetOuterMiddleware
+func (p *FScopeProvider) GetOuterMiddleware() []ServiceMiddleware {
+	middleware := make([]ServiceMiddleware, len(p.outerMiddleware))
+	copy(middleware, p.outerMiddleware)
+	return middleware
+}
+
+// GetInnerMiddleware
+func (p *FScopeProvider) GetInnerMiddleware() []ServiceMiddleware {
+	middleware := make([]ServiceMiddleware, len(p.innerMiddleware))
+	copy(middleware, p.innerMiddleware)
 	return middleware
 }
 
@@ -62,7 +90,8 @@ func (p *FScopeProvider) GetMiddleware() []ServiceMiddleware {
 type FServiceProvider struct {
 	transport       FTransport
 	protocolFactory *FProtocolFactory
-	middleware      []ServiceMiddleware
+	outerMiddleware      []ServiceMiddleware
+	innerMiddleware []ServiceMiddleware
 }
 
 // NewFServiceProvider creates a new FServiceProvider containing the given
@@ -71,7 +100,20 @@ func NewFServiceProvider(transport FTransport, protocolFactory *FProtocolFactory
 	return &FServiceProvider{
 		transport:       transport,
 		protocolFactory: protocolFactory,
-		middleware:      middleware,
+		outerMiddleware: middleware,
+		innerMiddleware: []ServiceMiddleware{},
+	}
+}
+
+// NewFServiceProvider2
+// TODO better name
+func NewFServiceProvider2(transport FTransport, prot *FProtocolFactory,
+	outerMiddleware []ServiceMiddleware, innerMiddleware []ServiceMiddleware) *FServiceProvider {
+	return &FServiceProvider{
+		transport: transport,
+		protocolFactory: prot,
+		outerMiddleware: outerMiddleware,
+		innerMiddleware: innerMiddleware,
 	}
 }
 
@@ -86,8 +128,21 @@ func (f *FServiceProvider) GetProtocolFactory() *FProtocolFactory {
 }
 
 // GetMiddleware returns the ServiceMiddleware stored on this FServiceProvider.
-func (f *FServiceProvider) GetMiddleware() []ServiceMiddleware {
-	middleware := make([]ServiceMiddleware, len(f.middleware))
-	copy(middleware, f.middleware)
+// DEPRECATED: replaced by GetOuterMiddleware() for more specificity
+func (p *FServiceProvider) GetMiddleware() []ServiceMiddleware {
+	return p.GetMiddleware()
+}
+
+// GetOuterMiddleware
+func (p *FServiceProvider) GetOuterMiddleware() []ServiceMiddleware {
+	middleware := make([]ServiceMiddleware, len(p.outerMiddleware))
+	copy(middleware, p.outerMiddleware)
+	return middleware
+}
+
+// GetInnerMiddleware
+func (p *FServiceProvider) GetInnerMiddleware() []ServiceMiddleware {
+	middleware := make([]ServiceMiddleware, len(p.innerMiddleware))
+	copy(middleware, p.innerMiddleware)
 	return middleware
 }

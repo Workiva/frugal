@@ -37,7 +37,8 @@ func NewFMyServiceClient(provider *frugal.FServiceProvider, middleware ...frugal
 		protocolFactory: provider.GetProtocolFactory(),
 		methods:         methods,
 	}
-	middleware = append(middleware, provider.GetMiddleware()...)
+	middleware = append(provider.GetInnerMiddleware(), middleware...)
+	middleware = append(middleware, provider.GetOuterMiddleware()...)
 	methods["getItem"] = frugal.NewMethod(client, client.getItem, "getItem", middleware)
 	return client
 }

@@ -33,7 +33,8 @@ func NewMyScopePublisher(provider *frugal.FScopeProvider, middleware ...frugal.S
 		protocolFactory: protocolFactory,
 		methods:         methods,
 	}
-	middleware = append(middleware, provider.GetMiddleware()...)
+	middleware = append(provider.GetInnerMiddleware(), middleware...)
+	middleware = append(middleware, provider.GetOuterMiddleware()...)
 	methods["publishnewItem"] = frugal.NewMethod(publisher, publisher.publishnewItem, "publishnewItem", middleware)
 	return publisher
 }
@@ -92,12 +93,14 @@ type myScopeSubscriber struct {
 }
 
 func NewMyScopeSubscriber(provider *frugal.FScopeProvider, middleware ...frugal.ServiceMiddleware) MyScopeSubscriber {
-	middleware = append(middleware, provider.GetMiddleware()...)
+	middleware = append(provider.GetInnerMiddleware(), middleware...)
+	middleware = append(middleware, provider.GetOuterMiddleware()...)
 	return &myScopeSubscriber{provider: provider, middleware: middleware}
 }
 
 func NewMyScopeErrorableSubscriber(provider *frugal.FScopeProvider, middleware ...frugal.ServiceMiddleware) MyScopeErrorableSubscriber {
-	middleware = append(middleware, provider.GetMiddleware()...)
+	middleware = append(provider.GetInnerMiddleware(), middleware...)
+	middleware = append(middleware, provider.GetOuterMiddleware()...)
 	return &myScopeSubscriber{provider: provider, middleware: middleware}
 }
 

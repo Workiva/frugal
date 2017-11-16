@@ -38,7 +38,8 @@ func NewEventsPublisher(provider *frugal.FScopeProvider, middleware ...frugal.Se
 		protocolFactory: protocolFactory,
 		methods:         methods,
 	}
-	middleware = append(middleware, provider.GetMiddleware()...)
+	middleware = append(provider.GetInnerMiddleware(), middleware...)
+	middleware = append(middleware, provider.GetOuterMiddleware()...)
 	methods["publishEventCreated"] = frugal.NewMethod(publisher, publisher.publishEventCreated, "publishEventCreated", middleware)
 	methods["publishSomeInt"] = frugal.NewMethod(publisher, publisher.publishSomeInt, "publishSomeInt", middleware)
 	methods["publishSomeStr"] = frugal.NewMethod(publisher, publisher.publishSomeStr, "publishSomeStr", middleware)
@@ -232,12 +233,14 @@ type eventsSubscriber struct {
 }
 
 func NewEventsSubscriber(provider *frugal.FScopeProvider, middleware ...frugal.ServiceMiddleware) EventsSubscriber {
-	middleware = append(middleware, provider.GetMiddleware()...)
+	middleware = append(provider.GetInnerMiddleware(), middleware...)
+	middleware = append(middleware, provider.GetOuterMiddleware()...)
 	return &eventsSubscriber{provider: provider, middleware: middleware}
 }
 
 func NewEventsErrorableSubscriber(provider *frugal.FScopeProvider, middleware ...frugal.ServiceMiddleware) EventsErrorableSubscriber {
-	middleware = append(middleware, provider.GetMiddleware()...)
+	middleware = append(provider.GetInnerMiddleware(), middleware...)
+	middleware = append(middleware, provider.GetOuterMiddleware()...)
 	return &eventsSubscriber{provider: provider, middleware: middleware}
 }
 

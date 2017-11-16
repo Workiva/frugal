@@ -59,7 +59,8 @@ func NewFFooClient(provider *frugal.FServiceProvider, middleware ...frugal.Servi
 		protocolFactory: provider.GetProtocolFactory(),
 		methods:         methods,
 	}
-	middleware = append(middleware, provider.GetMiddleware()...)
+	middleware = append(provider.GetInnerMiddleware(), middleware...)
+	middleware = append(middleware, provider.GetOuterMiddleware()...)
 	methods["ping"] = frugal.NewMethod(client, client.ping, "ping", middleware)
 	methods["blah"] = frugal.NewMethod(client, client.blah, "blah", middleware)
 	methods["oneWay"] = frugal.NewMethod(client, client.oneWay, "oneWay", middleware)

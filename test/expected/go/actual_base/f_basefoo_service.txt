@@ -35,7 +35,8 @@ func NewFBaseFooClient(provider *frugal.FServiceProvider, middleware ...frugal.S
 		protocolFactory: provider.GetProtocolFactory(),
 		methods:         methods,
 	}
-	middleware = append(middleware, provider.GetMiddleware()...)
+	middleware = append(provider.GetInnerMiddleware(), middleware...)
+	middleware = append(middleware, provider.GetOuterMiddleware()...)
 	methods["basePing"] = frugal.NewMethod(client, client.basePing, "basePing", middleware)
 	return client
 }
