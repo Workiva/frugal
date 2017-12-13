@@ -44,8 +44,8 @@ const (
 // Generator implements the LanguageGenerator interface for Go.
 type Generator struct {
 	*generator.BaseGenerator
-	generateConstants bool
-	typesFile         *os.File
+	DoGenerateConstants bool
+	TypesFile           *os.File
 }
 
 // NewGenerator creates a new Go LanguageGenerator.
@@ -55,28 +55,28 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 
 // SetupGenerator initializes globals the generator needs, like the types file.
 func (g *Generator) SetupGenerator(outputDir string) error {
-	g.generateConstants = true
+	g.DoGenerateConstants = true
 	t, err := g.GenerateFile("", outputDir, generator.TypeFile)
 	if err != nil {
 		return err
 	}
-	g.typesFile = t
-	if err = g.GenerateDocStringComment(g.typesFile); err != nil {
+	g.TypesFile = t
+	if err = g.GenerateDocStringComment(g.TypesFile); err != nil {
 		return err
 	}
-	if err = g.GenerateNewline(g.typesFile, 2); err != nil {
+	if err = g.GenerateNewline(g.TypesFile, 2); err != nil {
 		return err
 	}
-	if err = g.generatePackage(g.typesFile); err != nil {
+	if err = g.GeneratePackage(g.TypesFile); err != nil {
 		return err
 	}
-	if err = g.GenerateNewline(g.typesFile, 2); err != nil {
+	if err = g.GenerateNewline(g.TypesFile, 2); err != nil {
 		return err
 	}
-	if err = g.GenerateTypesImports(g.typesFile); err != nil {
+	if err = g.GenerateTypesImports(g.TypesFile); err != nil {
 		return err
 	}
-	if err = g.GenerateNewline(g.typesFile, 2); err != nil {
+	if err = g.GenerateNewline(g.TypesFile, 2); err != nil {
 		return err
 	}
 
@@ -85,8 +85,8 @@ func (g *Generator) SetupGenerator(outputDir string) error {
 
 // TeardownGenerator cleanups globals the generator needs, like the types file.
 func (g *Generator) TeardownGenerator() error {
-	defer g.typesFile.Close()
-	return g.PostProcess(g.typesFile)
+	defer g.TypesFile.Close()
+	return g.PostProcess(g.TypesFile)
 }
 
 // GetOutputDir returns the output directory for generated files.
@@ -152,15 +152,16 @@ func (g *Generator) GenerateDocStringComment(file *os.File) error {
 
 // GenerateServicePackage generates the package for the given service.
 func (g *Generator) GenerateServicePackage(file *os.File, s *parser.Service) error {
-	return g.generatePackage(file)
+	return g.GeneratePackage(file)
 }
 
 // GenerateScopePackage generates the package for the given scope.
 func (g *Generator) GenerateScopePackage(file *os.File, s *parser.Scope) error {
-	return g.generatePackage(file)
+	return g.GeneratePackage(file)
 }
 
-func (g *Generator) generatePackage(file *os.File) error {
+// GeneratePackage generates the package for a file
+func (g *Generator) GeneratePackage(file *os.File) error {
 	pkg := ""
 	namespace := g.Frugal.Namespace(lang)
 	if namespace != nil {
@@ -185,7 +186,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 			contents += g.GenerateInlineComment(constant.Comment, "")
 		}
 
-		cName := title(constant.Name)
+		cName := Title(constant.Name)
 		value := g.generateConstantValue(constant.Type, constant.Value)
 		// Don't use underlying type so typedefs aren't consts
 		if (constant.Type.IsPrimitive() || g.Frugal.IsEnum(constant.Type)) && constant.Type.Name != "binary" {
@@ -199,7 +200,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 	initfunc += "}\n\n"
 	contents += initfunc
 
-	g.typesFile.WriteString(contents)
+	g.TypesFile.WriteString(contents)
 	return nil
 }
 
@@ -213,21 +214,21 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 		idCtx := g.Frugal.ContextFromIdentifier(identifier)
 		switch idCtx.Type {
 		case parser.LocalConstant:
-			return title(idCtx.Constant.Name)
+			return Title(idCtx.Constant.Name)
 		case parser.LocalEnum:
-			return fmt.Sprintf("%s_%s", title(idCtx.Enum.Name), idCtx.EnumValue.Name)
+			return fmt.Sprintf("%s_%s", Title(idCtx.Enum.Name), idCtx.EnumValue.Name)
 		case parser.IncludeConstant:
 			include := idCtx.Include.Name
 			if namespace := g.Frugal.NamespaceForInclude(include, lang); namespace != nil {
 				include = namespace.Value
 			}
-			return fmt.Sprintf("%s.%s", includeNameToReference(include), title(idCtx.Constant.Name))
+			return fmt.Sprintf("%s.%s", includeNameToReference(include), Title(idCtx.Constant.Name))
 		case parser.IncludeEnum:
 			include := idCtx.Include.Name
 			if namespace := g.Frugal.NamespaceForInclude(include, lang); namespace != nil {
 				include = namespace.Value
 			}
-			return fmt.Sprintf("%s.%s_%s", includeNameToReference(include), title(idCtx.Enum.Name), idCtx.EnumValue.Name)
+			return fmt.Sprintf("%s.%s_%s", includeNameToReference(include), Title(idCtx.Enum.Name), idCtx.EnumValue.Name)
 		default:
 			panic(fmt.Sprintf("The Identifier %s has unexpected type %d", identifier, idCtx.Type))
 		}
@@ -280,12 +281,12 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}) str
 		}
 
 		contents := ""
-		contents += fmt.Sprintf("&%s{\n", title(s.Name))
+		contents += fmt.Sprintf("&%s{\n", Title(s.Name))
 
 		for _, pair := range value.([]parser.KeyValue) {
-			name := title(pair.KeyToString())
+			name := Title(pair.KeyToString())
 			for _, field := range s.Fields {
-				if name == title(field.Name) {
+				if name == Title(field.Name) {
 					val := g.generateConstantValue(field.Type, pair.Value)
 					contents += fmt.Sprintf("\t%s: %s,\n", name, val)
 				}
@@ -307,8 +308,8 @@ func (g *Generator) GenerateTypeDef(typedef *parser.TypeDef) error {
 		contents += g.GenerateInlineComment(typedef.Comment, "")
 	}
 
-	contents += fmt.Sprintf("type %s %s\n", title(typedef.Name), g.getGoTypeFromThriftType(typedef.Type))
-	_, err := g.typesFile.WriteString(contents)
+	contents += fmt.Sprintf("type %s %s\n", Title(typedef.Name), g.getGoTypeFromThriftType(typedef.Type))
+	_, err := g.TypesFile.WriteString(contents)
 	return err
 }
 
@@ -321,7 +322,7 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 		contents += g.GenerateInlineComment(enum.Comment, "")
 	}
 
-	eName := title(enum.Name)
+	eName := Title(enum.Name)
 	contents += fmt.Sprintf("type %s int64\n\n", eName)
 	contents += "const (\n"
 	for _, field := range enum.Values {
@@ -381,32 +382,32 @@ func (g *Generator) GenerateEnum(enum *parser.Enum) error {
 	contents += "\treturn int64(*p), nil\n"
 	contents += "}\n\n"
 
-	_, err := g.typesFile.WriteString(contents)
+	_, err := g.TypesFile.WriteString(contents)
 	return err
 }
 
 // GenerateStruct generates the given struct.
 func (g *Generator) GenerateStruct(s *parser.Struct) error {
 	contents := g.generateStruct(s, "")
-	_, err := g.typesFile.WriteString(contents)
+	_, err := g.TypesFile.WriteString(contents)
 	return err
 }
 
 // GenerateUnion generates the given union.
 func (g *Generator) GenerateUnion(union *parser.Struct) error {
 	contents := g.generateStruct(union, "")
-	_, err := g.typesFile.WriteString(contents)
+	_, err := g.TypesFile.WriteString(contents)
 	return err
 }
 
 // GenerateException generates the given exception.
 func (g *Generator) GenerateException(exception *parser.Struct) error {
 	contents := g.generateStruct(exception, "")
-	contents += fmt.Sprintf("func (p *%s) Error() string {\n", title(exception.Name))
+	contents += fmt.Sprintf("func (p *%s) Error() string {\n", Title(exception.Name))
 	contents += "\treturn p.String()\n"
 	contents += "}\n"
 
-	_, err := g.typesFile.WriteString(contents)
+	_, err := g.TypesFile.WriteString(contents)
 	return err
 }
 
@@ -447,7 +448,7 @@ func (g *Generator) generateStructDeclaration(s *parser.Struct, sName string) st
 
 	// Declare fields
 	for _, field := range s.Fields {
-		fName := title(field.Name)
+		fName := Title(field.Name)
 		// All fields in a union are marked optional by default
 
 		if field.Comment != nil {
@@ -466,7 +467,7 @@ func (g *Generator) generateStructDeclaration(s *parser.Struct, sName string) st
 		}
 		annotation := fmt.Sprintf("`thrift:\"%s\" db:\"%s\" json:\"%s\"`", thriftAnnotation, field.Name, jsonAnnotation)
 
-		goType := g.getGoTypeFromThriftTypePtr(field.Type, g.isPointerField(field))
+		goType := g.GetGoTypeFromThriftTypePtr(field.Type, g.IsPointerField(field))
 		contents += fmt.Sprintf("\t%s %s %s\n", fName, goType, annotation)
 	}
 
@@ -482,9 +483,9 @@ func (g *Generator) generateConstructor(s *parser.Struct, sName string) string {
 
 	for _, field := range s.Fields {
 		// Use the default if it exists and it's not a pointer field, otherwise the zero value is implicitly used
-		if field.Default != nil && !g.isPointerField(field) {
+		if field.Default != nil && !g.IsPointerField(field) {
 			val := g.generateConstantValue(field.Type, field.Default)
-			contents += fmt.Sprintf("\t\t%s: %s,\n", title(field.Name), val)
+			contents += fmt.Sprintf("\t\t%s: %s,\n", Title(field.Name), val)
 		}
 	}
 
@@ -497,10 +498,10 @@ func (g *Generator) generateGetters(s *parser.Struct, sName string) string {
 	contents := ""
 
 	for _, field := range s.Fields {
-		fName := title(field.Name)
-		isPointer := g.isPointerField(field)
-		goType := g.getGoTypeFromThriftTypePtr(field.Type, false)
-		goPtrType := g.getGoTypeFromThriftTypePtr(field.Type, true)
+		fName := Title(field.Name)
+		isPointer := g.IsPointerField(field)
+		goType := g.GetGoTypeFromThriftTypePtr(field.Type, false)
+		goPtrType := g.GetGoTypeFromThriftTypePtr(field.Type, true)
 		underlyingType := g.Frugal.UnderlyingType(field.Type)
 
 		if field.Modifier == parser.Optional || isPointer {
@@ -557,7 +558,7 @@ func (g *Generator) generateCountSetFields(s *parser.Struct, sName string) strin
 		contents += fmt.Sprintf("func (p *%s) CountSetFields%s() int {\n", sName, sName)
 		contents += "\tcount := 0\n"
 		for _, field := range s.Fields {
-			contents += fmt.Sprintf("\tif p.IsSet%s() {\n", title(field.Name))
+			contents += fmt.Sprintf("\tif p.IsSet%s() {\n", Title(field.Name))
 			contents += "\t\tcount++\n"
 			contents += "\t}\n"
 		}
@@ -577,7 +578,7 @@ func (g *Generator) generateRead(s *parser.Struct, sName string) string {
 	for _, field := range s.Fields {
 		// Generate variables to make sure required fields are present
 		if field.Modifier == parser.Required {
-			contents += fmt.Sprintf("\tisset%s := false\n", title(field.Name))
+			contents += fmt.Sprintf("\tisset%s := false\n", Title(field.Name))
 		}
 	}
 	contents += "\n"
@@ -597,7 +598,7 @@ func (g *Generator) generateRead(s *parser.Struct, sName string) string {
 			contents += "\t\t\t\treturn err\n"
 			contents += "\t\t\t}\n"
 			if field.Modifier == parser.Required {
-				contents += fmt.Sprintf("\t\t\tisset%s = true\n", title(field.Name))
+				contents += fmt.Sprintf("\t\t\tisset%s = true\n", Title(field.Name))
 			}
 		}
 		contents += "\t\tdefault:\n"
@@ -617,7 +618,7 @@ func (g *Generator) generateRead(s *parser.Struct, sName string) string {
 	contents += "\t}\n"
 	for _, field := range s.Fields {
 		if field.Modifier == parser.Required {
-			fName := title(field.Name)
+			fName := Title(field.Name)
 			contents += fmt.Sprintf("\tif !isset%s {\n", fName)
 			errorMessage := fmt.Sprintf("Required field %s is not set", fName)
 			contents += fmt.Sprintf("\t\treturn thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA, fmt.Errorf(\"%s\"))\n", errorMessage)
@@ -711,14 +712,14 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 	if first {
 		eq = "="
 		prefix = "p."
-		fName = title(field.Name)
+		fName = Title(field.Name)
 	}
 	contents := ""
 
-	isPointerField := g.isPointerField(field)
+	IsPointerField := g.IsPointerField(field)
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
-	goOrigType := g.getGoTypeFromThriftTypePtr(field.Type, false)
-	goUnderlyingType := g.getGoTypeFromThriftTypePtr(underlyingType, false)
+	goOrigType := g.GetGoTypeFromThriftTypePtr(field.Type, false)
+	goUnderlyingType := g.GetGoTypeFromThriftTypePtr(underlyingType, false)
 
 	isEnum := g.Frugal.IsEnum(underlyingType)
 	if underlyingType.IsPrimitive() || isEnum {
@@ -760,7 +761,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 
 		maybeAddress := ""
 		// need to assign an address if the field is a pointer
-		if isPointerField {
+		if IsPointerField {
 			maybeAddress = "&"
 		}
 
@@ -791,7 +792,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 		contents += "\t}\n"
 	} else if underlyingType.IsContainer() {
 		maybePointer := ""
-		if isPointerField {
+		if IsPointerField {
 			maybePointer = "*"
 		}
 		// TODO 2.0 use this to get the value reading code, respecting the type,
@@ -805,7 +806,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			contents += "\tif err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error reading list begin: \", err)\n"
 			contents += "\t}\n"
-			if !isPointerField {
+			if !IsPointerField {
 				contents += fmt.Sprintf("\t%s%s %s make(%s, 0, size)\n", prefix, fName, eq, goOrigType)
 			} else {
 				contents += fmt.Sprintf("\ttemp := make(%s, 0, size)\n", goOrigType)
@@ -826,7 +827,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			contents += "\tif err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error reading set begin: \", err)\n"
 			contents += "\t}\n"
-			if !isPointerField {
+			if !IsPointerField {
 				contents += fmt.Sprintf("\t%s%s %s make(%s, size)\n", prefix, fName, eq, goOrigType)
 			} else {
 				contents += fmt.Sprintf("\ttemp := make(%s, size)\n", goOrigType)
@@ -847,7 +848,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 			contents += "\tif err != nil {\n"
 			contents += "\t\treturn thrift.PrependError(\"error reading map begin: \", err)\n"
 			contents += "\t}\n"
-			if !isPointerField {
+			if !IsPointerField {
 				contents += fmt.Sprintf("\t%s%s %s make(%s, size)\n", prefix, fName, eq, goOrigType)
 			} else {
 				contents += fmt.Sprintf("\ttemp := make(%s, size)\n", goOrigType)
@@ -878,7 +879,7 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool) string
 
 func (g *Generator) generateWriteField(structName string, field *parser.Field) string {
 	contents := ""
-	fName := title(field.Name)
+	fName := Title(field.Name)
 
 	contents += fmt.Sprintf("func (p *%s) writeField%d(oprot thrift.TProtocol) error {\n", structName, field.ID)
 	// If an optional field isn't set, it isn't written
@@ -903,13 +904,13 @@ func (g *Generator) generateWriteField(structName string, field *parser.Field) s
 
 func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) string {
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
-	isPointerField := g.isPointerField(field)
-	fName := title(field.Name)
+	IsPointerField := g.IsPointerField(field)
+	fName := Title(field.Name)
 	contents := ""
 
 	isEnum := g.Frugal.IsEnum(underlyingType)
 	if underlyingType.IsPrimitive() || isEnum {
-		if isPointerField {
+		if IsPointerField {
 			prefix = "*" + prefix
 		}
 
@@ -948,7 +949,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, prefix string) st
 		contents += fmt.Sprintf("\t\treturn thrift.PrependError(fmt.Sprintf(\"%%T error writing struct: \", %s), err)\n", prefix+fName)
 		contents += "\t}\n"
 	} else if underlyingType.IsContainer() {
-		if isPointerField {
+		if IsPointerField {
 			prefix = "*" + prefix
 		}
 		valEnumType := g.getEnumFromThriftType(underlyingType.ValueType)
@@ -1015,12 +1016,12 @@ func (g *Generator) GenerateTypesImports(file *os.File) error {
 	protections := ""
 	pkgPrefix := g.Options[packagePrefixOption]
 	for _, include := range g.Frugal.Includes {
-		if imp, err := g.generateIncludeImport(include, pkgPrefix); err != nil {
+		if imp, err := g.GenerateIncludeImport(include, pkgPrefix); err != nil {
 			return err
 		} else {
 			contents += imp
 		}
-		protections += g.generateImportProtection(include)
+		protections += g.GenerateImportProtection(include)
 	}
 
 	contents += ")\n\n"
@@ -1050,12 +1051,12 @@ func (g *Generator) GenerateServiceResultArgsImports(file *os.File) error {
 	protections := ""
 	pkgPrefix := g.Options[packagePrefixOption]
 	for _, include := range g.Frugal.Includes {
-		if imp, err := g.generateIncludeImport(include, pkgPrefix); err != nil {
+		if imp, err := g.GenerateIncludeImport(include, pkgPrefix); err != nil {
 			return err
 		} else {
 			contents += imp
 		}
-		protections += g.generateImportProtection(include)
+		protections += g.GenerateImportProtection(include)
 	}
 
 	contents += ")\n\n"
@@ -1097,7 +1098,7 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 		return err
 	}
 	for _, include := range includes {
-		if imp, err := g.generateIncludeImport(include, pkgPrefix); err != nil {
+		if imp, err := g.GenerateIncludeImport(include, pkgPrefix); err != nil {
 			return err
 		} else {
 			imports += imp
@@ -1138,7 +1139,7 @@ func (g *Generator) GenerateScopeImports(file *os.File, s *parser.Scope) error {
 		return err
 	}
 	for _, include := range scopeIncludes {
-		if imp, err := g.generateIncludeImport(include, pkgPrefix); err != nil {
+		if imp, err := g.GenerateIncludeImport(include, pkgPrefix); err != nil {
 			return err
 		} else {
 			imports += imp
@@ -1151,7 +1152,8 @@ func (g *Generator) GenerateScopeImports(file *os.File, s *parser.Scope) error {
 	return err
 }
 
-func (g *Generator) generateIncludeImport(include *parser.Include, pkgPrefix string) (string, error) {
+// GenerateIncludeImport generates the correct included imports
+func (g *Generator) GenerateIncludeImport(include *parser.Include, pkgPrefix string) (string, error) {
 	includeName := filepath.Base(include.Name)
 	importPath := fmt.Sprintf("%s%s", pkgPrefix, includeNameToImport(includeName))
 	namespace := g.Frugal.NamespaceForInclude(includeName, lang)
@@ -1180,7 +1182,8 @@ func (g *Generator) generateIncludeImport(include *parser.Include, pkgPrefix str
 	return fmt.Sprintf("\t\"%s\"\n", importPath), nil
 }
 
-func (g *Generator) generateImportProtection(include *parser.Include) string {
+// GenerateImportProtection generates standard imports used by thrift
+func (g *Generator) GenerateImportProtection(include *parser.Include) string {
 	includeName := filepath.Base(include.Name)
 	namespace := g.Frugal.NamespaceForInclude(includeName, lang)
 	if namespace != nil {
@@ -1192,7 +1195,7 @@ func (g *Generator) generateImportProtection(include *parser.Include) string {
 
 // GenerateConstants generates any static constants.
 func (g *Generator) GenerateConstants(file *os.File, name string) error {
-	if !g.generateConstants {
+	if !g.DoGenerateConstants {
 		return nil
 	}
 	constants := fmt.Sprintf("const delimiter = \"%s\"", globals.TopicDelimiter)
@@ -1200,7 +1203,7 @@ func (g *Generator) GenerateConstants(file *os.File, name string) error {
 	if err != nil {
 		return err
 	}
-	g.generateConstants = false
+	g.DoGenerateConstants = false
 	return nil
 }
 
@@ -1208,7 +1211,7 @@ func (g *Generator) GenerateConstants(file *os.File, name string) error {
 func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error {
 	var (
 		scopeLower = parser.LowercaseFirstLetter(scope.Name)
-		scopeCamel = snakeToCamel(scope.Name)
+		scopeCamel = SnakeToCamel(scope.Name)
 		publisher  = ""
 	)
 
@@ -1361,7 +1364,7 @@ func generatePrefixStringTemplate(scope *parser.Scope) string {
 func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error {
 	var (
 		scopeLower = parser.LowercaseFirstLetter(scope.Name)
-		scopeCamel = snakeToCamel(scope.Name)
+		scopeCamel = SnakeToCamel(scope.Name)
 		subscriber = ""
 	)
 
@@ -1508,7 +1511,7 @@ func (g *Generator) generateServiceInterface(service *parser.Service) string {
 		contents += g.GenerateInlineComment(service.Comment, "")
 	}
 
-	contents += fmt.Sprintf("type F%s interface {\n", snakeToCamel(service.Name))
+	contents += fmt.Sprintf("type F%s interface {\n", SnakeToCamel(service.Name))
 	if service.Extends != "" {
 		contents += fmt.Sprintf("\t%s\n\n", g.getServiceExtendsName(service))
 	}
@@ -1522,7 +1525,7 @@ func (g *Generator) generateServiceInterface(service *parser.Service) string {
 		}
 
 		contents += fmt.Sprintf("\t%s(ctx frugal.FContext%s) %s\n",
-			snakeToCamel(method.Name), g.generateInterfaceArgs(method.Arguments),
+			SnakeToCamel(method.Name), g.generateInterfaceArgs(method.Arguments),
 			g.generateReturnArgs(method))
 	}
 	contents += "}\n\n"
@@ -1571,7 +1574,7 @@ func (g *Generator) generateAsyncReturnArgs(method *parser.Method) string {
 }
 
 func (g *Generator) generateClient(service *parser.Service) string {
-	servTitle := snakeToCamel(service.Name)
+	servTitle := SnakeToCamel(service.Name)
 	contents := ""
 	if service.Comment != nil {
 		contents += g.GenerateInlineComment(service.Comment, "")
@@ -1618,8 +1621,8 @@ func (g *Generator) generateClient(service *parser.Service) string {
 
 func (g *Generator) generateAsyncClientMethod(service *parser.Service, method *parser.Method) string {
 	var (
-		servTitle = snakeToCamel(service.Name)
-		nameTitle = snakeToCamel(method.Name)
+		servTitle = SnakeToCamel(service.Name)
+		nameTitle = SnakeToCamel(method.Name)
 	)
 
 	contents := ""
@@ -1655,8 +1658,8 @@ func (g *Generator) generateAsyncClientMethod(service *parser.Service, method *p
 
 func (g *Generator) generateClientMethod(service *parser.Service, method *parser.Method) string {
 	var (
-		servTitle = snakeToCamel(service.Name)
-		nameTitle = snakeToCamel(method.Name)
+		servTitle = SnakeToCamel(service.Name)
+		nameTitle = SnakeToCamel(method.Name)
 		nameLower = parser.LowercaseFirstLetter(method.Name)
 	)
 
@@ -1707,8 +1710,8 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 
 func (g *Generator) generateInternalClientMethod(service *parser.Service, method *parser.Method) string {
 	var (
-		servTitle = snakeToCamel(service.Name)
-		nameTitle = snakeToCamel(method.Name)
+		servTitle = SnakeToCamel(service.Name)
+		nameTitle = SnakeToCamel(method.Name)
 		nameLower = parser.LowercaseFirstLetter(method.Name)
 	)
 
@@ -1797,7 +1800,7 @@ func (g *Generator) generateInternalClientMethod(service *parser.Service, method
 	contents += "\t\treturn\n"
 	contents += "\t}\n"
 	for _, err := range method.Exceptions {
-		errTitle := snakeToCamel(err.Name)
+		errTitle := SnakeToCamel(err.Name)
 		contents += fmt.Sprintf("\tif result.%s != nil {\n", errTitle)
 		contents += fmt.Sprintf("\t\terr = result.%s\n", errTitle)
 		contents += "\t\treturn\n"
@@ -1824,7 +1827,7 @@ func (g *Generator) generateServer(service *parser.Service) string {
 
 func (g *Generator) generateProcessor(service *parser.Service) string {
 	var (
-		servTitle = snakeToCamel(service.Name)
+		servTitle = SnakeToCamel(service.Name)
 		servLower = strings.ToLower(service.Name)
 		contents  = ""
 	)
@@ -1850,7 +1853,7 @@ func (g *Generator) generateProcessor(service *parser.Service) string {
 		methodLower := parser.LowercaseFirstLetter(method.Name)
 		contents += fmt.Sprintf(
 			"\tp.AddToProcessorMap(\"%s\", &%sF%s{frugal.NewFBaseProcessorFunction(p.GetWriteMutex(), frugal.NewMethod(handler, handler.%s, \"%s\", middleware))})\n",
-			methodLower, servLower, snakeToCamel(method.Name), snakeToCamel(method.Name), snakeToCamel(method.Name))
+			methodLower, servLower, SnakeToCamel(method.Name), SnakeToCamel(method.Name), SnakeToCamel(method.Name))
 		if len(method.Annotations) > 0 {
 			contents += fmt.Sprintf("\tp.AddToAnnotationsMap(\"%s\", map[string]string{\n", methodLower)
 			for _, annotation := range method.Annotations {
@@ -1868,9 +1871,9 @@ func (g *Generator) generateProcessor(service *parser.Service) string {
 
 func (g *Generator) generateMethodProcessor(service *parser.Service, method *parser.Method) string {
 	var (
-		servTitle = snakeToCamel(service.Name)
+		servTitle = SnakeToCamel(service.Name)
 		servLower = strings.ToLower(service.Name)
-		nameTitle = snakeToCamel(method.Name)
+		nameTitle = SnakeToCamel(method.Name)
 		nameLower = parser.LowercaseFirstLetter(method.Name)
 	)
 
@@ -1935,7 +1938,7 @@ func (g *Generator) generateMethodProcessor(service *parser.Service, method *par
 		contents += "\t\tswitch v := err2.(type) {\n"
 		for _, err := range method.Exceptions {
 			contents += fmt.Sprintf("\t\tcase %s:\n", g.getGoTypeFromThriftType(err.Type))
-			contents += fmt.Sprintf("\t\t\tresult.%s = v\n", snakeToCamel(err.Name))
+			contents += fmt.Sprintf("\t\t\tresult.%s = v\n", SnakeToCamel(err.Name))
 		}
 		contents += "\t\tdefault:\n"
 		contents += g.generateMethodException("\t\t\t", service, method)
@@ -2007,7 +2010,7 @@ func (g *Generator) generateScopeArgs(scope *parser.Scope) string {
 func (g *Generator) generateHandlerArgs(method *parser.Method) string {
 	args := "[]interface{}{ctx"
 	for _, arg := range method.Arguments {
-		args += ", args." + snakeToCamel(arg.Name)
+		args += ", args." + SnakeToCamel(arg.Name)
 	}
 	args += "}"
 	return args
@@ -2090,16 +2093,16 @@ func (g *Generator) generateInputArgs(args []*parser.Field) string {
 func (g *Generator) generateStructArgs(args []*parser.Field) string {
 	argStr := ""
 	for _, arg := range args {
-		argStr += "\t\t" + snakeToCamel(arg.Name) + ": " + strings.ToLower(arg.Name) + ",\n"
+		argStr += "\t\t" + SnakeToCamel(arg.Name) + ": " + strings.ToLower(arg.Name) + ",\n"
 	}
 	return argStr
 }
 
 func (g *Generator) getGoTypeFromThriftType(t *parser.Type) string {
-	return g.getGoTypeFromThriftTypePtr(t, false)
+	return g.GetGoTypeFromThriftTypePtr(t, false)
 }
 
-func (g *Generator) getGoTypeFromThriftTypePtr(t *parser.Type, pointer bool) string {
+func (g *Generator) GetGoTypeFromThriftTypePtr(t *parser.Type, pointer bool) string {
 	maybePointer := ""
 	if pointer {
 		maybePointer = "*"
@@ -2123,14 +2126,14 @@ func (g *Generator) getGoTypeFromThriftTypePtr(t *parser.Type, pointer bool) str
 		return maybePointer + "[]byte"
 	case "list":
 		return fmt.Sprintf("%s[]%s", maybePointer,
-			g.getGoTypeFromThriftTypePtr(t.ValueType, false))
+			g.GetGoTypeFromThriftTypePtr(t.ValueType, false))
 	case "set":
 		return fmt.Sprintf("%smap[%s]bool", maybePointer,
-			g.getGoTypeFromThriftTypePtr(t.ValueType, false))
+			g.GetGoTypeFromThriftTypePtr(t.ValueType, false))
 	case "map":
 		return fmt.Sprintf("%smap[%s]%s", maybePointer,
-			g.getGoTypeFromThriftTypePtr(t.KeyType, false),
-			g.getGoTypeFromThriftTypePtr(t.ValueType, false))
+			g.GetGoTypeFromThriftTypePtr(t.KeyType, false),
+			g.GetGoTypeFromThriftTypePtr(t.ValueType, false))
 	default:
 		// Custom type, either typedef or struct.
 		name := g.qualifiedTypeName(t)
@@ -2185,7 +2188,8 @@ func (g *Generator) isPrimitive(t *parser.Type) bool {
 	}
 }
 
-func (g *Generator) isPointerField(field *parser.Field) bool {
+// IsPointerField returns true if field is a pointer type
+func (g *Generator) IsPointerField(field *parser.Field) bool {
 	underlyingType := g.Frugal.UnderlyingType(field.Type)
 	// Structs as fields are always pointers
 	if g.Frugal.IsStruct(underlyingType) {
@@ -2220,7 +2224,7 @@ func (g *Generator) isPointerField(field *parser.Field) bool {
 }
 
 func (g *Generator) qualifiedTypeName(t *parser.Type) string {
-	param := snakeToCamel(t.ParamName())
+	param := SnakeToCamel(t.ParamName())
 	include := t.IncludeName()
 	if include != "" {
 		name := include
@@ -2260,14 +2264,14 @@ func includeNameToReference(includeName string) string {
 	return split[len(split)-1]
 }
 
-// snakeToCamel returns a string converted from snake case to uppercase.
-func snakeToCamel(s string) string {
+// SnakeToCamel returns a string converted from snake case to uppercase.
+func SnakeToCamel(s string) string {
 	var result string
 
 	words := strings.Split(s, "_")
 
 	for _, word := range words {
-		if upper := strings.ToUpper(word); commonInitialisms[upper] {
+		if upper := strings.ToUpper(word); CommonInitialisms[upper] {
 			result += upper
 			continue
 		}
@@ -2280,7 +2284,8 @@ func snakeToCamel(s string) string {
 	return result
 }
 
-func title(name string) string {
+// Title converts the input string into a service name
+func Title(name string) string {
 	return titleServiceName(name, "")
 }
 
@@ -2301,7 +2306,7 @@ func titleServiceName(name string, serviceName string) string {
 	words := strings.Split(name, "_")
 
 	for _, word := range words {
-		if upper := strings.ToUpper(word); commonInitialisms[upper] {
+		if upper := strings.ToUpper(word); CommonInitialisms[upper] {
 			result += upper
 			continue
 		}
@@ -2324,16 +2329,16 @@ func startsWithInitialism(s string) string {
 	var initialism string
 	// the longest initialism is 5 char, the shortest 2
 	for i := 1; i <= 5; i++ {
-		if len(s) > i-1 && commonInitialisms[s[:i]] {
+		if len(s) > i-1 && CommonInitialisms[s[:i]] {
 			initialism = s[:i]
 		}
 	}
 	return initialism
 }
 
-// commonInitialisms, taken from
+// CommonInitialisms taken from
 // https://github.com/golang/lint/blob/3d26dc39376c307203d3a221bada26816b3073cf/lint.go#L482
-var commonInitialisms = map[string]bool{
+var CommonInitialisms = map[string]bool{
 	"API":   true,
 	"ASCII": true,
 	"CPU":   true,

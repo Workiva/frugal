@@ -8,7 +8,7 @@ import (
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/rs/cors"
 
-	"github.com/Workiva/frugal/examples/go/gen-go/v1/music"
+	"github.com/Workiva/frugal/examples/go/gen-go/twitter"
 	"github.com/Workiva/frugal/lib/go"
 )
 
@@ -21,8 +21,8 @@ func main() {
 	// Create a handler. Each incoming request at the processor is sent to
 	// the handler. Responses from the handler are returned back to the
 	// client
-	handler := &StoreHandler{}
-	processor := music.NewFStoreProcessor(handler)
+	handler := &TwitterHandler{}
+	processor := twitter.NewFTwitterProcessor(handler)
 
 	// Start the server using the configured processor, and protocol
 	mux := http.NewServeMux()
@@ -36,29 +36,24 @@ func main() {
 	log.Fatal(http.ListenAndServe(":9090", httpHandler))
 }
 
-// StoreHandler handles all incoming requests to the server.
+// TwitterHandler handles all incoming requests to the server.
 // The handler must satisfy the interface the server exposes.
-type StoreHandler struct{}
+type TwitterHandler struct{}
 
-// BuyAlbum always buys the same album
-func (f *StoreHandler) BuyAlbum(ctx frugal.FContext, ASIN string, acct string) (r *music.Album, err error) {
-	album := &music.Album{
-		ASIN:     "c54d385a-5024-4f3f-86ef-6314546a7e7f",
-		Duration: 1200,
-		Tracks: []*music.Track{{
-			Title:     "Comme des enfants",
-			Artist:    "Coeur de pirate",
-			Publisher: "Grosse Boîte",
-			Composer:  "Béatrice Martin",
-			Duration:  169,
-			Pro:       music.PerfRightsOrg_ASCAP,
-		}},
-	}
-
-	return album, nil
+// CreateTweet creates a new tweet
+func (f *TwitterHandler) CreateTweet(ctx frugal.FContext, tweet *twitter.Tweet) (err error) {
+	return nil
 }
 
-// EnterAlbumGiveaway always returns true
-func (f *StoreHandler) EnterAlbumGiveaway(ctx frugal.FContext, email string, name string) (r bool, err error) {
-	return true, nil
+// SearchTweets searches for a bunch of tweets
+func (f *TwitterHandler) SearchTweets(ctx frugal.FContext, query string) (r *twitter.TweetSearchResult_, err error) {
+	return nil, nil
+}
+
+// DeleteTweet deletes the tweeit with id
+func (f *TwitterHandler) DeleteTweet(ctx frugal.FContext, tweet_id int32) (err error) { return nil }
+
+// UpdateTweet updates the tweeit with id
+func (f *TwitterHandler) UpdateTweet(ctx frugal.FContext, tweet_id int32) (r *twitter.Tweet, err error) {
+	return nil, nil
 }

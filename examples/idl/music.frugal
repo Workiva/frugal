@@ -46,6 +46,14 @@ struct Album {
 }
 
 /**@
+ * A request object, showing how to use HTTP+JSON gateway annotations.
+ */
+struct BuyAlbumRequest {
+    1: string ASIN (http.jsonProperty="asin")
+    2: string acct (http.jsonProperty="account")
+}
+
+/**@
  * Exceptions are converted to the native format for each compiled
  * language.
  */
@@ -60,9 +68,10 @@ exception PurchasingError {
  */
 service Store {
     Album buyAlbum( 1: string ASIN, 2: string acct ) throws (1: PurchasingError error)
+    Album buyAlbumRequest( 1: BuyAlbumRequest request) throws (1: PurchasingError error) (http.pathTemplate="v1/store/album")
     // The deprecated annotation will mark a service method as deprecated.
     bool enterAlbumGiveaway( 1: string email, 2: string name ) (deprecated="use something else")
-}
+} 
 
 /**@
  * Scopes are a Frugal extension to the IDL for declaring PubSub

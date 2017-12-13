@@ -1,0 +1,27 @@
+
+
+namespace * v1.music
+
+struct Album {
+  1: string artist
+  2: string title
+  3: string ASIN
+}
+
+struct LookupAlbumRequest {
+  1: string ASIN (http.jsonProperty="asin")
+}
+
+struct BuyAlbumRequest {
+  1: string artist (http.jsonProperty="artist")
+  2: string title (http.jsonProperty="title")
+}
+
+service Store {
+  Album lookupAlbum(1: LookupAlbumRequest request) (http.pathTemplate="/v1/store/album")
+  Album lookupAlbum2(1: LookupAlbumRequest request) (http.pathTemplate="/v1/store/album/{asin}")
+  Album lookupAlbum3(1: LookupAlbumRequest request) (http.pathTemplate="/v1/store/album", http.query="asin")
+
+  Album buyAlbum(1: BuyAlbumRequest request) (http.pathTemplate="/v1/store/album", http.method="post")
+} 
+

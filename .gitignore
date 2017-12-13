@@ -6,6 +6,9 @@ target/
 .vscode
 py3env
 .vscode
+cscope.files
+cscope.out
+tags
 
 
 # Do not commit the following directories created by pub.

@@ -209,8 +209,8 @@ service FooService {
 
 ### Annotations
 
-Annotations are extra directive in the IDL that can alter the way code is generated.
-Some common annotations are listed below
+Annotations are extra directives in the IDL that can alter the way code is
+generated. Some common annotations are listed below
 
 | Annotation    | Values        | Allowed Places | Description
 | ------------- | ------------- | -------------- | -----------

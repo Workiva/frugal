@@ -21,6 +21,7 @@ import (
 
 	"github.com/Workiva/frugal/compiler/generator"
 	"github.com/Workiva/frugal/compiler/generator/dartlang"
+	"github.com/Workiva/frugal/compiler/generator/gateway"
 	"github.com/Workiva/frugal/compiler/generator/golang"
 	"github.com/Workiva/frugal/compiler/generator/html"
 	"github.com/Workiva/frugal/compiler/generator/java"
@@ -142,22 +143,31 @@ func getProgramGenerator(lang string, options map[string]string) (generator.Prog
 	var g generator.ProgramGenerator
 	switch lang {
 	case "dart":
-		g = generator.NewProgramGenerator(dartlang.NewGenerator(options), false)
+		g = generator.NewProgramGenerator(dartlang.NewGenerator(options), true, false)
 	case "go":
 		// Make sure the package prefix ends with a "/"
-		if package_prefix, ok := options["package_prefix"]; ok {
-			if package_prefix != "" && !strings.HasSuffix(package_prefix, "/") {
-				options["package_prefix"] = package_prefix + "/"
+		if packagePrefix, ok := options["package_prefix"]; ok {
+			if packagePrefix != "" && !strings.HasSuffix(packagePrefix, "/") {
+				options["package_prefix"] = packagePrefix + "/"
 			}
 		}
 
-		g = generator.NewProgramGenerator(golang.NewGenerator(options), false)
+		g = generator.NewProgramGenerator(golang.NewGenerator(options), true, false)
 	case "java":
-		g = generator.NewProgramGenerator(java.NewGenerator(options), true)
+		g = generator.NewProgramGenerator(java.NewGenerator(options), true, true)
 	case "py":
-		g = generator.NewProgramGenerator(python.NewGenerator(options), true)
+		g = generator.NewProgramGenerator(python.NewGenerator(options), true, true)
 	case "html":
 		g = html.NewGenerator(options)
+	case "gateway":
+		// Make sure the package prefix ends with a "/"
+		if packagePrefix, ok := options["package_prefix"]; ok {
+			if packagePrefix != "" && !strings.HasSuffix(packagePrefix, "/") {
+				options["package_prefix"] = packagePrefix + "/"
+			}
+		}
+
+		g = generator.NewProgramGenerator(gateway.NewGenerator(options), false, false)
 	default:
 		return nil, fmt.Errorf("Invalid gen value %s", lang)
 	}

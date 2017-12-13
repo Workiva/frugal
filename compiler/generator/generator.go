@@ -76,6 +76,7 @@ var Languages = LanguageOptions{
 	"html": Options{
 		"standalone": "Self-contained mode, includes all CSS in the HTML files. Generates no style.css file, but HTML files will be larger",
 	},
+	"gateway": Options{},
 }
 
 // ValidateOption indicates if the language option is supported for the given
@@ -146,13 +147,14 @@ func GetPackageComponents(pkg string) []string {
 // programGenerator is an implementation of the ProgramGenerator interface
 type programGenerator struct {
 	LanguageGenerator
+	doGenerateScopes         bool
 	splitPublisherSubscriber bool
 }
 
 // NewProgramGenerator creates a new ProgramGenerator using the given
 // LanguageGenerator.
-func NewProgramGenerator(generator LanguageGenerator, splitPublisherSubscriber bool) ProgramGenerator {
-	return &programGenerator{generator, splitPublisherSubscriber}
+func NewProgramGenerator(generator LanguageGenerator, doGenerateScopes bool, splitPublisherSubscriber bool) ProgramGenerator {
+	return &programGenerator{generator, doGenerateScopes, splitPublisherSubscriber}
 }
 
 // Generate the Frugal in the given directory.
@@ -205,17 +207,19 @@ func (o *programGenerator) Generate(frugal *parser.Frugal, outputDir string) err
 		}
 	}
 	// Generate scopes
-	for _, scope := range frugal.Scopes {
-		if o.splitPublisherSubscriber {
-			if err := o.generateScopeFile(scope, outputDir, PublishFile); err != nil {
-				return err
-			}
-			if err := o.generateScopeFile(scope, outputDir, SubscribeFile); err != nil {
-				return err
-			}
-		} else {
-			if err := o.generateScopeFile(scope, outputDir, CombinedScopeFile); err != nil {
-				return err
+	if o.doGenerateScopes {
+		for _, scope := range frugal.Scopes {
+			if o.splitPublisherSubscriber {
+				if err := o.generateScopeFile(scope, outputDir, PublishFile); err != nil {
+					return err
+				}
+				if err := o.generateScopeFile(scope, outputDir, SubscribeFile); err != nil {
+					return err
+				}
+			} else {
+				if err := o.generateScopeFile(scope, outputDir, CombinedScopeFile); err != nil {
+					return err
+				}
 			}
 		}
 	}

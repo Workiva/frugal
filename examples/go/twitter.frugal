@@ -1,0 +1,58 @@
+// Sample Twitter service
+namespace cpp thrift.example
+namespace java thrift.example
+
+enum TweetType {
+    TWEET,
+    RETWEET,
+    DM,
+    REPLY
+}
+
+struct Location {
+    1: required double latitude;
+    2: required double longitude;
+}
+
+// This works but ties the exposed API to the 
+// field name instead of the index number.
+//
+// Could use Jackson-like annotations for this (samples below)
+struct Tweet {
+    1: required i32 userId;
+    2: required string userName;
+    3: required string text;
+    4: optional Location loc; // (jsonProperty="location")
+    5: optional TweetType tweetType = TweetType.TWEET; // (jsonIgnore)
+    16: optional string language = "english";
+}
+
+typedef list<Tweet> TweetList
+
+struct TweetSearchResult {
+    1: TweetList tweets;
+}
+
+exception TwitterUnavailable {
+    1: string message;
+}
+
+const i32 MAX_RESULTS = 100;
+
+service Twitter {
+    // Annotation should create:
+    // HTTP PUT /v1/twitter/tweets { <Tweet converted to HTTP payload> }
+    void createTweet(1:Tweet tweet) throws (1:TwitterUnavailable unavailable) // ("http.method"="put", "http.pathTemplate"="/v1/twitter/tweets", "http.body"="tweet")
+
+    // Annotation should create:
+    // HTTP GET /v1/twitter/tweets?query=<query-parameter>
+    TweetSearchResult searchTweets(1:string query) // ("http.method"="get", "http.pathTemplate"="/v1/twitter/tweets", "http.query"="query")
+
+    // Annotation should create:
+    // HTTP DELETE /v1/twitter/tweets/{tweet_id}
+    void deleteTweet(1:i32 tweet_id) // ("http.method"="delete", "http.pathTemplate"="/v1/twitter/tweets/{tweet_id}")
+
+    // Annotation should create:
+    // HTTP POST /v1/twitter/tweets/{tweet_id} { <Tweet converted to HTTP payload> } -> returns Tweet
+    Tweet updateTweet(1:i32 tweet_id) // ("http.method"="post", "http.pathTemplate"="/v1/twitter/tweets/{tweet_id}", "http.body"="tweet")
+}

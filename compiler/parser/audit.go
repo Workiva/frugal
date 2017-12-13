@@ -73,7 +73,7 @@ func NewAuditorWithLogger(logger ValidationLogger) *Auditor {
 	}
 }
 
-// Compare checks the contents of newFile for breaking changes with respect to
+// Audit checks the contents of newFile for breaking changes with respect to
 // oldFile
 func (a *Auditor) Audit(oldFile, newFile string) error {
 	newFrugal, err := ParseFrugal(newFile)
