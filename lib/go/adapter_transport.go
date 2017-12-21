@@ -117,6 +117,8 @@ func (f *fAdapterTransport) readLoop() {
 }
 
 func (f *fAdapterTransport) readFrame(framedTransport *TFramedTransport) ([]byte, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	_, err := framedTransport.Read([]byte{})
 	if err != nil {
 		return nil, err
