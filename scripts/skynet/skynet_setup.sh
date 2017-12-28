@@ -5,8 +5,9 @@ set -exo pipefail
 mkdir -p /go/src/github.com/Workiva/
 
 # Move godeps to gopath for both library and binary
-cp -r /testing/vendor/* $GOPATH/
-cp -r /testing/lib/go/vendor/* $GOPATH/
+mkdir -p $GOPATH/src/
+cp -r /testing/vendor/* $GOPATH/src/
+cp -r /testing/lib/go/vendor/* $GOPATH/src/
 
 
 # Symlink frugal to gopath - this allows skynet-cli editing for interactive/directmount
