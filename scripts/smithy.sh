@@ -8,8 +8,9 @@ python $SMITHY_ROOT/scripts/smithy/verify_pr_target.py
 mkdir -p $SMITHY_ROOT/test_results/
 
 # Move godeps to gopath
-cp -r $FRUGAL_HOME/vendor/* $GOPATH/
-cp -r $FRUGAL_HOME/lib/go/vendor/* $GOPATH/
+mkdir -p $GOPATH/src/
+cp -r $FRUGAL_HOME/vendor/* $GOPATH/src/
+cp -r $FRUGAL_HOME/lib/go/vendor/* $GOPATH/src/
 
 # Run each language build and tests in parallel
 cd $FRUGAL_HOME
