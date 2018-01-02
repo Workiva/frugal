@@ -18,6 +18,7 @@ import org.junit.runners.JUnit4;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -163,7 +164,7 @@ public class FNatsServerTest {
         verify(mockConn).publish(reply, expected);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testRequestProcessRuntimeException() throws TException, IOException {
         byte[] data = "xxxxhello".getBytes();
         long timestamp = System.currentTimeMillis();
@@ -173,7 +174,11 @@ public class FNatsServerTest {
         mockProtocolFactory = new FProtocolFactory(new TJSONProtocol.Factory());
         FNatsServer.Request request = new FNatsServer.Request(data, timestamp, reply, highWatermark,
                 mockProtocolFactory, mockProtocolFactory, processor, mockConn);
+
         request.run();
+
+        byte[] expected = new byte[]{0, 0, 0, 0};
+        verify(mockConn).publish(reply, expected);
     }
 
     @Test
