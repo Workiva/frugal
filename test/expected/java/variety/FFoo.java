@@ -563,7 +563,7 @@ public class FFoo {
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
-						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "ping", "Internal error processing Ping: " + e.getMessage());
+						e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "ping", "Internal error processing Ping").initCause(e);
 					}
 					throw e;
 				}
@@ -617,7 +617,7 @@ public class FFoo {
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
-						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "blah", "Internal error processing blah: " + e.getMessage());
+						e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "blah", "Internal error processing blah").initCause(e);
 					}
 					throw e;
 				}
@@ -685,7 +685,7 @@ public class FFoo {
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
-						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "bin_method", "Internal error processing bin_method: " + e.getMessage());
+						e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "bin_method", "Internal error processing bin_method").initCause(e);
 					}
 					throw e;
 				}
@@ -735,7 +735,7 @@ public class FFoo {
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
-						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "param_modifiers", "Internal error processing param_modifiers: " + e.getMessage());
+						e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "param_modifiers", "Internal error processing param_modifiers").initCause(e);
 					}
 					throw e;
 				}
@@ -785,7 +785,7 @@ public class FFoo {
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
-						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "underlying_types_test", "Internal error processing underlying_types_test: " + e.getMessage());
+						e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "underlying_types_test", "Internal error processing underlying_types_test").initCause(e);
 					}
 					throw e;
 				}
@@ -835,7 +835,7 @@ public class FFoo {
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
-						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "getThing", "Internal error processing getThing: " + e.getMessage());
+						e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "getThing", "Internal error processing getThing").initCause(e);
 					}
 					throw e;
 				}
@@ -885,7 +885,7 @@ public class FFoo {
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
-						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "getMyInt", "Internal error processing getMyInt: " + e.getMessage());
+						e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "getMyInt", "Internal error processing getMyInt").initCause(e);
 					}
 					throw e;
 				}
@@ -935,7 +935,7 @@ public class FFoo {
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
-						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "use_subdir_struct", "Internal error processing use_subdir_struct: " + e.getMessage());
+						e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "use_subdir_struct", "Internal error processing use_subdir_struct").initCause(e);
 					}
 					throw e;
 				}
