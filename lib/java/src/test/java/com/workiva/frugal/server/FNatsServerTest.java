@@ -163,7 +163,7 @@ public class FNatsServerTest {
         verify(mockConn).publish(reply, expected);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testRequestProcessRuntimeException() throws TException, IOException {
         byte[] data = "xxxxhello".getBytes();
         long timestamp = System.currentTimeMillis();
@@ -173,7 +173,11 @@ public class FNatsServerTest {
         mockProtocolFactory = new FProtocolFactory(new TJSONProtocol.Factory());
         FNatsServer.Request request = new FNatsServer.Request(data, timestamp, reply, highWatermark,
                 mockProtocolFactory, mockProtocolFactory, processor, mockConn);
+
         request.run();
+
+        byte[] expected = new byte[]{0, 0, 0, 0};
+        verify(mockConn).publish(reply, expected);
     }
 
     @Test

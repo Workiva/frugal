@@ -53,7 +53,7 @@ class FNatsTransport(FAsyncTransport):
             raise TTransportException(TTransportExceptionType.ALREADY_OPEN,
                                       'Transport is already open')
 
-        self._sub_id = await self._nats_client.subscribe(
+        self._sub_id = await self._nats_client.subscribe_async(
             self._inbox,
             cb=self._on_message_callback
         )

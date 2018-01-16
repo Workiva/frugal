@@ -145,7 +145,7 @@ class FNatsSubscriberTransport(FSubscriberTransport):
                 ret = await ret
             return ret
 
-        self._sub_id = await self._nats_client.subscribe(
+        self._sub_id = await self._nats_client.subscribe_async(
             'frugal.{0}'.format(topic),
             queue=self._queue,
             cb=nats_callback,

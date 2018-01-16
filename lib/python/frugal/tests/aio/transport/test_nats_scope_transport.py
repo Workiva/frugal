@@ -74,11 +74,11 @@ class TestFNatsScopeTransport(utils.AsyncIOTestCase):
     async def test_subscribe(self):
         future = asyncio.Future()
         future.set_result(235)
-        self.mock_nats_client.subscribe.return_value = future
+        self.mock_nats_client.subscribe_async.return_value = future
 
         topic = 'bar'
         await self.sub_trans.subscribe(topic, self.callback)
-        self.mock_nats_client.subscribe.assert_called_once_with(
+        self.mock_nats_client.subscribe_async.assert_called_once_with(
             'frugal.bar',
             queue=self.queue,
             cb=mock.ANY,

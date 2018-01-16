@@ -3035,7 +3035,7 @@ func (g *Generator) generateServer(service *parser.Service) string {
 		contents += tabtabtabtab + "} catch (TException e) {\n"
 		contents += tabtabtabtabtab + "synchronized (WRITE_LOCK) {\n"
 		contents += tabtabtabtabtabtab + fmt.Sprintf(
-			"e = writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, \"%s\", \"Internal error processing %s: \" + e.getMessage());\n",
+			"e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, \"%s\", \"Internal error processing %s: \" + e.getMessage()).initCause(e);\n",
 			methodLower, method.Name)
 		contents += tabtabtabtabtab + "}\n"
 		contents += tabtabtabtabtab + "throw e;\n"

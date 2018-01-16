@@ -47,7 +47,7 @@ class FNatsServer(FServer):
         """Subscribe to the server subject and queue."""
         self._sub_ids = []
         for subject in self._subjects:
-            self._sub_ids.append(await self._nats_client.subscribe(
+            self._sub_ids.append(await self._nats_client.subscribe_async(
                 subject,
                 queue=self._queue,
                 cb=self._on_message_callback,

@@ -67,11 +67,11 @@ class TestFNatsTransport(utils.AsyncIOTestCase):
     async def test_open_subscribes(self):
         future = asyncio.Future()
         future.set_result(235)
-        self.mock_nats_client.subscribe.return_value = future
+        self.mock_nats_client.subscribe_async.return_value = future
         await self.transport.open()
 
         self.assertEqual(235, self.transport._sub_id)
-        self.mock_nats_client.subscribe.assert_called_once_with(
+        self.mock_nats_client.subscribe_async.assert_called_once_with(
             self.inbox,
             cb=self.transport._on_message_callback
         )
