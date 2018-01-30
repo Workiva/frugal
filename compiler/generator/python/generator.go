@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"frozendict"
 
 	"github.com/Workiva/frugal/compiler/generator"
 	"github.com/Workiva/frugal/compiler/globals"
@@ -499,7 +500,13 @@ func (g *Generator) generateMagicMethods(s *parser.Struct) string {
 	contents += tab + "def __hash__(self):\n"
 	contents += tabtab + "value = 17\n"
 	for _, field := range s.Fields {
-		contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(self.%s)\n", field.Name)
+	    if field.Type.KeyType != nil { // Check if map, hash frozen map in that case
+	        contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(frozendict(self.%s))\n", field.Name)
+	    } else if field.Type.ValueType != nil { // Check if set or list, hash frozenset in that case. Note: Hash may be incorrect for lists with duplicates
+	        contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(frozenset(self.%s))\n", field.Name)
+	    } else { // Write normally
+		    contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(self.%s)\n", field.Name)
+		}
 	}
 	contents += tabtab + "return value\n\n"
 
