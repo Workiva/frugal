@@ -499,7 +499,13 @@ func (g *Generator) generateMagicMethods(s *parser.Struct) string {
 	contents += tab + "def __hash__(self):\n"
 	contents += tabtab + "value = 17\n"
 	for _, field := range s.Fields {
-		contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(self.%s)\n", field.Name)
+	    if field.Type.KeyType != nil or field.Type.ValueType != nil {
+	        // Check if collection, convert to tuple to fix hash error
+	        contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(tuple(self.%s))\n", field.Name)
+	    } else {
+	        // Write normally
+		    contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(self.%s)\n", field.Name)
+		}
 	}
 	contents += tabtab + "return value\n\n"
 
