@@ -115,7 +115,6 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 	contents := "\n\n"
 	contents += "from thrift.Thrift import TType, TMessageType, TException, TApplicationException\n"
 	contents += "from .ttypes import *\n\n"
-	contents += "import frozendict\n"
 
 	for _, include := range g.Frugal.Includes {
 		namespace := g.getPackageNamespace(filepath.Base(include.Name))
@@ -128,6 +127,9 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 		_, value := g.generateConstantValue(constant.Type, constant.Value, "")
 		contents += fmt.Sprintf("%s = %s\n", constant.Name, value)
 	}
+
+	contents += "import frozendict\n"
+
 
 	if err = g.GenerateDocStringComment(file); err != nil {
 		return err
