@@ -501,11 +501,14 @@ func (g *Generator) generateMagicMethods(s *parser.Struct) string {
 	contents += tab + "def __hash__(self):\n"
 	contents += tabtab + "value = 17\n"
 	for _, field := range s.Fields {
-	    if field.Type.KeyType != nil { // Check if map, hash frozen map in that case
+	    if field.Type.KeyType != nil {
+	        // Check if map, hash frozen map in that case
 	        contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(frozendict(self.%s))\n", field.Name)
-	    } else if field.Type.ValueType != nil { // Check if set or list, hash frozenset in that case. Note: Hash may be incorrect for lists with duplicates
+	    } else if field.Type.ValueType != nil {
+	        // Check if set or list, hash frozenset in that case. Note: Hash may be incorrect for lists with duplicates
 	        contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(frozenset(self.%s))\n", field.Name)
-	    } else { // Write normally
+	    } else {
+	        // Write normally
 		    contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(self.%s)\n", field.Name)
 		}
 	}
