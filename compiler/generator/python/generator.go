@@ -128,9 +128,6 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 		contents += fmt.Sprintf("%s = %s\n", constant.Name, value)
 	}
 
-	contents += "import frozendict\n"
-
-
 	if err = g.GenerateDocStringComment(file); err != nil {
 		return err
 	}
@@ -503,6 +500,7 @@ func (g *Generator) generateMagicMethods(s *parser.Struct) string {
 	contents += tabtab + "value = 17\n"
 	for _, field := range s.Fields {
 	    if field.Type.KeyType != nil { // Check if map, hash frozen map in that case
+	    	contents += "import frozendict\n"
 	        contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(frozendict(self.%s))\n", field.Name)
 	    } else if field.Type.ValueType != nil { // Check if set or list, hash frozenset in that case. Note: Hash may be incorrect for lists with duplicates
 	        contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ hash(frozenset(self.%s))\n", field.Name)
