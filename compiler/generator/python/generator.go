@@ -114,8 +114,8 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 
 	contents := "\n\n"
 	contents += "from thrift.Thrift import TType, TMessageType, TException, TApplicationException\n"
-	contents += "import frozendict\n"
 	contents += "from .ttypes import *\n\n"
+	contents += "import frozendict\n"
 
 	for _, include := range g.Frugal.Includes {
 		namespace := g.getPackageNamespace(filepath.Base(include.Name))
