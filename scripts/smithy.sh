@@ -7,10 +7,6 @@ python $SMITHY_ROOT/scripts/smithy/verify_pr_target.py
 
 mkdir -p $SMITHY_ROOT/test_results/
 
-# Move godeps to gopath
-cp -r $FRUGAL_HOME/vendor/* $GOPATH/
-cp -r $FRUGAL_HOME/lib/go/vendor/* $GOPATH/
-
 # Run each language build and tests in parallel
-cd $FRUGAL_HOME
-go run scripts/smithy/parallel_smithy.go
+go get github.com/Sirupsen/logrus
+cd $FRUGAL_HOME && go run scripts/smithy/parallel_smithy.go

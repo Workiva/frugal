@@ -33,28 +33,26 @@ releases tab. Currently, adding these binaries is a manual process. If
 a downloadable release is missing, notify the messaging team to have it
 added.
 
+If go is already installed and setup you can also simply:
+
+```bash
+$ go get github.com/Workiva/frugal
+```
+
 ### From Source
 
 1.  Install [go](https://golang.org/doc/install) and setup [`GOPATH`](https://github.com/golang/go/wiki/GOPATH).
-1.  Install [godep](https://github.com/tools/godep).
-1.  Get the frugal source code
+1.  Clone the frugal repo
 
     ```bash
-    $ go get github.com/Workiva/frugal
-    ```
-
-    Or you can manually clone the frugal repo
-
-    ```bash
-    $ mkdir -p $GOPATH/src/github.com/Workiva/
-    $ cd $GOPATH/src/github.com/Workiva
+    $ mkdir -p $GOPATH/src/github.com/Workiva && cd $_
     $ git clone git@github.com:Workiva/frugal.git
     ```
 
-1.  Install frugal with godep
+1.  Install the CLI binary
     ```bash
     $ cd $GOPATH/src/github.com/Workiva/frugal
-    $ godep go install
+    $ go install
     ```
 
 When generating go, be aware the frugal go library and the frugal compiler
