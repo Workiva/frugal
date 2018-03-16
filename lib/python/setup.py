@@ -9,9 +9,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from setuptools import setup, find_packages
 
 from frugal.version import __version__
+
+this_dir = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(this_dir, 'requirements.txt')) as f:
+    requirements = f.read().splitlines()
 
 setup(
     name='frugal',
@@ -21,20 +26,16 @@ setup(
     maintainer_email='messaging@workiva.com',
     url='http://github.com/Workiva/frugal',
     packages=find_packages(exclude=('frugal.tests', 'frugal.tests.*')),
-    install_requires=[
-        "six==1.10.0",
-        "thrift==0.10.0",
-        "requests==2.12.5",
-    ],
+    install_requires=requirements,
     extras_require={
-        'tornado': ["nats-client==0.5.0"],
+        'tornado': ['nats-client==0.5.0'],
         'asyncio': [
-            "async-timeout==1.1.0",
-            "asyncio-nats-client==0.6.0",
+            'async-timeout==1.1.0',
+            'asyncio-nats-client==0.6.0',
             # DO NOT CHANGE without verifying asyncio nats with tls works
-            "multidict==3.1.3",
-            "aiohttp==2.3.8",
+            'multidict==3.1.3',
+            'aiohttp==2.3.8',
         ],
-        'gae': ["webapp2==2.5.2"],
+        'gae': ['webapp2==2.5.2'],
     }
 )
