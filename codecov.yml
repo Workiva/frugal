@@ -1,7 +1,4 @@
 # codecov inherits bot from team, do not add bot to this yml
-codecov:
-  url: "https://codecov.workiva.net"
-
 coverage:
   precision: 3
   round: down

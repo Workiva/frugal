@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-if [ "$TRAVIS_BRANCH" = 'master' ] && [ "$TRAVIS_PULL_REQUEST" == 'false' ]; then
+if [ "$TRAVIS_BRANCH" = 'master' ] && [ "$TRAVIS_PULL_REQUEST" == 'false'  ] && [ "$TRAVIS_REPO_SLUG" == 'Workiva/frugal' ]; then
     pip install twine
     cd $TRAVIS_BUILD_DIR/lib/python
     make install
