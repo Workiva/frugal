@@ -5,7 +5,7 @@ set -e
 # Python
 virtualenv -p /usr/bin/python /tmp/frugal
 source /tmp/frugal/bin/activate
-pip install -U pip
+pip install -U pip setuptools==39.0.1
 cd $FRUGAL_HOME/lib/python
 make deps-tornado
 make deps-gae
@@ -20,7 +20,7 @@ deactivate
 
 virtualenv -p /usr/bin/python3.5 /tmp/frugal-py3
 source /tmp/frugal-py3/bin/activate
-pip install -U pip
+pip install -U pip setuptools==39.0.1
 cd $FRUGAL_HOME/lib/python
 make deps-asyncio
 make xunit-py3

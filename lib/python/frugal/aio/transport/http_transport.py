@@ -130,7 +130,7 @@ class FHttpTransport(FTransportBase):
         # apply the default headers so their values cannot be modified
         request_headers.update(self._headers)
 
-        with ClientSession() as session:
+        async with ClientSession() as session:
             try:
                 with async_timeout.timeout(context.timeout / 1000):
                     async with session.post(self._url,

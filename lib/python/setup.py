@@ -29,11 +29,11 @@ setup(
     extras_require={
         'tornado': ["nats-client==0.5.0"],
         'asyncio': [
-            "async-timeout==1.1.0",
-            "asyncio-nats-client==0.6.4",
+            "async-timeout==2.0.1",
+            "asyncio-nats-client==0.7.0",
             # DO NOT CHANGE without verifying asyncio nats with tls works
             "multidict==3.1.3",
-            "aiohttp==2.3.8",
+            "aiohttp==3.1.2",
         ],
         'gae': ["webapp2==2.5.2"],
     }

@@ -3,7 +3,6 @@ nose-exclude==0.4.1
 rednose==1.2.1
 mock==1.0.1
 coverage==4.2
-setuptools==7.0
 flake8==3.3.0
 
 -r requirements.txt
