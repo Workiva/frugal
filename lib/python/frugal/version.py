@@ -10,4 +10,4 @@
 # limitations under the License.
 
 
-__version__ = '2.17.0'
+__version__ = '2.19.0'
