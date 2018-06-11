@@ -11,7 +11,12 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:frugal/src/frugal/f_error.dart';
+import 'package:thrift/thrift.dart';
+
 
 /// An implementation of a framed [TTransport] using a memory buffer and is used
 /// exclusively for writing. The size of this buffer is optionally limited. If

@@ -11,13 +11,17 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:collection';
+
+import 'package:uuid/uuid.dart';
+
 
 /// Header containing correlation id.
 const String _cidHeader = "_cid";
 
 /// Header containing op id (uint64 as string).
-const String _opidHeader = "_opid";
+/// @packagePrivate
+const String opidHeader = "_opid";
 
 /// Header containing request timeout (milliseconds as string).
 const String _timeoutHeader = "_timeout";
@@ -57,7 +61,7 @@ class FContext {
     _globalOpId++;
     _requestHeaders = {
       _cidHeader: correlationId,
-      _opidHeader: _globalOpId.toString(),
+      opidHeader: _globalOpId.toString(),
       _timeoutHeader: _defaultTimeout.inMilliseconds.toString(),
     };
     _responseHeaders = {};
@@ -68,9 +72,9 @@ class FContext {
     if (!headers.containsKey(_cidHeader) || headers[_cidHeader] == "") {
       headers[_cidHeader] = _generateCorrelationId();
     }
-    if (!headers.containsKey(_opidHeader) || headers[_opidHeader] == "") {
+    if (!headers.containsKey(opidHeader) || headers[opidHeader] == "") {
       _globalOpId++;
-      headers[_opidHeader] = _globalOpId.toString();
+      headers[opidHeader] = _globalOpId.toString();
     }
     if (!headers.containsKey(_timeoutHeader) || headers[_timeoutHeader] == "") {
       headers[_timeoutHeader] = _defaultTimeout.inMilliseconds.toString();
@@ -95,14 +99,16 @@ class FContext {
   String get correlationId => _requestHeaders[_cidHeader];
 
   /// The operation id for the context.
-  int get _opId {
-    var opIdStr = _requestHeaders[_opidHeader];
+  /// @packagePrivate
+  int get opId {
+    var opIdStr = _requestHeaders[opidHeader];
     return int.parse(opIdStr);
   }
 
   /// Set the operation id for the context.
-  set _opId(int id) {
-    _requestHeaders[_opidHeader] = "$id";
+  /// @packagePrivate
+  set opId(int id) {
+    _requestHeaders[opidHeader] = "$id";
   }
 
   /// Add a request header to the context for the given name.

@@ -11,7 +11,13 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+
+import 'package:frugal/src/frugal/transport/f_transport.dart';
+import 'package:frugal/src/frugal/transport/f_transport_monitor.dart';
+import 'package:logging/logging.dart';
+import 'package:w_common/disposable.dart';
+
 
 /// Runs an [FTransportMonitor] when a transport is closed.
 @Deprecated('3.0.0')

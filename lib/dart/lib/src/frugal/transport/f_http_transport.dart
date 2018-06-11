@@ -11,7 +11,18 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:frugal/src/frugal/f_context.dart';
+import 'package:frugal/src/frugal/f_error.dart';
+import 'package:frugal/src/frugal/transport/f_transport.dart';
+import 'package:frugal/src/frugal/transport/t_memory_transport.dart';
+import 'package:logging/logging.dart';
+import 'package:thrift/thrift.dart';
+import 'package:w_transport/w_transport.dart' as wt;
+
 
 /// typedef for passed in function that generates headers given an [FContext]
 typedef Map<String, String> GetHeadersWithContext(FContext ctx);
@@ -90,7 +101,7 @@ class FHttpTransport extends FTransport {
 
   @override
   Future<TTransport> request(FContext ctx, Uint8List payload) async {
-    _preflightRequestCheck(payload);
+    preflightRequestCheck(payload);
 
     // append dynamic headers first
     Map<String, String> requestHeaders = _getRequestHeaders(ctx);

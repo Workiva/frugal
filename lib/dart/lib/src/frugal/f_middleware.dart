@@ -11,7 +11,10 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+
+import 'package:frugal/src/frugal/internal/f_obj_to_json.dart';
+
 
 /// Processes a method invocation on a proxied method and returns the result.
 /// The arguments should match the arity of the proxied method, and have the

@@ -11,7 +11,10 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'package:frugal/src/frugal/f_context.dart';
+import 'package:frugal/src/frugal/headers.dart';
+import 'package:thrift/thrift.dart';
+
 
 /// Frugal's equivalent of Thrift's [TProtocol]. It defines the serialization
 /// protocol used for messages, such as JSON, binary, etc. [FProtocol] actually
