@@ -11,7 +11,11 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:convert';
+
+import 'package:frugal/src/frugal/f_context.dart';
+import 'package:thrift/thrift.dart';
+
 
 final TSerializer _serializer =
     new TSerializer(protocolFactory: new TJsonProtocolFactory());

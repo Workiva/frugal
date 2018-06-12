@@ -11,7 +11,12 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:frugal/src/frugal/internal/f_byte_buffer.dart';
+import 'package:thrift/thrift.dart';
+
 
 /// An [FByteBuffer]-backed implementation of [TTransport].
 class TMemoryTransport extends TTransport {

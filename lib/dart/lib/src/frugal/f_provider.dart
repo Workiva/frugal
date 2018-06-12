@@ -11,7 +11,12 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'package:frugal/src/frugal/f_middleware.dart';
+import 'package:frugal/src/frugal/protocol/f_protocol_factory.dart';
+import 'package:frugal/src/frugal/transport/f_publisher_transport.dart';
+import 'package:frugal/src/frugal/transport/f_subscriber_transport.dart';
+import 'package:frugal/src/frugal/transport/f_transport.dart';
+
 
 /// Produces [FPublisherTransport], [FSubscriberTransport], and [FProtocol]
 /// instances for use by pub/sub scopes. It does this by wrapping an

@@ -11,7 +11,17 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:frugal/src/frugal/f_context.dart';
+import 'package:frugal/src/frugal/f_error.dart';
+import 'package:frugal/src/frugal/headers.dart';
+import 'package:frugal/src/frugal/transport/f_transport.dart';
+import 'package:frugal/src/frugal/transport/t_memory_transport.dart';
+import 'package:logging/logging.dart';
+import 'package:thrift/thrift.dart';
+
 
 /// FAsyncTransport is an extension of FTransport that asynchronous frameworks
 /// can implement. Implementations need only implement [flush] to send request
@@ -29,7 +39,7 @@ abstract class FAsyncTransport extends FTransport {
 
   @override
   Future<Null> oneway(FContext ctx, Uint8List payload) async {
-    _preflightRequestCheck(payload);
+    preflightRequestCheck(payload);
     await flush(payload).timeout(ctx.timeout, onTimeout: () {
       throw new TTransportError(FrugalTTransportErrorType.TIMED_OUT,
           'request timed out after ${ctx.timeout}');
@@ -38,14 +48,14 @@ abstract class FAsyncTransport extends FTransport {
 
   @override
   Future<TTransport> request(FContext ctx, Uint8List payload) async {
-    _preflightRequestCheck(payload);
+    preflightRequestCheck(payload);
 
     Completer<Uint8List> resultCompleter = new Completer();
 
-    if (_handlers.containsKey(ctx._opId)) {
+    if (_handlers.containsKey(ctx.opId)) {
       throw new StateError("frugal: context already registered");
     }
-    _handlers[ctx._opId] = resultCompleter;
+    _handlers[ctx.opId] = resultCompleter;
     Completer<Uint8List> closedCompleter = new Completer();
     StreamSubscription<Object> closedSub = onClose.listen((_) {
       closedCompleter.completeError(
@@ -65,7 +75,7 @@ abstract class FAsyncTransport extends FTransport {
       throw new TTransportError(FrugalTTransportErrorType.TIMED_OUT,
           "request timed out after ${ctx.timeout}");
     } finally {
-      _handlers.remove(ctx._opId);
+      _handlers.remove(ctx.opId);
 
       // don't wait until this is disposed to cancel these
       await closedSub.cancel();
@@ -85,7 +95,7 @@ abstract class FAsyncTransport extends FTransport {
     var headers = Headers.decodeFromFrame(frame);
     var opId;
     try {
-      opId = int.parse(headers[_opidHeader]);
+      opId = int.parse(headers[opidHeader]);
     } catch (e) {
       _log.warning("frugal: invalid protocol frame: op id not a uint64", e);
       return;

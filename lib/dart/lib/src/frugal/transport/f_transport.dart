@@ -11,7 +11,17 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:frugal/src/frugal/f_context.dart';
+import 'package:frugal/src/frugal/f_error.dart';
+import 'package:frugal/src/frugal/transport/f_transport_monitor.dart';
+import 'package:frugal/src/frugal/transport/monitor_runner.dart';
+import 'package:meta/meta.dart';
+import 'package:thrift/thrift.dart';
+import 'package:w_common/disposable.dart';
+
 
 /// Comparable to Thrift's [TTransport] in that it represents the transport
 /// layer for frugal clients. However, frugal is callback based and sends only
@@ -41,6 +51,9 @@ abstract class FTransport extends Disposable {
     manageDisposable(_monitor);
   }
 
+  // ignore: mismatched_getter_and_setter_types
+  MonitorRunner get monitor => _monitor;
+
   /// Queries whether the transport is open.
   /// Returns [true] if the transport is open.
   bool get isOpen;
@@ -68,7 +81,8 @@ abstract class FTransport extends Disposable {
 
   /// Checks if a transport is open and the payload is within the request size
   /// limit.
-  void _preflightRequestCheck(Uint8List payload) {
+  @protected
+  void preflightRequestCheck(Uint8List payload) {
     if (!isOpen) {
       throw new TTransportError(
           FrugalTTransportErrorType.NOT_OPEN, 'transport not open');

@@ -11,7 +11,14 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:frugal/src/frugal/transport/f_async_transport.dart';
+import 'package:frugal/src/frugal/transport/t_framed_transport.dart';
+import 'package:logging/logging.dart';
+import 'package:thrift/thrift.dart' hide TFramedTransport;
+
 
 /// Wraps a [TSocketTransport] to produce an [FTransport] which uses the given
 /// socket for send/callback operations in a way that is compatible with Frugal.
@@ -19,13 +26,13 @@ part of frugal.src.frugal;
 /// [FAsyncTransport]'s handleResponse method.
 class FAdapterTransport extends FAsyncTransport {
   final Logger _adapterTransportLog = new Logger('FAdapterTransport');
-  _TFramedTransport _framedTransport;
+  TFramedTransport _framedTransport;
 
-  StreamSubscription<_FrameWrapper> _onFrameSub;
+  StreamSubscription<FrameWrapper> _onFrameSub;
 
   /// Create an [FAdapterTransport] with the given [TSocketTransport].
   FAdapterTransport(TSocketTransport transport)
-      : _framedTransport = new _TFramedTransport(transport.socket),
+      : _framedTransport = new TFramedTransport(transport.socket),
         super() {
     // If there is an error on the socket, close the transport pessimistically.
     // This error is already logged upstream in TSocketTransport.
@@ -33,7 +40,7 @@ class FAdapterTransport extends FAsyncTransport {
     // Forward state changes on to the transport monitor.
     // Note: Just forwarding OPEN on for the time-being.
     listenToStream(transport.socket.onState, (state) {
-      if (state == TSocketState.OPEN) _monitor?.signalOpen();
+      if (state == TSocketState.OPEN) monitor?.signalOpen();
     });
 
     manageDisposable(_framedTransport);
@@ -49,7 +56,7 @@ class FAdapterTransport extends FAsyncTransport {
     _onFrameSub = _framedTransport.onFrame.listen(_handleFrame);
   }
 
-  void _handleFrame(_FrameWrapper frame) {
+  void _handleFrame(FrameWrapper frame) {
     try {
       handleResponse(frame.frameBytes);
     } catch (e) {

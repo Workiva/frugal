@@ -11,7 +11,10 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+
+import 'package:frugal/src/frugal/transport/f_transport_monitor.dart';
+
 
 /// A default monitor implementation that attempts to reopen a closed transport
 /// with exponential backoff behavior and a capped number of retries. Its

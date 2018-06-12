@@ -11,7 +11,19 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+import 'dart:collection';
+import 'dart:convert';
+import 'dart:math';
+import 'dart:typed_data';
+
+import 'package:frugal/src/frugal/utils/byte_manipulations.dart';
+import 'package:logging/logging.dart';
+import 'package:thrift/thrift.dart';
+import 'package:uuid/uuid.dart';
+import 'package:w_common/disposable.dart';
+import 'package:w_transport/w_transport.dart' as wt;
+
 
 /// Transport layer for scope publishers.
 abstract class FPublisherTransport {

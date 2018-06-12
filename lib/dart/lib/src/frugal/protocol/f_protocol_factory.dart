@@ -11,7 +11,9 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'package:frugal/src/frugal/protocol/f_protocol.dart';
+import 'package:thrift/thrift.dart';
+
 
 /// Creates new [FProtocol] instances. It takes a [TProtocolFactory] and a
 /// [TTransport] and returns an [FProtocol] which wraps a [TProtocol] produced

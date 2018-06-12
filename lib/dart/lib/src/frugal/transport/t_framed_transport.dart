@@ -11,12 +11,21 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+import 'dart:math';
+import 'dart:typed_data';
+
+import 'package:frugal/src/frugal/f_error.dart';
+import 'package:logging/logging.dart';
+import 'package:thrift/thrift.dart';
+import 'package:w_common/disposable.dart';
+
 
 /// A framed implementation of [TTransport]. Has stream for consuming
 /// entire frames. Disallows direct reads.
-class _TFramedTransport extends TTransport with Disposable {
-  final Logger log = new Logger('frugal.transport._TFramedTransport');
+/// @packagePrivate
+class TFramedTransport extends TTransport with Disposable {
+  final Logger log = new Logger('frugal.transport.TFramedTransport');
   static const int _headerByteCount = 4;
 
   final TSocket socket;
@@ -26,14 +35,14 @@ class _TFramedTransport extends TTransport with Disposable {
   int _frameSize;
   bool _isOpen = false;
 
-  StreamController<_FrameWrapper> _frameStream = new StreamController();
+  StreamController<FrameWrapper> _frameStream = new StreamController();
   final Uint8List _headerBytes = new Uint8List(_headerByteCount);
   StreamSubscription _messageSub;
 
   /// Instantiate new [TFramedTransport] for the given [TSocket].
   /// Add a listener to the socket state that opens/closes the
   /// transport in response to socket state changes.
-  _TFramedTransport(this.socket) {
+  TFramedTransport(this.socket) {
     if (socket == null) {
       throw new ArgumentError.notNull('socket');
     }
@@ -63,7 +72,7 @@ class _TFramedTransport extends TTransport with Disposable {
   }
 
   /// Stream for getting frame data.
-  Stream<_FrameWrapper> get onFrame => _frameStream.stream;
+  Stream<FrameWrapper> get onFrame => _frameStream.stream;
 
   @override
   bool get isOpen => _isOpen;
@@ -125,7 +134,7 @@ class _TFramedTransport extends TTransport with Disposable {
 
     // Have an entire frame. Fire it off and reset.
     if (_readBuffer.length == _frameSize) {
-      _frameStream.add(new _FrameWrapper(
+      _frameStream.add(new FrameWrapper(
           new Uint8List.fromList(_readBuffer), new DateTime.now()));
       _readBuffer.clear();
       _frameSize = null;
@@ -162,11 +171,12 @@ class _TFramedTransport extends TTransport with Disposable {
   }
 }
 
-/// Wraps a _TFramedTransport frame with a timestamp indicating when it was
+/// Wraps a TFramedTransport frame with a timestamp indicating when it was
 /// placed in the frame buffer.
-class _FrameWrapper {
+/// @packagePrivate
+class FrameWrapper {
   Uint8List frameBytes;
   DateTime timestamp;
 
-  _FrameWrapper(this.frameBytes, this.timestamp);
+  FrameWrapper(this.frameBytes, this.timestamp);
 }

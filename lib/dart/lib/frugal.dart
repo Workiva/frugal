@@ -13,32 +13,21 @@
 
 library frugal;
 
-export 'src/frugal.dart'
-    show
-        BaseFTransportMonitor,
-        FAdapterTransport,
-        FAsyncCallback,
-        FAdapterTransport,
-        FAsyncTransport,
-        FContext,
-        FHttpTransport,
-        FMethod,
-        FProtocol,
-        FProtocolFactory,
-        FPublisherTransport,
-        FPublisherTransportFactory,
-        FScopeProvider,
-        FServiceProvider,
-        FSubscriberTransport,
-        FSubscriberTransportFactory,
-        FSubscription,
-        FTransport,
-        FTransportMonitor,
-        FrugalTApplicationErrorType,
-        FrugalTTransportErrorType,
-        GetHeadersWithContext,
-        InvocationHandler,
-        Middleware,
-        TMemoryOutputBuffer,
-        TMemoryTransport,
-        debugMiddleware;
+export 'package:frugal/src/frugal/f_context.dart' show FContext;
+export 'package:frugal/src/frugal/f_error.dart' show FrugalTApplicationErrorType, FrugalTTransportErrorType;
+export 'package:frugal/src/frugal/f_middleware.dart' show FMethod, InvocationHandler, Middleware, debugMiddleware;
+export 'package:frugal/src/frugal/f_provider.dart' show FScopeProvider, FServiceProvider;
+export 'package:frugal/src/frugal/f_subscription.dart' show FSubscription;
+export 'package:frugal/src/frugal/headers.dart' show decodeHeadersFromFrame;
+export 'package:frugal/src/frugal/protocol/f_protocol.dart' show FProtocol;
+export 'package:frugal/src/frugal/protocol/f_protocol_factory.dart' show FProtocolFactory;
+export 'package:frugal/src/frugal/transport/base_f_transport_monitor.dart' show BaseFTransportMonitor;
+export 'package:frugal/src/frugal/transport/f_adapter_transport.dart' show FAdapterTransport;
+export 'package:frugal/src/frugal/transport/f_async_transport.dart' show FAsyncTransport;
+export 'package:frugal/src/frugal/transport/f_http_transport.dart' show FHttpTransport, GetHeadersWithContext;
+export 'package:frugal/src/frugal/transport/f_publisher_transport.dart' show FPublisherTransport, FPublisherTransportFactory;
+export 'package:frugal/src/frugal/transport/f_subscriber_transport.dart' show FAsyncCallback, FSubscriberTransport, FSubscriberTransportFactory;
+export 'package:frugal/src/frugal/transport/f_transport.dart' show FTransport;
+export 'package:frugal/src/frugal/transport/f_transport_monitor.dart' show FTransportMonitor;
+export 'package:frugal/src/frugal/transport/t_memory_output_buffer.dart' show TMemoryOutputBuffer;
+export 'package:frugal/src/frugal/transport/t_memory_transport.dart' show TMemoryTransport;

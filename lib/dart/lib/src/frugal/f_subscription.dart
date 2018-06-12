@@ -11,7 +11,10 @@
  * limitations under the License.
  */
 
-part of frugal.src.frugal;
+import 'dart:async';
+
+import 'package:frugal/src/frugal/transport/f_subscriber_transport.dart';
+
 
 /// A subscription to a pub/sub topic created by a scope. The topic subscription
 /// is actually handled by an [FSubscriberTransport], which the [FSubscription]
