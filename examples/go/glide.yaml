@@ -10,7 +10,7 @@ import:
 - package: github.com/Workiva/frugal
   subpackages:
   - lib/go
-  version: 2.21.0
+  version: 2.22.0
 - package: github.com/nats-io/go-nats
   version: 6b6bf392d34d01f57cc563ae123f00c13778bd57
 - package: github.com/rs/cors

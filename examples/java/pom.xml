@@ -3,7 +3,7 @@
 
     <groupId>com.workiva.frugal</groupId>
     <artifactId>examples</artifactId>
-    <version>2.21.0</version>
+    <version>2.22.0</version>
 
     <repositories>
         <repository>
@@ -22,7 +22,7 @@
         <dependency>
             <groupId>com.workiva</groupId>
             <artifactId>frugal</artifactId>
-            <version>2.21.0</version>
+            <version>2.22.0</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
