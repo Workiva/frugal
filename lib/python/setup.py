@@ -27,10 +27,10 @@ setup(
         "requests>=2.12.5,<3",
     ],
     extras_require={
-        'tornado': ["nats-client==0.5.0"],
+        'tornado': ["nats-client==0.7.2"],
         'asyncio': [
             "async-timeout==2.0.1",
-            "asyncio-nats-client==0.7.0",
+            "asyncio-nats-client==0.7.2",
             # DO NOT CHANGE without verifying asyncio nats with tls works
             "multidict==3.1.3",
             "aiohttp==3.1.2",
