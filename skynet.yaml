@@ -8,7 +8,7 @@ run:  # local tests only, never run in Skynet
 
 contact: messaging@workiva.com
 
-image: drydock-prod.workiva.net/workiva/messaging-docker-images:210905
+image: drydock-prod.workiva.net/workiva/messaging-docker-images:378733
 
 env:
   - IN_SKYNET_CLI=true
@@ -41,7 +41,7 @@ requires:
 
 contact: messaging@workiva.com
 
-image: drydock-prod.workiva.net/workiva/messaging-docker-images:210905
+image: drydock-prod.workiva.net/workiva/messaging-docker-images:378733
 
 env:
   - PYTHONIOENCODING=utf-8
