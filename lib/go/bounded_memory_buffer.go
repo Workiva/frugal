@@ -14,7 +14,6 @@
 package frugal
 
 import (
-	"encoding/binary"
 	"fmt"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
@@ -60,7 +59,7 @@ func (f *TMemoryOutputBuffer) Reset() {
 // Bytes retrieves the framed contents of the buffer.
 func (f *TMemoryOutputBuffer) Bytes() []byte {
 	data := f.TMemoryBuffer.Bytes()
-	binary.BigEndian.PutUint32(data, uint32(len(data)-4))
+	bigEndianPutUint32(data, uint32(len(data)-4))
 	return data
 }
 

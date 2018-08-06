@@ -16,7 +16,6 @@ package frugal
 import (
 	"bufio"
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"sync"
@@ -128,7 +127,7 @@ func (p *TFramedTransport) Write(buf []byte) (int, error) {
 func (p *TFramedTransport) Flush() error {
 	size := p.buf.Len()
 	buf := p.writeBuffer[:4]
-	binary.BigEndian.PutUint32(buf, uint32(size))
+	bigEndianPutUint32(buf, uint32(size))
 	_, err := p.transport.Write(buf)
 	if err != nil {
 		return thrift.NewTTransportExceptionFromError(err)
@@ -150,7 +149,7 @@ func (p *TFramedTransport) readFrameHeader() (uint32, error) {
 	if _, err := io.ReadFull(p.reader, buf); err != nil {
 		return 0, err
 	}
-	size := binary.BigEndian.Uint32(buf)
+	size := bigEndianUint32(buf)
 	if size < 0 || size > p.maxLength {
 		return 0, thrift.NewTTransportException(TRANSPORT_EXCEPTION_UNKNOWN,
 			fmt.Sprintf("frugal: incorrect frame size (%d)", size))

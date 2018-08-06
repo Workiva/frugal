@@ -14,7 +14,6 @@
 package frugal
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -247,7 +246,7 @@ func unmarshalFrame(frame []byte) (*frameComponents, error) {
 	}
 
 	// Read frame size.
-	frameSize := binary.BigEndian.Uint32(frame)
+	frameSize := bigEndianUint32(frame)
 
 	if uint32(len(frame[4:])) != frameSize {
 		return nil, thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA,
@@ -282,15 +281,15 @@ func (v *v0ProtocolMarshaler) marshalHeaders(headers map[string]string) []byte {
 	buff[0] = protocolV0
 
 	// Write size
-	binary.BigEndian.PutUint32(buff[1:5], uint32(size))
+	bigEndianPutUint32(buff[1:5], uint32(size))
 
 	// Write headers
 	i := 5
 	for name, value := range headers {
-		binary.BigEndian.PutUint32(buff[i:i+4], uint32(len(name)))
+		bigEndianPutUint32(buff[i:i+4], uint32(len(name)))
 		i += 4
 		i += copy(buff[i:], name)
-		binary.BigEndian.PutUint32(buff[i:i+4], uint32(len(value)))
+		bigEndianPutUint32(buff[i:i+4], uint32(len(value)))
 		i += 4
 		i += copy(buff[i:], value)
 	}
@@ -308,7 +307,7 @@ func (v *v0ProtocolMarshaler) unmarshalHeaders(reader io.Reader) (map[string]str
 		return nil, thrift.NewTTransportException(TRANSPORT_EXCEPTION_UNKNOWN,
 			fmt.Sprintf("frugal: error reading protocol headers in unmarshalHeaders reading header size: %s", err))
 	}
-	size := int32(binary.BigEndian.Uint32(buff))
+	size := int32(bigEndianUint32(buff))
 	buff = make([]byte, size)
 	if _, err := io.ReadFull(reader, buff); err != nil {
 		if e, ok := err.(thrift.TTransportException); ok && e.TypeId() == TRANSPORT_EXCEPTION_END_OF_FILE {
@@ -329,7 +328,7 @@ func (v *v0ProtocolMarshaler) unmarshalHeadersFromFrame(frame []byte) (map[strin
 		return nil, thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA,
 			fmt.Errorf("frugal: invalid v0 frame size %d", len(frame)))
 	}
-	size := int32(binary.BigEndian.Uint32(frame))
+	size := int32(bigEndianUint32(frame))
 	if size > int32(len(frame[4:])) {
 		return nil, thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA,
 			fmt.Errorf("frugal: v0 frame size %d does not match actual size %d", size, len(frame[4:])))
@@ -350,12 +349,12 @@ func (v *v0ProtocolMarshaler) addHeadersToFrame(frame []byte, headers map[string
 		existing[name] = value
 	}
 	serializedHeaders := v.marshalHeaders(existing)
-	oldHeadersSize := int32(binary.BigEndian.Uint32(frame[5:]))
+	oldHeadersSize := int32(bigEndianUint32(frame[5:]))
 	frameSize := v.calculateHeaderSize(existing) + int32(len(frame)) - oldHeadersSize
 	buff := make([]byte, frameSize)
 
 	// Add frame size.
-	binary.BigEndian.PutUint32(buff, uint32(frameSize-4))
+	bigEndianPutUint32(buff, uint32(frameSize-4))
 
 	// Add headers (version is included).
 	offset := copy(buff[4:], serializedHeaders)
@@ -384,7 +383,7 @@ func (v *v0ProtocolMarshaler) readPairs(buff []byte, start, end int32) (map[stri
 	i := start
 	for i < end {
 		// Read header name.
-		nameSize := int32(binary.BigEndian.Uint32(buff[i : i+4]))
+		nameSize := int32(bigEndianUint32(buff[i : i+4]))
 		i += 4
 		if i > end || i+nameSize > end {
 			return nil, thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA,
@@ -394,7 +393,7 @@ func (v *v0ProtocolMarshaler) readPairs(buff []byte, start, end int32) (map[stri
 		i += nameSize
 
 		// Read header value.
-		valueSize := int32(binary.BigEndian.Uint32(buff[i : i+4]))
+		valueSize := int32(bigEndianUint32(buff[i : i+4]))
 		i += 4
 		if i > end || i+valueSize > end {
 			return nil, thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA,

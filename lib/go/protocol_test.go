@@ -15,7 +15,6 @@ package frugal
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"strconv"
@@ -65,7 +64,6 @@ func TestReadRequestHeader(t *testing.T) {
 	assert := assert.New(t)
 	transport := &thrift.TMemoryBuffer{Buffer: bytes.NewBuffer(frugalFrame)}
 	proto := &FProtocol{tProtocolFactory.GetProtocol(transport)}
-
 
 	ctx, err := proto.ReadRequestHeader()
 	assert.Nil(err)
@@ -310,7 +308,7 @@ func TestAddHeadersToFrameBadVersion(t *testing.T) {
 func TestAddHeadersToFrameBadFrameSize(t *testing.T) {
 	assert := assert.New(t)
 	frame := make([]byte, 10)
-	binary.BigEndian.PutUint32(frame[5:], 9000)
+	bigEndianPutUint32(frame[5:], 9000)
 	frame[4] = protocolV0
 	_, err := addHeadersToFrame(frame, make(map[string]string))
 	assert.NotNil(err)

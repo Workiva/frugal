@@ -16,7 +16,6 @@ package frugal
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -317,7 +316,7 @@ func TestHTTPTransportLifecycle(t *testing.T) {
 	framedRequestBytes := prependFrameSize(requestBytes)
 	responseBytes := []byte("I must've called a thousand times")
 	f := make([]byte, 4)
-	binary.BigEndian.PutUint32(f, uint32(len(responseBytes)))
+	bigEndianPutUint32(f, uint32(len(responseBytes)))
 	framedResponse := append(f, responseBytes...)
 
 	// Setup test server
@@ -360,7 +359,7 @@ func TestHTTPRequestHeaders(t *testing.T) {
 	framedRequestBytes := prependFrameSize(requestBytes)
 	responseBytes := []byte("I must've called a thousand times")
 	f := make([]byte, 4)
-	binary.BigEndian.PutUint32(f, uint32(len(responseBytes)))
+	bigEndianPutUint32(f, uint32(len(responseBytes)))
 	framedResponse := append(f, responseBytes...)
 
 	// Setup test server
@@ -672,7 +671,7 @@ func TestHTTPRequestHeadersWithContext(t *testing.T) {
 	framedRequestBytes := prependFrameSize(requestBytes)
 	responseBytes := []byte("I must've called a thousand times")
 	f := make([]byte, 4)
-	binary.BigEndian.PutUint32(f, uint32(len(responseBytes)))
+	bigEndianPutUint32(f, uint32(len(responseBytes)))
 	framedResponse := append(f, responseBytes...)
 
 	// Setup test server
@@ -723,7 +722,7 @@ func TestHTTPRequestHeadersWithContextReturnsEmptyMap(t *testing.T) {
 	framedRequestBytes := prependFrameSize(requestBytes)
 	responseBytes := []byte("I must've called a thousand times")
 	f := make([]byte, 4)
-	binary.BigEndian.PutUint32(f, uint32(len(responseBytes)))
+	bigEndianPutUint32(f, uint32(len(responseBytes)))
 	framedResponse := append(f, responseBytes...)
 
 	// Setup test server

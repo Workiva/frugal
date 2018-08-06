@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -113,7 +112,7 @@ func NewFrugalHandlerFunc(processor FProcessor, protocolFactory *FProtocolFactor
 			encoder = newEncoder(encoded)
 			err     error
 		)
-		binary.BigEndian.PutUint32(frameSize, uint32(outBuf.Len()))
+		bigEndianPutUint32(frameSize, uint32(outBuf.Len()))
 		if _, e := encoder.Write(frameSize); e != nil {
 			err = e
 		}
@@ -279,7 +278,7 @@ func (h *fHTTPTransport) Request(ctx FContext, data []byte) (thrift.TTransport, 
 	// If there are only 4 bytes, this needs to be a one-way
 	// (i.e. frame size 0)
 	if len(response) == 4 {
-		if binary.BigEndian.Uint32(response) != 0 {
+		if bigEndianUint32(response) != 0 {
 			return nil, thrift.NewTProtocolExceptionWithType(thrift.INVALID_DATA,
 				errors.New("frugal: missing data"))
 		}

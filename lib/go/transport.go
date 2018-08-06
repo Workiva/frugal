@@ -15,8 +15,6 @@ package frugal
 
 import (
 	"bytes"
-	"encoding/binary"
-	//"errors"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 )
@@ -159,6 +157,6 @@ func (f *fBaseTransport) Closed() <-chan error {
 
 func prependFrameSize(buf []byte) []byte {
 	frame := make([]byte, 4)
-	binary.BigEndian.PutUint32(frame, uint32(len(buf)))
+	bigEndianPutUint32(frame, uint32(len(buf)))
 	return append(frame, buf...)
 }
