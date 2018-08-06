@@ -6,10 +6,6 @@ import:
   - lib/go/thrift
 - package: github.com/Sirupsen/logrus
   version: ~0.11.0
-- package: github.com/mattrobenolt/gocql
-  version: 56c5a46b65eead93e1e53e983d1b2e7dbfde570d
-  subpackages:
-  - uuid
 - package: github.com/nats-io/go-nats
   version: 6b6bf392d34d01f57cc563ae123f00c13778bd57
   subpackages:

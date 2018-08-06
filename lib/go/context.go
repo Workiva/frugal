@@ -16,12 +16,11 @@ package frugal
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/mattrobenolt/gocql/uuid"
+	"github.com/nats-io/nuid"
 )
 
 const (
@@ -99,7 +98,7 @@ type FContext interface {
 // TODO 3.0 consider adding this to the FContext interface.
 func Clone(ctx FContext) FContext {
 	clone := &FContextImpl{
-		requestHeaders: ctx.RequestHeaders(),
+		requestHeaders:  ctx.RequestHeaders(),
 		responseHeaders: ctx.ResponseHeaders(),
 	}
 	clone.requestHeaders[opIDHeader] = getNextOpID()
@@ -255,5 +254,5 @@ func setResponseOpID(ctx FContext, id string) {
 // generateCorrelationID returns a random string id. It's assigned to a var for
 // testability purposes.
 var generateCorrelationID = func() string {
-	return strings.Replace(uuid.RandomUUID().String(), "-", "", -1)
+	return nuid.Next()
 }
