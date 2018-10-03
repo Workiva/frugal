@@ -637,10 +637,11 @@ func (g *Generator) generateStruct(s *parser.Struct) string {
 	}
 
 	contents += fmt.Sprintf("class %s ", s.Name)
+	contents += "implements thrift.TBase"
 	if s.Type == parser.StructTypeException {
-		contents += "extends Error "
+		contents += ", Exception"
 	}
-	contents += "implements thrift.TBase {\n"
+	contents += " {\n"
 
 	// Struct and field descriptors
 	contents += fmt.Sprintf(tab+"static final thrift.TStruct _STRUCT_DESC = new thrift.TStruct(\"%s\");\n", s.Name)

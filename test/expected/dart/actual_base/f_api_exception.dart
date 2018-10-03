@@ -5,7 +5,7 @@ import 'dart:typed_data' show Uint8List;
 import 'package:thrift/thrift.dart' as thrift;
 import 'package:actual_base_dart/actual_base_dart.dart' as t_actual_base_dart;
 
-class api_exception extends Error implements thrift.TBase {
+class api_exception implements thrift.TBase, Exception {
   static final thrift.TStruct _STRUCT_DESC = new thrift.TStruct("api_exception");
 
 
