@@ -12,6 +12,7 @@ environment:
   sdk: '>=1.24.0 <3.0.0'
 
 dependencies:
+  dart2_constant: ^1.0.0
   logging: ^0.11.2
   thrift:
     hosted:
