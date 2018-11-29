@@ -22,7 +22,7 @@ String fObjToJson(Object obj) {
     return new String.fromCharCodes(_serializer.write(obj));
   }
   if (obj is FContext) {
-    return JSON.encode(obj.requestHeaders());
+    return json.encode(obj.requestHeaders());
   }
-  return JSON.encode(obj);
+  return json.encode(obj);
 }

@@ -1,7 +1,16 @@
+name: frugal
+version: 2.24.0
+description: A frugal client for Dart
 authors:
-- Steven Osborne <steven.osborne@workiva.com>
-- Mark Erickson <mark.erickson@workiva.com>
-- Brian Shannan <brian.shannan@workiva.com>
+  - Steven Osborne <steven.osborne@workiva.com>
+  - Mark Erickson <mark.erickson@workiva.com>
+  - Brian Shannan <brian.shannan@workiva.com>
+homepage: https://github.com/Workiva/frugal/lib/dart
+publish_to: https://pub.workiva.org
+
+environment:
+  sdk: '>=1.24.3 <3.0.0'
+
 dependencies:
   logging: ^0.11.2
   thrift:
@@ -12,18 +21,9 @@ dependencies:
   uuid: '>=0.5.0 <2.0.0'
   w_common: ^1.8.1
   w_transport: '>=2.9.4 <4.0.0'
-description: A frugal client for Dart
+
 dev_dependencies:
-  analyzer: ^0.27.3
-  coverage: ^0.7.3
-  dart_dev: ^1.4.0
-  dart_style: '>=0.1.8 <0.3.0'
-  dartdoc: '>=0.4.0 <0.10.0'
-  mockito: ^0.11.0
-  test: ^0.12.15
-environment:
-  sdk: '>=1.13.0 <2.0.0'
-homepage: https://github.com/Workiva/frugal/lib/dart
-name: frugal
-publish_to: https://pub.workiva.org
-version: 2.24.0
+  coverage: ">=0.10.0 <0.13.0"
+  dart_dev: ^2.0.0
+  mockito: ">=2.2.2 <4.0.0"
+  test: ">=0.12.30 <2.0.0"

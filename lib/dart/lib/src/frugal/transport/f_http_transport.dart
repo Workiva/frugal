@@ -98,7 +98,7 @@ class FHttpTransport extends FTransport {
     requestHeaders.addAll(_headers);
 
     // Encode request payload
-    var requestBody = BASE64.encode(payload);
+    var requestBody = base64.encode(payload);
 
     // Configure the request
     wt.Request request = client.newRequest()
@@ -134,7 +134,7 @@ class FHttpTransport extends FTransport {
     // Attempt to decode the response payload
     Uint8List data;
     try {
-      data = new Uint8List.fromList(BASE64.decode(response.body.asString()));
+      data = new Uint8List.fromList(base64.decode(response.body.asString()));
     } on FormatException catch (_) {
       throw new TProtocolError(TProtocolErrorType.INVALID_DATA,
           'Expected a Base 64 encoded string.');

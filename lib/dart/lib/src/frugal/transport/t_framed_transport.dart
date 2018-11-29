@@ -158,7 +158,7 @@ class _TFramedTransport extends TTransport with Disposable {
     _writeBuffer.insertAll(0, _headerBytes);
     var buff = new Uint8List.fromList(_writeBuffer);
     _writeBuffer.clear();
-    return new Future.value(socket.send(buff));
+    return new Future(() => socket.send(buff));
   }
 }
 
