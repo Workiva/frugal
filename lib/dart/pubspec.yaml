@@ -9,7 +9,7 @@ homepage: https://github.com/Workiva/frugal/lib/dart
 publish_to: https://pub.workiva.org
 
 environment:
-  sdk: '>=1.24.3 <3.0.0'
+  sdk: '>=1.24.0 <3.0.0'
 
 dependencies:
   logging: ^0.11.2
