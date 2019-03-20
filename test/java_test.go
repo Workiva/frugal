@@ -258,3 +258,28 @@ func TestValidJavaSuppressDeprecatedLogging(t *testing.T) {
 	copyAllFiles(t, files)
 	compareAllFiles(t, files)
 }
+
+func TestValidJavaSuppressGeneratedAnnotations(t *testing.T) {
+	nowBefore := globals.Now
+	defer func() {
+		globals.Now = nowBefore
+	}()
+	globals.Now = time.Date(2015, 11, 24, 0, 0, 0, 0, time.UTC)
+
+	options := compiler.Options{
+		File:  frugalGenFile,
+		Gen:   "java:generated_annotations=suppress",
+		Out:   outputDir + "/suppress_generated_annotations",
+		Delim: delim,
+	}
+	if err := compiler.Compile(options); err != nil {
+		t.Fatal("Unexpected error", err)
+	}
+
+	files := []FileComparisonPair{
+		{"expected/java/suppress_generated_annotations/FFoo.java", filepath.Join(outputDir, "suppress_generated_annotations", "variety", "java", "FFoo.java")},
+	}
+
+	copyAllFiles(t, files)
+	compareAllFiles(t, files)
+}

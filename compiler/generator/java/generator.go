@@ -2277,7 +2277,9 @@ func (g *Generator) generateStructImports() string {
 	imports += "import java.util.BitSet;\n"
 	imports += "import java.nio.ByteBuffer;\n"
 	imports += "import java.util.Arrays;\n"
-	imports += "import javax.annotation.Generated;\n"
+	if g.includeGeneratedAnnotation() {
+		imports += "import javax.annotation.Generated;\n"
+	}
 	imports += "import org.slf4j.Logger;\n"
 	imports += "import org.slf4j.LoggerFactory;\n"
 
@@ -2309,8 +2311,9 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	imports += "import org.apache.thrift.protocol.TMessageType;\n"
 	imports += "import org.apache.thrift.transport.TTransport;\n"
 	imports += "import org.apache.thrift.transport.TTransportException;\n"
-
-	imports += "import javax.annotation.Generated;\n"
+	if g.includeGeneratedAnnotation() {
+		imports += "import javax.annotation.Generated;\n"
+	}
 	imports += "import java.util.Arrays;\n"
 	imports += "import java.util.concurrent.*;\n"
 
@@ -2349,7 +2352,9 @@ func (g *Generator) GenerateScopeImports(file *os.File, s *parser.Scope) error {
 	imports += "import java.util.Arrays;\n"
 	imports += "import org.slf4j.Logger;\n"
 	imports += "import org.slf4j.LoggerFactory;\n"
-	imports += "import javax.annotation.Generated;\n"
+	if g.includeGeneratedAnnotation() {
+		imports += "import javax.annotation.Generated;\n"
+	}
 
 	_, err := file.WriteString(imports)
 	return err
