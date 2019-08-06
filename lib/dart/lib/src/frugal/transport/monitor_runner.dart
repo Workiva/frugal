@@ -16,6 +16,9 @@ part of frugal.src.frugal;
 /// Runs an [FTransportMonitor] when a transport is closed.
 @Deprecated('3.0.0')
 class MonitorRunner extends Disposable {
+  @override
+  String get disposableTypeName => 'MonitorRunner';
+
   final Logger _log = new Logger('FTransportMonitor');
   FTransportMonitor _monitor;
   FTransport _transport;

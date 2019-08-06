@@ -16,6 +16,9 @@ part of frugal.src.frugal;
 /// A framed implementation of [TTransport]. Has stream for consuming
 /// entire frames. Disallows direct reads.
 class _TFramedTransport extends TTransport with Disposable {
+  @override
+  String get disposableTypeName => '_TFramedTransport';
+
   final Logger log = new Logger('frugal.transport._TFramedTransport');
   static const int _headerByteCount = 4;
 

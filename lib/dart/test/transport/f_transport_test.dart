@@ -46,6 +46,9 @@ void main() {
 }
 
 class _FTransportImpl extends FTransport {
+  @override
+  String get disposableTypeName => '_FTransportImpl';
+
   // Default implementations of non-implemented methods
   List<Error> errors = [];
   int openCalls = 0;
@@ -76,4 +79,7 @@ class _FTransportImpl extends FTransport {
 }
 
 /// Mock transport monitor.
-class MockTransportMonitor extends FTransportMonitor with Mock {}
+class MockTransportMonitor extends FTransportMonitor with Mock {
+  @override
+  String get disposableTypeName => 'MockTransportMonitor';
+}
