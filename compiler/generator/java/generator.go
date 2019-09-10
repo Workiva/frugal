@@ -2953,7 +2953,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 		method.Name)
 	contents += indent + tabtab + "}\n"
 	contents += indent + tabtab + "if (message.type == TMessageType.EXCEPTION) {\n"
-	contents += indent + tabtabtab + "TApplicationException e = TApplicationException.read(iprot);\n"
+	contents += indent + tabtabtab + "TApplicationException e = TApplicationException.readFrom(iprot);\n"
 	contents += indent + tabtabtab + "iprot.readMessageEnd();\n"
 	contents += indent + tabtabtab + "TException returnedException = e;\n"
 	contents += indent + tabtabtab + "if (e.getType() == TApplicationExceptionType.RESPONSE_TOO_LARGE) {\n"
