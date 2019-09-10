@@ -54,6 +54,7 @@ import org.apache.thrift.transport.TTransportException;
 import java.util.Arrays;
 import java.util.concurrent.*;
 
+
 public class FMyService {
 
 	private static final Logger logger = LoggerFactory.getLogger(FMyService.class);
@@ -87,7 +88,6 @@ public class FMyService {
 
 		private FTransport transport;
 		private FProtocolFactory protocolFactory;
-
 		public InternalClient(FServiceProvider provider) {
 			super(provider);
 			this.transport = provider.getTransport();
@@ -111,7 +111,7 @@ public class FMyService {
 				throw new TApplicationException(TApplicationExceptionType.WRONG_METHOD_NAME, "getItem failed: wrong method name");
 			}
 			if (message.type == TMessageType.EXCEPTION) {
-				TApplicationException e = TApplicationException.readFrom(iprot);
+				TApplicationException e = TApplicationException.read(iprot);
 				iprot.readMessageEnd();
 				TException returnedException = e;
 				if (e.getType() == TApplicationExceptionType.RESPONSE_TOO_LARGE) {
@@ -158,7 +158,7 @@ public class FMyService {
 		@Override
 		public void addMiddleware(ServiceMiddleware middleware) {
 			super.addMiddleware(middleware);
-			handler = InvocationHandler.composeMiddleware(handler, Iface.class, new ServiceMiddleware[] { middleware });
+			handler = InvocationHandler.composeMiddleware(handler, Iface.class, new ServiceMiddleware[]{middleware});
 		}
 
 		private class GetItem implements FProcessorFunction {
@@ -170,8 +170,7 @@ public class FMyService {
 				} catch (TException e) {
 					iprot.readMessageEnd();
 					synchronized (WRITE_LOCK) {
-						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.PROTOCOL_ERROR, "getItem",
-								e.getMessage());
+						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.PROTOCOL_ERROR, "getItem", e.getMessage());
 					}
 					throw e;
 				}
@@ -192,9 +191,7 @@ public class FMyService {
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
-						e = (TApplicationException) writeApplicationException(ctx, oprot,
-								TApplicationExceptionType.INTERNAL_ERROR, "getItem",
-								"Internal error processing getItem: " + e.getMessage()).initCause(e);
+						e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "getItem", "Internal error processing getItem: " + e.getMessage()).initCause(e);
 					}
 					throw e;
 				}
@@ -207,9 +204,7 @@ public class FMyService {
 						oprot.getTransport().flush();
 					} catch (TTransportException e) {
 						if (e.getType() == TTransportExceptionType.REQUEST_TOO_LARGE) {
-							throw (TApplicationException) writeApplicationException(ctx, oprot,
-									TApplicationExceptionType.RESPONSE_TOO_LARGE, "getItem",
-									"response too large: " + e.getMessage()).initCause(e);
+							throw (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.RESPONSE_TOO_LARGE, "getItem", "response too large: " + e.getMessage()).initCause(e);
 						}
 						throw e;
 					}
@@ -219,10 +214,9 @@ public class FMyService {
 
 	}
 
-	public static class getItem_args implements org.apache.thrift.TBase<getItem_args, getItem_args._Fields>,
-			java.io.Serializable, Cloneable, Comparable<getItem_args> {
-		private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct(
-				"getItem_args");
+	public static class getItem_args implements org.apache.thrift.TBase<getItem_args, getItem_args._Fields>, java.io.Serializable, Cloneable, Comparable<getItem_args> {
+		private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getItem_args");
+
 
 		private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
 		static {
@@ -230,10 +224,7 @@ public class FMyService {
 			schemes.put(TupleScheme.class, new getItem_argsTupleSchemeFactory());
 		}
 
-		/**
-		 * The set of fields this struct contains, along with convenience methods for
-		 * finding and manipulating them.
-		 */
+		/** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
 		public enum _Fields implements org.apache.thrift.TFieldIdEnum {
 			;
 
@@ -249,20 +240,19 @@ public class FMyService {
 			 * Find the _Fields constant that matches fieldId, or null if its not found.
 			 */
 			public static _Fields findByThriftId(int fieldId) {
-				switch (fieldId) {
-				default:
-					return null;
+				switch(fieldId) {
+					default:
+						return null;
 				}
 			}
 
 			/**
-			 * Find the _Fields constant that matches fieldId, throwing an exception if it
-			 * is not found.
+			 * Find the _Fields constant that matches fieldId, throwing an exception
+			 * if it is not found.
 			 */
 			public static _Fields findByThriftIdOrThrow(int fieldId) {
 				_Fields fields = findByThriftId(fieldId);
-				if (fields == null)
-					throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+				if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
 				return fields;
 			}
 
@@ -319,10 +309,7 @@ public class FMyService {
 			throw new IllegalStateException();
 		}
 
-		/**
-		 * Returns true if field corresponding to fieldID is set (has been assigned a
-		 * value) and false otherwise
-		 */
+		/** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
 		public boolean isSet(_Fields field) {
 			if (field == null) {
 				throw new IllegalArgumentException();
@@ -338,7 +325,7 @@ public class FMyService {
 			if (that == null)
 				return false;
 			if (that instanceof getItem_args)
-				return this.equals((getItem_args) that);
+				return this.equals((getItem_args)that);
 			return false;
 		}
 
@@ -395,8 +382,7 @@ public class FMyService {
 
 		private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
 			try {
-				write(new org.apache.thrift.protocol.TCompactProtocol(
-						new org.apache.thrift.transport.TIOStreamTransport(out)));
+				write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
 			} catch (org.apache.thrift.TException te) {
 				throw new java.io.IOException(te);
 			}
@@ -404,10 +390,8 @@ public class FMyService {
 
 		private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
 			try {
-				// it doesn't seem like you should have to do this, but java serialization is
-				// wacky, and doesn't call the default constructor.
-				read(new org.apache.thrift.protocol.TCompactProtocol(
-						new org.apache.thrift.transport.TIOStreamTransport(in)));
+				// it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+				read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
 			} catch (org.apache.thrift.TException te) {
 				throw new java.io.IOException(te);
 			}
@@ -421,8 +405,7 @@ public class FMyService {
 
 		private static class getItem_argsStandardScheme extends StandardScheme<getItem_args> {
 
-			public void read(org.apache.thrift.protocol.TProtocol iprot, getItem_args struct)
-					throws org.apache.thrift.TException {
+			public void read(org.apache.thrift.protocol.TProtocol iprot, getItem_args struct) throws org.apache.thrift.TException {
 				org.apache.thrift.protocol.TField schemeField;
 				iprot.readStructBegin();
 				while (true) {
@@ -431,20 +414,18 @@ public class FMyService {
 						break;
 					}
 					switch (schemeField.id) {
-					default:
-						org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+						default:
+							org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
 					}
 					iprot.readFieldEnd();
 				}
 				iprot.readStructEnd();
 
-				// check for required fields of primitive type, which can't be checked in the
-				// validate method
+				// check for required fields of primitive type, which can't be checked in the validate method
 				struct.validate();
 			}
 
-			public void write(org.apache.thrift.protocol.TProtocol oprot, getItem_args struct)
-					throws org.apache.thrift.TException {
+			public void write(org.apache.thrift.protocol.TProtocol oprot, getItem_args struct) throws org.apache.thrift.TException {
 				struct.validate();
 
 				oprot.writeStructBegin(STRUCT_DESC);
@@ -463,14 +444,12 @@ public class FMyService {
 		private static class getItem_argsTupleScheme extends TupleScheme<getItem_args> {
 
 			@Override
-			public void write(org.apache.thrift.protocol.TProtocol prot, getItem_args struct)
-					throws org.apache.thrift.TException {
+			public void write(org.apache.thrift.protocol.TProtocol prot, getItem_args struct) throws org.apache.thrift.TException {
 				TTupleProtocol oprot = (TTupleProtocol) prot;
 			}
 
 			@Override
-			public void read(org.apache.thrift.protocol.TProtocol prot, getItem_args struct)
-					throws org.apache.thrift.TException {
+			public void read(org.apache.thrift.protocol.TProtocol prot, getItem_args struct) throws org.apache.thrift.TException {
 				TTupleProtocol iprot = (TTupleProtocol) prot;
 			}
 
@@ -478,15 +457,11 @@ public class FMyService {
 
 	}
 
-	public static class getItem_result implements org.apache.thrift.TBase<getItem_result, getItem_result._Fields>,
-			java.io.Serializable, Cloneable, Comparable<getItem_result> {
-		private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct(
-				"getItem_result");
+	public static class getItem_result implements org.apache.thrift.TBase<getItem_result, getItem_result._Fields>, java.io.Serializable, Cloneable, Comparable<getItem_result> {
+		private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("getItem_result");
 
-		private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField(
-				"success", org.apache.thrift.protocol.TType.STRUCT, (short) 0);
-		private static final org.apache.thrift.protocol.TField D_FIELD_DESC = new org.apache.thrift.protocol.TField("d",
-				org.apache.thrift.protocol.TType.STRUCT, (short) 1);
+		private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.STRUCT, (short)0);
+		private static final org.apache.thrift.protocol.TField D_FIELD_DESC = new org.apache.thrift.protocol.TField("d", org.apache.thrift.protocol.TType.STRUCT, (short)1);
 
 		private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
 		static {
@@ -496,13 +471,11 @@ public class FMyService {
 
 		public some.vendored.pkg.Item success;
 		public InvalidData d;
-
-		/**
-		 * The set of fields this struct contains, along with convenience methods for
-		 * finding and manipulating them.
-		 */
+		/** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
 		public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-			SUCCESS((short) 0, "success"), D((short) 1, "d");
+			SUCCESS((short)0, "success"),
+			D((short)1, "d")
+			;
 
 			private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -516,24 +489,23 @@ public class FMyService {
 			 * Find the _Fields constant that matches fieldId, or null if its not found.
 			 */
 			public static _Fields findByThriftId(int fieldId) {
-				switch (fieldId) {
-				case 0: // SUCCESS
-					return SUCCESS;
-				case 1: // D
-					return D;
-				default:
-					return null;
+				switch(fieldId) {
+					case 0: // SUCCESS
+						return SUCCESS;
+					case 1: // D
+						return D;
+					default:
+						return null;
 				}
 			}
 
 			/**
-			 * Find the _Fields constant that matches fieldId, throwing an exception if it
-			 * is not found.
+			 * Find the _Fields constant that matches fieldId, throwing an exception
+			 * if it is not found.
 			 */
 			public static _Fields findByThriftIdOrThrow(int fieldId) {
 				_Fields fields = findByThriftId(fieldId);
-				if (fields == null)
-					throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+				if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
 				return fields;
 			}
 
@@ -565,7 +537,9 @@ public class FMyService {
 		public getItem_result() {
 		}
 
-		public getItem_result(some.vendored.pkg.Item success, InvalidData d) {
+		public getItem_result(
+			some.vendored.pkg.Item success,
+			InvalidData d) {
 			this();
 			this.success = success;
 			this.d = d;
@@ -608,10 +582,7 @@ public class FMyService {
 			this.success = null;
 		}
 
-		/**
-		 * Returns true if field success is set (has been assigned a value) and false
-		 * otherwise
-		 */
+		/** Returns true if field success is set (has been assigned a value) and false otherwise */
 		public boolean isSetSuccess() {
 			return this.success != null;
 		}
@@ -635,10 +606,7 @@ public class FMyService {
 			this.d = null;
 		}
 
-		/**
-		 * Returns true if field d is set (has been assigned a value) and false
-		 * otherwise
-		 */
+		/** Returns true if field d is set (has been assigned a value) and false otherwise */
 		public boolean isSetD() {
 			return this.d != null;
 		}
@@ -655,7 +623,7 @@ public class FMyService {
 				if (value == null) {
 					unsetSuccess();
 				} else {
-					setSuccess((some.vendored.pkg.Item)valu e);
+					setSuccess((some.vendored.pkg.Item)value);
 				}
 				break;
 
@@ -663,7 +631,7 @@ public class FMyService {
 				if (value == null) {
 					unsetD();
 				} else {
-					setD((InvalidData) value);
+					setD((InvalidData)value);
 				}
 				break;
 
@@ -682,10 +650,7 @@ public class FMyService {
 			throw new IllegalStateException();
 		}
 
-		/**
-		 * Returns true if field corresponding to fieldID is set (has been assigned a
-		 * value) and false otherwise
-		 */
+		/** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
 		public boolean isSet(_Fields field) {
 			if (field == null) {
 				throw new IllegalArgumentException();
@@ -705,7 +670,7 @@ public class FMyService {
 			if (that == null)
 				return false;
 			if (that instanceof getItem_result)
-				return this.equals((getItem_result) that);
+				return this.equals((getItem_result)that);
 			return false;
 		}
 
@@ -806,8 +771,7 @@ public class FMyService {
 				sb.append(this.success);
 			}
 			first = false;
-			if (!first)
-				sb.append(", ");
+			if (!first) sb.append(", ");
 			sb.append("d:");
 			if (this.d == null) {
 				sb.append("null");
@@ -832,8 +796,7 @@ public class FMyService {
 
 		private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
 			try {
-				write(new org.apache.thrift.protocol.TCompactProtocol(
-						new org.apache.thrift.transport.TIOStreamTransport(out)));
+				write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
 			} catch (org.apache.thrift.TException te) {
 				throw new java.io.IOException(te);
 			}
@@ -841,10 +804,8 @@ public class FMyService {
 
 		private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
 			try {
-				// it doesn't seem like you should have to do this, but java serialization is
-				// wacky, and doesn't call the default constructor.
-				read(new org.apache.thrift.protocol.TCompactProtocol(
-						new org.apache.thrift.transport.TIOStreamTransport(in)));
+				// it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+				read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
 			} catch (org.apache.thrift.TException te) {
 				throw new java.io.IOException(te);
 			}
@@ -858,8 +819,7 @@ public class FMyService {
 
 		private static class getItem_resultStandardScheme extends StandardScheme<getItem_result> {
 
-			public void read(org.apache.thrift.protocol.TProtocol iprot, getItem_result struct)
-					throws org.apache.thrift.TException {
+			public void read(org.apache.thrift.protocol.TProtocol iprot, getItem_result struct) throws org.apache.thrift.TException {
 				org.apache.thrift.protocol.TField schemeField;
 				iprot.readStructBegin();
 				while (true) {
@@ -868,38 +828,36 @@ public class FMyService {
 						break;
 					}
 					switch (schemeField.id) {
-					case 0: // SUCCESS
-						if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-							struct.success = new some.vendored.pkg.Item();
-							struct.success.read(iprot);
-							struct.setSuccessIsSet(true);
-						} else {
+						case 0: // SUCCESS
+							if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+								struct.success = new some.vendored.pkg.Item();
+								struct.success.read(iprot);
+								struct.setSuccessIsSet(true);
+							} else {
+								org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+							}
+							break;
+						case 1: // D
+							if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+								struct.d = new InvalidData();
+								struct.d.read(iprot);
+								struct.setDIsSet(true);
+							} else {
+								org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+							}
+							break;
+						default:
 							org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-						}
-						break;
-					case 1: // D
-						if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-							struct.d = new InvalidData();
-							struct.d.read(iprot);
-							struct.setDIsSet(true);
-						} else {
-							org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-						}
-						break;
-					default:
-						org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
 					}
 					iprot.readFieldEnd();
 				}
 				iprot.readStructEnd();
 
-				// check for required fields of primitive type, which can't be checked in the
-				// validate method
+				// check for required fields of primitive type, which can't be checked in the validate method
 				struct.validate();
 			}
 
-			public void write(org.apache.thrift.protocol.TProtocol oprot, getItem_result struct)
-					throws org.apache.thrift.TException {
+			public void write(org.apache.thrift.protocol.TProtocol oprot, getItem_result struct) throws org.apache.thrift.TException {
 				struct.validate();
 
 				oprot.writeStructBegin(STRUCT_DESC);
@@ -928,8 +886,7 @@ public class FMyService {
 		private static class getItem_resultTupleScheme extends TupleScheme<getItem_result> {
 
 			@Override
-			public void write(org.apache.thrift.protocol.TProtocol prot, getItem_result struct)
-					throws org.apache.thrift.TException {
+			public void write(org.apache.thrift.protocol.TProtocol prot, getItem_result struct) throws org.apache.thrift.TException {
 				TTupleProtocol oprot = (TTupleProtocol) prot;
 				BitSet optionals = new BitSet();
 				if (struct.isSetSuccess()) {
@@ -948,8 +905,7 @@ public class FMyService {
 			}
 
 			@Override
-			public void read(org.apache.thrift.protocol.TProtocol prot, getItem_result struct)
-					throws org.apache.thrift.TException {
+			public void read(org.apache.thrift.protocol.TProtocol prot, getItem_result struct) throws org.apache.thrift.TException {
 				TTupleProtocol iprot = (TTupleProtocol) prot;
 				BitSet incoming = iprot.readBitSet(2);
 				if (incoming.get(0)) {
