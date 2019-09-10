@@ -130,7 +130,7 @@ public class FStore {
 				throw new TApplicationException(TApplicationExceptionType.WRONG_METHOD_NAME, "buyAlbum failed: wrong method name");
 			}
 			if (message.type == TMessageType.EXCEPTION) {
-				TApplicationException e = TApplicationException.read(iprot);
+				TApplicationException e = TApplicationException.readFrom(iprot);
 				iprot.readMessageEnd();
 				TException returnedException = e;
 				if (e.getType() == TApplicationExceptionType.RESPONSE_TOO_LARGE) {
@@ -171,7 +171,7 @@ public class FStore {
 				throw new TApplicationException(TApplicationExceptionType.WRONG_METHOD_NAME, "enterAlbumGiveaway failed: wrong method name");
 			}
 			if (message.type == TMessageType.EXCEPTION) {
-				TApplicationException e = TApplicationException.read(iprot);
+				TApplicationException e = TApplicationException.readFrom(iprot);
 				iprot.readMessageEnd();
 				TException returnedException = e;
 				if (e.getType() == TApplicationExceptionType.RESPONSE_TOO_LARGE) {

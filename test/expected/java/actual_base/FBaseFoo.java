@@ -54,7 +54,6 @@ import org.apache.thrift.transport.TTransportException;
 import java.util.Arrays;
 import java.util.concurrent.*;
 
-
 public class FBaseFoo {
 
 	private static final Logger logger = LoggerFactory.getLogger(FBaseFoo.class);
@@ -87,6 +86,7 @@ public class FBaseFoo {
 
 		private FTransport transport;
 		private FProtocolFactory protocolFactory;
+
 		public InternalClient(FServiceProvider provider) {
 			this.transport = provider.getTransport();
 			this.protocolFactory = provider.getProtocolFactory();
@@ -106,19 +106,22 @@ public class FBaseFoo {
 			iprot.readResponseHeader(ctx);
 			TMessage message = iprot.readMessageBegin();
 			if (!message.name.equals("basePing")) {
-				throw new TApplicationException(TApplicationExceptionType.WRONG_METHOD_NAME, "basePing failed: wrong method name");
+				throw new TApplicationException(TApplicationExceptionType.WRONG_METHOD_NAME,
+						"basePing failed: wrong method name");
 			}
 			if (message.type == TMessageType.EXCEPTION) {
-				TApplicationException e = TApplicationException.read(iprot);
+				TApplicationException e = TApplicationException.readFrom(iprot);
 				iprot.readMessageEnd();
 				TException returnedException = e;
 				if (e.getType() == TApplicationExceptionType.RESPONSE_TOO_LARGE) {
-					returnedException = new TTransportException(TTransportExceptionType.RESPONSE_TOO_LARGE, e.getMessage());
+					returnedException = new TTransportException(TTransportExceptionType.RESPONSE_TOO_LARGE,
+							e.getMessage());
 				}
 				throw returnedException;
 			}
 			if (message.type != TMessageType.REPLY) {
-				throw new TApplicationException(TApplicationExceptionType.INVALID_MESSAGE_TYPE, "basePing failed: invalid message type");
+				throw new TApplicationException(TApplicationExceptionType.INVALID_MESSAGE_TYPE,
+						"basePing failed: invalid message type");
 			}
 			basePing_result res = new basePing_result();
 			res.read(iprot);
@@ -147,7 +150,7 @@ public class FBaseFoo {
 
 		@Override
 		public void addMiddleware(ServiceMiddleware middleware) {
-			handler = InvocationHandler.composeMiddleware(handler, Iface.class, new ServiceMiddleware[]{middleware});
+			handler = InvocationHandler.composeMiddleware(handler, Iface.class, new ServiceMiddleware[] { middleware });
 		}
 
 		private class BasePing implements FProcessorFunction {
@@ -159,7 +162,8 @@ public class FBaseFoo {
 				} catch (TException e) {
 					iprot.readMessageEnd();
 					synchronized (WRITE_LOCK) {
-						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.PROTOCOL_ERROR, "basePing", e.getMessage());
+						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.PROTOCOL_ERROR, "basePing",
+								e.getMessage());
 					}
 					throw e;
 				}
@@ -177,7 +181,9 @@ public class FBaseFoo {
 					return;
 				} catch (TException e) {
 					synchronized (WRITE_LOCK) {
-						e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "basePing", "Internal error processing basePing: " + e.getMessage()).initCause(e);
+						e = (TApplicationException) writeApplicationException(ctx, oprot,
+								TApplicationExceptionType.INTERNAL_ERROR, "basePing",
+								"Internal error processing basePing: " + e.getMessage()).initCause(e);
 					}
 					throw e;
 				}
@@ -190,7 +196,9 @@ public class FBaseFoo {
 						oprot.getTransport().flush();
 					} catch (TTransportException e) {
 						if (e.getType() == TTransportExceptionType.REQUEST_TOO_LARGE) {
-							throw (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.RESPONSE_TOO_LARGE, "basePing", "response too large: " + e.getMessage()).initCause(e);
+							throw (TApplicationException) writeApplicationException(ctx, oprot,
+									TApplicationExceptionType.RESPONSE_TOO_LARGE, "basePing",
+									"response too large: " + e.getMessage()).initCause(e);
 						}
 						throw e;
 					}
@@ -200,9 +208,10 @@ public class FBaseFoo {
 
 	}
 
-	public static class basePing_args implements org.apache.thrift.TBase<basePing_args, basePing_args._Fields>, java.io.Serializable, Cloneable, Comparable<basePing_args> {
-		private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("basePing_args");
-
+	public static class basePing_args implements org.apache.thrift.TBase<basePing_args, basePing_args._Fields>,
+			java.io.Serializable, Cloneable, Comparable<basePing_args> {
+		private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct(
+				"basePing_args");
 
 		private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
 		static {
@@ -210,7 +219,10 @@ public class FBaseFoo {
 			schemes.put(TupleScheme.class, new basePing_argsTupleSchemeFactory());
 		}
 
-		/** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+		/**
+		 * The set of fields this struct contains, along with convenience methods for
+		 * finding and manipulating them.
+		 */
 		public enum _Fields implements org.apache.thrift.TFieldIdEnum {
 			;
 
@@ -226,19 +238,20 @@ public class FBaseFoo {
 			 * Find the _Fields constant that matches fieldId, or null if its not found.
 			 */
 			public static _Fields findByThriftId(int fieldId) {
-				switch(fieldId) {
-					default:
-						return null;
+				switch (fieldId) {
+				default:
+					return null;
 				}
 			}
 
 			/**
-			 * Find the _Fields constant that matches fieldId, throwing an exception
-			 * if it is not found.
+			 * Find the _Fields constant that matches fieldId, throwing an exception if it
+			 * is not found.
 			 */
 			public static _Fields findByThriftIdOrThrow(int fieldId) {
 				_Fields fields = findByThriftId(fieldId);
-				if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+				if (fields == null)
+					throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
 				return fields;
 			}
 
@@ -295,7 +308,10 @@ public class FBaseFoo {
 			throw new IllegalStateException();
 		}
 
-		/** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+		/**
+		 * Returns true if field corresponding to fieldID is set (has been assigned a
+		 * value) and false otherwise
+		 */
 		public boolean isSet(_Fields field) {
 			if (field == null) {
 				throw new IllegalArgumentException();
@@ -311,7 +327,7 @@ public class FBaseFoo {
 			if (that == null)
 				return false;
 			if (that instanceof basePing_args)
-				return this.equals((basePing_args)that);
+				return this.equals((basePing_args) that);
 			return false;
 		}
 
@@ -368,7 +384,8 @@ public class FBaseFoo {
 
 		private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
 			try {
-				write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+				write(new org.apache.thrift.protocol.TCompactProtocol(
+						new org.apache.thrift.transport.TIOStreamTransport(out)));
 			} catch (org.apache.thrift.TException te) {
 				throw new java.io.IOException(te);
 			}
@@ -376,8 +393,10 @@ public class FBaseFoo {
 
 		private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
 			try {
-				// it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
-				read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+				// it doesn't seem like you should have to do this, but java serialization is
+				// wacky, and doesn't call the default constructor.
+				read(new org.apache.thrift.protocol.TCompactProtocol(
+						new org.apache.thrift.transport.TIOStreamTransport(in)));
 			} catch (org.apache.thrift.TException te) {
 				throw new java.io.IOException(te);
 			}
@@ -391,7 +410,8 @@ public class FBaseFoo {
 
 		private static class basePing_argsStandardScheme extends StandardScheme<basePing_args> {
 
-			public void read(org.apache.thrift.protocol.TProtocol iprot, basePing_args struct) throws org.apache.thrift.TException {
+			public void read(org.apache.thrift.protocol.TProtocol iprot, basePing_args struct)
+					throws org.apache.thrift.TException {
 				org.apache.thrift.protocol.TField schemeField;
 				iprot.readStructBegin();
 				while (true) {
@@ -400,18 +420,20 @@ public class FBaseFoo {
 						break;
 					}
 					switch (schemeField.id) {
-						default:
-							org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+					default:
+						org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
 					}
 					iprot.readFieldEnd();
 				}
 				iprot.readStructEnd();
 
-				// check for required fields of primitive type, which can't be checked in the validate method
+				// check for required fields of primitive type, which can't be checked in the
+				// validate method
 				struct.validate();
 			}
 
-			public void write(org.apache.thrift.protocol.TProtocol oprot, basePing_args struct) throws org.apache.thrift.TException {
+			public void write(org.apache.thrift.protocol.TProtocol oprot, basePing_args struct)
+					throws org.apache.thrift.TException {
 				struct.validate();
 
 				oprot.writeStructBegin(STRUCT_DESC);
@@ -430,12 +452,14 @@ public class FBaseFoo {
 		private static class basePing_argsTupleScheme extends TupleScheme<basePing_args> {
 
 			@Override
-			public void write(org.apache.thrift.protocol.TProtocol prot, basePing_args struct) throws org.apache.thrift.TException {
+			public void write(org.apache.thrift.protocol.TProtocol prot, basePing_args struct)
+					throws org.apache.thrift.TException {
 				TTupleProtocol oprot = (TTupleProtocol) prot;
 			}
 
 			@Override
-			public void read(org.apache.thrift.protocol.TProtocol prot, basePing_args struct) throws org.apache.thrift.TException {
+			public void read(org.apache.thrift.protocol.TProtocol prot, basePing_args struct)
+					throws org.apache.thrift.TException {
 				TTupleProtocol iprot = (TTupleProtocol) prot;
 			}
 
@@ -443,9 +467,10 @@ public class FBaseFoo {
 
 	}
 
-	public static class basePing_result implements org.apache.thrift.TBase<basePing_result, basePing_result._Fields>, java.io.Serializable, Cloneable, Comparable<basePing_result> {
-		private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("basePing_result");
-
+	public static class basePing_result implements org.apache.thrift.TBase<basePing_result, basePing_result._Fields>,
+			java.io.Serializable, Cloneable, Comparable<basePing_result> {
+		private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct(
+				"basePing_result");
 
 		private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
 		static {
@@ -453,7 +478,10 @@ public class FBaseFoo {
 			schemes.put(TupleScheme.class, new basePing_resultTupleSchemeFactory());
 		}
 
-		/** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+		/**
+		 * The set of fields this struct contains, along with convenience methods for
+		 * finding and manipulating them.
+		 */
 		public enum _Fields implements org.apache.thrift.TFieldIdEnum {
 			;
 
@@ -469,19 +497,20 @@ public class FBaseFoo {
 			 * Find the _Fields constant that matches fieldId, or null if its not found.
 			 */
 			public static _Fields findByThriftId(int fieldId) {
-				switch(fieldId) {
-					default:
-						return null;
+				switch (fieldId) {
+				default:
+					return null;
 				}
 			}
 
 			/**
-			 * Find the _Fields constant that matches fieldId, throwing an exception
-			 * if it is not found.
+			 * Find the _Fields constant that matches fieldId, throwing an exception if it
+			 * is not found.
 			 */
 			public static _Fields findByThriftIdOrThrow(int fieldId) {
 				_Fields fields = findByThriftId(fieldId);
-				if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+				if (fields == null)
+					throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
 				return fields;
 			}
 
@@ -538,7 +567,10 @@ public class FBaseFoo {
 			throw new IllegalStateException();
 		}
 
-		/** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+		/**
+		 * Returns true if field corresponding to fieldID is set (has been assigned a
+		 * value) and false otherwise
+		 */
 		public boolean isSet(_Fields field) {
 			if (field == null) {
 				throw new IllegalArgumentException();
@@ -554,7 +586,7 @@ public class FBaseFoo {
 			if (that == null)
 				return false;
 			if (that instanceof basePing_result)
-				return this.equals((basePing_result)that);
+				return this.equals((basePing_result) that);
 			return false;
 		}
 
@@ -611,7 +643,8 @@ public class FBaseFoo {
 
 		private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
 			try {
-				write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+				write(new org.apache.thrift.protocol.TCompactProtocol(
+						new org.apache.thrift.transport.TIOStreamTransport(out)));
 			} catch (org.apache.thrift.TException te) {
 				throw new java.io.IOException(te);
 			}
@@ -619,8 +652,10 @@ public class FBaseFoo {
 
 		private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
 			try {
-				// it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
-				read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+				// it doesn't seem like you should have to do this, but java serialization is
+				// wacky, and doesn't call the default constructor.
+				read(new org.apache.thrift.protocol.TCompactProtocol(
+						new org.apache.thrift.transport.TIOStreamTransport(in)));
 			} catch (org.apache.thrift.TException te) {
 				throw new java.io.IOException(te);
 			}
@@ -634,7 +669,8 @@ public class FBaseFoo {
 
 		private static class basePing_resultStandardScheme extends StandardScheme<basePing_result> {
 
-			public void read(org.apache.thrift.protocol.TProtocol iprot, basePing_result struct) throws org.apache.thrift.TException {
+			public void read(org.apache.thrift.protocol.TProtocol iprot, basePing_result struct)
+					throws org.apache.thrift.TException {
 				org.apache.thrift.protocol.TField schemeField;
 				iprot.readStructBegin();
 				while (true) {
@@ -643,18 +679,20 @@ public class FBaseFoo {
 						break;
 					}
 					switch (schemeField.id) {
-						default:
-							org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+					default:
+						org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
 					}
 					iprot.readFieldEnd();
 				}
 				iprot.readStructEnd();
 
-				// check for required fields of primitive type, which can't be checked in the validate method
+				// check for required fields of primitive type, which can't be checked in the
+				// validate method
 				struct.validate();
 			}
 
-			public void write(org.apache.thrift.protocol.TProtocol oprot, basePing_result struct) throws org.apache.thrift.TException {
+			public void write(org.apache.thrift.protocol.TProtocol oprot, basePing_result struct)
+					throws org.apache.thrift.TException {
 				struct.validate();
 
 				oprot.writeStructBegin(STRUCT_DESC);
@@ -673,12 +711,14 @@ public class FBaseFoo {
 		private static class basePing_resultTupleScheme extends TupleScheme<basePing_result> {
 
 			@Override
-			public void write(org.apache.thrift.protocol.TProtocol prot, basePing_result struct) throws org.apache.thrift.TException {
+			public void write(org.apache.thrift.protocol.TProtocol prot, basePing_result struct)
+					throws org.apache.thrift.TException {
 				TTupleProtocol oprot = (TTupleProtocol) prot;
 			}
 
 			@Override
-			public void read(org.apache.thrift.protocol.TProtocol prot, basePing_result struct) throws org.apache.thrift.TException {
+			public void read(org.apache.thrift.protocol.TProtocol prot, basePing_result struct)
+					throws org.apache.thrift.TException {
 				TTupleProtocol iprot = (TTupleProtocol) prot;
 			}
 
