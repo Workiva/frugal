@@ -1335,7 +1335,8 @@ func (g *Generator) GenerateObjectPackage(file *os.File, name string) error {
 
 // GenerateThriftImports generates necessary imports for Thrift.
 func (g *Generator) GenerateThriftImports() (string, error) {
-	imports := "import 'dart:typed_data' show Uint8List;\n"
+	imports := "// ignore_for_file: unused_import\n"
+	imports += "import 'dart:typed_data' show Uint8List;\n"
 	imports += "import 'package:thrift/thrift.dart' as thrift;\n"
 	// Import the current package
 	imports += g.getImportDeclaration(g.getNamespaceOrName(), g.getPackagePrefix())
