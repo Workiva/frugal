@@ -721,10 +721,10 @@ func (g *Generator) generateStruct(s *parser.Struct) string {
 	contents += g.generateToString(s)
 
 	// equals
-	contents += g.generateEquals(s)
+	// contents += g.generateEquals(s)
 
 	// hashCode
-	contents += g.generateHashCode(s)
+	// contents += g.generateHashCode(s)
 
 	// clone
 	contents += g.generateClone(s)
