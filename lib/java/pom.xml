@@ -3,7 +3,7 @@
 
     <groupId>com.workiva</groupId>
     <artifactId>frugal</artifactId>
-    <version>3.7.0</version>
+    <version>3.8.0</version>
     <packaging>jar</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
@@ -181,7 +181,7 @@
                 <configuration>
                     <configLocation>checkstyle.xml</configLocation>
                     <consoleOutput>true</consoleOutput>
-                    <!-- TODO: change me back after fixing checkstyle -->
+                    
                     <failOnViolation>false</failOnViolation>
                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
                     <includeResources>false</includeResources>
@@ -195,7 +195,7 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
-                            <!-- TODO: change me back after fixing checkstyle -->
+                            
                             <failOnViolation>false</failOnViolation>
                         </configuration>
                     </execution>
