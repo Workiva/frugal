@@ -422,40 +422,39 @@ public class FNatsServer implements FServer {
      * @param request the request
      */
     private void processRequest(Request request) {
-            eventHandler.onRequestStarted(request.ephemeralProperties);
+        eventHandler.onRequestStarted(request.ephemeralProperties);
+
+        try {
+            // Read and process frame (exclude first 4 bytes which represent frame size).
+            TTransport input = new TMemoryInputTransport(request.frameBytes, 4, request.frameBytes.length);
+            TMemoryOutputBuffer output = new TMemoryOutputBuffer(NATS_MAX_MESSAGE_SIZE);
 
             try {
-                // Read and process frame (exclude first 4 bytes which represent frame size).
-                TTransport input = new TMemoryInputTransport(request.frameBytes, 4, request.frameBytes.length);
-                TMemoryOutputBuffer output = new TMemoryOutputBuffer(NATS_MAX_MESSAGE_SIZE);
-
+                FProtocol inputProto = inputProtoFactory.getProtocol(input);
+                inputProto.setEphemeralProperties(request.ephemeralProperties);
+                FProtocol outputProto = outputProtoFactory.getProtocol(output);
+                processor.process(inputProto, outputProto);
+            } catch (TException e) {
+                LOGGER.error("error processing request", e);
+                return;
+            } catch (RuntimeException e) {
                 try {
-                    FProtocol inputProto = inputProtoFactory.getProtocol(input);
-                    inputProto.setEphemeralProperties(request.ephemeralProperties);
-                    FProtocol outputProto = outputProtoFactory.getProtocol(output);
-                    processor.process(inputProto, outputProto);
-                } catch (TException e) {
-                    LOGGER.error("error processing request", e);
-                    return;
-                } catch (RuntimeException e) {
-                    try {
-                        conn.publish(request.reply, output.getWriteBytes());
-                        conn.flush(Duration.ofSeconds(60));
-                    } catch (Exception ignored) {
-                    }
-                    return;
+                    conn.publish(request.reply, output.getWriteBytes());
+                    conn.flush(Duration.ofSeconds(60));
+                } catch (Exception ignored) {
                 }
-
-                if (!output.hasWriteData()) {
-                    return;
-                }
-
-                // Send response.
-                conn.publish(request.reply, output.getWriteBytes());
-            } finally {
-                eventHandler.onRequestEnded(request.ephemeralProperties);
+                return;
             }
 
+            if (!output.hasWriteData()) {
+                return;
+            }
+
+            // Send response.
+            conn.publish(request.reply, output.getWriteBytes());
+        } finally {
+            eventHandler.onRequestEnded(request.ephemeralProperties);
+        }
     }
 
     /**
