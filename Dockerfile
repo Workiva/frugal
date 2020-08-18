@@ -1,4 +1,4 @@
-FROM amazonlinux:2
+FROM amazonlinux:2 AS build-go
 SHELL ["/bin/bash", "-c"]
 
 # Pin deps versions
@@ -99,6 +99,9 @@ ARG BUILD_ARTIFACTS_AUDIT=/audit/*
 RUN pip3 freeze > /audit/pip.lock
 
 CMD ["bash"]
+# Update packages
+ARG BUILD_ID
+RUN yum update -y && \
 
 ARG GIT_BRANCH
 ARG GIT_MERGE_BRANCH
