@@ -99,12 +99,11 @@ ARG BUILD_ARTIFACTS_AUDIT=/audit/*
 RUN pip3 freeze > /audit/pip.lock
 
 CMD ["bash"]
+
 # Update packages
 ARG BUILD_ID
 RUN yum update -y && \
 
-ARG GIT_BRANCH
-ARG GIT_MERGE_BRANCH
 ARG GIT_SSH_KEY
 ARG KNOWN_HOSTS_CONTENT
 
