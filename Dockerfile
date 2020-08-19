@@ -100,11 +100,6 @@ RUN pip3 freeze > /audit/pip.lock
 
 CMD ["bash"]
 
-# Update packages
-ARG BUILD_ID
-RUN yum update -y && \
-
-ARG GIT_SSH_KEY
 ARG KNOWN_HOSTS_CONTENT
 
 ARG BUILD_ID
