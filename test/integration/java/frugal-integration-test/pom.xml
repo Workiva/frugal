@@ -23,7 +23,7 @@
         <dependency>
             <groupId>com.workiva</groupId>
             <artifactId>frugal</artifactId>
-            <version>3.12.3</version>
+            <version>3.13.0</version>
         </dependency>
         <dependency>
             <groupId>io.nats</groupId>
