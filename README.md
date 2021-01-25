@@ -1,6 +1,6 @@
 # Frugal
 
-![Build Status](https://travis-ci.org/Workiva/frugal.svg?branch=develop)
+![Builds Status](https://travis-ci.org/Workiva/frugal.svg?branch=develop)
 
 Frugal is an extension of [Apache Thrift](https://thrift.apache.org/) which
 provides additional functionality. Key features include:
