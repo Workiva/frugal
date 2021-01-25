@@ -308,3 +308,4 @@ class GetFooRequest implements thrift.TBase {
 Frugal is intended to be a superset of Thrift, meaning valid Thrift should be
 valid Frugal. File an issue if you discover an inconsistency in compatibility
 with the IDL.
+f8030f38c1de8c116a822ddda3f39fa8
