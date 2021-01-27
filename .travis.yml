@@ -11,7 +11,7 @@ env:
   - TWINE_REPOSITORY=pypi
 
 before_install:
-  - echo $NEW_RELIC | base64 -D | bash
+  - echo $NEW_RELIC | base64 -d | bash
   - mkdir -p $GOPATH/src/github.com/Workiva/frugal
   - rsync -av $TRAVIS_BUILD_DIR/ $GOPATH/src/github.com/Workiva/frugal
   - export TRAVIS_BUILD_DIR=$GOPATH/src/github.com/Workiva/frugal
