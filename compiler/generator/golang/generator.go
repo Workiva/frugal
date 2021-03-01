@@ -36,6 +36,7 @@ const (
 	scopeSuffix               = "_scope"
 	packagePrefixOption       = "package_prefix"
 	thriftImportOption        = "thrift_import"
+	thriftVersionOption       = "thrift_version"
 	frugalImportOption        = "frugal_import"
 	asyncOption               = "async"
 	useVendorOption           = "use_vendor"
@@ -605,8 +606,13 @@ func (g *Generator) generateCountSetFields(s *parser.Struct, sName string) strin
 func (g *Generator) generateRead(s *parser.Struct, sName string) string {
 	contents := ""
 
-	contents += fmt.Sprintf("func (p *%s) Read(ctx context.Context, iprot thrift.TProtocol) error {\n", sName)
-	contents += "\tif _, err := iprot.ReadStructBegin(ctx); err != nil {\n"
+	if g.isThrift14Gen() {
+		contents += fmt.Sprintf("func (p *%s) Read(ctx context.Context, iprot thrift.TProtocol) error {\n", sName)
+		contents += "\tif _, err := iprot.ReadStructBegin(ctx); err != nil {\n"
+	} else {
+		contents += fmt.Sprintf("func (p *%s) Read(iprot thrift.TProtocol) error {\n", sName)
+		contents += "\tif _, err := iprot.ReadStructBegin(); err != nil {\n"
+	}
 	contents += "\t\treturn thrift.PrependError(fmt.Sprintf(\"%T read error: \", p), err)\n"
 	contents += "\t}\n\n"
 	for _, field := range s.Fields {
@@ -617,7 +623,11 @@ func (g *Generator) generateRead(s *parser.Struct, sName string) string {
 	}
 	contents += "\n"
 	contents += "\tfor {\n"
-	contents += "\t\t_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin(ctx)\n"
+	if g.isThrift14Gen() {
+		contents += "\t\t_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin(ctx)\n"
+	} else {
+		contents += "\t\t_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()\n"
+	}
 	contents += "\t\tif err != nil {\n"
 	contents += "\t\t\treturn thrift.PrependError(fmt.Sprintf(\"%T field %d read error: \", p, fieldId), err)\n"
 	contents += "\t\t}\n"
@@ -631,7 +641,11 @@ func (g *Generator) generateRead(s *parser.Struct, sName string) string {
 			if g.generateSlim() {
 				contents += g.generateReadFieldRec(field, true)
 			} else {
-				contents += fmt.Sprintf("\t\t\tif err := p.ReadField%d(ctx, iprot); err != nil {\n", field.ID)
+				if g.isThrift14Gen() {
+					contents += fmt.Sprintf("\t\t\tif err := p.ReadField%d(ctx, iprot); err != nil {\n", field.ID)
+				} else {
+					contents += fmt.Sprintf("\t\t\tif err := p.ReadField%d(iprot); err != nil {\n", field.ID)
+				}
 				contents += "\t\t\t\treturn err\n"
 				contents += "\t\t\t}\n"
 			}
@@ -641,17 +655,29 @@ func (g *Generator) generateRead(s *parser.Struct, sName string) string {
 		}
 		contents += "\t\tdefault:\n"
 	}
-	contents += "\t\t\tif err := iprot.Skip(ctx, fieldTypeId); err != nil {\n"
+	if g.isThrift14Gen() {
+		contents += "\t\t\tif err := iprot.Skip(ctx, fieldTypeId); err != nil {\n"
+	} else {
+		contents += "\t\t\tif err := iprot.Skip(fieldTypeId); err != nil {\n"
+	}
 	contents += "\t\t\t\treturn err\n"
 	contents += "\t\t\t}\n"
 	if len(s.Fields) > 0 {
 		contents += "\t\t}\n"
 	}
-	contents += "\t\tif err := iprot.ReadFieldEnd(ctx); err != nil {\n"
+	if g.isThrift14Gen() {
+		contents += "\t\tif err := iprot.ReadFieldEnd(ctx); err != nil {\n"
+	} else {
+		contents += "\t\tif err := iprot.ReadFieldEnd(); err != nil {\n"
+	}
 	contents += "\t\t\treturn err\n"
 	contents += "\t\t}\n"
 	contents += "\t}\n"
-	contents += "\tif err := iprot.ReadStructEnd(ctx); err != nil {\n"
+	if g.isThrift14Gen() {
+		contents += "\tif err := iprot.ReadStructEnd(ctx); err != nil {\n"
+	} else {
+		contents += "\tif err := iprot.ReadStructEnd(); err != nil {\n"
+	}
 	contents += "\t\treturn thrift.PrependError(fmt.Sprintf(\"%T read struct end error: \", p), err)\n"
 	contents += "\t}\n"
 	for _, field := range s.Fields {
@@ -683,7 +709,12 @@ func (g *Generator) generateRead(s *parser.Struct, sName string) string {
 }
 
 func (g *Generator) generateWrite(s *parser.Struct, sName string) string {
-	contents := fmt.Sprintf("func (p *%s) Write(ctx context.Context, oprot thrift.TProtocol) error {\n", sName)
+	var contents string
+	if g.isThrift14Gen() {
+		contents = fmt.Sprintf("func (p *%s) Write(ctx context.Context, oprot thrift.TProtocol) error {\n", sName)
+	} else {
+		contents = fmt.Sprintf("func (p *%s) Write(oprot thrift.TProtocol) error {\n", sName)
+	}
 
 	// Only one field can be set for a union, make sure that's the case
 	if s.Type == parser.StructTypeUnion {
@@ -701,10 +732,18 @@ func (g *Generator) generateWrite(s *parser.Struct, sName string) string {
 		contents += g.generateWriteFieldInline(field)
 	}
 
-	contents += "\tif err := oprot.WriteFieldStop(ctx); err != nil{\n"
+	if g.isThrift14Gen() {
+		contents += "\tif err := oprot.WriteFieldStop(ctx); err != nil{\n"
+	} else {
+		contents += "\tif err := oprot.WriteFieldStop(); err != nil{\n"
+	}
 	contents += "\t\treturn thrift.PrependError(\"write field stop error: \", err)\n"
 	contents += "\t}\n"
-	contents += "\tif err := oprot.WriteStructEnd(ctx); err != nil {\n"
+	if g.isThrift14Gen() {
+		contents += "\tif err := oprot.WriteStructEnd(ctx); err != nil {\n"
+	} else {
+		contents += "\tif err := oprot.WriteStructEnd(); err != nil {\n"
+	}
 	contents += "\t\treturn thrift.PrependError(\"write struct stop error: \", err)\n"
 	contents += "\t}\n"
 	contents += "\treturn nil\n"
@@ -1391,10 +1430,25 @@ func (g *Generator) generateInternalPublishMethod(scope *parser.Scope, op *parse
 	publisher += g.generateWriteFieldRec(parser.FieldFromType(op.Type, ""), "p")
 	publisher += "\treturn nil\n"
 	publisher += "}\n\n"
-	publisher += fmt.Sprintf("func (p %s) Read(ctx context.Context, iprot thrift.TProtocol) error {\n", helper)
+	if g.isThrift14Gen() {
+		publisher += fmt.Sprintf("func (p %s) Read(ctx context.Context, iprot thrift.TProtocol) error {\n", helper)
+	} else {
+		publisher += fmt.Sprintf("func (p %s) Read(iprot thrift.TProtocol) error {\n", helper)
+	}
 	publisher += "\tpanic(\"Not Implemented!\")\n"
 	publisher += "}\n"
 	return publisher
+}
+
+func (g *Generator) isThrift14Gen() bool {
+	switch g.Options[thriftVersionOption] {
+	case ``, `v0.13.0`:
+		// the default and v0.13.0 cases are not >= thrift v0.14.0
+		return false
+	default:
+		// assume that all other versions are >= v0.14.0
+		return true
+	}
 }
 
 func generatePrefixStringTemplate(scope *parser.Scope) string {
