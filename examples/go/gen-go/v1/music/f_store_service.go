@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/Workiva/frugal/lib/go"
+	"github.com/Workiva/frugal/lib/go/shim"
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/sirupsen/logrus"
 )
@@ -210,7 +211,7 @@ func (p *StoreBuyAlbumArgs) GetAcct() string {
 	return p.Acct
 }
 
-func (p *StoreBuyAlbumArgs) Read(iprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumArgs) Read(iprot shim.TProtocol0_13) error {
 	if _, err := iprot.ReadStructBegin(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
 	}
@@ -247,7 +248,7 @@ func (p *StoreBuyAlbumArgs) Read(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreBuyAlbumArgs) ReadField1(iprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumArgs) ReadField1(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 1: ", err)
 	} else {
@@ -256,7 +257,7 @@ func (p *StoreBuyAlbumArgs) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreBuyAlbumArgs) ReadField2(iprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumArgs) ReadField2(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 2: ", err)
 	} else {
@@ -265,7 +266,7 @@ func (p *StoreBuyAlbumArgs) ReadField2(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreBuyAlbumArgs) Write(oprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumArgs) Write(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteStructBegin("buyAlbum_args"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
@@ -284,7 +285,7 @@ func (p *StoreBuyAlbumArgs) Write(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreBuyAlbumArgs) writeField1(oprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumArgs) writeField1(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("ASIN", thrift.STRING, 1); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:ASIN: ", p), err)
 	}
@@ -297,7 +298,7 @@ func (p *StoreBuyAlbumArgs) writeField1(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreBuyAlbumArgs) writeField2(oprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumArgs) writeField2(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("acct", thrift.STRING, 2); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:acct: ", p), err)
 	}
@@ -352,7 +353,7 @@ func (p *StoreBuyAlbumResult) GetError() *PurchasingError {
 	return p.Error
 }
 
-func (p *StoreBuyAlbumResult) Read(iprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumResult) Read(iprot shim.TProtocol0_13) error {
 	if _, err := iprot.ReadStructBegin(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
 	}
@@ -389,7 +390,7 @@ func (p *StoreBuyAlbumResult) Read(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreBuyAlbumResult) ReadField0(iprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumResult) ReadField0(iprot shim.TProtocol0_13) error {
 	p.Success = NewAlbum()
 	if err := p.Success.Read(iprot); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.Success), err)
@@ -397,7 +398,7 @@ func (p *StoreBuyAlbumResult) ReadField0(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreBuyAlbumResult) ReadField1(iprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumResult) ReadField1(iprot shim.TProtocol0_13) error {
 	p.Error = NewPurchasingError()
 	if err := p.Error.Read(iprot); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.Error), err)
@@ -405,7 +406,7 @@ func (p *StoreBuyAlbumResult) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreBuyAlbumResult) Write(oprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumResult) Write(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteStructBegin("buyAlbum_result"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
@@ -424,7 +425,7 @@ func (p *StoreBuyAlbumResult) Write(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreBuyAlbumResult) writeField0(oprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumResult) writeField0(oprot shim.TProtocol0_13) error {
 	if p.IsSetSuccess() {
 		if err := oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			return thrift.PrependError(fmt.Sprintf("%T write field begin error 0:success: ", p), err)
@@ -439,7 +440,7 @@ func (p *StoreBuyAlbumResult) writeField0(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreBuyAlbumResult) writeField1(oprot thrift.TProtocol) error {
+func (p *StoreBuyAlbumResult) writeField1(oprot shim.TProtocol0_13) error {
 	if p.IsSetError() {
 		if err := oprot.WriteFieldBegin("error", thrift.STRUCT, 1); err != nil {
 			return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:error: ", p), err)
@@ -478,7 +479,7 @@ func (p *StoreEnterAlbumGiveawayArgs) GetName() string {
 	return p.Name
 }
 
-func (p *StoreEnterAlbumGiveawayArgs) Read(iprot thrift.TProtocol) error {
+func (p *StoreEnterAlbumGiveawayArgs) Read(iprot shim.TProtocol0_13) error {
 	if _, err := iprot.ReadStructBegin(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
 	}
@@ -515,7 +516,7 @@ func (p *StoreEnterAlbumGiveawayArgs) Read(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreEnterAlbumGiveawayArgs) ReadField1(iprot thrift.TProtocol) error {
+func (p *StoreEnterAlbumGiveawayArgs) ReadField1(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 1: ", err)
 	} else {
@@ -524,7 +525,7 @@ func (p *StoreEnterAlbumGiveawayArgs) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreEnterAlbumGiveawayArgs) ReadField2(iprot thrift.TProtocol) error {
+func (p *StoreEnterAlbumGiveawayArgs) ReadField2(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 2: ", err)
 	} else {
@@ -533,7 +534,7 @@ func (p *StoreEnterAlbumGiveawayArgs) ReadField2(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreEnterAlbumGiveawayArgs) Write(oprot thrift.TProtocol) error {
+func (p *StoreEnterAlbumGiveawayArgs) Write(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteStructBegin("enterAlbumGiveaway_args"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
@@ -552,7 +553,7 @@ func (p *StoreEnterAlbumGiveawayArgs) Write(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreEnterAlbumGiveawayArgs) writeField1(oprot thrift.TProtocol) error {
+func (p *StoreEnterAlbumGiveawayArgs) writeField1(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("email", thrift.STRING, 1); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:email: ", p), err)
 	}
@@ -565,7 +566,7 @@ func (p *StoreEnterAlbumGiveawayArgs) writeField1(oprot thrift.TProtocol) error 
 	return nil
 }
 
-func (p *StoreEnterAlbumGiveawayArgs) writeField2(oprot thrift.TProtocol) error {
+func (p *StoreEnterAlbumGiveawayArgs) writeField2(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("name", thrift.STRING, 2); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:name: ", p), err)
 	}
@@ -606,7 +607,7 @@ func (p *StoreEnterAlbumGiveawayResult) GetSuccess() bool {
 	return *p.Success
 }
 
-func (p *StoreEnterAlbumGiveawayResult) Read(iprot thrift.TProtocol) error {
+func (p *StoreEnterAlbumGiveawayResult) Read(iprot shim.TProtocol0_13) error {
 	if _, err := iprot.ReadStructBegin(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
 	}
@@ -639,7 +640,7 @@ func (p *StoreEnterAlbumGiveawayResult) Read(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreEnterAlbumGiveawayResult) ReadField0(iprot thrift.TProtocol) error {
+func (p *StoreEnterAlbumGiveawayResult) ReadField0(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadBool(); err != nil {
 		return thrift.PrependError("error reading field 0: ", err)
 	} else {
@@ -648,7 +649,7 @@ func (p *StoreEnterAlbumGiveawayResult) ReadField0(iprot thrift.TProtocol) error
 	return nil
 }
 
-func (p *StoreEnterAlbumGiveawayResult) Write(oprot thrift.TProtocol) error {
+func (p *StoreEnterAlbumGiveawayResult) Write(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteStructBegin("enterAlbumGiveaway_result"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
@@ -664,7 +665,7 @@ func (p *StoreEnterAlbumGiveawayResult) Write(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *StoreEnterAlbumGiveawayResult) writeField0(oprot thrift.TProtocol) error {
+func (p *StoreEnterAlbumGiveawayResult) writeField0(oprot shim.TProtocol0_13) error {
 	if p.IsSetSuccess() {
 		if err := oprot.WriteFieldBegin("success", thrift.BOOL, 0); err != nil {
 			return thrift.PrependError(fmt.Sprintf("%T write field begin error 0:success: ", p), err)

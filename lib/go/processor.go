@@ -16,6 +16,7 @@ package frugal
 import (
 	"sync"
 
+	"github.com/Workiva/frugal/lib/go/shim"
 	"github.com/apache/thrift/lib/go/thrift"
 )
 
@@ -215,7 +216,7 @@ func (f *FBaseProcessorFunction) sendError(ctx FContext, oprot *FProtocol, kind 
 }
 
 // SendReply ...
-func (f *FBaseProcessorFunction) SendReply(ctx FContext, oprot *FProtocol, method string, result thrift.TStruct) error {
+func (f *FBaseProcessorFunction) SendReply(ctx FContext, oprot *FProtocol, method string, result shim.TStruct0_13) error {
 	f.writeMu.Lock()
 	defer f.writeMu.Unlock()
 	if err := oprot.WriteResponseHeader(ctx); err != nil {

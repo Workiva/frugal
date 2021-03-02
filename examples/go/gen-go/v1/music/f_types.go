@@ -10,6 +10,8 @@ import (
 	"fmt"
 
 	"github.com/apache/thrift/lib/go/thrift"
+
+	"github.com/Workiva/frugal/lib/go/shim"
 )
 
 // (needed to ensure safety because of naive import list construction.)
@@ -127,7 +129,7 @@ func (p *Track) GetPro() PerfRightsOrg {
 	return p.Pro
 }
 
-func (p *Track) Read(iprot thrift.TProtocol) error {
+func (p *Track) Read(iprot shim.TProtocol0_13) error {
 	if _, err := iprot.ReadStructBegin(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
 	}
@@ -180,7 +182,7 @@ func (p *Track) Read(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) ReadField1(iprot thrift.TProtocol) error {
+func (p *Track) ReadField1(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 1: ", err)
 	} else {
@@ -189,7 +191,7 @@ func (p *Track) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) ReadField2(iprot thrift.TProtocol) error {
+func (p *Track) ReadField2(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 2: ", err)
 	} else {
@@ -198,7 +200,7 @@ func (p *Track) ReadField2(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) ReadField3(iprot thrift.TProtocol) error {
+func (p *Track) ReadField3(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 3: ", err)
 	} else {
@@ -207,7 +209,7 @@ func (p *Track) ReadField3(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) ReadField4(iprot thrift.TProtocol) error {
+func (p *Track) ReadField4(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 4: ", err)
 	} else {
@@ -216,7 +218,7 @@ func (p *Track) ReadField4(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) ReadField5(iprot thrift.TProtocol) error {
+func (p *Track) ReadField5(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadDouble(); err != nil {
 		return thrift.PrependError("error reading field 5: ", err)
 	} else {
@@ -226,7 +228,7 @@ func (p *Track) ReadField5(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) ReadField6(iprot thrift.TProtocol) error {
+func (p *Track) ReadField6(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadI32(); err != nil {
 		return thrift.PrependError("error reading field 6: ", err)
 	} else {
@@ -236,7 +238,7 @@ func (p *Track) ReadField6(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) Write(oprot thrift.TProtocol) error {
+func (p *Track) Write(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteStructBegin("Track"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
@@ -267,7 +269,7 @@ func (p *Track) Write(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) writeField1(oprot thrift.TProtocol) error {
+func (p *Track) writeField1(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("title", thrift.STRING, 1); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:title: ", p), err)
 	}
@@ -280,7 +282,7 @@ func (p *Track) writeField1(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) writeField2(oprot thrift.TProtocol) error {
+func (p *Track) writeField2(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("artist", thrift.STRING, 2); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:artist: ", p), err)
 	}
@@ -293,7 +295,7 @@ func (p *Track) writeField2(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) writeField3(oprot thrift.TProtocol) error {
+func (p *Track) writeField3(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("publisher", thrift.STRING, 3); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 3:publisher: ", p), err)
 	}
@@ -306,7 +308,7 @@ func (p *Track) writeField3(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) writeField4(oprot thrift.TProtocol) error {
+func (p *Track) writeField4(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("composer", thrift.STRING, 4); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 4:composer: ", p), err)
 	}
@@ -319,7 +321,7 @@ func (p *Track) writeField4(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) writeField5(oprot thrift.TProtocol) error {
+func (p *Track) writeField5(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("duration", thrift.DOUBLE, 5); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 5:duration: ", p), err)
 	}
@@ -332,7 +334,7 @@ func (p *Track) writeField5(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Track) writeField6(oprot thrift.TProtocol) error {
+func (p *Track) writeField6(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("pro", thrift.I32, 6); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 6:pro: ", p), err)
 	}
@@ -376,7 +378,7 @@ func (p *Album) GetASIN() string {
 	return p.ASIN
 }
 
-func (p *Album) Read(iprot thrift.TProtocol) error {
+func (p *Album) Read(iprot shim.TProtocol0_13) error {
 	if _, err := iprot.ReadStructBegin(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
 	}
@@ -417,7 +419,7 @@ func (p *Album) Read(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Album) ReadField1(iprot thrift.TProtocol) error {
+func (p *Album) ReadField1(iprot shim.TProtocol0_13) error {
 	_, size, err := iprot.ReadListBegin()
 	if err != nil {
 		return thrift.PrependError("error reading list begin: ", err)
@@ -436,7 +438,7 @@ func (p *Album) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Album) ReadField2(iprot thrift.TProtocol) error {
+func (p *Album) ReadField2(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadDouble(); err != nil {
 		return thrift.PrependError("error reading field 2: ", err)
 	} else {
@@ -446,7 +448,7 @@ func (p *Album) ReadField2(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Album) ReadField3(iprot thrift.TProtocol) error {
+func (p *Album) ReadField3(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 3: ", err)
 	} else {
@@ -455,7 +457,7 @@ func (p *Album) ReadField3(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Album) Write(oprot thrift.TProtocol) error {
+func (p *Album) Write(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteStructBegin("Album"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
@@ -477,7 +479,7 @@ func (p *Album) Write(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Album) writeField1(oprot thrift.TProtocol) error {
+func (p *Album) writeField1(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("tracks", thrift.LIST, 1); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:tracks: ", p), err)
 	}
@@ -498,7 +500,7 @@ func (p *Album) writeField1(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Album) writeField2(oprot thrift.TProtocol) error {
+func (p *Album) writeField2(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("duration", thrift.DOUBLE, 2); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:duration: ", p), err)
 	}
@@ -511,7 +513,7 @@ func (p *Album) writeField2(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *Album) writeField3(oprot thrift.TProtocol) error {
+func (p *Album) writeField3(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("ASIN", thrift.STRING, 3); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 3:ASIN: ", p), err)
 	}
@@ -550,7 +552,7 @@ func (p *PurchasingError) GetErrorCode() int16 {
 	return p.ErrorCode
 }
 
-func (p *PurchasingError) Read(iprot thrift.TProtocol) error {
+func (p *PurchasingError) Read(iprot shim.TProtocol0_13) error {
 	if _, err := iprot.ReadStructBegin(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
 	}
@@ -587,7 +589,7 @@ func (p *PurchasingError) Read(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *PurchasingError) ReadField1(iprot thrift.TProtocol) error {
+func (p *PurchasingError) ReadField1(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 1: ", err)
 	} else {
@@ -596,7 +598,7 @@ func (p *PurchasingError) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *PurchasingError) ReadField2(iprot thrift.TProtocol) error {
+func (p *PurchasingError) ReadField2(iprot shim.TProtocol0_13) error {
 	if v, err := iprot.ReadI16(); err != nil {
 		return thrift.PrependError("error reading field 2: ", err)
 	} else {
@@ -605,7 +607,7 @@ func (p *PurchasingError) ReadField2(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *PurchasingError) Write(oprot thrift.TProtocol) error {
+func (p *PurchasingError) Write(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteStructBegin("PurchasingError"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
@@ -624,7 +626,7 @@ func (p *PurchasingError) Write(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *PurchasingError) writeField1(oprot thrift.TProtocol) error {
+func (p *PurchasingError) writeField1(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("message", thrift.STRING, 1); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:message: ", p), err)
 	}
@@ -637,7 +639,7 @@ func (p *PurchasingError) writeField1(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *PurchasingError) writeField2(oprot thrift.TProtocol) error {
+func (p *PurchasingError) writeField2(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteFieldBegin("error_code", thrift.I16, 2); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:error_code: ", p), err)
 	}

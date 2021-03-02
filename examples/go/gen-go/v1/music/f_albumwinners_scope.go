@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/Workiva/frugal/lib/go"
+	"github.com/Workiva/frugal/lib/go/shim"
 	"github.com/apache/thrift/lib/go/thrift"
 )
 
@@ -58,7 +59,7 @@ func (p *albumWinnersPublisher) publishContestStart(ctx frugal.FContext, req []*
 
 type albumWinnersContestStartMessage []*Album
 
-func (p albumWinnersContestStartMessage) Write(oprot thrift.TProtocol) error {
+func (p albumWinnersContestStartMessage) Write(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteListBegin(thrift.STRUCT, len(p)); err != nil {
 		return thrift.PrependError("error writing list begin: ", err)
 	}
@@ -73,7 +74,7 @@ func (p albumWinnersContestStartMessage) Write(oprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p albumWinnersContestStartMessage) Read(iprot thrift.TProtocol) error {
+func (p albumWinnersContestStartMessage) Read(iprot shim.TProtocol0_13) error {
 	panic("Not Implemented!")
 }
 
@@ -94,14 +95,14 @@ func (p *albumWinnersPublisher) publishTimeLeft(ctx frugal.FContext, req Minutes
 
 type albumWinnersTimeLeftMessage Minutes
 
-func (p albumWinnersTimeLeftMessage) Write(oprot thrift.TProtocol) error {
+func (p albumWinnersTimeLeftMessage) Write(oprot shim.TProtocol0_13) error {
 	if err := oprot.WriteDouble(float64(p)); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
 	}
 	return nil
 }
 
-func (p albumWinnersTimeLeftMessage) Read(iprot thrift.TProtocol) error {
+func (p albumWinnersTimeLeftMessage) Read(iprot shim.TProtocol0_13) error {
 	panic("Not Implemented!")
 }
 

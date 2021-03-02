@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/Workiva/frugal/lib/go/shim"
 	"github.com/apache/thrift/lib/go/thrift"
 )
 
@@ -87,7 +88,7 @@ func NewFProtocolFactory(protoFactory thrift.TProtocolFactory) *FProtocolFactory
 // GetProtocol returns a new FProtocol instance using the given TTransport.
 func (f *FProtocolFactory) GetProtocol(tr thrift.TTransport) *FProtocol {
 	return &FProtocol{
-		TProtocol:           f.protoFactory.GetProtocol(tr),
+		TProtocol0_13:       f.protoFactory.GetProtocol(tr),
 		ephemeralProperties: make(map[interface{}]interface{}),
 	}
 }
@@ -100,7 +101,7 @@ func (f *FProtocolFactory) GetProtocol(tr thrift.TTransport) *FProtocol {
 // serialization of the message using a simple binary protocol. See the
 // protocol documentation for more details.
 type FProtocol struct {
-	thrift.TProtocol
+	shim.TProtocol0_13
 	ephemeralProperties map[interface{}]interface{}
 }
 

@@ -1,6 +1,9 @@
 package frugal
 
-import "github.com/apache/thrift/lib/go/thrift"
+import (
+	"github.com/Workiva/frugal/lib/go/shim"
+	"github.com/apache/thrift/lib/go/thrift"
+)
 
 // WriteString writes string `value` of field name and id `name` and `field` respectively into `p`.
 func WriteString(p thrift.TProtocol, value, name string, field int16) error {
@@ -115,7 +118,7 @@ func WriteBinary(p thrift.TProtocol, value []byte, name string, field int16) err
 }
 
 // WriteStruct writes thrift.Struct of filed and id `name` and `field` respectively into `p`.
-func WriteStruct(p thrift.TProtocol, value thrift.TStruct, name string, field int16) error {
+func WriteStruct(p thrift.TProtocol, value shim.TStruct0_13, name string, field int16) error {
 	if err := p.WriteFieldBegin(name, thrift.STRUCT, field); err != nil {
 		return thrift.PrependError("write field begin error: ", err)
 	}

@@ -1,6 +1,9 @@
 package frugal
 
-import "github.com/apache/thrift/lib/go/thrift"
+import (
+	"github.com/Workiva/frugal/lib/go/shim"
+	"github.com/apache/thrift/lib/go/thrift"
+)
 
 var _ FClient = (*FStandardClient)(nil)
 
@@ -8,9 +11,9 @@ var _ FClient = (*FStandardClient)(nil)
 type FClient interface {
 	Open() error  // holdover from publisher refactor, remove in frugal v4
 	Close() error // holdover from publisher refactor, remvoe in frugal v4
-	Call(ctx FContext, method string, args, result thrift.TStruct) error
-	Oneway(ctx FContext, method string, args thrift.TStruct) error
-	Publish(ctx FContext, op, topic string, message thrift.TStruct) error
+	Call(ctx FContext, method string, args, result shim.TStruct0_13) error
+	Oneway(ctx FContext, method string, args shim.TStruct0_13) error
+	Publish(ctx FContext, op, topic string, message shim.TStruct0_13) error
 }
 
 // FStandardClient implements FClient, and uses the standard message format for Frugal.
@@ -53,7 +56,7 @@ func (client *FStandardClient) Close() error {
 }
 
 // Call invokes a service and waits for a response.
-func (client *FStandardClient) Call(ctx FContext, method string, args, result thrift.TStruct) error {
+func (client *FStandardClient) Call(ctx FContext, method string, args, result shim.TStruct0_13) error {
 	payload, err := client.prepareMessage(ctx, method, args, thrift.CALL)
 	if err != nil {
 		return err
@@ -66,7 +69,7 @@ func (client *FStandardClient) Call(ctx FContext, method string, args, result th
 }
 
 // Oneway sends a message to a service, without waiting for a response.
-func (client *FStandardClient) Oneway(ctx FContext, method string, args thrift.TStruct) error {
+func (client *FStandardClient) Oneway(ctx FContext, method string, args shim.TStruct0_13) error {
 	payload, err := client.prepareMessage(ctx, method, args, thrift.ONEWAY)
 	if err != nil {
 		return err
@@ -75,7 +78,7 @@ func (client *FStandardClient) Oneway(ctx FContext, method string, args thrift.T
 }
 
 // Publish sends a message to a topic.
-func (client *FStandardClient) Publish(ctx FContext, op, topic string, message thrift.TStruct) error {
+func (client *FStandardClient) Publish(ctx FContext, op, topic string, message shim.TStruct0_13) error {
 	payload, err := client.prepareMessage(ctx, op, message, thrift.CALL)
 	if err != nil {
 		return err
@@ -83,7 +86,7 @@ func (client *FStandardClient) Publish(ctx FContext, op, topic string, message t
 	return client.publisher.Publish(topic, payload)
 }
 
-func (client FStandardClient) prepareMessage(ctx FContext, method string, args thrift.TStruct, kind thrift.TMessageType) ([]byte, error) {
+func (client FStandardClient) prepareMessage(ctx FContext, method string, args shim.TStruct0_13, kind thrift.TMessageType) ([]byte, error) {
 	buffer := NewTMemoryOutputBuffer(client.limit)
 	oprot := client.protocolFactory.GetProtocol(buffer)
 	if err := oprot.WriteRequestHeader(ctx); err != nil {
@@ -104,7 +107,7 @@ func (client FStandardClient) prepareMessage(ctx FContext, method string, args t
 	return buffer.Bytes(), nil
 }
 
-func (client FStandardClient) processReply(ctx FContext, method string, result thrift.TStruct, resultTransport thrift.TTransport) error {
+func (client FStandardClient) processReply(ctx FContext, method string, result shim.TStruct0_13, resultTransport thrift.TTransport) error {
 	iprot := client.protocolFactory.GetProtocol(resultTransport)
 	if err := iprot.ReadResponseHeader(ctx); err != nil {
 		return err
