@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/Workiva/frugal/compiler"
 	"github.com/Workiva/frugal/compiler/generator"
@@ -23,6 +24,7 @@ var (
 	recurse bool
 	verbose bool
 	version bool
+	include string
 )
 
 func main() {
@@ -73,6 +75,10 @@ func main() {
 			Name:        "audit",
 			Usage:       "frugal file to run audit against",
 			Destination: &audit,
+		}, cli.StringFlag{
+			Name:		"include, i",
+			Usage:		"additional include directory",
+			Destination: &include,
 		},
 	}
 
@@ -106,6 +112,7 @@ func main() {
 			Delim:   delim,
 			Recurse: recurse,
 			Verbose: verbose,
+			IncludeDirs: strings.Split(include, ","),
 		}
 
 		// Handle panics for graceful error messages.
@@ -122,7 +129,7 @@ func main() {
 			if audit == "" {
 				err = compiler.Compile(options)
 			} else {
-				err = auditor.Audit(audit, options.File)
+				err = auditor.Audit(audit, options.File, []string{include})
 			}
 			if err != nil {
 				fmt.Printf("Failed to generate %s:\n\t%s\n", options.File, err.Error())

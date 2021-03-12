@@ -39,6 +39,7 @@ type Options struct {
 	DryRun  bool   // Do not generate code
 	Recurse bool   // Generate includes
 	Verbose bool   // Verbose mode
+	IncludeDirs []string // Additional Include file
 }
 
 // Compile parses the Frugal IDL and generates code for it, returning an error
@@ -59,7 +60,7 @@ func Compile(options Options) error {
 		return err
 	}
 
-	frugal, err := parseFrugal(absFile)
+	frugal, err := parseFrugal(absFile, options.IncludeDirs)
 	if err != nil {
 		return err
 	}
@@ -68,12 +69,12 @@ func Compile(options Options) error {
 }
 
 // parseFrugal parses a frugal file.
-func parseFrugal(file string) (*parser.Frugal, error) {
+func parseFrugal(file string, includeDir []string) (*parser.Frugal, error) {
 	if !exists(file) {
 		return nil, fmt.Errorf("Frugal file not found: %s\n", file)
 	}
 	logv(fmt.Sprintf("Parsing %s", file))
-	return parser.ParseFrugal(file)
+	return parser.ParseFrugal(file, includeDir)
 }
 
 // generateFrugal generates code for a frugal struct.

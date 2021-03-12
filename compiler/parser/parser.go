@@ -42,11 +42,11 @@ const (
 )
 
 // ParseFrugal parses the given Frugal file into its semantic representation.
-func ParseFrugal(filePath string) (*Frugal, error) {
-	return parseFrugal(filePath, []string{})
+func ParseFrugal(filePath string, includeDirs []string) (*Frugal, error) {
+	return parseFrugal(filePath, []string{}, includeDirs)
 }
 
-func parseFrugal(filePath string, visitedIncludes []string) (*Frugal, error) {
+func parseFrugal(filePath string, visitedIncludes []string, includeDirs []string) (*Frugal, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -79,9 +79,32 @@ func parseFrugal(filePath string, visitedIncludes []string) (*Frugal, error) {
 			return nil, fmt.Errorf("Bad include name: %s", include)
 		}
 
-		parsedIncl, err := parseFrugal(filepath.Join(frugal.Dir, include), visitedIncludes)
+		inc := include
+		if !filepath.IsAbs(inc) {
+			inc = filepath.Join(frugal.Dir, include)
+		}
+
+		parsedIncl, err := parseFrugal(inc, visitedIncludes, includeDirs)
 		if err != nil {
-			return nil, fmt.Errorf("Include %s: %s", include, err)
+
+			if includeDirs == nil || len(includeDirs) == 0 {
+				return nil, fmt.Errorf("Include %s: %s", include, err)
+			}
+
+			for _, includeDir := range includeDirs {
+				inc = filepath.Join(includeDir, include)
+				p, err := parseFrugal(inc, visitedIncludes, includeDirs)
+
+				if err == nil {
+					parsedIncl = p
+					break
+				}
+
+			}
+
+			if parsedIncl == nil {
+				return nil, fmt.Errorf("Include %s: %s, %s", include, includeDirs, err)
+			}
 		}
 
 		// Lop off extension (.frugal or .thrift)
