@@ -41,7 +41,7 @@ var xxs = &frugaltest.Xtruct{
 
 var xcept = &frugaltest.Xception{ErrorCode: 1001, Message: "Xception"}
 
-func CallEverything(client *frugaltest.FFrugalTestClient) {
+func CallEverything(client *frugaltest.FFrugalTestClient, isHttp bool) {
 	ctx := frugal.NewFContext("")
 	ctx.SetTimeout(5 * time.Second)
 	var err error
@@ -117,7 +117,12 @@ func CallEverything(client *frugaltest.FFrugalTestClient) {
 	// Using 400 for now, will change back to 42 (101010) once the Thrift fix is implemented
 	// TODO: Change back to 42
 	ctx = frugal.NewFContext("TestBinary")
-	binary, err := client.TestBinary(ctx, []byte(strconv.Itoa(400)))
+	var binary []byte
+	if isHttp {
+		binary, err = client.TestBinary(ctx, []byte(strconv.Itoa(400)))
+	} else {
+		binary, err = client.TestBinary(ctx, []byte(strconv.Itoa(150 * 1024 * 1024)))
+	}
 	if err != nil {
 		log.Fatal("Unexpected error in TestBinary call: ", err)
 	}

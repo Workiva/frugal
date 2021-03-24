@@ -35,7 +35,7 @@ func main() {
 		log.Fatal("Unable to start client: ", err)
 	}
 
-	common.CallEverything(client)
+	common.CallEverything(client, *transport == common.HttpName)
 
 	select {
 	case <-clientMiddlewareCalled:
