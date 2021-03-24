@@ -66,11 +66,14 @@ public class FHttpTransport extends FTransport {
         super();
         this.httpClient = httpClient;
         this.url = url;
+        // TODO: if <= 0, which implies unbounded size. So if unset we have an implicit unbound size.
         this.requestSizeLimit = requestSizeLimit;
         this.responseSizeLimit = responseSizeLimit;
         this.requestHeaders = requestHeaders;
+
         // TODO: trace frame size and recursion depth limits and figure out if these are sane choices.
-        this.config = new TConfiguration(responseSizeLimit, responseSizeLimit, 64);
+        int tconfigMaxSize = responseSizeLimit > 0 ? responseSizeLimit : Integer.MAX_VALUE;
+        this.config = new TConfiguration(tconfigMaxSize, tconfigMaxSize, 64);
     }
 
     /**
