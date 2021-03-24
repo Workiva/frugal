@@ -28,6 +28,7 @@ import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
@@ -58,6 +59,7 @@ public class FHttpTransport extends FTransport {
     private final String url;
     private final int responseSizeLimit;
     private final FHttpTransportHeaders requestHeaders;
+    private final TConfiguration config;
 
     private FHttpTransport(CloseableHttpClient httpClient, String url, int requestSizeLimit, int responseSizeLimit,
             FHttpTransportHeaders requestHeaders) {
@@ -67,6 +69,8 @@ public class FHttpTransport extends FTransport {
         this.requestSizeLimit = requestSizeLimit;
         this.responseSizeLimit = responseSizeLimit;
         this.requestHeaders = requestHeaders;
+        // TODO: trace frame size and recursion depth limits and figure out if these are sane choices.
+        this.config = new TConfiguration(responseSizeLimit, responseSizeLimit, 64);
     }
 
     /**
@@ -208,7 +212,7 @@ public class FHttpTransport extends FTransport {
 
         byte[] response = makeRequest(context, payload);
 
-        return response == null ? null : new TMemoryInputTransport(response);
+        return response == null ? null : new TMemoryInputTransport(this.config, response);
     }
 
     private static class Base64EncodingEntity extends AbstractHttpEntity {
