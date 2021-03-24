@@ -89,8 +89,8 @@ public class TestClient {
                     System.out.println("host: " + host);
                     String url = "http://" + host + ":" + port;
                     CloseableHttpClient httpClient = HttpClients.createDefault();
-                    // Set request and response size limit to 1mb
-                    int maxSize = 1048576;
+                    // Set request and response size limit to 200mb
+                    int maxSize = 200 * 1024 * 1024;
                     FHttpTransport.Builder httpTransport = new FHttpTransport.Builder(httpClient, url).withRequestSizeLimit(maxSize).withResponseSizeLimit(maxSize);
                     fTransport = httpTransport.build();
                     fTransport.open();
@@ -205,7 +205,7 @@ public class TestClient {
             context = new FContext("testBinary");
             try {
                 // verify the byte[] is able to be encoded as UTF-8 to avoid deserialization errors in clients
-                byte[] data = "foo".getBytes("UTF-8");
+                byte[] data = new byte[150 * 1024 * 1024];
                 ByteBuffer bin = testClient.testBinary(context, ByteBuffer.wrap(data));
 
                 bin.mark();
