@@ -205,7 +205,7 @@ public class TestClient {
             context = new FContext("testBinary");
             try {
                 // verify the byte[] is able to be encoded as UTF-8 to avoid deserialization errors in clients
-                byte[] data = new byte[150 * 1024 * 1024]
+                byte[] data = new byte[150 * 1024 * 1024];
                 ByteBuffer bin = testClient.testBinary(context, ByteBuffer.wrap(data));
 
                 bin.mark();
