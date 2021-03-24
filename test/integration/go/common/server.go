@@ -15,6 +15,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"time"
 
@@ -34,14 +35,19 @@ func StartServer(
 	serverMiddlewareCalled chan bool,
 	pubSubResponseSent chan bool) {
 
+	conf := &thrift.TConfiguration{
+		MaxMessageSize: math.MinInt32,
+		MaxFrameSize: math.MinInt32,
+	}
+
 	var protocolFactory thrift.TProtocolFactory
 	switch protocol {
 	case "compact":
-		protocolFactory = thrift.NewTCompactProtocolFactory()
+		protocolFactory = thrift.NewTCompactProtocolFactoryConf(conf)
 	case "json":
 		protocolFactory = thrift.NewTJSONProtocolFactory()
 	case "binary":
-		protocolFactory = thrift.NewTBinaryProtocolFactoryDefault()
+		protocolFactory = thrift.NewTBinaryProtocolFactoryConf(conf)
 	default:
 		panic(fmt.Errorf("Invalid protocol specified %s", protocol))
 	}

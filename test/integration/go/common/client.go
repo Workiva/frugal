@@ -16,6 +16,7 @@ package common
 import (
 	"flag"
 	"fmt"
+	"math"
 	"net/http"
 	"time"
 
@@ -41,16 +42,21 @@ func StartClient(
 	sent chan bool,
 	clientMiddlewareCalled chan bool) (client *frugaltest.FFrugalTestClient, err error) {
 
+	conf := &thrift.TConfiguration{
+		MaxMessageSize: math.MinInt32,
+		MaxFrameSize: math.MinInt32,
+	}
+
 	var protocolFactory thrift.TProtocolFactory
 	switch protocol {
 	case "compact":
-		protocolFactory = thrift.NewTCompactProtocolFactory()
+		protocolFactory = thrift.NewTCompactProtocolFactoryConf(conf)
 	case "simplejson":
 		protocolFactory = thrift.NewTSimpleJSONProtocolFactory()
 	case "json":
 		protocolFactory = thrift.NewTJSONProtocolFactory()
 	case "binary":
-		protocolFactory = thrift.NewTBinaryProtocolFactoryDefault()
+		protocolFactory = thrift.NewTBinaryProtocolFactoryConf(conf)
 	default:
 		return nil, fmt.Errorf("Invalid protocol specified %s", protocol)
 	}
