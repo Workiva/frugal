@@ -126,7 +126,7 @@ func CallEverything(client *frugaltest.FFrugalTestClient, isHttp bool) {
 	} else {
 		data = []byte(strconv.Itoa(400))
 	}
-	binary, err = client.TestBinary(ctx, data)
+	binary, err := client.TestBinary(ctx, data)
 	if err != nil {
 		log.Fatal("Unexpected error in TestBinary call: ", err)
 	}
