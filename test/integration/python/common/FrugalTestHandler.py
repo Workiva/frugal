@@ -37,7 +37,7 @@ class FrugalTestHandler(Iface):
         return thing
 
     def testBinary(self, ctx, thing):
-        print("test_binary({})".format(thing))
+        print("test_binary({}...)".format(thing[:100]))
         return thing
 
     def testStruct(self, ctx, thing):
