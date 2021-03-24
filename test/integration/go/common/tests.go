@@ -15,7 +15,9 @@ package common
 
 import (
 	"bytes"
+	"fmt"
 	"log"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"strings"
@@ -117,17 +119,19 @@ func CallEverything(client *frugaltest.FFrugalTestClient, isHttp bool) {
 	// Using 400 for now, will change back to 42 (101010) once the Thrift fix is implemented
 	// TODO: Change back to 42
 	ctx = frugal.NewFContext("TestBinary")
-	var binary []byte
+	var data []byte
 	if isHttp {
-		binary, err = client.TestBinary(ctx, []byte(strconv.Itoa(400)))
+		data = make([]byte, 150 * 1024 * 1024)
+		rand.Read(data)
 	} else {
-		binary, err = client.TestBinary(ctx, []byte(strconv.Itoa(150 * 1024 * 1024)))
+		data = []byte(strconv.Itoa(400))
 	}
+	binary, err = client.TestBinary(ctx, data)
 	if err != nil {
 		log.Fatal("Unexpected error in TestBinary call: ", err)
 	}
-	if bytes.Compare(binary, []byte(strconv.Itoa(400))) != 0 {
-		log.Fatal("Unexpected TestBinary() result expected 101010, got %b ", binary)
+	if bytes.Compare(binary, data) != 0 {
+		log.Fatal(fmt.Sprintf("Unexpected TestBinary() result expected %b..., got %b... ", data[:100], binary[:100]))
 	}
 
 	xs := frugaltest.NewXtruct()
