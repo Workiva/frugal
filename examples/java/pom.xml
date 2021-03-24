@@ -15,11 +15,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.thrift</groupId>
-            <artifactId>libthrift</artifactId>
-            <version>0.14.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.workiva</groupId>
             <artifactId>frugal</artifactId>
             <version>3.14.1</version>
