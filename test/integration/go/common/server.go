@@ -36,8 +36,8 @@ func StartServer(
 	pubSubResponseSent chan bool) {
 
 	conf := &thrift.TConfiguration{
-		MaxMessageSize: math.MinInt32,
-		MaxFrameSize: math.MinInt32,
+		MaxMessageSize: math.MaxInt32,
+		MaxFrameSize: math.MaxInt32,
 	}
 
 	var protocolFactory thrift.TProtocolFactory
