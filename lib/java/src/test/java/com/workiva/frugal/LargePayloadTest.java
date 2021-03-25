@@ -35,6 +35,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TCompactProtocol;
+import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.junit.Test;
 
@@ -377,8 +378,8 @@ public class LargePayloadTest {
 
     @Test
     public void endToEnd() throws TException {
-//    TProtocolFactory tpf = new TJSONProtocol.Factory();
-        TProtocolFactory tpf = new TCompactProtocol.Factory();
+    TProtocolFactory tpf = new TJSONProtocol.Factory();
+//        TProtocolFactory tpf = new TCompactProtocol.Factory();
         FProtocolFactory fProtocolFactory = new FProtocolFactory(tpf);
         CountDownLatch called = new CountDownLatch(1);
 
@@ -405,7 +406,7 @@ public class LargePayloadTest {
         FContext context = new FContext("context");
         byte[] data = new byte[101 * 1024 * 1024];
 
-        ByteBuffer bin = testClient.testBinary(context, ByteBuffer.wrap(data));
+        String s = testClient.testString(context, "yeehaw");
     }
 }
 
