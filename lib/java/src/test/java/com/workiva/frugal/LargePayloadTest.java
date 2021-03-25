@@ -403,7 +403,7 @@ public class LargePayloadTest {
         FFrugalTest.Client testClient = new FFrugalTest
                 .Client(new FServiceProvider(fTransport, fProtocolFactory, new ClientMiddleware()));
         FContext context = new FContext("context");
-        byte[] data = new byte[150 * 1024 * 1024];
+        byte[] data = new byte[101 * 1024 * 1024];
 
         ByteBuffer bin = testClient.testBinary(context, ByteBuffer.wrap(data));
     }
