@@ -126,7 +126,7 @@ func StartClient(
 		trans = frugal.NewFNatsTransport(natsConn, fmt.Sprintf("frugal.foo.bar.rpc.%d", port), "")
 	case HttpName:
 		// Set request and response capacity to 200mb
-		maxSize := uint(200 * 1024 * 1024)
+		maxSize := uint(203 * 1024 * 1024)
 		trans = frugal.NewFHTTPTransportBuilder(&http.Client{}, fmt.Sprintf("http://localhost:%d", port)).WithRequestSizeLimit(maxSize).WithResponseSizeLimit(maxSize).Build()
 	default:
 		return nil, fmt.Errorf("Invalid transport specified %s", transport)

@@ -326,7 +326,7 @@ func CallEverything(client *frugaltest.FFrugalTestClient, isHttp bool) {
 	// Request at the 1mb limit
 	limit := 1024 * 1024
 	if isHttp {
-		limit *= 201 // try 201mbs for http
+		limit *= 220 // try 201mbs for http
 	}
 	request := make([]byte, limit)
 	ctx = frugal.NewFContext("TestRequestTooLarge")
