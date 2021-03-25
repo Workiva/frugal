@@ -377,7 +377,6 @@ public class LargePayloadTest {
 
     @Test
     public void endToEnd() throws TException {
-//    TProtocolFactory tpf = new TJSONProtocol.Factory();
         TProtocolFactory tpf = new TCompactProtocol.Factory();
         FProtocolFactory fProtocolFactory = new FProtocolFactory(tpf);
         CountDownLatch called = new CountDownLatch(1);
@@ -390,7 +389,6 @@ public class LargePayloadTest {
         serverThread.start();
 
         String url = "http://localhost:8080";
-//    CloseableHttpClient httpClient = HttpClients.createDefault();
         CloseableHttpClient httpClient = HttpClients.custom().setConnectionTimeToLive(60, TimeUnit.SECONDS).build();
 
         // Set request and response size limit to 1mb
@@ -402,10 +400,11 @@ public class LargePayloadTest {
 
         FFrugalTest.Client testClient = new FFrugalTest
                 .Client(new FServiceProvider(fTransport, fProtocolFactory, new ClientMiddleware()));
-        FContext context = new FContext("context");
+        FContext context = new FContext("largePayloadTest");
         byte[] data = new byte[101 * 1024 * 1024];
 
         ByteBuffer bin = testClient.testBinary(context, ByteBuffer.wrap(data));
+
     }
 }
 

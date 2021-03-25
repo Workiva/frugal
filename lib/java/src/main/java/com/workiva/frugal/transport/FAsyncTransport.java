@@ -16,6 +16,7 @@ package com.workiva.frugal.transport;
 import com.workiva.frugal.FContext;
 import com.workiva.frugal.exception.TTransportExceptionType;
 import com.workiva.frugal.protocol.HeaderUtils;
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.transport.TMemoryInputTransport;
@@ -40,6 +41,11 @@ public abstract class FAsyncTransport extends FTransport {
 
     protected Map<Long, BlockingQueue<byte[]>> queueMap = new HashMap<>();
 
+    private static final TConfiguration tconfig = new TConfiguration(
+            Integer.MAX_VALUE,
+            TConfiguration.DEFAULT_MAX_FRAME_SIZE,
+            TConfiguration.DEFAULT_RECURSION_DEPTH
+    );
     /**
      * Interrupt all pending requests and signal close.
      */
@@ -113,7 +119,7 @@ public abstract class FAsyncTransport extends FTransport {
                         "request: transport closed, request canceled");
             }
 
-            return new TMemoryInputTransport(response);
+            return new TMemoryInputTransport(tconfig, response);
         } finally {
             synchronized (this) {
                 queueMap.remove(getOpId(context));

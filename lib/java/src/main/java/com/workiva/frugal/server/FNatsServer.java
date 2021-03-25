@@ -404,6 +404,7 @@ public class FNatsServer implements FServer {
 
             try {
                 // Read and process frame (exclude first 4 bytes which represent frame size).
+                // NOTE: from the NATS 1mb limit, the default TConfiguration limit of 100mb should be fine.
                 TTransport input = new TMemoryInputTransport(frameBytes, 4, frameBytes.length);
                 TMemoryOutputBuffer output = new TMemoryOutputBuffer(NATS_MAX_MESSAGE_SIZE);
 

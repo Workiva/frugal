@@ -59,21 +59,22 @@ public class FHttpTransport extends FTransport {
     private final String url;
     private final int responseSizeLimit;
     private final FHttpTransportHeaders requestHeaders;
-    private final TConfiguration config;
+    private final TConfiguration tconfig;
 
     private FHttpTransport(CloseableHttpClient httpClient, String url, int requestSizeLimit, int responseSizeLimit,
             FHttpTransportHeaders requestHeaders) {
         super();
         this.httpClient = httpClient;
         this.url = url;
-        // TODO: if <= 0, which implies unbounded size. So if unset we have an implicit unbound size.
         this.requestSizeLimit = requestSizeLimit;
         this.responseSizeLimit = responseSizeLimit;
         this.requestHeaders = requestHeaders;
 
-        // TODO: trace frame size and recursion depth limits and figure out if these are sane choices.
-        int tconfigMaxSize = responseSizeLimit > 0 ? responseSizeLimit : Integer.MAX_VALUE;
-        this.config = new TConfiguration(tconfigMaxSize, tconfigMaxSize, 64);
+        this.tconfig = new TConfiguration(
+                Integer.MAX_VALUE,
+                TConfiguration.DEFAULT_MAX_FRAME_SIZE,
+                TConfiguration.DEFAULT_RECURSION_DEPTH
+        );
     }
 
     /**
@@ -215,7 +216,7 @@ public class FHttpTransport extends FTransport {
 
         byte[] response = makeRequest(context, payload);
 
-        return response == null ? null : new TMemoryInputTransport(this.config, response);
+        return response == null ? null : new TMemoryInputTransport(tconfig, response);
     }
 
     private static class Base64EncodingEntity extends AbstractHttpEntity {
