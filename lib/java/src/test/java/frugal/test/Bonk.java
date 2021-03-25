@@ -17,6 +17,7 @@ import org.apache.thrift.EncodingUtils;
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
 import org.apache.thrift.server.AbstractNonblockingServer.*;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -30,393 +31,403 @@ import java.util.BitSet;
 import java.util.Objects;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Bonk implements org.apache.thrift.TBase<Bonk, Bonk._Fields>, java.io.Serializable, Cloneable, Comparable<Bonk> {
-	private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("Bonk");
+  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("Bonk");
 
-	private static final org.apache.thrift.protocol.TField MESSAGE_FIELD_DESC = new org.apache.thrift.protocol.TField("message", org.apache.thrift.protocol.TType.STRING, (short)1);
-	private static final org.apache.thrift.protocol.TField TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("type", org.apache.thrift.protocol.TType.I32, (short)2);
+  private static final org.apache.thrift.protocol.TField MESSAGE_FIELD_DESC = new org.apache.thrift.protocol.TField("message", org.apache.thrift.protocol.TType.STRING, (short) 1);
+  private static final org.apache.thrift.protocol.TField TYPE_FIELD_DESC = new org.apache.thrift.protocol.TField("type", org.apache.thrift.protocol.TType.I32, (short) 2);
 
-	public String message;
-	public int type;
-	/** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-	public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-		MESSAGE((short)1, "message"),
-		TYPE((short)2, "type")
-		;
+  public String message;
+  public int type;
 
-		private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+  /**
+   * The set of fields this struct contains, along with convenience methods for finding and manipulating them.
+   */
+  public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+    MESSAGE((short) 1, "message"),
+    TYPE((short) 2, "type");
 
-		static {
-			for (_Fields field : EnumSet.allOf(_Fields.class)) {
-				byName.put(field.getFieldName(), field);
-			}
-		}
+    private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
-		/**
-		 * Find the _Fields constant that matches fieldId, or null if its not found.
-		 */
-		public static _Fields findByThriftId(int fieldId) {
-			switch(fieldId) {
-				case 1: // MESSAGE
-					return MESSAGE;
-				case 2: // TYPE
-					return TYPE;
-				default:
-					return null;
-			}
-		}
+    static {
+      for (_Fields field : EnumSet.allOf(_Fields.class)) {
+        byName.put(field.getFieldName(), field);
+      }
+    }
 
-		/**
-		 * Find the _Fields constant that matches fieldId, throwing an exception
-		 * if it is not found.
-		 */
-		public static _Fields findByThriftIdOrThrow(int fieldId) {
-			_Fields fields = findByThriftId(fieldId);
-			if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-			return fields;
-		}
+    /**
+     * Find the _Fields constant that matches fieldId, or null if its not found.
+     */
+    public static _Fields findByThriftId(int fieldId) {
+      switch (fieldId) {
+        case 1: // MESSAGE
+          return MESSAGE;
+        case 2: // TYPE
+          return TYPE;
+        default:
+          return null;
+      }
+    }
 
-		/**
-		 * Find the _Fields constant that matches name, or null if its not found.
-		 */
-		public static _Fields findByName(String name) {
-			return byName.get(name);
-		}
+    /**
+     * Find the _Fields constant that matches fieldId, throwing an exception
+     * if it is not found.
+     */
+    public static _Fields findByThriftIdOrThrow(int fieldId) {
+      _Fields fields = findByThriftId(fieldId);
+      if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+      return fields;
+    }
 
-		private final short _thriftId;
-		private final String _fieldName;
+    /**
+     * Find the _Fields constant that matches name, or null if its not found.
+     */
+    public static _Fields findByName(String name) {
+      return byName.get(name);
+    }
 
-		_Fields(short thriftId, String fieldName) {
-			_thriftId = thriftId;
-			_fieldName = fieldName;
-		}
+    private final short _thriftId;
+    private final String _fieldName;
 
-		public short getThriftFieldId() {
-			return _thriftId;
-		}
+    _Fields(short thriftId, String fieldName) {
+      _thriftId = thriftId;
+      _fieldName = fieldName;
+    }
 
-		public String getFieldName() {
-			return _fieldName;
-		}
-	}
+    public short getThriftFieldId() {
+      return _thriftId;
+    }
 
-	// isset id assignments
-	private static final int __TYPE_ISSET_ID = 0;
-	private byte __isset_bitfield = 0;
-	public Bonk() {
-	}
+    public String getFieldName() {
+      return _fieldName;
+    }
+  }
 
-	public Bonk(
-		String message,
-		int type) {
-		this();
-		this.message = message;
-		this.type = type;
-		setTypeIsSet(true);
-	}
+  // isset id assignments
+  private static final int __TYPE_ISSET_ID = 0;
+  private byte __isset_bitfield = 0;
 
-	/**
-	 * Performs a deep copy on <i>other</i>.
-	 */
-	public Bonk(Bonk other) {
-		__isset_bitfield = other.__isset_bitfield;
-		if (other.isSetMessage()) {
-			this.message = other.message;
-		}
-		this.type = other.type;
-	}
+  public Bonk() {
+  }
 
-	public Bonk deepCopy() {
-		return new Bonk(this);
-	}
+  public Bonk(
+      String message,
+      int type) {
+    this();
+    this.message = message;
+    this.type = type;
+    setTypeIsSet(true);
+  }
 
-	@Override
-	public void clear() {
-		this.message = null;
+  /**
+   * Performs a deep copy on <i>other</i>.
+   */
+  public Bonk(Bonk other) {
+    __isset_bitfield = other.__isset_bitfield;
+    if (other.isSetMessage()) {
+      this.message = other.message;
+    }
+    this.type = other.type;
+  }
 
-		setTypeIsSet(false);
-		this.type = 0;
+  public Bonk deepCopy() {
+    return new Bonk(this);
+  }
 
-	}
+  @Override
+  public void clear() {
+    this.message = null;
 
-	public String getMessage() {
-		return this.message;
-	}
+    setTypeIsSet(false);
+    this.type = 0;
 
-	public Bonk setMessage(String message) {
-		this.message = message;
-		return this;
-	}
+  }
 
-	public void unsetMessage() {
-		this.message = null;
-	}
+  public String getMessage() {
+    return this.message;
+  }
 
-	/** Returns true if field message is set (has been assigned a value) and false otherwise */
-	public boolean isSetMessage() {
-		return this.message != null;
-	}
+  public Bonk setMessage(String message) {
+    this.message = message;
+    return this;
+  }
 
-	public void setMessageIsSet(boolean value) {
-		if (!value) {
-			this.message = null;
-		}
-	}
+  public void unsetMessage() {
+    this.message = null;
+  }
 
-	public int getType() {
-		return this.type;
-	}
+  /**
+   * Returns true if field message is set (has been assigned a value) and false otherwise
+   */
+  public boolean isSetMessage() {
+    return this.message != null;
+  }
 
-	public Bonk setType(int type) {
-		this.type = type;
-		setTypeIsSet(true);
-		return this;
-	}
+  public void setMessageIsSet(boolean value) {
+    if (!value) {
+      this.message = null;
+    }
+  }
 
-	public void unsetType() {
-		__isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __TYPE_ISSET_ID);
-	}
+  public int getType() {
+    return this.type;
+  }
 
-	/** Returns true if field type is set (has been assigned a value) and false otherwise */
-	public boolean isSetType() {
-		return EncodingUtils.testBit(__isset_bitfield, __TYPE_ISSET_ID);
-	}
+  public Bonk setType(int type) {
+    this.type = type;
+    setTypeIsSet(true);
+    return this;
+  }
 
-	public void setTypeIsSet(boolean value) {
-		__isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __TYPE_ISSET_ID, value);
-	}
+  public void unsetType() {
+    __isset_bitfield = EncodingUtils.clearBit(__isset_bitfield, __TYPE_ISSET_ID);
+  }
 
-	public void setFieldValue(_Fields field, Object value) {
-		switch (field) {
-		case MESSAGE:
-			if (value == null) {
-				unsetMessage();
-			} else {
-				setMessage((String)value);
-			}
-			break;
+  /**
+   * Returns true if field type is set (has been assigned a value) and false otherwise
+   */
+  public boolean isSetType() {
+    return EncodingUtils.testBit(__isset_bitfield, __TYPE_ISSET_ID);
+  }
 
-		case TYPE:
-			if (value == null) {
-				unsetType();
-			} else {
-				setType((Integer)value);
-			}
-			break;
+  public void setTypeIsSet(boolean value) {
+    __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __TYPE_ISSET_ID, value);
+  }
 
-		}
-	}
+  public void setFieldValue(_Fields field, Object value) {
+    switch (field) {
+      case MESSAGE:
+        if (value == null) {
+          unsetMessage();
+        } else {
+          setMessage((String) value);
+        }
+        break;
 
-	public Object getFieldValue(_Fields field) {
-		switch (field) {
-		case MESSAGE:
-			return getMessage();
+      case TYPE:
+        if (value == null) {
+          unsetType();
+        } else {
+          setType((Integer) value);
+        }
+        break;
 
-		case TYPE:
-			return getType();
+    }
+  }
 
-		}
-		throw new IllegalStateException();
-	}
+  public Object getFieldValue(_Fields field) {
+    switch (field) {
+      case MESSAGE:
+        return getMessage();
 
-	/** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-	public boolean isSet(_Fields field) {
-		if (field == null) {
-			throw new IllegalArgumentException();
-		}
+      case TYPE:
+        return getType();
 
-		switch (field) {
-		case MESSAGE:
-			return isSetMessage();
-		case TYPE:
-			return isSetType();
-		}
-		throw new IllegalStateException();
-	}
+    }
+    throw new IllegalStateException();
+  }
 
-	@Override
-	public boolean equals(Object that) {
-		if (that == null)
-			return false;
-		if (that instanceof Bonk)
-			return this.equals((Bonk)that);
-		return false;
-	}
+  /**
+   * Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise
+   */
+  public boolean isSet(_Fields field) {
+    if (field == null) {
+      throw new IllegalArgumentException();
+    }
 
-	public boolean equals(Bonk that) {
-		if (that == null)
-			return false;
-		if (!Objects.equals(this.message, that.message))
-			return false;
-		if (this.type != that.type)
-			return false;
-		return true;
-	}
+    switch (field) {
+      case MESSAGE:
+        return isSetMessage();
+      case TYPE:
+        return isSetType();
+    }
+    throw new IllegalStateException();
+  }
 
-	@Override
-	public int hashCode() {
-		List<Object> list = new ArrayList<Object>();
+  @Override
+  public boolean equals(Object that) {
+    if (that == null)
+      return false;
+    if (that instanceof Bonk)
+      return this.equals((Bonk) that);
+    return false;
+  }
 
-		boolean present_message = true && (isSetMessage());
-		list.add(present_message);
-		if (present_message)
-			list.add(message);
+  public boolean equals(Bonk that) {
+    if (that == null)
+      return false;
+    if (!Objects.equals(this.message, that.message))
+      return false;
+    if (this.type != that.type)
+      return false;
+    return true;
+  }
 
-		boolean present_type = true;
-		list.add(present_type);
-		if (present_type)
-			list.add(type);
+  @Override
+  public int hashCode() {
+    List<Object> list = new ArrayList<Object>();
 
-		return list.hashCode();
-	}
+    boolean present_message = true && (isSetMessage());
+    list.add(present_message);
+    if (present_message)
+      list.add(message);
 
-	@Override
-	public int compareTo(Bonk other) {
-		if (!getClass().equals(other.getClass())) {
-			return getClass().getName().compareTo(other.getClass().getName());
-		}
+    boolean present_type = true;
+    list.add(present_type);
+    if (present_type)
+      list.add(type);
 
-		int lastComparison = 0;
+    return list.hashCode();
+  }
 
-		lastComparison = Boolean.compare(isSetMessage(), other.isSetMessage());
-		if (lastComparison != 0) {
-			return lastComparison;
-		}
-		if (isSetMessage()) {
-			lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.message, other.message);
-			if (lastComparison != 0) {
-				return lastComparison;
-			}
-		}
-		lastComparison = Boolean.compare(isSetType(), other.isSetType());
-		if (lastComparison != 0) {
-			return lastComparison;
-		}
-		if (isSetType()) {
-			lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.type, other.type);
-			if (lastComparison != 0) {
-				return lastComparison;
-			}
-		}
-		return 0;
-	}
+  @Override
+  public int compareTo(Bonk other) {
+    if (!getClass().equals(other.getClass())) {
+      return getClass().getName().compareTo(other.getClass().getName());
+    }
 
-	public _Fields fieldForId(int fieldId) {
-		return _Fields.findByThriftId(fieldId);
-	}
+    int lastComparison = 0;
 
-	public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
-		if (iprot.getScheme() != StandardScheme.class) {
-			throw new UnsupportedOperationException();
-		}
-		new BonkStandardScheme().read(iprot, this);
-	}
+    lastComparison = Boolean.compare(isSetMessage(), other.isSetMessage());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetMessage()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.message, other.message);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    lastComparison = Boolean.compare(isSetType(), other.isSetType());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetType()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.type, other.type);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
+    return 0;
+  }
 
-	public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
-		if (oprot.getScheme() != StandardScheme.class) {
-			throw new UnsupportedOperationException();
-		}
-		new BonkStandardScheme().write(oprot, this);
-	}
+  public _Fields fieldForId(int fieldId) {
+    return _Fields.findByThriftId(fieldId);
+  }
 
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder("Bonk(");
-		boolean first = true;
+  public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    if (iprot.getScheme() != StandardScheme.class) {
+      throw new UnsupportedOperationException();
+    }
+    new BonkStandardScheme().read(iprot, this);
+  }
 
-		sb.append("message:");
-		sb.append(this.message);
-		first = false;
-		if (!first) sb.append(", ");
-		sb.append("type:");
-		sb.append(this.type);
-		first = false;
-		sb.append(")");
-		return sb.toString();
-	}
+  public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    if (oprot.getScheme() != StandardScheme.class) {
+      throw new UnsupportedOperationException();
+    }
+    new BonkStandardScheme().write(oprot, this);
+  }
 
-	public void validate() throws org.apache.thrift.TException {
-		// check for required fields
-		// check for sub-struct validity
-	}
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("Bonk(");
+    boolean first = true;
 
-	private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-		try {
-			write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-		} catch (org.apache.thrift.TException te) {
-			throw new java.io.IOException(te);
-		}
-	}
+    sb.append("message:");
+    sb.append(this.message);
+    first = false;
+    if (!first) sb.append(", ");
+    sb.append("type:");
+    sb.append(this.type);
+    first = false;
+    sb.append(")");
+    return sb.toString();
+  }
 
-	private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
-		try {
-			// it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
-			__isset_bitfield = 0;
-			read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-		} catch (org.apache.thrift.TException te) {
-			throw new java.io.IOException(te);
-		}
-	}
+  public void validate() throws org.apache.thrift.TException {
+    // check for required fields
+    // check for sub-struct validity
+  }
 
-	private static class BonkStandardScheme extends StandardScheme<Bonk> {
+  private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+    try {
+      write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+    } catch (org.apache.thrift.TException te) {
+      throw new java.io.IOException(te);
+    }
+  }
 
-		public void read(org.apache.thrift.protocol.TProtocol iprot, Bonk struct) throws org.apache.thrift.TException {
-			org.apache.thrift.protocol.TField schemeField;
-			iprot.readStructBegin();
-			while (true) {
-				schemeField = iprot.readFieldBegin();
-				if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
-					break;
-				}
-				switch (schemeField.id) {
-					case 1: // MESSAGE
-						if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-							struct.message = iprot.readString();
-							struct.setMessageIsSet(true);
-						} else {
-							org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-						}
-						break;
-					case 2: // TYPE
-						if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
-							struct.type = iprot.readI32();
-							struct.setTypeIsSet(true);
-						} else {
-							org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-						}
-						break;
-					default:
-						org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-				}
-				iprot.readFieldEnd();
-			}
-			iprot.readStructEnd();
+  private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+    try {
+      // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+      __isset_bitfield = 0;
+      read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+    } catch (org.apache.thrift.TException te) {
+      throw new java.io.IOException(te);
+    }
+  }
 
-			// check for required fields of primitive type, which can't be checked in the validate method
-			struct.validate();
-		}
+  private static class BonkStandardScheme extends StandardScheme<Bonk> {
 
-		public void write(org.apache.thrift.protocol.TProtocol oprot, Bonk struct) throws org.apache.thrift.TException {
-			struct.validate();
+    public void read(org.apache.thrift.protocol.TProtocol iprot, Bonk struct) throws org.apache.thrift.TException {
+      org.apache.thrift.protocol.TField schemeField;
+      iprot.readStructBegin();
+      while (true) {
+        schemeField = iprot.readFieldBegin();
+        if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
+          break;
+        }
+        switch (schemeField.id) {
+          case 1: // MESSAGE
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
+              struct.message = iprot.readString();
+              struct.setMessageIsSet(true);
+            } else {
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
+          case 2: // TYPE
+            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
+              struct.type = iprot.readI32();
+              struct.setTypeIsSet(true);
+            } else {
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
+          default:
+            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+        }
+        iprot.readFieldEnd();
+      }
+      iprot.readStructEnd();
 
-			oprot.writeStructBegin(STRUCT_DESC);
-			if (struct.isSetMessage()) {
-				oprot.writeFieldBegin(MESSAGE_FIELD_DESC);
-				String elem2 = struct.message;
-				oprot.writeString(elem2);
-				oprot.writeFieldEnd();
-			}
-			oprot.writeFieldBegin(TYPE_FIELD_DESC);
-			int elem3 = struct.type;
-			oprot.writeI32(elem3);
-			oprot.writeFieldEnd();
-			oprot.writeFieldStop();
-			oprot.writeStructEnd();
-		}
+      // check for required fields of primitive type, which can't be checked in the validate method
+      struct.validate();
+    }
 
-	}
+    public void write(org.apache.thrift.protocol.TProtocol oprot, Bonk struct) throws org.apache.thrift.TException {
+      struct.validate();
+
+      oprot.writeStructBegin(STRUCT_DESC);
+      if (struct.isSetMessage()) {
+        oprot.writeFieldBegin(MESSAGE_FIELD_DESC);
+        String elem2 = struct.message;
+        oprot.writeString(elem2);
+        oprot.writeFieldEnd();
+      }
+      oprot.writeFieldBegin(TYPE_FIELD_DESC);
+      int elem3 = struct.type;
+      oprot.writeI32(elem3);
+      oprot.writeFieldEnd();
+      oprot.writeFieldStop();
+      oprot.writeStructEnd();
+    }
+
+  }
 
 }

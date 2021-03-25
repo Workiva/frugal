@@ -7,33 +7,6 @@
 
 package frugal.test;
 
-import org.apache.thrift.scheme.IScheme;
-import org.apache.thrift.scheme.SchemeFactory;
-import org.apache.thrift.scheme.StandardScheme;
-
-import org.apache.thrift.scheme.TupleScheme;
-import org.apache.thrift.protocol.TTupleProtocol;
-import org.apache.thrift.protocol.TProtocolException;
-import org.apache.thrift.EncodingUtils;
-import org.apache.thrift.TException;
-import org.apache.thrift.async.AsyncMethodCallback;
-import org.apache.thrift.server.AbstractNonblockingServer.*;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.EnumMap;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.EnumSet;
-import java.util.Collections;
-import java.util.BitSet;
-import java.util.Objects;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.workiva.frugal.FContext;
 import com.workiva.frugal.exception.TApplicationExceptionType;
 import com.workiva.frugal.exception.TTransportExceptionType;
@@ -42,567 +15,584 @@ import com.workiva.frugal.middleware.ServiceMiddleware;
 import com.workiva.frugal.processor.FBaseProcessor;
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.processor.FProcessorFunction;
-import com.workiva.frugal.protocol.*;
+import com.workiva.frugal.protocol.FProtocol;
 import com.workiva.frugal.provider.FServiceClient;
 import com.workiva.frugal.provider.FServiceProvider;
-import com.workiva.frugal.transport.FTransport;
-import com.workiva.frugal.transport.TMemoryOutputBuffer;
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TMessageType;
-import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.scheme.StandardScheme;
 import org.apache.thrift.transport.TTransportException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.*;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class FSuperService {
 
-	private static final Logger logger = LoggerFactory.getLogger(FSuperService.class);
-
-	public interface Iface extends InternalIface {}
-
-	/** For internal use only. Contains only the methods defined directly by the service. */
-	public interface InternalIface {
-
-		public void testSuperClass(FContext ctx) throws TException;
-
-	}
-
-	public static class Client implements Iface {
-
-		private InternalIface proxy;
-
-		public Client(FServiceProvider provider, ServiceMiddleware... middleware) {
-			InternalIface client = new InternalClient(provider);
-			List<ServiceMiddleware> combined = new ArrayList<ServiceMiddleware>(Arrays.asList(middleware));
-			combined.addAll(provider.getMiddleware());
-			middleware = combined.toArray(new ServiceMiddleware[0]);
-			proxy = InvocationHandler.composeMiddleware(client, InternalIface.class, middleware);
-		}
-
-		public void testSuperClass(FContext ctx) throws TException {
-			proxy.testSuperClass(ctx);
-		}
-
-	}
-
-	private static class InternalClient extends FServiceClient implements InternalIface {
-		public InternalClient(FServiceProvider provider) {
-			super(provider);
-		}
-		public void testSuperClass(FContext ctx) throws TException {
-			testSuperClass_args args = new testSuperClass_args();
-			testSuperClass_result res = new testSuperClass_result();
-			requestBase(ctx, "testSuperClass", args, res);
-		}
-	}
-
-	public static class Processor extends FBaseProcessor implements FProcessor {
-
-		private Iface handler;
-
-		public Processor(Iface iface, ServiceMiddleware... middleware) {
-			handler = InvocationHandler.composeMiddleware(iface, Iface.class, middleware);
-		}
-
-		protected java.util.Map<String, FProcessorFunction> getProcessMap() {
-			java.util.Map<String, FProcessorFunction> processMap = new java.util.HashMap<>();
-			processMap.put("testSuperClass", new TestSuperClass());
-			return processMap;
-		}
-
-		protected java.util.Map<String, java.util.Map<String, String>> getAnnotationsMap() {
-			java.util.Map<String, java.util.Map<String, String>> annotationsMap = new java.util.HashMap<>();
-			return annotationsMap;
-		}
-
-		@Override
-		public void addMiddleware(ServiceMiddleware middleware) {
-			handler = InvocationHandler.composeMiddleware(handler, Iface.class, new ServiceMiddleware[]{middleware});
-		}
-
-		private class TestSuperClass implements FProcessorFunction {
-
-			public void process(FContext ctx, FProtocol iprot, FProtocol oprot) throws TException {
-				testSuperClass_args args = new testSuperClass_args();
-				try {
-					args.read(iprot);
-				} catch (TException e) {
-					iprot.readMessageEnd();
-					synchronized (WRITE_LOCK) {
-						e = writeApplicationException(ctx, oprot, TApplicationExceptionType.PROTOCOL_ERROR, "testSuperClass", e.getMessage());
-					}
-					throw e;
-				}
-
-				iprot.readMessageEnd();
-				testSuperClass_result result = new testSuperClass_result();
-				try {
-					handler.testSuperClass(ctx);
-				} catch (TApplicationException e) {
-					oprot.writeResponseHeader(ctx);
-					oprot.writeMessageBegin(new TMessage("testSuperClass", TMessageType.EXCEPTION, 0));
-					e.write(oprot);
-					oprot.writeMessageEnd();
-					oprot.getTransport().flush();
-					return;
-				} catch (TException e) {
-					synchronized (WRITE_LOCK) {
-						e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "testSuperClass", "Internal error processing testSuperClass: " + e.getMessage()).initCause(e);
-					}
-					throw e;
-				}
-				synchronized (WRITE_LOCK) {
-					try {
-						oprot.writeResponseHeader(ctx);
-						oprot.writeMessageBegin(new TMessage("testSuperClass", TMessageType.REPLY, 0));
-						result.write(oprot);
-						oprot.writeMessageEnd();
-						oprot.getTransport().flush();
-					} catch (TTransportException e) {
-						if (e.getType() == TTransportExceptionType.REQUEST_TOO_LARGE) {
-							throw (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.RESPONSE_TOO_LARGE, "testSuperClass", "response too large: " + e.getMessage()).initCause(e);
-						}
-						throw e;
-					}
-				}
-			}
-		}
-
-	}
-
-	public static class testSuperClass_args implements org.apache.thrift.TBase<testSuperClass_args, testSuperClass_args._Fields>, java.io.Serializable, Cloneable, Comparable<testSuperClass_args> {
-		private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("testSuperClass_args");
-
-
-		/** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-		public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-			;
-
-			private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
-
-			static {
-				for (_Fields field : EnumSet.allOf(_Fields.class)) {
-					byName.put(field.getFieldName(), field);
-				}
-			}
-
-			/**
-			 * Find the _Fields constant that matches fieldId, or null if its not found.
-			 */
-			public static _Fields findByThriftId(int fieldId) {
-				switch(fieldId) {
-					default:
-						return null;
-				}
-			}
-
-			/**
-			 * Find the _Fields constant that matches fieldId, throwing an exception
-			 * if it is not found.
-			 */
-			public static _Fields findByThriftIdOrThrow(int fieldId) {
-				_Fields fields = findByThriftId(fieldId);
-				if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-				return fields;
-			}
-
-			/**
-			 * Find the _Fields constant that matches name, or null if its not found.
-			 */
-			public static _Fields findByName(String name) {
-				return byName.get(name);
-			}
-
-			private final short _thriftId;
-			private final String _fieldName;
-
-			_Fields(short thriftId, String fieldName) {
-				_thriftId = thriftId;
-				_fieldName = fieldName;
-			}
-
-			public short getThriftFieldId() {
-				return _thriftId;
-			}
-
-			public String getFieldName() {
-				return _fieldName;
-			}
-		}
-
-		// isset id assignments
-		public testSuperClass_args() {
-		}
-
-		/**
-		 * Performs a deep copy on <i>other</i>.
-		 */
-		public testSuperClass_args(testSuperClass_args other) {
-		}
-
-		public testSuperClass_args deepCopy() {
-			return new testSuperClass_args(this);
-		}
-
-		@Override
-		public void clear() {
-		}
-
-		public void setFieldValue(_Fields field, Object value) {
-			switch (field) {
-			}
-		}
-
-		public Object getFieldValue(_Fields field) {
-			switch (field) {
-			}
-			throw new IllegalStateException();
-		}
-
-		/** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-		public boolean isSet(_Fields field) {
-			if (field == null) {
-				throw new IllegalArgumentException();
-			}
-
-			switch (field) {
-			}
-			throw new IllegalStateException();
-		}
-
-		@Override
-		public boolean equals(Object that) {
-			if (that == null)
-				return false;
-			if (that instanceof testSuperClass_args)
-				return this.equals((testSuperClass_args)that);
-			return false;
-		}
-
-		public boolean equals(testSuperClass_args that) {
-			if (that == null)
-				return false;
-			return true;
-		}
-
-		@Override
-		public int hashCode() {
-			List<Object> list = new ArrayList<Object>();
-
-			return list.hashCode();
-		}
-
-		@Override
-		public int compareTo(testSuperClass_args other) {
-			if (!getClass().equals(other.getClass())) {
-				return getClass().getName().compareTo(other.getClass().getName());
-			}
-
-			int lastComparison = 0;
-
-			return 0;
-		}
-
-		public _Fields fieldForId(int fieldId) {
-			return _Fields.findByThriftId(fieldId);
-		}
-
-		public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
-			if (iprot.getScheme() != StandardScheme.class) {
-				throw new UnsupportedOperationException();
-			}
-			new testSuperClass_argsStandardScheme().read(iprot, this);
-		}
-
-		public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
-			if (oprot.getScheme() != StandardScheme.class) {
-				throw new UnsupportedOperationException();
-			}
-			new testSuperClass_argsStandardScheme().write(oprot, this);
-		}
-
-		@Override
-		public String toString() {
-			StringBuilder sb = new StringBuilder("testSuperClass_args(");
-			boolean first = true;
-
-			sb.append(")");
-			return sb.toString();
-		}
-
-		public void validate() throws org.apache.thrift.TException {
-			// check for required fields
-			// check for sub-struct validity
-		}
-
-		private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-			try {
-				write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-			} catch (org.apache.thrift.TException te) {
-				throw new java.io.IOException(te);
-			}
-		}
-
-		private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
-			try {
-				// it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
-				read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-			} catch (org.apache.thrift.TException te) {
-				throw new java.io.IOException(te);
-			}
-		}
-
-		private static class testSuperClass_argsStandardScheme extends StandardScheme<testSuperClass_args> {
-
-			public void read(org.apache.thrift.protocol.TProtocol iprot, testSuperClass_args struct) throws org.apache.thrift.TException {
-				org.apache.thrift.protocol.TField schemeField;
-				iprot.readStructBegin();
-				while (true) {
-					schemeField = iprot.readFieldBegin();
-					if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
-						break;
-					}
-					switch (schemeField.id) {
-						default:
-							org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-					}
-					iprot.readFieldEnd();
-				}
-				iprot.readStructEnd();
-
-				// check for required fields of primitive type, which can't be checked in the validate method
-				struct.validate();
-			}
-
-			public void write(org.apache.thrift.protocol.TProtocol oprot, testSuperClass_args struct) throws org.apache.thrift.TException {
-				struct.validate();
-
-				oprot.writeStructBegin(STRUCT_DESC);
-				oprot.writeFieldStop();
-				oprot.writeStructEnd();
-			}
-
-		}
-
-	}
-
-	public static class testSuperClass_result implements org.apache.thrift.TBase<testSuperClass_result, testSuperClass_result._Fields>, java.io.Serializable, Cloneable, Comparable<testSuperClass_result> {
-		private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("testSuperClass_result");
-
-
-		/** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-		public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-			;
-
-			private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
-
-			static {
-				for (_Fields field : EnumSet.allOf(_Fields.class)) {
-					byName.put(field.getFieldName(), field);
-				}
-			}
-
-			/**
-			 * Find the _Fields constant that matches fieldId, or null if its not found.
-			 */
-			public static _Fields findByThriftId(int fieldId) {
-				switch(fieldId) {
-					default:
-						return null;
-				}
-			}
-
-			/**
-			 * Find the _Fields constant that matches fieldId, throwing an exception
-			 * if it is not found.
-			 */
-			public static _Fields findByThriftIdOrThrow(int fieldId) {
-				_Fields fields = findByThriftId(fieldId);
-				if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
-				return fields;
-			}
-
-			/**
-			 * Find the _Fields constant that matches name, or null if its not found.
-			 */
-			public static _Fields findByName(String name) {
-				return byName.get(name);
-			}
-
-			private final short _thriftId;
-			private final String _fieldName;
-
-			_Fields(short thriftId, String fieldName) {
-				_thriftId = thriftId;
-				_fieldName = fieldName;
-			}
-
-			public short getThriftFieldId() {
-				return _thriftId;
-			}
-
-			public String getFieldName() {
-				return _fieldName;
-			}
-		}
-
-		// isset id assignments
-		public testSuperClass_result() {
-		}
-
-		/**
-		 * Performs a deep copy on <i>other</i>.
-		 */
-		public testSuperClass_result(testSuperClass_result other) {
-		}
-
-		public testSuperClass_result deepCopy() {
-			return new testSuperClass_result(this);
-		}
-
-		@Override
-		public void clear() {
-		}
-
-		public void setFieldValue(_Fields field, Object value) {
-			switch (field) {
-			}
-		}
-
-		public Object getFieldValue(_Fields field) {
-			switch (field) {
-			}
-			throw new IllegalStateException();
-		}
-
-		/** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-		public boolean isSet(_Fields field) {
-			if (field == null) {
-				throw new IllegalArgumentException();
-			}
-
-			switch (field) {
-			}
-			throw new IllegalStateException();
-		}
-
-		@Override
-		public boolean equals(Object that) {
-			if (that == null)
-				return false;
-			if (that instanceof testSuperClass_result)
-				return this.equals((testSuperClass_result)that);
-			return false;
-		}
-
-		public boolean equals(testSuperClass_result that) {
-			if (that == null)
-				return false;
-			return true;
-		}
-
-		@Override
-		public int hashCode() {
-			List<Object> list = new ArrayList<Object>();
-
-			return list.hashCode();
-		}
-
-		@Override
-		public int compareTo(testSuperClass_result other) {
-			if (!getClass().equals(other.getClass())) {
-				return getClass().getName().compareTo(other.getClass().getName());
-			}
-
-			int lastComparison = 0;
-
-			return 0;
-		}
-
-		public _Fields fieldForId(int fieldId) {
-			return _Fields.findByThriftId(fieldId);
-		}
-
-		public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
-			if (iprot.getScheme() != StandardScheme.class) {
-				throw new UnsupportedOperationException();
-			}
-			new testSuperClass_resultStandardScheme().read(iprot, this);
-		}
-
-		public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
-			if (oprot.getScheme() != StandardScheme.class) {
-				throw new UnsupportedOperationException();
-			}
-			new testSuperClass_resultStandardScheme().write(oprot, this);
-		}
-
-		@Override
-		public String toString() {
-			StringBuilder sb = new StringBuilder("testSuperClass_result(");
-			boolean first = true;
-
-			sb.append(")");
-			return sb.toString();
-		}
-
-		public void validate() throws org.apache.thrift.TException {
-			// check for required fields
-			// check for sub-struct validity
-		}
-
-		private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-			try {
-				write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-			} catch (org.apache.thrift.TException te) {
-				throw new java.io.IOException(te);
-			}
-		}
-
-		private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
-			try {
-				// it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
-				read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-			} catch (org.apache.thrift.TException te) {
-				throw new java.io.IOException(te);
-			}
-		}
-
-		private static class testSuperClass_resultStandardScheme extends StandardScheme<testSuperClass_result> {
-
-			public void read(org.apache.thrift.protocol.TProtocol iprot, testSuperClass_result struct) throws org.apache.thrift.TException {
-				org.apache.thrift.protocol.TField schemeField;
-				iprot.readStructBegin();
-				while (true) {
-					schemeField = iprot.readFieldBegin();
-					if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
-						break;
-					}
-					switch (schemeField.id) {
-						default:
-							org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-					}
-					iprot.readFieldEnd();
-				}
-				iprot.readStructEnd();
-
-				// check for required fields of primitive type, which can't be checked in the validate method
-				struct.validate();
-			}
-
-			public void write(org.apache.thrift.protocol.TProtocol oprot, testSuperClass_result struct) throws org.apache.thrift.TException {
-				struct.validate();
-
-				oprot.writeStructBegin(STRUCT_DESC);
-				oprot.writeFieldStop();
-				oprot.writeStructEnd();
-			}
-
-		}
-
-	}
+  private static final Logger logger = LoggerFactory.getLogger(FSuperService.class);
+
+  public interface Iface extends InternalIface {
+  }
+
+  /**
+   * For internal use only. Contains only the methods defined directly by the service.
+   */
+  public interface InternalIface {
+
+    public void testSuperClass(FContext ctx) throws TException;
+
+  }
+
+  public static class Client implements Iface {
+
+    private InternalIface proxy;
+
+    public Client(FServiceProvider provider, ServiceMiddleware... middleware) {
+      InternalIface client = new InternalClient(provider);
+      List<ServiceMiddleware> combined = new ArrayList<ServiceMiddleware>(Arrays.asList(middleware));
+      combined.addAll(provider.getMiddleware());
+      middleware = combined.toArray(new ServiceMiddleware[0]);
+      proxy = InvocationHandler.composeMiddleware(client, InternalIface.class, middleware);
+    }
+
+    public void testSuperClass(FContext ctx) throws TException {
+      proxy.testSuperClass(ctx);
+    }
+
+  }
+
+  private static class InternalClient extends FServiceClient implements InternalIface {
+    public InternalClient(FServiceProvider provider) {
+      super(provider);
+    }
+
+    public void testSuperClass(FContext ctx) throws TException {
+      testSuperClass_args args = new testSuperClass_args();
+      testSuperClass_result res = new testSuperClass_result();
+      requestBase(ctx, "testSuperClass", args, res);
+    }
+  }
+
+  public static class Processor extends FBaseProcessor implements FProcessor {
+
+    private Iface handler;
+
+    public Processor(Iface iface, ServiceMiddleware... middleware) {
+      handler = InvocationHandler.composeMiddleware(iface, Iface.class, middleware);
+    }
+
+    protected java.util.Map<String, FProcessorFunction> getProcessMap() {
+      java.util.Map<String, FProcessorFunction> processMap = new java.util.HashMap<>();
+      processMap.put("testSuperClass", new TestSuperClass());
+      return processMap;
+    }
+
+    protected java.util.Map<String, java.util.Map<String, String>> getAnnotationsMap() {
+      java.util.Map<String, java.util.Map<String, String>> annotationsMap = new java.util.HashMap<>();
+      return annotationsMap;
+    }
+
+    @Override
+    public void addMiddleware(ServiceMiddleware middleware) {
+      handler = InvocationHandler.composeMiddleware(handler, Iface.class, new ServiceMiddleware[]{middleware});
+    }
+
+    private class TestSuperClass implements FProcessorFunction {
+
+      public void process(FContext ctx, FProtocol iprot, FProtocol oprot) throws TException {
+        testSuperClass_args args = new testSuperClass_args();
+        try {
+          args.read(iprot);
+        } catch (TException e) {
+          iprot.readMessageEnd();
+          synchronized (WRITE_LOCK) {
+            e = writeApplicationException(ctx, oprot, TApplicationExceptionType.PROTOCOL_ERROR, "testSuperClass", e.getMessage());
+          }
+          throw e;
+        }
+
+        iprot.readMessageEnd();
+        testSuperClass_result result = new testSuperClass_result();
+        try {
+          handler.testSuperClass(ctx);
+        } catch (TApplicationException e) {
+          oprot.writeResponseHeader(ctx);
+          oprot.writeMessageBegin(new TMessage("testSuperClass", TMessageType.EXCEPTION, 0));
+          e.write(oprot);
+          oprot.writeMessageEnd();
+          oprot.getTransport().flush();
+          return;
+        } catch (TException e) {
+          synchronized (WRITE_LOCK) {
+            e = (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.INTERNAL_ERROR, "testSuperClass", "Internal error processing testSuperClass: " + e.getMessage()).initCause(e);
+          }
+          throw e;
+        }
+        synchronized (WRITE_LOCK) {
+          try {
+            oprot.writeResponseHeader(ctx);
+            oprot.writeMessageBegin(new TMessage("testSuperClass", TMessageType.REPLY, 0));
+            result.write(oprot);
+            oprot.writeMessageEnd();
+            oprot.getTransport().flush();
+          } catch (TTransportException e) {
+            if (e.getType() == TTransportExceptionType.REQUEST_TOO_LARGE) {
+              throw (TApplicationException) writeApplicationException(ctx, oprot, TApplicationExceptionType.RESPONSE_TOO_LARGE, "testSuperClass", "response too large: " + e.getMessage()).initCause(e);
+            }
+            throw e;
+          }
+        }
+      }
+    }
+
+  }
+
+  public static class testSuperClass_args implements org.apache.thrift.TBase<testSuperClass_args, testSuperClass_args._Fields>, java.io.Serializable, Cloneable, Comparable<testSuperClass_args> {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("testSuperClass_args");
+
+
+    /**
+     * The set of fields this struct contains, along with convenience methods for finding and manipulating them.
+     */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      ;
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch (fieldId) {
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public testSuperClass_args() {
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public testSuperClass_args(testSuperClass_args other) {
+    }
+
+    public testSuperClass_args deepCopy() {
+      return new testSuperClass_args(this);
+    }
+
+    @Override
+    public void clear() {
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      }
+      throw new IllegalStateException();
+    }
+
+    /**
+     * Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise
+     */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof testSuperClass_args)
+        return this.equals((testSuperClass_args) that);
+      return false;
+    }
+
+    public boolean equals(testSuperClass_args that) {
+      if (that == null)
+        return false;
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      List<Object> list = new ArrayList<Object>();
+
+      return list.hashCode();
+    }
+
+    @Override
+    public int compareTo(testSuperClass_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      if (iprot.getScheme() != StandardScheme.class) {
+        throw new UnsupportedOperationException();
+      }
+      new testSuperClass_argsStandardScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      if (oprot.getScheme() != StandardScheme.class) {
+        throw new UnsupportedOperationException();
+      }
+      new testSuperClass_argsStandardScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("testSuperClass_args(");
+      boolean first = true;
+
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class testSuperClass_argsStandardScheme extends StandardScheme<testSuperClass_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, testSuperClass_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true) {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
+            break;
+          }
+          switch (schemeField.id) {
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, testSuperClass_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+  }
+
+  public static class testSuperClass_result implements org.apache.thrift.TBase<testSuperClass_result, testSuperClass_result._Fields>, java.io.Serializable, Cloneable, Comparable<testSuperClass_result> {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("testSuperClass_result");
+
+
+    /**
+     * The set of fields this struct contains, along with convenience methods for finding and manipulating them.
+     */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      ;
+
+      private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
+
+      static {
+        for (_Fields field : EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch (fieldId) {
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final String _fieldName;
+
+      _Fields(short thriftId, String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public testSuperClass_result() {
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public testSuperClass_result(testSuperClass_result other) {
+    }
+
+    public testSuperClass_result deepCopy() {
+      return new testSuperClass_result(this);
+    }
+
+    @Override
+    public void clear() {
+    }
+
+    public void setFieldValue(_Fields field, Object value) {
+      switch (field) {
+      }
+    }
+
+    public Object getFieldValue(_Fields field) {
+      switch (field) {
+      }
+      throw new IllegalStateException();
+    }
+
+    /**
+     * Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise
+     */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new IllegalArgumentException();
+      }
+
+      switch (field) {
+      }
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof testSuperClass_result)
+        return this.equals((testSuperClass_result) that);
+      return false;
+    }
+
+    public boolean equals(testSuperClass_result that) {
+      if (that == null)
+        return false;
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      List<Object> list = new ArrayList<Object>();
+
+      return list.hashCode();
+    }
+
+    @Override
+    public int compareTo(testSuperClass_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      if (iprot.getScheme() != StandardScheme.class) {
+        throw new UnsupportedOperationException();
+      }
+      new testSuperClass_resultStandardScheme().read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      if (oprot.getScheme() != StandardScheme.class) {
+        throw new UnsupportedOperationException();
+      }
+      new testSuperClass_resultStandardScheme().write(oprot, this);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("testSuperClass_result(");
+      boolean first = true;
+
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+      try {
+        // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class testSuperClass_resultStandardScheme extends StandardScheme<testSuperClass_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, testSuperClass_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true) {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
+            break;
+          }
+          switch (schemeField.id) {
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, testSuperClass_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+  }
 
 }
