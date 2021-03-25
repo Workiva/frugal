@@ -323,7 +323,11 @@ func CallEverything(client *frugaltest.FFrugalTestClient, isHttp bool) {
 	}
 
 	// Request at the 1mb limit
-	request := make([]byte, 1024*1024)
+	limit := 1024 * 1024
+	if isHttp {
+		limit *= 201 // try 201mbs for http
+	}
+	request := make([]byte, limit)
 	ctx = frugal.NewFContext("TestRequestTooLarge")
 	err = client.TestRequestTooLarge(ctx, request)
 	switch e := err.(type) {
@@ -348,8 +352,7 @@ func CallEverything(client *frugaltest.FFrugalTestClient, isHttp bool) {
 		}
 		log.Println("TApplicationException")
 	default:
-		log.Fatalf("Unexpected TestResponseTooLarge() %v",
-			response)
+		log.Printf("Unexpected TestResponseTooLarge() %v", len(response))
 		log.Fatalf("TestResponseTooLarge() error: %v", e.Error())
 	}
 
