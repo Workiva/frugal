@@ -123,6 +123,7 @@ func CallEverything(client *frugaltest.FFrugalTestClient, isHttp bool) {
 	if isHttp {
 		data = make([]byte, 150 * 1024 * 1024)
 		rand.Read(data)
+		ctx.SetTimeout(60 * time.Second)
 	} else {
 		data = []byte(strconv.Itoa(400))
 	}

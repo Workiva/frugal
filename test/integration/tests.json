@@ -12,13 +12,13 @@
   {
     "name": "go",
     "server": {
-      "timeout": 8,
+      "timeout": 30,
       "command": [
         "go/bin/testserver"
       ]
     },
     "client": {
-      "timeout": 8,
+      "timeout": 30,
       "command": [
         "go/bin/testclient"
       ]
