@@ -1976,7 +1976,7 @@ func (g *Generator) generateHandlerArgs(method *parser.Method) string {
 	return args
 }
 func (g *Generator) generateCallArgs(method *parser.Method) string {
-	args := "ctx"
+	args := "fctx"
 	for _, arg := range method.Arguments {
 		args += ", " + strings.ToLower(arg.Name)
 	}
