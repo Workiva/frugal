@@ -2223,6 +2223,9 @@ func snakeToCamel(s string) string {
 	words := strings.Split(s, "_")
 
 	for _, word := range words {
+		if word == "" {
+			continue
+		}
 		if upper := strings.ToUpper(word); commonInitialisms[upper] {
 			result += upper
 			continue
