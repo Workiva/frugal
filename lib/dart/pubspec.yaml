@@ -1,7 +1,3 @@
-authors:
-- Steven Osborne <steven.osborne@workiva.com>
-- Mark Erickson <mark.erickson@workiva.com>
-- Brian Shannan <brian.shannan@workiva.com>
 dependencies:
   logging: ^0.11.2
   thrift:
