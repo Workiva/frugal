@@ -16,6 +16,7 @@ package frugal
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	//"errors"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -148,6 +149,7 @@ func (f *fBaseTransport) Close(cause error) {
 
 // Execute a frugal frame (NOTE: this frame must include the frame size).
 func (f *fBaseTransport) ExecuteFrame(frame []byte) error {
+	fmt.Println("HERE DAN - transport - ExecuteFrame - frame: ", frame)
 	return f.registry.Execute(frame[4:])
 }
 

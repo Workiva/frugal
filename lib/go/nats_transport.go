@@ -84,6 +84,9 @@ func (f *fNatsTransport) Open() error {
 
 // handler receives a NATS message and executes the frame
 func (f *fNatsTransport) handler(msg *nats.Msg) {
+	fmt.Println("HERE DAN - nats_transport - handler - msg.Subject: ", msg.Subject)
+	fmt.Println("HERE DAN - nats_transport - handler - msg.Data: ", msg.Data)
+	fmt.Println("HERE DAN - nats_transport - handler - msg.Header: ", msg.Header)
 	if err := f.fBaseTransport.ExecuteFrame(msg.Data); err != nil {
 		logger().Warn("Could not execute frame", err)
 	}
@@ -109,6 +112,7 @@ func (f *fNatsTransport) Close() error {
 }
 
 func (f *fNatsTransport) checkMessageSize(data []byte) error {
+	fmt.Println("HERE DAN - nats_transport - checkMessageSize - data: ", data)
 	if len(data) > natsMaxMessageSize {
 		return thrift.NewTTransportException(
 			TRANSPORT_EXCEPTION_REQUEST_TOO_LARGE,
