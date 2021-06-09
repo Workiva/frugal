@@ -1,3 +1,5 @@
+// @dart=2.7
+// ^ Do not remove until migrated to null safety. More info at https://wiki.atl.workiva.net/pages/viewpage.action?pageId=189370832
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements. See the NOTICE file
 /// distributed with this work for additional information
