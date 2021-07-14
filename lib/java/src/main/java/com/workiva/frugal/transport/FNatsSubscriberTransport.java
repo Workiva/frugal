@@ -19,6 +19,7 @@ import io.nats.client.Connection;
 
 import io.nats.client.Connection.Status;
 import io.nats.client.Dispatcher;
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransportException;
@@ -39,6 +40,7 @@ public class FNatsSubscriberTransport implements FSubscriberTransport {
     protected String subject;
     protected final String queue;
     protected Dispatcher dispatcher;
+    private final TConfiguration tconfig;
 
     /**
      * Creates a new FNatsScopeTransport which is used for subscribing. Subscribers using this transport will subscribe
@@ -51,6 +53,11 @@ public class FNatsSubscriberTransport implements FSubscriberTransport {
     protected FNatsSubscriberTransport(Connection conn, String queue) {
         this.conn = conn;
         this.queue = queue;
+        this.tconfig = new TConfiguration(
+                Integer.MAX_VALUE,
+                TConfiguration.DEFAULT_MAX_FRAME_SIZE,
+                TConfiguration.DEFAULT_RECURSION_DEPTH
+        );
     }
 
     /**
@@ -117,7 +124,7 @@ public class FNatsSubscriberTransport implements FSubscriberTransport {
             }
             try {
                 callback.onMessage(
-                        new TMemoryInputTransport(msg.getData(), 4, msg.getData().length - 4)
+                        new TMemoryInputTransport(tconfig, msg.getData(), 4, msg.getData().length - 4)
                 );
             } catch (Throwable t) {
                 LOGGER.error("error executing user provided callback", t);

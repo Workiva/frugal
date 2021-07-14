@@ -26,6 +26,7 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
@@ -74,6 +75,7 @@ public class FDefaultNettyHttpProcessor implements FNettyHttpProcessor {
     private final FProtocolFactory inProtocolFactory;
     private final FProtocolFactory outProtocolFactory;
     private final Collection<Map.Entry<String, String>> customHeaders;
+    private final TConfiguration tconfig;
 
     private FDefaultNettyHttpProcessor(
             FProcessor processor,
@@ -83,6 +85,11 @@ public class FDefaultNettyHttpProcessor implements FNettyHttpProcessor {
         this.inProtocolFactory = inProtocolFactory;
         this.outProtocolFactory = outProtocolFactory;
         this.customHeaders = new ArrayList<>();
+        this.tconfig = new TConfiguration(
+                Integer.MAX_VALUE,
+                TConfiguration.DEFAULT_MAX_FRAME_SIZE,
+                TConfiguration.DEFAULT_RECURSION_DEPTH
+        );
     }
 
     /**
@@ -164,7 +171,8 @@ public class FDefaultNettyHttpProcessor implements FNettyHttpProcessor {
         // Process a frame, exclude frame length (first 4 bytes)
         // TODO: use TByteBuffer that wraps buff once Thrift 0.10.0 is released to avoid this copy.
         byte[] inputFrame = Arrays.copyOfRange(inputBytes, 4, inputBytes.length);
-        TTransport inTransport = new TMemoryInputTransport(inputFrame);
+        TTransport inTransport = new TMemoryInputTransport(tconfig, inputFrame);
+
         TMemoryOutputBuffer outTransport = new TMemoryOutputBuffer();
         processor.process(inProtocolFactory.getProtocol(inTransport), outProtocolFactory.getProtocol(outTransport));
 

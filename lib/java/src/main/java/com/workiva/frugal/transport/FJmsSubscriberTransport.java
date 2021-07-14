@@ -14,6 +14,7 @@
 package com.workiva.frugal.transport;
 
 import com.workiva.frugal.protocol.FAsyncCallback;
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransportException;
@@ -39,6 +40,7 @@ public class FJmsSubscriberTransport implements FSubscriberTransport {
     private final Connection connection;
     private final String topicPrefix;
     private final boolean useQueues;
+    private final TConfiguration tconfig;
     Session session;
     MessageConsumer consumer;
 
@@ -49,6 +51,11 @@ public class FJmsSubscriberTransport implements FSubscriberTransport {
         }
         this.topicPrefix = topicPrefix;
         this.useQueues = useQueues;
+        this.tconfig = new TConfiguration(
+                Integer.MAX_VALUE,
+                TConfiguration.DEFAULT_MAX_FRAME_SIZE,
+                TConfiguration.DEFAULT_RECURSION_DEPTH
+        );
     }
 
     /**
@@ -164,7 +171,7 @@ public class FJmsSubscriberTransport implements FSubscriberTransport {
                 }
                 try {
                     callback.onMessage(
-                            new TMemoryInputTransport(payload, 4, payload.length - 4)
+                            new TMemoryInputTransport(tconfig, payload, 4, payload.length - 4)
                     );
                 } catch (Exception e) {
                     LOGGER.error("error executing user provided callback", e);

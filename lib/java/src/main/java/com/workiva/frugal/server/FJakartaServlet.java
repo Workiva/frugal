@@ -4,6 +4,7 @@ import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocol;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import com.workiva.frugal.transport.TMemoryOutputBuffer;
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
@@ -53,6 +54,7 @@ public class FJakartaServlet extends HttpServlet {
     private final int maxRequestSize;
     private final ExecutorService exec;
     private final FServerEventHandler eventHandler;
+    private final TConfiguration tconfig;
 
     /**
      * Creates a servlet for the specified processor and protocol factory, which
@@ -105,6 +107,11 @@ public class FJakartaServlet extends HttpServlet {
         this.maxRequestSize = b.maxRequestSize;
         this.exec = b.exec;
         this.eventHandler = b.eventHandler != null ? b.eventHandler : new FDefaultServerEventHandler(5000);
+        this.tconfig = new TConfiguration(
+                Integer.MAX_VALUE,
+                TConfiguration.DEFAULT_MAX_FRAME_SIZE,
+                TConfiguration.DEFAULT_RECURSION_DEPTH
+        );
     }
 
     @Override
@@ -190,7 +197,7 @@ public class FJakartaServlet extends HttpServlet {
     private byte[] process(byte[] frame, Map<Object, Object> ephemeralProperties) throws TException {
         eventHandler.onRequestStarted(ephemeralProperties);
 
-        TTransport inTransport = new TMemoryInputTransport(frame);
+        TTransport inTransport = new TMemoryInputTransport(tconfig, frame);
         TMemoryOutputBuffer outTransport = new TMemoryOutputBuffer();
         try {
             FProtocol inProtocol = inProtocolFactory.getProtocol(inTransport);
