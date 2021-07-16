@@ -72,7 +72,7 @@ class TestFNatsTransport(utils.AsyncIOTestCase):
 
         self.assertEqual(235, self.transport._sub_id)
         self.mock_nats_client.subscribe_async.assert_called_once_with(
-            self.inbox,
+            self.inbox + ".*",
             cb=self.transport._on_message_callback
         )
         self.assertTrue(self.transport._is_open)
@@ -87,7 +87,7 @@ class TestFNatsTransport(utils.AsyncIOTestCase):
         callback.return_value = future
         self.transport.handle_response = callback
         await self.transport._on_message_callback(message)
-        callback.assert_called_once_with(message.data[4:])
+        callback.assert_called_once_with(message)
 
     @utils.async_runner
     async def test_close_not_subscribed(self):
@@ -125,6 +125,31 @@ class TestFNatsTransport(utils.AsyncIOTestCase):
             frame
         )
 
+    @utils.async_runner
+    async def test_flush_op(self):
+        self.transport._is_open = True
+        op_id = 1
+        data = bytearray([2, 3, 4, 5, 6, 7])
+        data_len = bytearray([0, 0, 0, 6])
+        frame = data_len + data
+        future = asyncio.Future()
+        future.set_result(None)
+        self.mock_nats_client.publish_request.return_value = future
+        await self.transport.flush_op(op_id, frame)
+
+        self.mock_nats_client.publish_request.assert_called_once_with(
+            self.subject,
+            f"{self.inbox}.{op_id}",
+            frame
+        )
+
     def test_request_size_limit(self):
         self.assertEqual(_NATS_MAX_MESSAGE_SIZE,
                          self.transport.get_request_size_limit())
+
+    @utils.async_runner
+    async def test_handle_status_message(self):
+        message = mock.Mock()
+        message.data = []
+        message.subject = "subject.1"
+        await self.transport._on_message_callback(message)

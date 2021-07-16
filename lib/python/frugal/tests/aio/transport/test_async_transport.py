@@ -8,6 +8,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import mock
 
 from asyncio import Future
 from asyncio import gather
@@ -94,9 +95,10 @@ class TestFAsyncTransport(aio_utils.AsyncIOTestCase):
     async def test_request(self):
         ctx = FContext("fooid")
         frame = utils.mock_frame(ctx)
-        transport = FAsyncTransportImpl(response=frame)
+        message = utils.mock_message_with_frame(frame)
+        transport = FAsyncTransportImpl(response=message)
         response_transport = await transport.request(ctx, frame)
-        self.assertEqual(frame, response_transport.getvalue())
+        self.assertEqual(frame[4:], response_transport.getvalue())
         self.assertEqual(0, len(transport._futures))
         self.assertEqual(frame, transport._payload)
 
@@ -185,26 +187,28 @@ class TestFAsyncTransport(aio_utils.AsyncIOTestCase):
         ctx = FContext()
         future = Future()
         transport._futures[str(ctx._get_op_id())] = future
-        await transport.handle_response(None)
-        self.assertFalse(future.done())
+        await transport.handle_response(utils.mock_message_with_frame(None))
+        self.assertTrue(future.done())
 
     @aio_utils.async_runner
     async def test_handle_response_bad_frame(self):
         transport = FAsyncTransport(1024)
 
         with self.assertRaises(TProtocolException) as cm:
-            await transport.handle_response(b"foo")
+            message = utils.mock_message_with_frame(b"foobars")
+            await transport.handle_response(message)
 
-        self.assertEquals("Invalid frame size: 3", str(cm.exception))
+        self.assertEqual("Invalid frame size: 3", str(cm.exception))
 
     @aio_utils.async_runner
     async def test_handle_response_missing_op_id(self):
         transport = FAsyncTransport(1024)
-        frame = bytearray(b'\x00\x00\x00\x00\x00\x80\x01\x00\x02\x00\x00\x00'
-                          b'\x08basePing\x00\x00\x00\x00\x00')
+        frame = bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\x01\x00'
+                          b'\x02\x00\x00\x00\x08basePing\x00\x00\x00\x00\x00')
 
         with self.assertRaises(TProtocolException) as cm:
-            await transport.handle_response(frame)
+            message = utils.mock_message_with_frame(frame)
+            await transport.handle_response(message)
 
         self.assertEquals("Frame missing op_id", str(cm.exception))
 
@@ -215,11 +219,17 @@ class TestFAsyncTransport(aio_utils.AsyncIOTestCase):
         ctx2 = FContext()
         future = Future()
         transport._futures[str(ctx1._get_op_id())] = future
-        await transport.handle_response(utils.mock_frame(ctx2))
+
+        await transport.handle_response(utils.mock_message_with_context(ctx2))
         self.assertFalse(future.done())
 
     @aio_utils.async_runner
-    async def test_flush_not_implemented(self):
-        transport = FAsyncTransport(1024)
-        with self.assertRaises(NotImplementedError):
-            await transport.flush(None)
+    async def test_service_not_available(self):
+        ctx = FContext("fooid")
+        frame = utils.mock_frame(ctx)
+        message = utils.mock_message_with_frame(bytearray())
+        transport = FAsyncTransportImpl(response=message)
+        with self.assertRaises(TTransportException) as te:
+            await transport.request(ctx, frame)
+            self.assertEquals("request: service not available", str(te.exception))
+            self.assertTrue(False) # WHY DOES THIS ASSERTION PASS

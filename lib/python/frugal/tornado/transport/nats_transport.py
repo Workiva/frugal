@@ -9,6 +9,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 from nats.io.utils import new_inbox
 from thrift.transport.TTransport import TTransportException
 from tornado import gen
@@ -19,6 +21,8 @@ from frugal.tornado.transport import FAsyncTransport
 
 _NOT_OPEN = 'NATS not connected.'
 _ALREADY_OPEN = 'NATS transport already open.'
+
+logger = logging.getLogger(__name__)
 
 
 class FNatsTransport(FAsyncTransport):
@@ -70,6 +74,8 @@ class FNatsTransport(FAsyncTransport):
 
     @gen.coroutine
     def _on_message_callback(self, msg):
+        if len(msg.data) == 0:
+            logger.debug("Received empty message: %s" % msg)
         yield self.handle_response(msg.data[4:])
 
     @gen.coroutine

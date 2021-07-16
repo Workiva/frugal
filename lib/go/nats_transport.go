@@ -84,7 +84,11 @@ func (f *fNatsTransport) Open() error {
 
 // handler receives a NATS message and executes the frame
 func (f *fNatsTransport) handler(msg *nats.Msg) {
-	if err := f.fBaseTransport.ExecuteFrame(msg.Data); err != nil {
+	_, hasStatus := msg.Header["Status"]
+	if len(msg.Data) == 0 && hasStatus {
+		logger().Debug("Received status message: {}", msg)
+		return
+	} else if err := f.fBaseTransport.ExecuteFrame(msg.Data); err != nil {
 		logger().Warn("Could not execute frame", err)
 	}
 }

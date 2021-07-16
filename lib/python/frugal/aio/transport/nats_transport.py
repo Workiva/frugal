@@ -54,13 +54,13 @@ class FNatsTransport(FAsyncTransport):
                                       'Transport is already open')
 
         self._sub_id = await self._nats_client.subscribe_async(
-            self._inbox,
+            self._inbox + ".*",
             cb=self._on_message_callback
         )
         self._is_open = True
 
     async def _on_message_callback(self, message):
-        await self.handle_response(message.data[4:])
+        await self.handle_response(message)
 
     async def close(self):
         """Unsubscribe from the inbox subject."""
@@ -77,3 +77,8 @@ class FNatsTransport(FAsyncTransport):
             self._inbox,
             data
         )
+
+    async def flush_op(self, op_id, payload):
+        await self._nats_client.publish_request(self._subject,
+                                                f"{self._inbox}.{op_id}",
+                                                payload)

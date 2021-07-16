@@ -10,6 +10,7 @@
 # limitations under the License.
 
 from datetime import timedelta
+import logging
 
 from thrift.protocol.TProtocol import TProtocolException
 from thrift.transport.TTransport import TMemoryBuffer
@@ -21,6 +22,9 @@ from frugal.context import _OPID_HEADER
 from frugal.exceptions import TTransportExceptionType
 from frugal.tornado.transport.transport import FTransportBase
 from frugal.util.headers import _Headers
+
+
+logger = logging.getLogger(__name__)
 
 
 class FAsyncTransport(FTransportBase):
@@ -97,6 +101,7 @@ class FAsyncTransport(FTransportBase):
             frame: The response frame
         """
         if not frame:
+            logger.debug("Received empty message")
             return
         headers = _Headers.decode_from_frame(frame)
         op_id = headers.get(_OPID_HEADER, None)

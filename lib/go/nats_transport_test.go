@@ -233,6 +233,23 @@ func TestNatsTransportRequestSameOpid(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("frugal: context already registered, opid %d is in-flight for another request", opID), err.Error())
 }
 
+// Ensures empty status messages do not cause panic
+func TestStatusmessage(t *testing.T) {
+	s := runServer(nil)
+	defer s.Shutdown()
+	tr, server, conn := newClientAndServer(t, false)
+
+	defer server.Stop()
+	defer conn.Close()
+	defer tr.Close()
+
+	msg := nats.Msg{
+		Data: make([]byte, 0),
+		Header: map[string][]string{"Status": {"503"}},
+	}
+	tr.handler(&msg)
+}
+
 // HELPER METHODS
 
 func newClientAndServer(t *testing.T, isTTransport bool) (*fNatsTransport, *fNatsServer, *nats.Conn) {
