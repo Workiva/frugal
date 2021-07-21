@@ -42,24 +42,24 @@ func TestNewCorrelationID(t *testing.T) {
 }
 
 // Ensures the "_opid" request header for an FContext is returned for calls to
-// getOpID.
+// GetOpID.
 func TestOpID(t *testing.T) {
 	assert := assert.New(t)
 	corid := "fooid"
 	opid := "12345"
 	ctx := NewFContext(corid)
 	ctx.AddRequestHeader(opIDHeader, opid)
-	actOpID, err := getOpID(ctx)
+	actOpID, err := GetOpID(ctx)
 	assert.Nil(err)
 	assert.Equal(uint64(12345), actOpID)
 
 	delete(ctx.(*FContextImpl).requestHeaders, opIDHeader)
-	_, err = getOpID(ctx)
+	_, err = GetOpID(ctx)
 	assert.Equal(fmt.Errorf("FContext does not have the required %s request header", opIDHeader), err)
 
 	opIDStr := "-123"
 	ctx.(*FContextImpl).requestHeaders[opIDHeader] = opIDStr
-	_, err = getOpID(ctx)
+	_, err = GetOpID(ctx)
 	assert.Equal(fmt.Errorf("FContext has an opid that is not a non-negative integer: %s", opIDStr), err)
 }
 
@@ -96,7 +96,7 @@ func TestRequestHeader(t *testing.T) {
 	assert.Equal(t, ctx, ctx.AddRequestHeader(opIDHeader, "123"))
 
 	assert.Equal(t, "baz", ctx.CorrelationID())
-	actOpID, err := getOpID(ctx)
+	actOpID, err := GetOpID(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(123), actOpID)
 }

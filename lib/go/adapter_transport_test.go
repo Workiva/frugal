@@ -34,7 +34,7 @@ func (m *mockFRegistry) AssignOpID(ctx FContext) error {
 }
 
 func (m *mockFRegistry) Register(ctx FContext, resultC chan []byte) error {
-	opID, err := getOpID(ctx)
+	opID, err := GetOpID(ctx)
 	if err == nil {
 		m.channels[opID] = resultC
 	}

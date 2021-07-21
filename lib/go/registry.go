@@ -48,8 +48,11 @@ type fRegistry interface {
 	Register(ctx FContext, resultC chan []byte) error
 	// Unregister a callback for the given Context.
 	Unregister(FContext)
-	// Execute dispatches a single Thrift message frame.
+	// Execute helps to dispatch a single Thrift message frame.
 	Execute([]byte) error
+
+	// Dispatches a single Thrift message frame.
+	Dispatch(uint64, []byte) error
 }
 
 type fRegistryImpl struct {
@@ -68,7 +71,7 @@ func (c *fRegistryImpl) Register(ctx FContext, resultC chan []byte) error {
 	// An FContext can be reused for multiple requests. Because of this,
 	// FContext's have a monotonically increasing atomic uint64. We check
 	// the channels map to ensure that request is not still in-flight.
-	opID, err := getOpID(ctx)
+	opID, err := GetOpID(ctx)
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -84,7 +87,7 @@ func (c *fRegistryImpl) Register(ctx FContext, resultC chan []byte) error {
 
 // Unregister a callback for the given Context.
 func (c *fRegistryImpl) Unregister(ctx FContext) {
-	opID, err := getOpID(ctx)
+	opID, err := GetOpID(ctx)
 	if err != nil {
 		logger().Warnf("Attempted to unregister an FContext with a malformed opid: %s", err)
 		return
@@ -108,6 +111,20 @@ func (c *fRegistryImpl) Execute(frame []byte) error {
 		return err
 	}
 
+	c.mu.RLock()
+	resultC, ok := c.channels[opid]
+	if !ok {
+		logger().Warn("frugal: unregistered context")
+		c.mu.RUnlock()
+		return nil
+	}
+	c.mu.RUnlock()
+
+	resultC <- frame
+	return nil
+}
+
+func (c *fRegistryImpl) Dispatch(opid uint64, frame []byte) error {
 	c.mu.RLock()
 	resultC, ok := c.channels[opid]
 	if !ok {

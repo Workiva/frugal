@@ -301,7 +301,7 @@ func setRequestOpID(ctx FContext, id uint64) {
 }
 
 // opID returns the request operation id for the given context.
-func getOpID(ctx FContext) (uint64, error) {
+func GetOpID(ctx FContext) (uint64, error) {
 	opIDStr, ok := ctx.RequestHeader(opIDHeader)
 	if !ok {
 		// Should not happen unless a client/server sent a bogus context.

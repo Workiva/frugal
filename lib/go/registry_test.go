@@ -43,7 +43,7 @@ func TestClientRegistry(t *testing.T) {
 	resultC := make(chan []byte, 1)
 	registry := newFRegistry()
 	ctx := NewFContext("")
-	opid, err := getOpID(ctx)
+	opid, err := GetOpID(ctx)
 	assert.Nil(err)
 	assert.True(opid > 0)
 
@@ -63,7 +63,7 @@ func TestClientRegistry(t *testing.T) {
 
 	// Unregister the context
 	registry.Unregister(ctx)
-	opid, err = getOpID(ctx)
+	opid, err = GetOpID(ctx)
 	assert.Nil(err)
 	_, ok := registry.(*fRegistryImpl).channels[opid]
 	assert.False(ok)
@@ -74,7 +74,7 @@ func TestClientRegistry(t *testing.T) {
 
 	// Now, register the same context again and ensure the opID is increased.
 	assert.Nil(registry.Register(ctx, resultC))
-	_, err = getOpID(ctx)
+	_, err = GetOpID(ctx)
 	assert.Nil(err)
 }
 

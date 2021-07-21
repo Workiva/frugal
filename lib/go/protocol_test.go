@@ -72,7 +72,7 @@ func TestReadRequestHeader(t *testing.T) {
 	cid, ok := ctx.ResponseHeader(cidHeader)
 	assert.True(ok)
 	assert.Equal(frugalHeaders[cidHeader], cid)
-	opid, err := getOpID(ctx)
+	opid, err := GetOpID(ctx)
 	assert.Nil(err)
 	assert.NotEqual(uint64(0), opid)
 	val, ok := ctx.RequestHeader("hello")
@@ -136,7 +136,7 @@ func TestWriteReadRequestHeader(t *testing.T) {
 	transport := &thrift.TMemoryBuffer{Buffer: &bytes.Buffer{}}
 	proto := &FProtocol{TProtocol: tProtocolFactory.GetProtocol(transport)}
 	ctx := NewFContext("123")
-	origOpID, err := getOpID(ctx)
+	origOpID, err := GetOpID(ctx)
 	assert.Nil(err)
 	ctx.AddRequestHeader("hello", "world")
 	ctx.AddRequestHeader("foo", "bar")
@@ -150,7 +150,7 @@ func TestWriteReadRequestHeader(t *testing.T) {
 	assert.True(ok)
 	assert.Equal("bar", header)
 	assert.Equal("123", ctx.CorrelationID())
-	opid, err := getOpID(ctx)
+	opid, err := GetOpID(ctx)
 	assert.Nil(err)
 
 	// The opid sent on the request headers and the opid received on the
@@ -172,7 +172,7 @@ func TestWriteReadResponseHeader(t *testing.T) {
 	transport := &thrift.TMemoryBuffer{Buffer: &bytes.Buffer{}}
 	proto := &FProtocol{TProtocol: tProtocolFactory.GetProtocol(transport)}
 	ctx := NewFContext("123")
-	origOpID, err := getOpID(ctx)
+	origOpID, err := GetOpID(ctx)
 	assert.Nil(err)
 	ctx.AddResponseHeader("hello", "world")
 	ctx.AddResponseHeader("foo", "bar")
