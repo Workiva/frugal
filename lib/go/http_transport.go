@@ -266,6 +266,8 @@ func (h *fHTTPTransport) Request(ctx FContext, data []byte) (thrift.TTransport, 
 			strings.HasSuffix(err.Error(), "net/http: timeout awaiting response headers") ||
 			strings.HasSuffix(err.Error(), "net/http: request canceled while waiting for connection") {
 			return nil, thrift.NewTTransportException(TRANSPORT_EXCEPTION_TIMED_OUT, "frugal: http request timed out")
+		} else if strings.HasSuffix(err.Error(), "connect: connection refused") {
+			return nil, thrift.NewTTransportException(TRANSPORT_EXCEPTION_SERVICE_NOT_AVAILABLE, "frugal: service not available")
 		}
 		return nil, thrift.NewTTransportExceptionFromError(err)
 	}
