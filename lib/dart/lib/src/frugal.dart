@@ -19,6 +19,8 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:app_intelligence/app_intelligence_common.dart';
+import 'package:app_intelligence/insight_constants.dart';
 import 'package:logging/logging.dart';
 import 'package:thrift/thrift.dart';
 import 'package:uuid/uuid.dart';

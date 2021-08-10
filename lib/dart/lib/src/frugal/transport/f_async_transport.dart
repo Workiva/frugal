@@ -82,7 +82,7 @@ abstract class FAsyncTransport extends FTransport {
   /// frame size. Implementations should call this when asynchronous responses
   /// are received from the server.
   void handleResponse(Uint8List frame) {
-    var headers = Headers.decodeFromFrame(frame);
+    Map<String, String> headers = Headers.decodeFromFrame(frame);
     var opId;
     try {
       opId = int.parse(headers[_opidHeader]);
@@ -90,16 +90,23 @@ abstract class FAsyncTransport extends FTransport {
       _log.severe("frugal: invalid protocol frame: op id not a uint64", e);
       return;
     }
+    final correlationId = headers[_cidHeader];
+    final logContext = {
+      LogIds.correlationId: correlationId,
+    };
 
     Completer<Uint8List> handler = _handlers[opId];
     if (handler == null) {
-      _log.severe("frugal: no handler found for message, dropping message");
+      _log.severe(ContextualMessage(
+          "frugal: no handler found for message, dropping message",
+          context: logContext));
       return;
     }
 
     if (handler.isCompleted) {
-      _log.severe(
-          "frugal: handler already called for message, dropping message");
+      _log.severe(ContextualMessage(
+          "frugal: handler already called for message, dropping message",
+          context: logContext));
       return;
     }
     handler.complete(frame);
