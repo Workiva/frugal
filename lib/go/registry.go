@@ -48,8 +48,11 @@ type fRegistry interface {
 	Register(ctx FContext, resultC chan []byte) error
 	// Unregister a callback for the given Context.
 	Unregister(FContext)
-	// Execute dispatches a single Thrift message frame.
+	// Execute helps to dispatch a single Thrift message frame.
 	Execute([]byte) error
+
+	// Dispatches a single Thrift message frame.
+	dispatch(uint64, []byte) error
 }
 
 type fRegistryImpl struct {
@@ -108,6 +111,10 @@ func (c *fRegistryImpl) Execute(frame []byte) error {
 		return err
 	}
 
+	return c.dispatch(opid, frame)
+}
+
+func (c *fRegistryImpl) dispatch(opid uint64, frame []byte) error {
 	c.mu.RLock()
 	resultC, ok := c.channels[opid]
 	if !ok {

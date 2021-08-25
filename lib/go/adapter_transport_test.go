@@ -55,6 +55,15 @@ func (m *mockFRegistry) Execute(frame []byte) error {
 	return m.Called(frame).Error(0)
 }
 
+func (m *mockFRegistry) dispatch(opid uint64, frame []byte) error {
+	select {
+	case m.executeCalled <- struct{}{}:
+	default:
+	}
+
+	return m.Called(frame).Error(0)
+}
+
 // Ensures Open returns an error if the wrapped transport fails to open.
 func TestAdapterTransportOpenError(t *testing.T) {
 	mockTr := new(mockTTransport)
