@@ -31,8 +31,26 @@ func (ffs *filterFrugalSpec) isServiceSpecified(
 	return false
 }
 
+func (ffs *filterFrugalSpec) shouldRemoveService(
+	s *parser.Service,
+) bool {
+	if ffs == nil {
+		return false
+	}
+
+	for _, fs := range ffs.Services {
+		if fs.isService(s) {
+			if fs.Entire != nil {
+				return *fs.Entire
+			}
+		}
+	}
+	return false
+}
+
 type filterFrugalService struct {
 	Name    string   `yaml:"name"`
+	Entire  *bool    `yaml:"all"`
 	Methods []string `yaml:"methods"`
 }
 
@@ -55,13 +73,20 @@ type filterFrugalStruct struct {
 	Name string `yaml:"name"`
 }
 
+func shouldEntirelyRemoveService(
+	gf *generatorFilter,
+	s *parser.Service,
+) bool {
+	return gf.Excluded.shouldRemoveService(s)
+}
+
 func applyFilterToService(
 	gf *generatorFilter,
 	s *parser.Service,
 ) {
 
 	isIncludesSpecified := gf.Included.isServiceSpecified(s)
-	isExcludesSpecified := gf.Included.isServiceSpecified(s)
+	isExcludesSpecified := gf.Excluded.isServiceSpecified(s)
 	if !isIncludesSpecified && !isExcludesSpecified {
 		// nothing to do!
 		return
@@ -98,6 +123,7 @@ func applyFilterToService(
 					// and if the included spec has them
 					msc = append(msc[:i], msc[i+1:]...)
 					i--
+					continue
 				}
 			}
 		}

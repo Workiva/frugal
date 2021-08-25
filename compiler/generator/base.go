@@ -53,7 +53,14 @@ func (b *BaseGenerator) FilterInput(f *parser.Frugal) {
 		return
 	}
 
-	for _, service := range f.Services {
+	for i := 0; i < len(f.Services); i++ {
+		service := f.Services[i]
+		if shouldEntirelyRemoveService(gf, service) {
+			f.Services = append(f.Services[:i], f.Services[i+1:]...)
+			i--
+			continue
+		}
+
 		applyFilterToService(gf, service)
 	}
 
