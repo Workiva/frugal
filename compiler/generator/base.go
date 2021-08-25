@@ -15,9 +15,11 @@ package generator
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/Workiva/frugal/compiler/parser"
+	"gopkg.in/yaml.v2"
 )
 
 // BaseGenerator contains base generator logic which language generators can
@@ -26,6 +28,36 @@ type BaseGenerator struct {
 	Options map[string]string
 	Frugal  *parser.Frugal
 	elemNum int
+}
+
+func (b *BaseGenerator) FilterInput(f *parser.Frugal) {
+	filename, ok := b.Options[`filter_yaml`]
+	if !ok {
+		return
+	}
+	if len(filename) == 0 {
+		filename = `frugal_filter.yaml`
+	}
+
+	input, err := ioutil.ReadFile(filename)
+	if err != nil {
+		fmt.Printf("could not read file %q: %v\n", filename, err)
+		return
+	}
+
+	gf := &generatorFilter{}
+
+	err = yaml.Unmarshal(input, gf)
+	if err != nil {
+		fmt.Printf("could not unmarshl file %q: %v\n", filename, err)
+		return
+	}
+
+	for _, service := range f.Services {
+		applyFilterToService(gf, service)
+	}
+
+	// TODO do the same for structs...
 }
 
 // CreateFile creates a new file using the given configuration.
