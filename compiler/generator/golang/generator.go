@@ -1577,7 +1577,6 @@ func (g *Generator) generateServiceInterface(service *parser.Service) string {
 		contents += fmt.Sprintf("\t%s\n\n", g.getServiceExtendsName(service))
 	}
 	for _, method := range service.Methods {
-		// here, it would be nice to just filter?
 		contents += g.generateCommentWithDeprecated(method.Comment, "\t", method.Annotations)
 		contents += fmt.Sprintf("\t%s(fctx frugal.FContext%s) %s\n",
 			snakeToCamel(method.Name), g.generateInterfaceArgs(method.Arguments),
