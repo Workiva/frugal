@@ -62,7 +62,6 @@ func getNeededStructs(
 			subset = append(subset, s)
 		} else {
 			notAdded = append(notAdded, s)
-
 		}
 	}
 
