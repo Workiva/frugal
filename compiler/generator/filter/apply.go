@@ -1,6 +1,8 @@
 package filter
 
-import "github.com/Workiva/frugal/compiler/parser"
+import (
+	"github.com/Workiva/frugal/compiler/parser"
+)
 
 func Apply(
 	filename string,
@@ -55,13 +57,52 @@ func applyToStructs(
 	spec *filterSpec,
 	f *parser.Frugal,
 ) {
+	if spec.Excluded.Structs == nil ||
+		(spec.Excluded.Structs.All != nil &&
+			*spec.Excluded.Structs.All != true) {
+		// we have nothing to do if we're not specified in the excludes or if we
+		// aren't excluding all
+		return
+	}
+
+	requiredStructs := getNeededStructs(spec, f)
+
 	for i := 0; i < len(f.Structs); i++ {
 		s := f.Structs[i]
-		if spec.Excluded.isStructSpecified(s) &&
-			!spec.Included.isStructSpecified(s) {
+
+		if structListContains(requiredStructs, s) {
+			continue
+		}
+
+		if spec.Excluded.isStructSpecified(s) {
 			f.Structs = append(f.Structs[:i], f.Structs[i+1:]...)
 			i--
+		}
+	}
+
+	for i := 0; i < len(f.Exceptions); i++ {
+		s := f.Exceptions[i]
+
+		if structListContains(requiredStructs, s) {
 			continue
+		}
+
+		if spec.Excluded.isStructSpecified(s) {
+			f.Exceptions = append(f.Exceptions[:i], f.Exceptions[i+1:]...)
+			i--
+		}
+	}
+
+	for i := 0; i < len(f.Unions); i++ {
+		s := f.Unions[i]
+
+		if structListContains(requiredStructs, s) {
+			continue
+		}
+
+		if spec.Excluded.isStructSpecified(s) {
+			f.Unions = append(f.Unions[:i], f.Unions[i+1:]...)
+			i--
 		}
 	}
 }
