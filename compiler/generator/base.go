@@ -15,11 +15,10 @@ package generator
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
+	"github.com/Workiva/frugal/compiler/generator/filter"
 	"github.com/Workiva/frugal/compiler/parser"
-	"gopkg.in/yaml.v2"
 )
 
 // BaseGenerator contains base generator logic which language generators can
@@ -39,40 +38,10 @@ func (b *BaseGenerator) FilterInput(f *parser.Frugal) {
 		filename = `frugal_filter.yaml`
 	}
 
-	input, err := ioutil.ReadFile(filename)
+	err := filter.Apply(filename, f)
 	if err != nil {
-		fmt.Printf("could not read file %q: %v\n", filename, err)
-		return
+		fmt.Printf("failure to apply filter: %v\n", err)
 	}
-
-	gf := &frugalFilterYaml{}
-
-	err = yaml.Unmarshal(input, gf)
-	if err != nil {
-		fmt.Printf("could not unmarshl file %q: %v\n", filename, err)
-		return
-	}
-
-	for i := 0; i < len(f.Services); i++ {
-		service := f.Services[i]
-		if shouldEntirelyRemoveService(gf, service) {
-			f.Services = append(f.Services[:i], f.Services[i+1:]...)
-			i--
-			continue
-		}
-
-		applyFilterToService(gf, service)
-	}
-
-	for i := 0; i < len(f.Scopes); i++ {
-		if shouldEntirelyRemoveScope(gf, f.Scopes[i]) {
-			f.Scopes = append(f.Scopes[:i], f.Scopes[i+1:]...)
-			i--
-			continue
-		}
-	}
-
-	// TODO do the same for structs...
 }
 
 // CreateFile creates a new file using the given configuration.
