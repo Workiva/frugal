@@ -45,7 +45,7 @@ func (b *BaseGenerator) FilterInput(f *parser.Frugal) {
 		return
 	}
 
-	gf := &generatorFilter{}
+	gf := &frugalFilterYaml{}
 
 	err = yaml.Unmarshal(input, gf)
 	if err != nil {
@@ -62,6 +62,14 @@ func (b *BaseGenerator) FilterInput(f *parser.Frugal) {
 		}
 
 		applyFilterToService(gf, service)
+	}
+
+	for i := 0; i < len(f.Scopes); i++ {
+		if shouldEntirelyRemoveScope(gf, f.Scopes[i]) {
+			f.Scopes = append(f.Scopes[:i], f.Scopes[i+1:]...)
+			i--
+			continue
+		}
 	}
 
 	// TODO do the same for structs...
