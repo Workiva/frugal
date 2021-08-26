@@ -29,9 +29,11 @@ func newYamlSpec(filename string) (*filterSpec, error) {
 }
 
 type definitionsSpec struct {
-	Services []serviceSpec `yaml:"services"`
-	Structs  *structSpec   `yaml:"structs"`
-	Scopes   *scopesSpec   `yaml:"scopes"`
+	Services  []serviceSpec  `yaml:"services"`
+	Structs   *structSpec    `yaml:"structs"`
+	Scopes    *scopesSpec    `yaml:"scopes"`
+	Constants *constantsSpec `yaml:"constants"`
+	Typedefs  *typedefsSpec  `yaml:"types"`
 }
 
 func (ffs *definitionsSpec) isServiceSpecified(
@@ -85,4 +87,24 @@ func (ffs *definitionsSpec) isStructSpecified(
 	}
 
 	return ffs.Structs.isStructSpecified(s)
+}
+
+func (ffs *definitionsSpec) isConstantSpecified(
+	s *parser.Constant,
+) bool {
+	if ffs == nil {
+		return false
+	}
+
+	return ffs.Constants.isSpecified(s)
+}
+
+func (ffs *definitionsSpec) isTypedefSpecified(
+	s *parser.TypeDef,
+) bool {
+	if ffs == nil {
+		return false
+	}
+
+	return ffs.Typedefs.isSpecified(s)
 }

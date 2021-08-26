@@ -16,10 +16,10 @@ func Apply(
 	applyToServices(spec, f)
 	applyToScopes(spec, f)
 	applyToStructs(spec, f)
+	applyToTypeDefs(spec, f)
+	applyToConstants(spec, f)
 
-	// TODO consider Enums, Constants, Exceptions, Unions, Namespaces, Typedefs, Includes?
-
-	// TODO do the same for structs...
+	// TODO consider Enums, Namespaces, Includes?
 
 	return nil
 }
@@ -102,6 +102,62 @@ func applyToStructs(
 
 		if spec.Excluded.isStructSpecified(s) {
 			f.Unions = append(f.Unions[:i], f.Unions[i+1:]...)
+			i--
+		}
+	}
+}
+
+func applyToConstants(
+	spec *filterSpec,
+	f *parser.Frugal,
+) {
+	if spec.Excluded.Constants == nil ||
+		(spec.Excluded.Constants.All != nil &&
+			*spec.Excluded.Constants.All != true) {
+		// we have nothing to do if we're not specified in the excludes or if we
+		// aren't excluding all
+		return
+	}
+
+	// requiredStructs := getNeededStructs(spec, f)
+
+	for i := 0; i < len(f.Constants); i++ {
+		s := f.Constants[i]
+
+		// if structListContains(requiredStructs, s) {
+		// 	continue
+		// }
+
+		if spec.Excluded.isConstantSpecified(s) {
+			f.Constants = append(f.Constants[:i], f.Constants[i+1:]...)
+			i--
+		}
+	}
+}
+
+func applyToTypeDefs(
+	spec *filterSpec,
+	f *parser.Frugal,
+) {
+	if spec.Excluded.Typedefs == nil ||
+		(spec.Excluded.Typedefs.All != nil &&
+			*spec.Excluded.Typedefs.All != true) {
+		// we have nothing to do if we're not specified in the excludes or if we
+		// aren't excluding all
+		return
+	}
+
+	// requiredStructs := getNeededStructs(spec, f)
+
+	for i := 0; i < len(f.Typedefs); i++ {
+		s := f.Typedefs[i]
+
+		// if structListContains(requiredStructs, s) {
+		// 	continue
+		// }
+
+		if spec.Excluded.isTypedefSpecified(s) {
+			f.Typedefs = append(f.Typedefs[:i], f.Typedefs[i+1:]...)
 			i--
 		}
 	}
