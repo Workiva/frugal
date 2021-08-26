@@ -104,3 +104,15 @@ func applyToStructs(
 		}
 	}
 }
+
+func structListContains(
+	ss []*parser.Struct,
+	s *parser.Struct,
+) bool {
+	for _, other := range ss {
+		if s.Name == other.Name {
+			return true
+		}
+	}
+	return false
+}

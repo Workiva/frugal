@@ -20,14 +20,14 @@ func newYamlSpec(filename string) (*filterSpec, error) {
 		return nil, err
 	}
 
-	gf := &filterSpec{}
+	fs := &filterSpec{}
 
-	err = yaml.Unmarshal(input, gf)
+	err = yaml.Unmarshal(input, fs)
 	if err != nil {
 		return nil, err
 	}
 
-	return gf, nil
+	return fs, nil
 }
 
 // definitionsSpec is all of the Services, Scopes, and Structs that should be included/excluded.
@@ -38,15 +38,13 @@ type definitionsSpec struct {
 	Scopes   *scopesSpec   `yaml:"scopes"`
 }
 
-func (ds *definitionsSpec) isServiceSpecified(
-	s *parser.Service,
-) bool {
+func (ds *definitionsSpec) isServiceSpecified(s *parser.Service) bool {
 	if ds == nil {
 		return false
 	}
 
-	for _, fs := range ds.Services {
-		if fs.matches(s) {
+	for _, ss := range ds.Services {
+		if ss.matches(s) {
 			return true
 		}
 	}
@@ -54,30 +52,24 @@ func (ds *definitionsSpec) isServiceSpecified(
 	return false
 }
 
-func (ds *definitionsSpec) isEntireServiceSpecified(
-	s *parser.Service,
-) bool {
+func (ds *definitionsSpec) isEntireServiceSpecified(s *parser.Service) bool {
 	if ds == nil {
 		return false
 	}
 
-	for _, fs := range ds.Services {
-		if fs.matches(s) && fs.Entire != nil {
-			return *fs.Entire
+	for _, ss := range ds.Services {
+		if ss.isEntireServiceSpecified(s) {
+			return true
 		}
 	}
 
 	return false
 }
 
-func (ds *definitionsSpec) isEntireScopeSpecified(
-	s *parser.Scope,
-) bool {
+func (ds *definitionsSpec) isEntireScopeSpecified(s *parser.Scope) bool {
 	return ds != nil && ds.Scopes.isSpecified(s)
 }
 
-func (ds *definitionsSpec) isStructSpecified(
-	s *parser.Struct,
-) bool {
+func (ds *definitionsSpec) isStructSpecified(s *parser.Struct) bool {
 	return ds != nil && ds.Structs.isStructSpecified(s)
 }

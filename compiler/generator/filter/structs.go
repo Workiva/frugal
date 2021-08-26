@@ -91,16 +91,16 @@ func isStructUsedByService(
 	}
 
 	for _, m := range service.Methods {
-		if typeContainsType(s, m.ReturnType) {
+		if structExistsInType(s, m.ReturnType) {
 			return true
 		}
 		for _, arg := range m.Arguments {
-			if structContainsType(s, arg) {
+			if structExistsInField(s, arg) {
 				return true
 			}
 		}
 		for _, exc := range m.Exceptions {
-			if structContainsType(s, exc) {
+			if structExistsInField(s, exc) {
 				return true
 			}
 		}
@@ -128,7 +128,7 @@ func getAllSubstructs(
 		for i := 0; len(notInSubset) > 0 && i < len(notInSubset); i++ {
 			other := notInSubset[i]
 			for _, f := range s.Fields {
-				if structContainsType(other, f) {
+				if structExistsInField(other, f) {
 					subset = append(subset, other)
 					toCheck = append(toCheck, other)
 					notInSubset = append(notInSubset[:i], notInSubset[i+1:]...)
@@ -141,17 +141,17 @@ func getAllSubstructs(
 	return subset
 }
 
-// structContainsType returns true if the struct appears in the given field.
+// structExistsInField returns true if the struct appears in the given field.
 // The field may have sub-types that use the given struct. If so, this still
 // returns true.
-func structContainsType(
+func structExistsInField(
 	s *parser.Struct,
 	field *parser.Field,
 ) bool {
-	return typeContainsType(s, field.Type)
+	return structExistsInType(s, field.Type)
 }
 
-func typeContainsType(
+func structExistsInType(
 	s *parser.Struct,
 	typ *parser.Type,
 ) bool {
@@ -164,25 +164,13 @@ func typeContainsType(
 	}
 
 	// Check slices and maps by checking KeyType and ValueType
-	if typeContainsType(s, typ.KeyType) {
+	if structExistsInType(s, typ.KeyType) {
 		return true
 	}
 
-	if typeContainsType(s, typ.ValueType) {
+	if structExistsInType(s, typ.ValueType) {
 		return true
 	}
 
-	return false
-}
-
-func structListContains(
-	ss []*parser.Struct,
-	s *parser.Struct,
-) bool {
-	for _, other := range ss {
-		if s.Name == other.Name {
-			return true
-		}
-	}
 	return false
 }
