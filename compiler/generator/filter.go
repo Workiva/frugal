@@ -12,9 +12,9 @@ type frugalFilterYaml struct {
 }
 
 type frugalFilterSpec struct {
-	Services  []filterFrugalService `yaml:"services"`
-	Structs   []filterFrugalStruct  `yaml:"structs"`
-	AllScopes *bool                 `yaml:"allScopes"`
+	Services []frugalFilterServiceSpec `yaml:"services"`
+	Structs  []filterFrugalStruct      `yaml:"structs"`
+	Scopes   *frugalFilterScopesSpec   `yaml:"scopes"`
 }
 
 func (ffs *frugalFilterSpec) isServiceSpecified(
@@ -51,24 +51,26 @@ func (ffs *frugalFilterSpec) isEntireService(
 func (ffs *frugalFilterSpec) shouldRemoveScope(
 	s *parser.Scope,
 ) bool {
-	if ffs == nil {
+	if ffs == nil || ffs.Scopes == nil {
 		return false
 	}
 
-	return ffs.AllScopes != nil && *ffs.AllScopes
+	// Currently, we don't have the ability to filter at a per-scope level.
+	// It's all or nothing.
+	return ffs.Scopes.All != nil && *ffs.Scopes.All
 }
 
-type filterFrugalService struct {
+type frugalFilterServiceSpec struct {
 	Name    string   `yaml:"name"`
 	Entire  *bool    `yaml:"all"`
 	Methods []string `yaml:"methods"`
 }
 
-func (ffs *filterFrugalService) isService(s *parser.Service) bool {
+func (ffs *frugalFilterServiceSpec) isService(s *parser.Service) bool {
 	return strings.EqualFold(s.Name, ffs.Name)
 }
 
-func (ffs *filterFrugalService) hasMethod(
+func (ffs *frugalFilterServiceSpec) hasMethod(
 	m *parser.Method,
 ) bool {
 	for _, fm := range ffs.Methods {
@@ -77,6 +79,10 @@ func (ffs *filterFrugalService) hasMethod(
 		}
 	}
 	return false
+}
+
+type frugalFilterScopesSpec struct {
+	All *bool `yaml:"all"`
 }
 
 type filterFrugalStruct struct {
