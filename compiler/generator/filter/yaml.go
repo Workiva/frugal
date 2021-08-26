@@ -3,10 +3,12 @@ package filter
 import (
 	"io/ioutil"
 
-	"github.com/Workiva/frugal/compiler/parser"
 	"gopkg.in/yaml.v2"
+
+	"github.com/Workiva/frugal/compiler/parser"
 )
 
+// filterSpec is the top-level definition of what should be filtered
 type filterSpec struct {
 	Included *definitionsSpec `yaml:"included"`
 	Excluded *definitionsSpec `yaml:"excluded"`
@@ -28,35 +30,38 @@ func newYamlSpec(filename string) (*filterSpec, error) {
 	return gf, nil
 }
 
+// definitionsSpec is all of the Services, Scopes, and Structs that should be included/excluded.
+// Eventually this may include constants, typedefs, and others.
 type definitionsSpec struct {
 	Services []serviceSpec `yaml:"services"`
 	Structs  *structSpec   `yaml:"structs"`
 	Scopes   *scopesSpec   `yaml:"scopes"`
 }
 
-func (ffs *definitionsSpec) isServiceSpecified(
+func (ds *definitionsSpec) isServiceSpecified(
 	s *parser.Service,
 ) bool {
-	if ffs == nil {
+	if ds == nil {
 		return false
 	}
 
-	for _, fs := range ffs.Services {
+	for _, fs := range ds.Services {
 		if fs.matches(s) {
 			return true
 		}
 	}
+
 	return false
 }
 
-func (ffs *definitionsSpec) isEntireServiceSpecified(
+func (ds *definitionsSpec) isEntireServiceSpecified(
 	s *parser.Service,
 ) bool {
-	if ffs == nil {
+	if ds == nil {
 		return false
 	}
 
-	for _, fs := range ffs.Services {
+	for _, fs := range ds.Services {
 		if fs.matches(s) && fs.Entire != nil {
 			return *fs.Entire
 		}
@@ -65,24 +70,14 @@ func (ffs *definitionsSpec) isEntireServiceSpecified(
 	return false
 }
 
-func (ffs *definitionsSpec) isEntireScopeSpecified(
+func (ds *definitionsSpec) isEntireScopeSpecified(
 	s *parser.Scope,
 ) bool {
-	if ffs == nil || ffs.Scopes == nil {
-		return false
-	}
-
-	// Currently, we don't have the ability to filter at a per-scope level.
-	// It's all or nothing.
-	return ffs.Scopes.All != nil && *ffs.Scopes.All
+	return ds != nil && ds.Scopes.isSpecified(s)
 }
 
-func (ffs *definitionsSpec) isStructSpecified(
+func (ds *definitionsSpec) isStructSpecified(
 	s *parser.Struct,
 ) bool {
-	if ffs == nil {
-		return false
-	}
-
-	return ffs.Structs.isStructSpecified(s)
+	return ds != nil && ds.Structs.isStructSpecified(s)
 }

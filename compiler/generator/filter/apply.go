@@ -17,9 +17,7 @@ func Apply(
 	applyToScopes(spec, f)
 	applyToStructs(spec, f)
 
-	// TODO consider Enums, Constants, Exceptions, Unions, Namespaces, Typedefs, Includes?
-
-	// TODO do the same for structs...
+	// FUTURE: filter out Enums, Constants, Namespaces, Typedefs, and Includes
 
 	return nil
 }

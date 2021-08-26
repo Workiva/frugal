@@ -31,22 +31,28 @@ func (ss *structSpec) isStructSpecified(
 	return false
 }
 
-// AFAICT this will not be able to pick up types that are used across
-// frugal generated repos appropriately...
+// getNeededStructs will return the known struct-ish types that will be needed.
+//
+// It includes Structs, Exceptions, and Unions (struct-ish).
+// This will not be able to pick up types that are used across
+// frugal generated repos appropriately.
 func getNeededStructs(
 	spec *filterSpec,
 	f *parser.Frugal,
 ) []*parser.Struct {
 
-	allStructIshs := make([]*parser.Struct, 0, len(f.Structs))
-	allStructIshs = append(allStructIshs, f.Structs...)
-	allStructIshs = append(allStructIshs, f.Exceptions...)
-	allStructIshs = append(allStructIshs, f.Unions...)
+	// Structs, Exceptions, and Unions can all inherit from each other.
+	// i.e. If a union is a union of structs, then we'll need to
+	// parse through all three types to notice that.
+	allParserStructs := make([]*parser.Struct, 0, len(f.Structs))
+	allParserStructs = append(allParserStructs, f.Structs...)
+	allParserStructs = append(allParserStructs, f.Exceptions...)
+	allParserStructs = append(allParserStructs, f.Unions...)
 
-	subset := make([]*parser.Struct, 0, len(allStructIshs)/2)
-	notAdded := make([]*parser.Struct, 0, len(allStructIshs)/2)
+	subset := make([]*parser.Struct, 0, len(allParserStructs)/2)
+	notAdded := make([]*parser.Struct, 0, len(allParserStructs)/2)
 
-	for _, s := range allStructIshs {
+	for _, s := range allParserStructs {
 		if spec.Included.isStructSpecified(s) {
 			// this struct is needed because the caller specified it
 			// specifically.
@@ -68,7 +74,7 @@ func isStructUsedByAnyService(
 	services []*parser.Service,
 ) bool {
 	for _, service := range services {
-		if isUsedByService(s, service) {
+		if isStructUsedByService(s, service) {
 			// this struct is needed because a service wants it.
 			return true
 		}
@@ -76,7 +82,7 @@ func isStructUsedByAnyService(
 	return false
 }
 
-func isUsedByService(
+func isStructUsedByService(
 	s *parser.Struct,
 	service *parser.Service,
 ) bool {
@@ -85,18 +91,16 @@ func isUsedByService(
 	}
 
 	for _, m := range service.Methods {
-		if m.ReturnType != nil {
-			if s.Name == m.ReturnType.Name {
-				return true
-			}
+		if typeContainsType(s, m.ReturnType) {
+			return true
 		}
 		for _, arg := range m.Arguments {
-			if s.Name == arg.Type.Name {
+			if structContainsType(s, arg) {
 				return true
 			}
 		}
 		for _, exc := range m.Exceptions {
-			if s.Name == exc.Type.Name {
+			if structContainsType(s, exc) {
 				return true
 			}
 		}
@@ -105,7 +109,12 @@ func isUsedByService(
 	return false
 }
 
-// the subset and notInSubset slices may be mutated during the call of this func.
+// getAllSubstructs iterates through the types of the subset
+// to determine which of the `notInSubset` Structs also need
+// to be pulled in. It returns the `subset` + any needed from
+// the `notInSubset`.
+//
+// Note: the input slices may be mutated during the call of this func.
 func getAllSubstructs(
 	subset, notInSubset []*parser.Struct,
 ) []*parser.Struct {
@@ -132,6 +141,9 @@ func getAllSubstructs(
 	return subset
 }
 
+// structContainsType returns true if the struct appears in the given field.
+// The field may have sub-types that use the given struct. If so, this still
+// returns true.
 func structContainsType(
 	s *parser.Struct,
 	field *parser.Field,
@@ -151,7 +163,7 @@ func typeContainsType(
 		return true
 	}
 
-	// Check slices and maps:
+	// Check slices and maps by checking KeyType and ValueType
 	if typeContainsType(s, typ.KeyType) {
 		return true
 	}

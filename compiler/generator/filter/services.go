@@ -12,14 +12,14 @@ type serviceSpec struct {
 	Methods []string `yaml:"methods"`
 }
 
-func (ffs *serviceSpec) matches(s *parser.Service) bool {
-	return strings.EqualFold(s.Name, ffs.Name)
+func (ss *serviceSpec) matches(s *parser.Service) bool {
+	return strings.EqualFold(s.Name, ss.Name)
 }
 
-func (ffs *serviceSpec) isMethodSpecified(
+func (ss *serviceSpec) isMethodSpecified(
 	m *parser.Method,
 ) bool {
-	for _, fm := range ffs.Methods {
+	for _, fm := range ss.Methods {
 		if strings.EqualFold(m.Name, fm) {
 			return true
 		}
@@ -42,9 +42,10 @@ func applyFilterToService(
 	msc := s.Methods
 
 	if isIncludesSpecified {
+		// reset the msc so that we only start including the desired "includes"
 		msc = msc[:0]
 		for _, sf := range gf.Included.Services {
-			if sf.Name != s.Name {
+			if !sf.matches(s) {
 				continue
 			}
 
@@ -60,7 +61,7 @@ func applyFilterToService(
 
 	if isExcludesSpecified {
 		for _, sf := range gf.Excluded.Services {
-			if sf.Name != s.Name {
+			if !sf.matches(s) {
 				continue
 			}
 
