@@ -7,18 +7,18 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type frugalFilterYaml struct {
-	Included *frugalFilterSpec `yaml:"included"`
-	Excluded *frugalFilterSpec `yaml:"excluded"`
+type filterSpec struct {
+	Included *definitionsSpec `yaml:"included"`
+	Excluded *definitionsSpec `yaml:"excluded"`
 }
 
-func newYamlSpec(filename string) (*frugalFilterYaml, error) {
+func newYamlSpec(filename string) (*filterSpec, error) {
 	input, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	gf := &frugalFilterYaml{}
+	gf := &filterSpec{}
 
 	err = yaml.Unmarshal(input, gf)
 	if err != nil {
@@ -28,13 +28,13 @@ func newYamlSpec(filename string) (*frugalFilterYaml, error) {
 	return gf, nil
 }
 
-type frugalFilterSpec struct {
-	Services []frugalFilterServiceSpec `yaml:"services"`
-	Structs  []filterFrugalStruct      `yaml:"structs"`
-	Scopes   *frugalFilterScopesSpec   `yaml:"scopes"`
+type definitionsSpec struct {
+	Services []serviceSpec `yaml:"services"`
+	Structs  []structSpec  `yaml:"structs"`
+	Scopes   *scopesSpec   `yaml:"scopes"`
 }
 
-func (ffs *frugalFilterSpec) isServiceSpecified(
+func (ffs *definitionsSpec) isServiceSpecified(
 	s *parser.Service,
 ) bool {
 	if ffs == nil {
@@ -42,14 +42,14 @@ func (ffs *frugalFilterSpec) isServiceSpecified(
 	}
 
 	for _, fs := range ffs.Services {
-		if fs.isService(s) {
+		if fs.matches(s) {
 			return true
 		}
 	}
 	return false
 }
 
-func (ffs *frugalFilterSpec) isEntireService(
+func (ffs *definitionsSpec) isEntireServiceSpecified(
 	s *parser.Service,
 ) bool {
 	if ffs == nil {
@@ -57,7 +57,7 @@ func (ffs *frugalFilterSpec) isEntireService(
 	}
 
 	for _, fs := range ffs.Services {
-		if fs.isService(s) && fs.Entire != nil {
+		if fs.matches(s) && fs.Entire != nil {
 			return *fs.Entire
 		}
 	}
@@ -65,7 +65,7 @@ func (ffs *frugalFilterSpec) isEntireService(
 	return false
 }
 
-func (ffs *frugalFilterSpec) shouldRemoveScope(
+func (ffs *definitionsSpec) isEntireScopeSpecified(
 	s *parser.Scope,
 ) bool {
 	if ffs == nil || ffs.Scopes == nil {

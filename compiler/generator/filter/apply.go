@@ -11,9 +11,21 @@ func Apply(
 		return err
 	}
 
+	applyToServices(spec, f)
+	applyToScopes(spec, f)
+
+	// TODO do the same for structs...
+
+	return nil
+}
+
+func applyToServices(
+	spec *filterSpec,
+	f *parser.Frugal,
+) {
 	for i := 0; i < len(f.Services); i++ {
 		service := f.Services[i]
-		if shouldEntirelyRemoveService(spec, service) {
+		if spec.Excluded.isEntireServiceSpecified(service) {
 			f.Services = append(f.Services[:i], f.Services[i+1:]...)
 			i--
 			continue
@@ -21,30 +33,17 @@ func Apply(
 
 		applyFilterToService(spec, service)
 	}
+}
 
+func applyToScopes(
+	spec *filterSpec,
+	f *parser.Frugal,
+) {
 	for i := 0; i < len(f.Scopes); i++ {
-		if shouldEntirelyRemoveScope(spec, f.Scopes[i]) {
+		if spec.Excluded.isEntireScopeSpecified(f.Scopes[i]) {
 			f.Scopes = append(f.Scopes[:i], f.Scopes[i+1:]...)
 			i--
 			continue
 		}
 	}
-
-	// TODO do the same for structs...
-
-	return nil
-}
-
-func shouldEntirelyRemoveService(
-	gf *frugalFilterYaml,
-	s *parser.Service,
-) bool {
-	return gf.Excluded.isEntireService(s)
-}
-
-func shouldEntirelyRemoveScope(
-	gf *frugalFilterYaml,
-	s *parser.Scope,
-) bool {
-	return gf.Excluded.shouldRemoveScope(s)
 }

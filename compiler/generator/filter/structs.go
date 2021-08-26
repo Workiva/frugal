@@ -1,5 +1,5 @@
 package filter
 
-type filterFrugalStruct struct {
+type structSpec struct {
 	Name string `yaml:"name"`
 }

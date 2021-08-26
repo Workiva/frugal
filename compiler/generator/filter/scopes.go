@@ -1,5 +1,5 @@
 package filter
 
-type frugalFilterScopesSpec struct {
+type scopesSpec struct {
 	All *bool `yaml:"all"`
 }

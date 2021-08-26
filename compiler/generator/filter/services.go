@@ -6,17 +6,17 @@ import (
 	"github.com/Workiva/frugal/compiler/parser"
 )
 
-type frugalFilterServiceSpec struct {
+type serviceSpec struct {
 	Name    string   `yaml:"name"`
 	Entire  *bool    `yaml:"all"`
 	Methods []string `yaml:"methods"`
 }
 
-func (ffs *frugalFilterServiceSpec) isService(s *parser.Service) bool {
+func (ffs *serviceSpec) matches(s *parser.Service) bool {
 	return strings.EqualFold(s.Name, ffs.Name)
 }
 
-func (ffs *frugalFilterServiceSpec) hasMethod(
+func (ffs *serviceSpec) isMethodSpecified(
 	m *parser.Method,
 ) bool {
 	for _, fm := range ffs.Methods {
@@ -28,7 +28,7 @@ func (ffs *frugalFilterServiceSpec) hasMethod(
 }
 
 func applyFilterToService(
-	gf *frugalFilterYaml,
+	gf *filterSpec,
 	s *parser.Service,
 ) {
 
@@ -49,7 +49,7 @@ func applyFilterToService(
 			}
 
 			for _, m := range s.Methods {
-				if !methodSliceIncludes(msc, m) && sf.hasMethod(m) {
+				if !methodSliceIncludes(msc, m) && sf.isMethodSpecified(m) {
 					// add methods if they have not already been included
 					// and if the included spec has them
 					msc = append(msc, m)
@@ -65,7 +65,7 @@ func applyFilterToService(
 			}
 
 			for i := 0; i < len(msc); i++ {
-				if sf.hasMethod(msc[i]) {
+				if sf.isMethodSpecified(msc[i]) {
 					// add methods if they have not already been included
 					// and if the included spec has them
 					msc = append(msc[:i], msc[i+1:]...)
