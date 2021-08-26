@@ -30,7 +30,7 @@ func newYamlSpec(filename string) (*filterSpec, error) {
 
 type definitionsSpec struct {
 	Services []serviceSpec `yaml:"services"`
-	Structs  []structSpec  `yaml:"structs"`
+	Structs  *structSpec   `yaml:"structs"`
 	Scopes   *scopesSpec   `yaml:"scopes"`
 }
 
@@ -75,4 +75,14 @@ func (ffs *definitionsSpec) isEntireScopeSpecified(
 	// Currently, we don't have the ability to filter at a per-scope level.
 	// It's all or nothing.
 	return ffs.Scopes.All != nil && *ffs.Scopes.All
+}
+
+func (ffs *definitionsSpec) isStructSpecified(
+	s *parser.Struct,
+) bool {
+	if ffs == nil {
+		return false
+	}
+
+	return ffs.Structs.isStructSpecified(s)
 }
