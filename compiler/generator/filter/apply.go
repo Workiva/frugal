@@ -13,6 +13,11 @@ func Apply(
 		return err
 	}
 
+	if spec == nil || (spec.Included == nil && spec.Excluded == nil) {
+		// nothing to do!
+		return nil
+	}
+
 	debugPrintf("\n\nStarting filter of generated frugal in %q from %q...\n\n", f.Name, f.File)
 	defer debugPrintf("\nCompleted filter of generated frugal in %q from %q.\n\n", f.Name, f.File)
 
