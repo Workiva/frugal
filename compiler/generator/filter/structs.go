@@ -54,13 +54,16 @@ func getNeededStructs(
 
 	for _, s := range allParserStructs {
 		if spec.Included.isStructSpecified(s) {
+			debugPrintf("Including struct %q\n\tSpecified in Include\n", s.Name)
 			// this struct is needed because the caller specified it
 			// specifically.
 			subset = append(subset, s)
 		} else if isStructUsedByAnyService(s, f.Services) {
+			debugPrintf("Including struct %q\n\tUsed by a Service\n", s.Name)
 			// it's needed because a Service needs it.
 			subset = append(subset, s)
 		} else {
+			debugPrintf("Initially skipping struct %q\n\tNot directly specified in struct input or service method input\n", s.Name)
 			notAdded = append(notAdded, s)
 		}
 	}
@@ -124,20 +127,33 @@ func getAllSubstructs(
 		s := toCheck[0]
 		toCheck = toCheck[1:]
 
+		// look at all of the structs that aren't in the "known to include" subset.
+		// If we find any that are used by `toCheck`, then add them to the subset,
+		// and make sure we iterate down into them by also adding them to `toCheck`.
 		for i := 0; len(notInSubset) > 0 && i < len(notInSubset); i++ {
 			other := notInSubset[i]
-			for _, f := range s.Fields {
-				if structExistsInField(other, f) {
-					subset = append(subset, other)
-					toCheck = append(toCheck, other)
-					notInSubset = append(notInSubset[:i], notInSubset[i+1:]...)
-					i--
-					break
-				}
+			if structExistsInAnyField(other, s.Fields) {
+				debugPrintf("Now including struct %q\n\tUsed in field (or sub-field) of %q\n", other.Name, s.Name)
+				subset = append(subset, other)
+				toCheck = append(toCheck, other)
+				notInSubset = append(notInSubset[:i], notInSubset[i+1:]...)
+				i--
 			}
 		}
 	}
 	return subset
+}
+
+func structExistsInAnyField(
+	s *parser.Struct,
+	fields []*parser.Field,
+) bool {
+	for _, f := range fields {
+		if structExistsInField(s, f) {
+			return true
+		}
+	}
+	return false
 }
 
 // structExistsInField returns true if the struct appears in the given field.
