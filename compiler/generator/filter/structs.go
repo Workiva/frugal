@@ -161,7 +161,7 @@ func structExistsInAnyField(
 	fields []*parser.Field,
 ) bool {
 	for _, f := range fields {
-		if structExistsInField(s, f) {
+		if f != nil && structExistsInField(s, f) {
 			return true
 		}
 	}
