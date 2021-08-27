@@ -33,37 +33,17 @@ func newYamlSpec(filename string) (*filterSpec, error) {
 // definitionsSpec is all of the Services, Scopes, and Structs that should be included/excluded.
 // Eventually this may include constants, typedefs, and others.
 type definitionsSpec struct {
-	Services []serviceSpec `yaml:"services"`
+	Services *servicesSpec `yaml:"services"`
 	Structs  *structSpec   `yaml:"structs"`
 	Scopes   *scopesSpec   `yaml:"scopes"`
 }
 
 func (ds *definitionsSpec) isServiceSpecified(s *parser.Service) bool {
-	if ds == nil {
-		return false
-	}
-
-	for _, ss := range ds.Services {
-		if ss.matches(s) {
-			return true
-		}
-	}
-
-	return false
+	return ds != nil && ds.Services.isServiceSpecified(s)
 }
 
 func (ds *definitionsSpec) isEntireServiceSpecified(s *parser.Service) bool {
-	if ds == nil {
-		return false
-	}
-
-	for _, ss := range ds.Services {
-		if ss.isEntireServiceSpecified(s) {
-			return true
-		}
-	}
-
-	return false
+	return ds != nil && ds.Services.isEntireServiceSpecified(s)
 }
 
 func (ds *definitionsSpec) isEntireScopeSpecified(s *parser.Scope) bool {

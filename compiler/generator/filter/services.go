@@ -6,6 +6,47 @@ import (
 	"github.com/Workiva/frugal/compiler/parser"
 )
 
+type servicesSpec struct {
+	All   *bool         `yaml:"all"`
+	Specs []serviceSpec `yaml:"specs"`
+}
+
+func (ss *servicesSpec) isEntireServiceSpecified(s *parser.Service) bool {
+	if ss == nil {
+		return false
+	}
+
+	if ss.All != nil && *ss.All {
+		return true
+	}
+
+	for _, ss := range ss.Specs {
+		if ss.isEntireServiceSpecified(s) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (ss *servicesSpec) isServiceSpecified(s *parser.Service) bool {
+	if ss == nil {
+		return false
+	}
+
+	if ss.All != nil && *ss.All {
+		return true
+	}
+
+	for _, ss := range ss.Specs {
+		if ss.matches(s) {
+			return true
+		}
+	}
+
+	return false
+}
+
 type serviceSpec struct {
 	Name    string   `yaml:"name"`
 	Entire  *bool    `yaml:"all"`
@@ -48,7 +89,7 @@ func applyFilterToService(
 	if isIncludesSpecified {
 		// reset the msc so that we only start including the desired "includes"
 		msc = msc[:0]
-		for _, sf := range fs.Included.Services {
+		for _, sf := range fs.Included.Services.Specs {
 			if !sf.matches(s) {
 				continue
 			}
@@ -64,7 +105,7 @@ func applyFilterToService(
 	}
 
 	if isExcludesSpecified {
-		for _, sf := range fs.Excluded.Services {
+		for _, sf := range fs.Excluded.Services.Specs {
 			if !sf.matches(s) {
 				continue
 			}

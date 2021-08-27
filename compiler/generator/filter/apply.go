@@ -28,7 +28,10 @@ func applyToServices(
 ) {
 	for i := 0; i < len(f.Services); i++ {
 		service := f.Services[i]
-		if spec.Excluded.isEntireServiceSpecified(service) {
+		// if we're trying to exclude the entire service, and we don't have
+		// it explicitly included for any reason, let's remove it entirely.
+		if spec.Excluded.isEntireServiceSpecified(service) &&
+			!spec.Included.isServiceSpecified(service) {
 			f.Services = append(f.Services[:i], f.Services[i+1:]...)
 			i--
 			continue
