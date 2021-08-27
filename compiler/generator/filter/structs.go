@@ -54,18 +54,30 @@ func getNeededStructs(
 
 	for _, s := range allParserStructs {
 		if spec.Included.isStructSpecified(s) {
-			debugPrintf("Including struct %q\n\tSpecified in Include\n", s.Name)
+			debugPrintf("Including %q\n", s.Name)
+			debugPrintln("\tSpecified in Include")
 			// this struct is needed because the caller specified it
 			// specifically.
 			subset = append(subset, s)
-		} else if isStructUsedByAnyService(s, f.Services) {
-			debugPrintf("Including struct %q\n\tUsed by a Service\n", s.Name)
+			continue
+		}
+		if isStructUsedByAnyService(s, f.Services) {
+			debugPrintf("Including %q\n", s.Name)
+			debugPrintln("\tUsed by a Service")
 			// it's needed because a Service needs it.
 			subset = append(subset, s)
-		} else {
-			debugPrintf("Initially skipping struct %q\n\tNot directly specified in struct input or service method input\n", s.Name)
-			notAdded = append(notAdded, s)
+			continue
 		}
+
+		// It would be nice to add a check for any of the `*Frugal` structs that
+		// include this `f`, but we currently do not have access to that while
+		// running the frugal binary. We would need a reverse look-up of `ParsedIncludes`.
+		// In the meantime, we require consumers to manually define all of the structs
+		// their methods will need from other packages.
+
+		debugPrintf("Skipping %q\n", s.Name)
+		debugPrintln("\tIt is not directly specified in struct input or service method input")
+		notAdded = append(notAdded, s)
 	}
 
 	return getAllSubstructs(subset, notAdded)
