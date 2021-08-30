@@ -178,3 +178,21 @@ func TestGetNeededStructs(t *testing.T) {
 	// - ArtistError (used by getArtist)
 	assert.Len(t, actStructs, 3)
 }
+
+func TestStructSliceIncludes(t *testing.T) {
+	assert.False(t, structListContains(nil, nil))
+	assert.False(t, structListContains([]*parser.Struct{{}}, nil))
+
+	artist := &parser.Struct{
+		Name: `Artist`,
+		Type: parser.StructTypeStruct,
+	}
+	artistException := &parser.Struct{
+		Name: `Artist`,
+		// Surprise! It's an exception with the same name!
+		Type: parser.StructTypeException,
+	}
+	assert.False(t, structListContains([]*parser.Struct{artist}, artistException))
+	assert.True(t, structListContains([]*parser.Struct{artist}, artist))
+	assert.True(t, structListContains([]*parser.Struct{artist, artistException}, artistException))
+}

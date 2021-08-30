@@ -205,3 +205,18 @@ func typeContainsStruct(
 
 	return false
 }
+
+func structListContains(
+	ss []*parser.Struct,
+	s *parser.Struct,
+) bool {
+	if s == nil {
+		return false
+	}
+	for _, other := range ss {
+		if s.Name == other.Name && s.Type == other.Type {
+			return true
+		}
+	}
+	return false
+}
