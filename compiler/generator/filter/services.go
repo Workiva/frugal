@@ -64,6 +64,10 @@ func (ss *serviceSpec) matches(s *parser.Service) bool {
 func (ss *serviceSpec) isMethodSpecified(
 	m *parser.Method,
 ) bool {
+	if m == nil {
+		return false
+	}
+
 	for _, fm := range ss.Methods {
 		if strings.EqualFold(m.Name, fm) {
 			return true
@@ -129,6 +133,10 @@ func methodSliceIncludes(
 	ms []*parser.Method,
 	other *parser.Method,
 ) bool {
+	if other == nil {
+		return false
+	}
+
 	for _, m := range ms {
 		if m.Name == other.Name {
 			return true

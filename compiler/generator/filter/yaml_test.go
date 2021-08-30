@@ -127,7 +127,7 @@ func TestNewYamlSpec(t *testing.T) {
 }
 
 func TestDefinitionsSpecIsServiceSpecified(t *testing.T) {
-	s := &parser.Service{Name: `josh`}
+	s := &parser.Service{Name: `albumService`}
 	var ds *definitionsSpec
 	assert.False(t, ds.isServiceSpecified(s))
 
@@ -145,18 +145,18 @@ func TestDefinitionsSpecIsServiceSpecified(t *testing.T) {
 	assert.False(t, ds.isServiceSpecified(s))
 
 	ds.Services.Specs = append(ds.Services.Specs, serviceSpec{
-		Name: `notjosh`,
+		Name: `notalbumService`,
 	})
 	assert.False(t, ds.isServiceSpecified(s))
 
 	ds.Services.Specs = append(ds.Services.Specs, serviceSpec{
-		Name: `josh`,
+		Name: `albumService`,
 	})
 	assert.True(t, ds.isServiceSpecified(s))
 }
 
 func TestDefinitionsSpecIsEntireServiceSpecified(t *testing.T) {
-	s := &parser.Service{Name: `josh`}
+	s := &parser.Service{Name: `albumService`}
 	var ds *definitionsSpec
 	assert.False(t, ds.isEntireServiceSpecified(s))
 
@@ -174,12 +174,12 @@ func TestDefinitionsSpecIsEntireServiceSpecified(t *testing.T) {
 	assert.False(t, ds.isEntireServiceSpecified(s))
 
 	ds.Services.Specs = append(ds.Services.Specs, serviceSpec{
-		Name: `notjosh`,
+		Name: `notalbumService`,
 	})
 	assert.False(t, ds.isEntireServiceSpecified(s))
 
 	ds.Services.Specs = append(ds.Services.Specs, serviceSpec{
-		Name: `josh`,
+		Name: `albumService`,
 	})
 	assert.False(t, ds.isEntireServiceSpecified(s))
 
@@ -192,7 +192,7 @@ func TestDefinitionsSpecIsEntireServiceSpecified(t *testing.T) {
 }
 
 func TestDefinitionsSpecIsEntireScopeSpecified(t *testing.T) {
-	s := &parser.Scope{Name: `josh`}
+	s := &parser.Scope{Name: `updatesScope`}
 	var ds *definitionsSpec
 	assert.False(t, ds.isEntireScopeSpecified(s))
 
