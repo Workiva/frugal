@@ -54,14 +54,18 @@ scope NewReleases prefix global.releases {
 }`
 )
 
+func GetTestStructs(t *testing.T) testingIDL {
+	return getTestStructs(t)
+}
+
 type testingIDL struct {
-	fileFrugal *parser.Frugal
+	FileFrugal *parser.Frugal
 
 	artist, song, year, place, album *parser.Struct
 
 	artistError *parser.Struct
 
-	musicService *parser.Service
+	MusicService *parser.Service
 
 	getArtist, getAlbum, getTop5Albums *parser.Method
 
@@ -83,21 +87,21 @@ func getTestStructs(t *testing.T) testingIDL {
 	require.IsType(t, &parser.Frugal{}, i)
 
 	res := testingIDL{
-		fileFrugal: i.(*parser.Frugal),
+		FileFrugal: i.(*parser.Frugal),
 	}
 
-	require.NotEmpty(t, res.fileFrugal.Exceptions)
-	for i := range res.fileFrugal.Exceptions {
-		e := res.fileFrugal.Exceptions[i]
+	require.NotEmpty(t, res.FileFrugal.Exceptions)
+	for i := range res.FileFrugal.Exceptions {
+		e := res.FileFrugal.Exceptions[i]
 		switch e.Name {
 		case `ArtistError`:
 			res.artistError = e
 		}
 	}
 
-	require.NotEmpty(t, res.fileFrugal.Structs)
-	for i := range res.fileFrugal.Structs {
-		s := res.fileFrugal.Structs[i]
+	require.NotEmpty(t, res.FileFrugal.Structs)
+	for i := range res.FileFrugal.Structs {
+		s := res.FileFrugal.Structs[i]
 		switch s.Name {
 		case `Artist`:
 			res.artist = s
@@ -113,11 +117,11 @@ func getTestStructs(t *testing.T) testingIDL {
 			res.burrito = s
 		}
 	}
-	for i := range res.fileFrugal.Services {
-		s := res.fileFrugal.Services[i]
+	for i := range res.FileFrugal.Services {
+		s := res.FileFrugal.Services[i]
 		switch s.Name {
 		case `MusicService`:
-			res.musicService = s
+			res.MusicService = s
 		}
 	}
 
@@ -127,10 +131,10 @@ func getTestStructs(t *testing.T) testingIDL {
 	require.NotNil(t, res.place)
 	require.NotNil(t, res.album)
 	require.NotNil(t, res.artistError)
-	require.NotNil(t, res.musicService)
+	require.NotNil(t, res.MusicService)
 
-	for i := range res.musicService.Methods {
-		m := res.musicService.Methods[i]
+	for i := range res.MusicService.Methods {
+		m := res.MusicService.Methods[i]
 		switch m.Name {
 		case `getArtist`:
 			res.getArtist = m

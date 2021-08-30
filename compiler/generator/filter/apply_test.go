@@ -20,9 +20,9 @@ func TestApplyToScopes(t *testing.T) {
 	err := yaml.Unmarshal([]byte(testYaml), fs)
 	require.NoError(t, err)
 
-	assert.NotEmpty(t, ts.fileFrugal.Scopes)
-	applyToScopes(fs, ts.fileFrugal)
-	assert.Empty(t, ts.fileFrugal.Scopes)
+	assert.NotEmpty(t, ts.FileFrugal.Scopes)
+	applyToScopes(fs, ts.FileFrugal)
+	assert.Empty(t, ts.FileFrugal.Scopes)
 }
 
 func TestApplyToStructs(t *testing.T) {
@@ -38,13 +38,13 @@ func TestApplyToStructs(t *testing.T) {
 	require.NoError(t, err)
 
 	// we don't want the services to keep around structs in this unit test.
-	ts.fileFrugal.Services = nil
+	ts.FileFrugal.Services = nil
 
-	assert.Len(t, ts.fileFrugal.Structs, 6)
-	assert.NotEmpty(t, ts.fileFrugal.Exceptions)
-	applyToStructs(fs, ts.fileFrugal)
-	assert.Len(t, ts.fileFrugal.Structs, 5)
-	assert.Empty(t, ts.fileFrugal.Exceptions)
+	assert.Len(t, ts.FileFrugal.Structs, 6)
+	assert.NotEmpty(t, ts.FileFrugal.Exceptions)
+	applyToStructs(fs, ts.FileFrugal)
+	assert.Len(t, ts.FileFrugal.Structs, 5)
+	assert.Empty(t, ts.FileFrugal.Exceptions)
 }
 
 func TestApplyToServices(t *testing.T) {
@@ -53,7 +53,7 @@ func TestApplyToServices(t *testing.T) {
 	testYaml := `excluded:
   services:
     specs:
-      - name: musicService
+      - name: MusicService
         methods:
           - getAlbum
           - getTop5Albums`
@@ -61,9 +61,9 @@ func TestApplyToServices(t *testing.T) {
 	err := yaml.Unmarshal([]byte(testYaml), fs)
 	require.NoError(t, err)
 
-	assert.Len(t, ts.musicService.Methods, 3)
-	applyToServices(fs, ts.fileFrugal)
-	assert.Len(t, ts.musicService.Methods, 1)
+	assert.Len(t, ts.MusicService.Methods, 3)
+	applyToServices(fs, ts.FileFrugal)
+	assert.Len(t, ts.MusicService.Methods, 1)
 }
 
 func TestApply(t *testing.T) {
@@ -75,7 +75,7 @@ func TestApply(t *testing.T) {
       - Burrito
   services:
     specs:
-      - name: musicService
+      - name: MusicService
         methods:
           - getArtist
 excluded:
@@ -93,17 +93,17 @@ excluded:
 	err = ioutil.WriteFile(filename, []byte(testYaml), 0)
 	require.NoError(t, err)
 
-	assert.NotEmpty(t, ts.fileFrugal.Scopes)
-	assert.Len(t, ts.musicService.Methods, 3)
-	assert.Len(t, ts.fileFrugal.Structs, 6)
-	assert.Len(t, ts.fileFrugal.Exceptions, 1)
+	assert.NotEmpty(t, ts.FileFrugal.Scopes)
+	assert.Len(t, ts.MusicService.Methods, 3)
+	assert.Len(t, ts.FileFrugal.Structs, 6)
+	assert.Len(t, ts.FileFrugal.Exceptions, 1)
 
-	err = Apply(filename, ts.fileFrugal)
+	err = Apply(filename, ts.FileFrugal)
 	require.NoError(t, err)
 
-	assert.Empty(t, ts.fileFrugal.Scopes)
-	assert.Len(t, ts.musicService.Methods, 1)
-	assert.Len(t, ts.fileFrugal.Structs, 2)
-	assert.Len(t, ts.fileFrugal.Exceptions, 1)
+	assert.Empty(t, ts.FileFrugal.Scopes)
+	assert.Len(t, ts.MusicService.Methods, 1)
+	assert.Len(t, ts.FileFrugal.Structs, 2)
+	assert.Len(t, ts.FileFrugal.Exceptions, 1)
 
 }

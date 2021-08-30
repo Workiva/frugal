@@ -145,7 +145,7 @@ func TestApplyFilterToService(t *testing.T) {
 	testYaml := `included:
   services:
     specs:
-      - name: musicService
+      - name: MusicService
         methods:
           - getAlbum
 excluded:
@@ -156,9 +156,9 @@ excluded:
 	require.NoError(t, err)
 	ts := getTestStructs(t)
 
-	assert.Len(t, ts.musicService.Methods, 3)
-	applyFilterToService(fs, ts.musicService)
+	assert.Len(t, ts.MusicService.Methods, 3)
+	applyFilterToService(fs, ts.MusicService)
 	// based on the yaml, we should only have the single method `getAlbum` now
-	require.Len(t, ts.musicService.Methods, 1)
-	assert.Equal(t, `getAlbum`, ts.musicService.Methods[0].Name)
+	require.Len(t, ts.MusicService.Methods, 1)
+	assert.Equal(t, `getAlbum`, ts.MusicService.Methods[0].Name)
 }

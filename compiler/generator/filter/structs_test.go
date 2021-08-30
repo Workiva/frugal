@@ -135,15 +135,15 @@ func TestGetAllSubstructs(t *testing.T) {
 func TestIsStructUsedByService(t *testing.T) {
 	ts := getTestStructs(t)
 
-	assert.True(t, isStructUsedByService(ts.artist, ts.musicService))
-	assert.False(t, isStructUsedByService(ts.burrito, ts.musicService))
+	assert.True(t, isStructUsedByService(ts.artist, ts.MusicService))
+	assert.False(t, isStructUsedByService(ts.burrito, ts.MusicService))
 }
 
 func TestIsStructUsedByAnyService(t *testing.T) {
 	ts := getTestStructs(t)
 
-	assert.True(t, isStructUsedByAnyService(ts.artist, ts.fileFrugal.Services))
-	assert.False(t, isStructUsedByAnyService(ts.burrito, ts.fileFrugal.Services))
+	assert.True(t, isStructUsedByAnyService(ts.artist, ts.FileFrugal.Services))
+	assert.False(t, isStructUsedByAnyService(ts.burrito, ts.FileFrugal.Services))
 }
 
 func TestGetNeededStructs(t *testing.T) {
@@ -158,20 +158,20 @@ func TestGetNeededStructs(t *testing.T) {
 	require.NoError(t, err)
 	ts := getTestStructs(t)
 
-	actStructs := getNeededStructs(fs, ts.fileFrugal)
+	actStructs := getNeededStructs(fs, ts.FileFrugal)
 	// The MusicService still needs all of the other structs, so it
 	// should have all of the structs in the IDL.
 	assert.Len(t, actStructs, 7)
 
 	// now let's remove getAlbum and getTop5Albums from the *parser.Frugal
 	// so we don't need _all_ of the structs anymore.
-	for i := range ts.musicService.Methods {
-		switch ts.musicService.Methods[i] {
+	for i := range ts.MusicService.Methods {
+		switch ts.MusicService.Methods[i] {
 		case ts.getAlbum, ts.getTop5Albums:
-			ts.musicService.Methods[i] = nil
+			ts.MusicService.Methods[i] = nil
 		}
 	}
-	actStructs = getNeededStructs(fs, ts.fileFrugal)
+	actStructs = getNeededStructs(fs, ts.FileFrugal)
 	// Now it should only have:
 	// - Burrito (as requested)
 	// - Artist (used by getArtist)
