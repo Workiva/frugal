@@ -47,6 +47,10 @@ service MusicService {
 struct Burrito {
 	0: string meat
 	1: int64 weightGrams
+}
+scope NewReleases prefix global.releases {
+	Album: albums
+	Song: songs
 }`
 )
 
