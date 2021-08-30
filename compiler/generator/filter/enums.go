@@ -41,76 +41,15 @@ func getNeededEnums(
 		e := f.Enums[i]
 
 		if spec.Included.isEnumSpecified(e) ||
-			isEnumNeededByStructs(e, f.Structs) ||
-			isEnumNeededByStructs(e, f.Exceptions) ||
-			isEnumNeededByStructs(e, f.Unions) ||
-			isEnumNeededByAnyService(e, f.Services) {
+			isNameNeededByStructs(e.Name, f.Structs) ||
+			isNameNeededByStructs(e.Name, f.Exceptions) ||
+			isNameNeededByStructs(e.Name, f.Unions) ||
+			isNameNeededByAnyService(e.Name, f.Services) {
 			needed = append(needed, e)
 		}
 	}
 
 	return needed
-}
-
-func isEnumNeededByStructs(
-	e *parser.Enum,
-	ss []*parser.Struct,
-) bool {
-	for _, s := range ss {
-		if anyFieldContainsTypeWithName(s.Fields, e.Name) {
-			return true
-		}
-	}
-	return false
-}
-
-func isEnumNeededByAnyService(
-	e *parser.Enum,
-	ss []*parser.Service,
-) bool {
-	for _, s := range ss {
-		if isEnumNeededByService(e, s) {
-			return true
-		}
-	}
-	return false
-}
-
-func isEnumNeededByService(
-	e *parser.Enum,
-	s *parser.Service,
-) bool {
-	for _, m := range s.Methods {
-		if isEnumNeededByMethod(e, m) {
-			return true
-		}
-	}
-	return false
-}
-
-func isEnumNeededByMethod(
-	e *parser.Enum,
-	m *parser.Method,
-) bool {
-	if m == nil {
-		return false
-	}
-
-	if typeContainsTypeWithName(m.ReturnType, e.Name) {
-		return true
-	}
-	for _, arg := range m.Arguments {
-		if fieldContainsTypeWithName(arg, e.Name) {
-			return true
-		}
-	}
-	for _, exc := range m.Exceptions {
-		if fieldContainsTypeWithName(exc, e.Name) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func enumListContains(

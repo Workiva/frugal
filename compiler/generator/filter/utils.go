@@ -4,6 +4,67 @@ import (
 	"github.com/Workiva/frugal/compiler/parser"
 )
 
+func isNameNeededByStructs(
+	name string,
+	ss []*parser.Struct,
+) bool {
+	for _, s := range ss {
+		if anyFieldContainsTypeWithName(s.Fields, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func isNameNeededByAnyService(
+	name string,
+	ss []*parser.Service,
+) bool {
+	for _, s := range ss {
+		if isNameNeededByService(name, s) {
+			return true
+		}
+	}
+	return false
+}
+
+func isNameNeededByService(
+	name string,
+	s *parser.Service,
+) bool {
+	for _, m := range s.Methods {
+		if isNameNeededByMethod(name, m) {
+			return true
+		}
+	}
+	return false
+}
+
+func isNameNeededByMethod(
+	name string,
+	m *parser.Method,
+) bool {
+	if m == nil {
+		return false
+	}
+
+	if typeContainsTypeWithName(m.ReturnType, name) {
+		return true
+	}
+	for _, arg := range m.Arguments {
+		if fieldContainsTypeWithName(arg, name) {
+			return true
+		}
+	}
+	for _, exc := range m.Exceptions {
+		if fieldContainsTypeWithName(exc, name) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func anyFieldContainsTypeWithName(
 	fields []*parser.Field,
 	name string,

@@ -24,11 +24,11 @@ func Apply(
 	applyToServices(spec, f)
 	applyToScopes(spec, f)
 	applyToStructs(spec, f)
-	applyToTypeDefs(spec, f)
 	applyToConstants(spec, f)
 	applyToEnums(spec, f)
+	applyToTypeDefs(spec, f)
 
-	// FUTURE: filter out Enums, Namespaces, and Includes
+	// FUTURE: filter out Namespaces and Includes
 
 	return nil
 }
@@ -154,34 +154,6 @@ func applyToConstants(
 	}
 }
 
-func applyToTypeDefs(
-	spec *filterSpec,
-	f *parser.Frugal,
-) {
-	if spec.Excluded.Typedefs == nil ||
-		(spec.Excluded.Typedefs.All != nil &&
-			*spec.Excluded.Typedefs.All != true) {
-		// we have nothing to do if we're not specified in the excludes or if we
-		// aren't excluding all
-		return
-	}
-
-	// requiredStructs := getNeededStructs(spec, f)
-
-	for i := 0; i < len(f.Typedefs); i++ {
-		s := f.Typedefs[i]
-
-		// if structListContains(requiredStructs, s) {
-		// 	continue
-		// }
-
-		if spec.Excluded.isTypedefSpecified(s) {
-			f.Typedefs = append(f.Typedefs[:i], f.Typedefs[i+1:]...)
-			i--
-		}
-	}
-}
-
 func applyToEnums(
 	spec *filterSpec,
 	f *parser.Frugal,
@@ -201,7 +173,6 @@ func applyToEnums(
 		e := f.Enums[i]
 
 		if enumListContains(requiredEnums, e) {
-			debugPrintf("Allowing Enum %q\n", e.Name)
 			continue
 		}
 
@@ -209,8 +180,36 @@ func applyToEnums(
 			debugPrintf("Excluding Enum %q\n", e.Name)
 			f.Enums = append(f.Enums[:i], f.Enums[i+1:]...)
 			i--
-		} else {
-			debugPrintf("Allowing Enum %q\n", e.Name)
+		}
+	}
+}
+
+func applyToTypeDefs(
+	spec *filterSpec,
+	f *parser.Frugal,
+) {
+	if spec.Excluded.Typedefs == nil ||
+		(spec.Excluded.Typedefs.All != nil &&
+			*spec.Excluded.Typedefs.All != true) {
+		// we have nothing to do if we're not specified in the excludes or if we
+		// aren't excluding all
+		debugPrintf("No Typedefs excluded\n")
+		return
+	}
+
+	requiredTypes := getNeededTypeDefs(spec, f)
+
+	for i := 0; i < len(f.Typedefs); i++ {
+		t := f.Typedefs[i]
+
+		if typeDefListContains(requiredTypes, t) {
+			continue
+		}
+
+		if spec.Excluded.isTypedefSpecified(t) {
+			debugPrintf("Excluding Type %q\n", t.Name)
+			f.Typedefs = append(f.Typedefs[:i], f.Typedefs[i+1:]...)
+			i--
 		}
 	}
 }
