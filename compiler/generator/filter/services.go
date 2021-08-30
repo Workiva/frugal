@@ -6,20 +6,69 @@ import (
 	"github.com/Workiva/frugal/compiler/parser"
 )
 
+type servicesSpec struct {
+	All   *bool         `yaml:"all"`
+	Specs []serviceSpec `yaml:"specs"`
+}
+
+func (ss *servicesSpec) isEntireServiceSpecified(s *parser.Service) bool {
+	if ss == nil {
+		return false
+	}
+
+	if ss.All != nil && *ss.All {
+		return true
+	}
+
+	for _, ss := range ss.Specs {
+		if ss.isEntireServiceSpecified(s) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (ss *servicesSpec) isServiceSpecified(s *parser.Service) bool {
+	if ss == nil {
+		return false
+	}
+
+	if ss.All != nil && *ss.All {
+		return true
+	}
+
+	for _, ss := range ss.Specs {
+		if ss.matches(s) {
+			return true
+		}
+	}
+
+	return false
+}
+
 type serviceSpec struct {
 	Name    string   `yaml:"name"`
 	Entire  *bool    `yaml:"all"`
 	Methods []string `yaml:"methods"`
 }
 
-func (ffs *serviceSpec) matches(s *parser.Service) bool {
-	return strings.EqualFold(s.Name, ffs.Name)
+func (ss *serviceSpec) isEntireServiceSpecified(s *parser.Service) bool {
+	return ss.matches(s) && ss.Entire != nil && *ss.Entire
 }
 
-func (ffs *serviceSpec) isMethodSpecified(
+func (ss *serviceSpec) matches(s *parser.Service) bool {
+	return strings.EqualFold(s.Name, ss.Name)
+}
+
+func (ss *serviceSpec) isMethodSpecified(
 	m *parser.Method,
 ) bool {
-	for _, fm := range ffs.Methods {
+	if m == nil {
+		return false
+	}
+
+	for _, fm := range ss.Methods {
 		if strings.EqualFold(m.Name, fm) {
 			return true
 		}
@@ -28,12 +77,12 @@ func (ffs *serviceSpec) isMethodSpecified(
 }
 
 func applyFilterToService(
-	gf *filterSpec,
+	fs *filterSpec,
 	s *parser.Service,
 ) {
 
-	isIncludesSpecified := gf.Included.isServiceSpecified(s)
-	isExcludesSpecified := gf.Excluded.isServiceSpecified(s)
+	isIncludesSpecified := fs.Included.isServiceSpecified(s)
+	isExcludesSpecified := fs.Excluded.isServiceSpecified(s)
 	if !isIncludesSpecified && !isExcludesSpecified {
 		// nothing to do!
 		return
@@ -42,9 +91,10 @@ func applyFilterToService(
 	msc := s.Methods
 
 	if isIncludesSpecified {
+		// reset the msc so that we only start including the desired "includes"
 		msc = msc[:0]
-		for _, sf := range gf.Included.Services {
-			if sf.Name != s.Name {
+		for _, sf := range fs.Included.Services.Specs {
+			if !sf.matches(s) {
 				continue
 			}
 
@@ -59,8 +109,8 @@ func applyFilterToService(
 	}
 
 	if isExcludesSpecified {
-		for _, sf := range gf.Excluded.Services {
-			if sf.Name != s.Name {
+		for _, sf := range fs.Excluded.Services.Specs {
+			if !sf.matches(s) {
 				continue
 			}
 
@@ -83,6 +133,10 @@ func methodSliceIncludes(
 	ms []*parser.Method,
 	other *parser.Method,
 ) bool {
+	if other == nil {
+		return false
+	}
+
 	for _, m := range ms {
 		if m.Name == other.Name {
 			return true

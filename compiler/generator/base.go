@@ -38,6 +38,9 @@ func (b *BaseGenerator) FilterInput(f *parser.Frugal) {
 		filename = `frugal_filter.yaml`
 	}
 
+	_, ok = b.Options[`debugFilter`]
+	filter.SetDebug(ok)
+
 	err := filter.Apply(filename, f)
 	if err != nil {
 		fmt.Printf("failure to apply filter: %v\n", err)
