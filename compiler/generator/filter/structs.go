@@ -105,16 +105,20 @@ func isStructUsedByService(
 	}
 
 	for _, m := range service.Methods {
-		if structExistsInType(s, m.ReturnType) {
+		if m == nil {
+			continue
+		}
+
+		if typeContainsStruct(m.ReturnType, s) {
 			return true
 		}
 		for _, arg := range m.Arguments {
-			if structExistsInField(s, arg) {
+			if fieldContainsStruct(arg, s) {
 				return true
 			}
 		}
 		for _, exc := range m.Exceptions {
-			if structExistsInField(s, exc) {
+			if fieldContainsStruct(exc, s) {
 				return true
 			}
 		}
@@ -144,7 +148,7 @@ func getAllSubstructs(
 		// and make sure we iterate down into them by also adding them to `toCheck`.
 		for i := 0; len(notInSubset) > 0 && i < len(notInSubset); i++ {
 			other := notInSubset[i]
-			if structExistsInAnyField(other, s.Fields) {
+			if anyFieldContainsStruct(s.Fields, other) {
 				debugPrintf("Now including struct %q\n\tUsed in field (or sub-field) of %q\n", other.Name, s.Name)
 				subset = append(subset, other)
 				toCheck = append(toCheck, other)
@@ -156,31 +160,31 @@ func getAllSubstructs(
 	return subset
 }
 
-func structExistsInAnyField(
-	s *parser.Struct,
+func anyFieldContainsStruct(
 	fields []*parser.Field,
+	s *parser.Struct,
 ) bool {
 	for _, f := range fields {
-		if f != nil && structExistsInField(s, f) {
+		if f != nil && fieldContainsStruct(f, s) {
 			return true
 		}
 	}
 	return false
 }
 
-// structExistsInField returns true if the struct appears in the given field.
+// fieldContainsStruct returns true if the struct appears in the given field.
 // The field may have sub-types that use the given struct. If so, this still
 // returns true.
-func structExistsInField(
-	s *parser.Struct,
+func fieldContainsStruct(
 	field *parser.Field,
+	s *parser.Struct,
 ) bool {
-	return structExistsInType(s, field.Type)
+	return typeContainsStruct(field.Type, s)
 }
 
-func structExistsInType(
-	s *parser.Struct,
+func typeContainsStruct(
 	typ *parser.Type,
+	s *parser.Struct,
 ) bool {
 	if typ == nil {
 		return false
@@ -191,11 +195,11 @@ func structExistsInType(
 	}
 
 	// Check slices and maps by checking KeyType and ValueType
-	if structExistsInType(s, typ.KeyType) {
+	if typeContainsStruct(typ.KeyType, s) {
 		return true
 	}
 
-	if structExistsInType(s, typ.ValueType) {
+	if typeContainsStruct(typ.ValueType, s) {
 		return true
 	}
 
