@@ -26,6 +26,7 @@ func Apply(
 	applyToStructs(spec, f)
 	applyToTypeDefs(spec, f)
 	applyToConstants(spec, f)
+	applyToEnums(spec, f)
 
 	// FUTURE: filter out Enums, Namespaces, and Includes
 
@@ -177,6 +178,39 @@ func applyToTypeDefs(
 		if spec.Excluded.isTypedefSpecified(s) {
 			f.Typedefs = append(f.Typedefs[:i], f.Typedefs[i+1:]...)
 			i--
+		}
+	}
+}
+
+func applyToEnums(
+	spec *filterSpec,
+	f *parser.Frugal,
+) {
+	if spec.Excluded.Enums == nil ||
+		(spec.Excluded.Enums.All != nil &&
+			*spec.Excluded.Enums.All != true) {
+		// we have nothing to do if we're not specified in the excludes or if we
+		// aren't excluding all
+		debugPrintf("No Enums excluded\n")
+		return
+	}
+
+	requiredEnums := getNeededEnums(spec, f)
+
+	for i := 0; i < len(f.Enums); i++ {
+		e := f.Enums[i]
+
+		if enumListContains(requiredEnums, e) {
+			debugPrintf("Allowing Enum %q\n", e.Name)
+			continue
+		}
+
+		if spec.Excluded.isEnumSpecified(e) {
+			debugPrintf("Excluding Enum %q\n", e.Name)
+			f.Enums = append(f.Enums[:i], f.Enums[i+1:]...)
+			i--
+		} else {
+			debugPrintf("Allowing Enum %q\n", e.Name)
 		}
 	}
 }

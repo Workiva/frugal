@@ -33,10 +33,11 @@ func newYamlSpec(filename string) (*filterSpec, error) {
 // definitionsSpec is all of the Services, Scopes, and Structs that should be included/excluded.
 // Eventually this may include constants, typedefs, and others.
 type definitionsSpec struct {
-	Services *servicesSpec `yaml:"services"`
-	Structs  *structSpec   `yaml:"structs"`
-	Scopes   *scopesSpec   `yaml:"scopes"`
+	Services  *servicesSpec  `yaml:"services"`
+	Structs   *structSpec    `yaml:"structs"`
+	Scopes    *scopesSpec    `yaml:"scopes"`
 	Constants *constantsSpec `yaml:"constants"`
+	Enums     *enumsSpec     `yaml:"enums"`
 	Typedefs  *typedefsSpec  `yaml:"types"`
 }
 
@@ -56,22 +57,14 @@ func (ds *definitionsSpec) isStructSpecified(s *parser.Struct) bool {
 	return ds != nil && ds.Structs.isStructSpecified(s)
 }
 
-func (ffs *definitionsSpec) isConstantSpecified(
-	s *parser.Constant,
-) bool {
-	if ffs == nil {
-		return false
-	}
-
-	return ffs.Constants.isSpecified(s)
+func (ds *definitionsSpec) isConstantSpecified(c *parser.Constant) bool {
+	return ds != nil && ds.Constants.isSpecified(c)
 }
 
-func (ffs *definitionsSpec) isTypedefSpecified(
-	s *parser.TypeDef,
-) bool {
-	if ffs == nil {
-		return false
-	}
+func (ds *definitionsSpec) isTypedefSpecified(td *parser.TypeDef) bool {
+	return ds != nil && ds.Typedefs.isSpecified(td)
+}
 
-	return ffs.Typedefs.isSpecified(s)
+func (ds *definitionsSpec) isEnumSpecified(e *parser.Enum) bool {
+	return ds != nil && ds.Enums.isSpecified(e)
 }

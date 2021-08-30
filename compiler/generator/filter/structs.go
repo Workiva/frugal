@@ -164,12 +164,13 @@ func anyFieldContainsStruct(
 	fields []*parser.Field,
 	s *parser.Struct,
 ) bool {
-	for _, f := range fields {
-		if f != nil && fieldContainsStruct(f, s) {
-			return true
-		}
-	}
-	return false
+	return anyFieldContainsTypeWithName(fields, s.Name)
+	// for _, f := range fields {
+	// 	if f != nil && fieldContainsStruct(f, s) {
+	// 		return true
+	// 	}
+	// }
+	// return false
 }
 
 // fieldContainsStruct returns true if the struct appears in the given field.
