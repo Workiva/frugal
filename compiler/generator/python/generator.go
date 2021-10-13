@@ -969,7 +969,7 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	publisher += tabtab + "middleware = middleware or []\n"
 	publisher += tabtab + "if middleware and not isinstance(middleware, list):\n"
 	publisher += tabtabtab + "middleware = [middleware]\n"
-	publisher += tabtab + "middleware += provider.get_middleware()\n"
+	publisher += tabtab + "middleware += provider.get_publisher_middleware()\n"
 	publisher += tabtab + "self._transport, self._protocol_factory = provider.new_publisher()\n"
 	publisher += tabtab + "self._methods = {\n"
 	for _, op := range scope.Operations {

@@ -79,18 +79,31 @@ public class FScopeProvider {
     private FSubscriberTransportFactory subscriberTransportFactory;
     private FProtocolFactory protocolFactory;
     private List<ServiceMiddleware> middleware;
+    private List<ServiceMiddleware> publisherMiddleware;
+    private List<ServiceMiddleware> subscriberMiddleware;
 
-    public FScopeProvider(FPublisherTransportFactory ptf, FSubscriberTransportFactory stf,
-                          FProtocolFactory pf, ServiceMiddleware ...middleware) {
+    public FScopeProvider(FPublisherTransportFactory ptf, FSubscriberTransportFactory stf, FProtocolFactory pf,
+            ServiceMiddleware... middleware) {
         publisherTransportFactory = ptf;
         subscriberTransportFactory = stf;
         protocolFactory = pf;
         this.middleware = Arrays.asList(middleware);
     }
 
+    public FScopeProvider(FPublisherTransportFactory ptf, FSubscriberTransportFactory stf, FProtocolFactory pf,
+            ServiceMiddleware[] combinedMiddleware, ServiceMiddleware[] publisherMiddleware,
+            ServiceMiddleware[] subscriberMiddleware) {
+        publisherTransportFactory = ptf;
+        subscriberTransportFactory = stf;
+        protocolFactory = pf;
+        this.middleware = Arrays.asList(combinedMiddleware);
+        this.publisherMiddleware = Arrays.asList(publisherMiddleware);
+        this.subscriberMiddleware = Arrays.asList(subscriberMiddleware);
+    }
+
     /**
-     * Returns a new Publisher containing an FPublisherTransport and FProtocolFactory
-     * used for publishing.
+     * Returns a new Publisher containing an FPublisherTransport and
+     * FProtocolFactory used for publishing.
      *
      * @return Publisher with FPublisherTransport and FProtocol.
      */
@@ -100,8 +113,8 @@ public class FScopeProvider {
     }
 
     /**
-     * Returns a new Subscriber containing an FSubscriberTransport and FProtocolFactory
-     * used for subscribing.
+     * Returns a new Subscriber containing an FSubscriberTransport and
+     * FProtocolFactory used for subscribing.
      *
      * @return SubscriberClient with FSubscriberTransport and FProtocol.
      */
@@ -112,5 +125,17 @@ public class FScopeProvider {
 
     public List<ServiceMiddleware> getMiddleware() {
         return new ArrayList<>(middleware);
+    }
+
+    public List<ServiceMiddleware> getPublisherMiddleware() {
+        ArrayList<ServiceMiddleware> m = new ArrayList<>(middleware);
+        m.addAll(publisherMiddleware);
+        return m;
+    }
+
+    public List<ServiceMiddleware> getSubscriberMiddleware() {
+        ArrayList<ServiceMiddleware> m = new ArrayList<>(middleware);
+        m.addAll(subscriberMiddleware);
+        return m;
     }
 }

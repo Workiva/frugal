@@ -1106,7 +1106,7 @@ func (g *Generator) generateWrite(s *parser.Struct) string {
 func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind string) string {
 	contents := ""
 
-	contents += ignoreDeprecationWarningIfNeeded(tabtab + ind, field.Annotations)
+	contents += ignoreDeprecationWarningIfNeeded(tabtab+ind, field.Annotations)
 
 	fName := toFieldName(field.Name)
 	thisPrefix := ""
@@ -1542,7 +1542,7 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	publishers += tabtab + "transport = provider.publisherTransportFactory.getTransport();\n"
 	publishers += tabtab + "protocolFactory = provider.protocolFactory;\n"
 	publishers += tabtab + "var combined = middleware ?? [];\n"
-	publishers += tabtab + "combined.addAll(provider.middleware);\n"
+	publishers += tabtab + "combined.addAll(provider.PublisherMiddleware);\n"
 	publishers += tabtab + "this._methods = {};\n"
 	for _, operation := range scope.Operations {
 		publishers += fmt.Sprintf(tabtab+"this._methods['%s'] = frugal.FMethod(this._publish%s, '%s', 'publish%s', combined);\n",
@@ -1646,7 +1646,7 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 
 	subscribers += tab + fmt.Sprintf("%s(this.provider, [List<frugal.Middleware> middleware])\n", subscriberClassname)
 	subscribers += tabtabtab + ": this._middleware = middleware ?? [] {\n"
-	subscribers += tabtab + "this._middleware.addAll(provider.middleware);\n"
+	subscribers += tabtab + "this._middleware.addAll(provider.subscriberMiddleware);\n"
 	subscribers += "}\n\n"
 
 	args := ""
@@ -1833,7 +1833,7 @@ func (g *Generator) generateClient(service *parser.Service) string {
 	contents += tabtab + "}\n"
 	contents += tabtab + "return null;\n"
 	contents += tab + "}\n"
-	
+
 	for _, method := range service.Methods {
 		contents += "\n"
 		contents += g.generateClientMethod(service, method)
@@ -1888,7 +1888,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	}
 
 	contents += fmt.Sprintf(indent+"final message = frugal.prepareMessage(ctx, '%s', args, thrift.TMessageType.%s, _protocolFactory, _transport.requestSizeLimit);\n",
-	nameLower, msgType)
+		nameLower, msgType)
 
 	if method.Oneway {
 		contents += indent + "await _transport.oneway(ctx, message);\n"

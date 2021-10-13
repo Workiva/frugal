@@ -1310,7 +1310,7 @@ func (g *Generator) GeneratePublisher(file *os.File, scope *parser.Scope) error 
 	publisher += "\t\tclient:  frugal.NewFScopeClient(provider),\n"
 	publisher += "\t\tmethods: make(map[string]*frugal.Method),\n"
 	publisher += "\t}\n"
-	publisher += "\tmiddleware = append(middleware, provider.GetMiddleware()...)\n"
+	publisher += "\tmiddleware = append(middleware, provider.GetPublisherMiddleware()...)\n"
 	for _, op := range scope.Operations {
 		publisher += fmt.Sprintf("\tpublisher.methods[\"publish%s\"] = frugal.NewMethod(publisher, publisher.publish%s, \"publish%s\", middleware)\n",
 			op.Name, op.Name, op.Name)
@@ -1465,13 +1465,13 @@ func (g *Generator) GenerateSubscriber(file *os.File, scope *parser.Scope) error
 
 	subscriber += fmt.Sprintf("func New%sSubscriber(provider *frugal.FScopeProvider, middleware ...frugal.ServiceMiddleware) %sSubscriber {\n",
 		scopeCamel, scopeCamel)
-	subscriber += "\tmiddleware = append(middleware, provider.GetMiddleware()...)\n"
+	subscriber += "\tmiddleware = append(middleware, provider.GetSubscriberMiddleware()...)\n"
 	subscriber += fmt.Sprintf("\treturn &%sSubscriber{provider: provider, middleware: middleware}\n", scopeLower)
 	subscriber += "}\n\n"
 
 	subscriber += fmt.Sprintf("func New%sErrorableSubscriber(provider *frugal.FScopeProvider, middleware ...frugal.ServiceMiddleware) %sErrorableSubscriber {\n",
 		scopeCamel, scopeCamel)
-	subscriber += "\tmiddleware = append(middleware, provider.GetMiddleware()...)\n"
+	subscriber += "\tmiddleware = append(middleware, provider.GetSubscriberMiddleware()...)\n"
 	subscriber += fmt.Sprintf("\treturn &%sSubscriber{provider: provider, middleware: middleware}\n", scopeLower)
 	subscriber += "}\n\n"
 

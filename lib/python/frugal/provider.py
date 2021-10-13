@@ -17,7 +17,8 @@ class FScopeProvider(object):
     """
 
     def __init__(self, pub_transport_factory, sub_transport_factory,
-                 protocol_factory, middleware=None):
+                 protocol_factory, middleware=None,
+                 publisher_middleware=None, subscriber_middleware=None):
         """Initialize FScopeProvider.
 
         Args:
@@ -30,6 +31,8 @@ class FScopeProvider(object):
         self._sub_transport_factory = sub_transport_factory
         self._protocol_factory = protocol_factory
         self._middleware = middleware or []
+        self._publisher_middleware = publisher_middleware or []
+        self._subscriber_middleware = subscriber_middleware or []
 
     def new_publisher(self):
         """Return a tupled FScopeTransport and FProtocol.
@@ -47,6 +50,17 @@ class FScopeProvider(object):
         """Return the ServiceMiddleware stored on this FScopeProvider."""
         return list(self._middleware)
 
+    def get_publisher_middleware(self):
+        """Return the publisher ServiceMiddleware stored on this FScopeProvider."""
+        m = list(self._middleware)
+        m.append(self._publisher_middleware)
+        return m
+
+    def get_subscriber_middleware(self):
+        """Return the subscriber ServiceMiddleware stored on this FScopeProvider."""
+        m = list(self._middleware)
+        m.append(self._subscriber_middleware)
+        return m
 
 class FServiceProvider(object):
     """FServiceProvider is the service equivalent of FScopeProvider. It produces

@@ -251,7 +251,7 @@ func (t *TornadoGenerator) GenerateSubscriber(file *os.File, scope *parser.Scope
 	subscriber += tabtab + "middleware = middleware or []\n"
 	subscriber += tabtab + "if middleware and not isinstance(middleware, list):\n"
 	subscriber += tabtabtab + "middleware = [middleware]\n"
-	subscriber += tabtab + "middleware += provider.get_middleware()\n"
+	subscriber += tabtab + "middleware += provider.get_subscriber_middleware()\n"
 	subscriber += tabtab + "self._middleware = middleware\n"
 	subscriber += tabtab + "self._provider = provider\n\n"
 

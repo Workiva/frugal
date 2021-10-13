@@ -22,8 +22,12 @@ class FScopeProvider {
   /// Creates a new [FScopeProvider].
   FScopeProvider(this.publisherTransportFactory,
       this.subscriberTransportFactory, this.protocolFactory,
-      {List<Middleware> middleware})
-      : _middleware = middleware ?? [];
+      {List<Middleware> middleware,
+      List<Middleware> publisherMiddleware,
+      List<Middleware> subscriberMiddleware})
+      : _middleware = middleware ?? [],
+        _publisherMiddleware = publisherMiddleware ?? [],
+        _subscriberMiddleware = subscriberMiddleware ?? [];
 
   /// [FPublisherTransportFactory] used by the scope.
   final FPublisherTransportFactory publisherTransportFactory;
@@ -37,8 +41,28 @@ class FScopeProvider {
   /// Middleware applied to publishers and subscribers.
   final List<Middleware> _middleware;
 
+  /// Middleware applied to publishers.
+  final List<Middleware> _publisherMiddleware;
+
+  /// Middleware applied to subscribers.
+  final List<Middleware> _subscriberMiddleware;
+
   /// The middleware stored on this FScopeProvider.
   List<Middleware> get middleware => new List.from(this._middleware);
+
+  /// The publisher middleware and shared middleware stored on this FScopeProvider.
+  List<Middleware> get publisherMiddleware {
+    List<Middleware> m = new List.from(this._middleware);
+    m.addAll(this._publisherMiddleware);
+    return m;
+  }
+
+  /// The subscriber middleware and shared middleware stored on this FScopeProvider.
+  List<Middleware> get subscriberMiddleware {
+    List<Middleware> m = new List.from(this._middleware);
+    m.addAll(this._subscriberMiddleware);
+    return m;
+  }
 }
 
 /// The service equivalent of [FScopeProvider]. It produces [FTransport] and

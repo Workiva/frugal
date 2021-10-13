@@ -22,6 +22,8 @@ type FScopeProvider struct {
 	subscriberTransportFactory FSubscriberTransportFactory
 	protocolFactory            *FProtocolFactory
 	middleware                 []ServiceMiddleware
+	publisherMiddleware        []ServiceMiddleware
+	subscriberMiddleware       []ServiceMiddleware
 }
 
 // NewFScopeProvider creates a new FScopeProvider using the given factories.
@@ -32,6 +34,20 @@ func NewFScopeProvider(pub FPublisherTransportFactory, sub FSubscriberTransportF
 		subscriberTransportFactory: sub,
 		protocolFactory:            prot,
 		middleware:                 middleware,
+	}
+}
+
+// NewFScopeProvider creates a new FScopeProvider using the given factories.
+func NewFScopeProviderWithMiddleware(pub FPublisherTransportFactory, sub FSubscriberTransportFactory,
+	prot *FProtocolFactory, middleware, publisherMiddleware, subscriberMiddleware []ServiceMiddleware,
+) *FScopeProvider {
+	return &FScopeProvider{
+		publisherTransportFactory:  pub,
+		subscriberTransportFactory: sub,
+		protocolFactory:            prot,
+		middleware:                 middleware,
+		publisherMiddleware:        publisherMiddleware,
+		subscriberMiddleware:       subscriberMiddleware,
 	}
 }
 
@@ -53,6 +69,20 @@ func (p *FScopeProvider) NewSubscriber() (FSubscriberTransport, *FProtocolFactor
 func (p *FScopeProvider) GetMiddleware() []ServiceMiddleware {
 	middleware := make([]ServiceMiddleware, len(p.middleware))
 	copy(middleware, p.middleware)
+	return middleware
+}
+
+func (p *FScopeProvider) GetPublisherMiddleware() []ServiceMiddleware {
+	middleware := make([]ServiceMiddleware, len(p.middleware)+len(p.publisherMiddleware))
+	copy(middleware, p.middleware)
+	copy(middleware, p.publisherMiddleware)
+	return middleware
+}
+
+func (p *FScopeProvider) GetSubscriberMiddleware() []ServiceMiddleware {
+	middleware := make([]ServiceMiddleware, len(p.middleware)+len(p.subscriberMiddleware))
+	copy(middleware, p.middleware)
+	copy(middleware, p.subscriberMiddleware)
 	return middleware
 }
 
