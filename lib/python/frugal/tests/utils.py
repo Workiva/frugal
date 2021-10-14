@@ -9,9 +9,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import mock
+
 from frugal.util.headers import _Headers
 
 
 def mock_frame(context):
-    return _Headers._write_to_bytearray(context.get_request_headers())
+    return bytearray([0x00, 0x00, 0x00, 0x00]) + _Headers._write_to_bytearray(context.get_request_headers())
+
+
+def mock_message_with_context(context):
+    message = mock.Mock()
+    message.data = mock_frame(context)
+    message.subject = "test." + context.get_request_header("_opid")
+    return message
+
+
+def mock_message_with_frame(frame):
+    message = mock.Mock()
+    message.data = frame
+    message.subject = "subject.1"
+    return message
 

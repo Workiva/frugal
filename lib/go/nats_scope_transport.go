@@ -111,17 +111,65 @@ func (n *fNatsPublisherTransport) formattedSubject(subject string) string {
 	return fmt.Sprintf("%s%s", frugalPrefix, subject)
 }
 
+// FNatsSubscriberFactoryBuilder configures and builds NATS subscribers.
+type FNatsSubscriberFactoryBuilder struct {
+	conn        *nats.Conn
+	queue       string
+	workerCount uint
+	queueLen    uint
+}
+
+// NewFNatsSubscriberFactoryBuilder creates a builder with default settings for creating a
+// NATS subscriber
+func NewFNatsSubscriberFactoryBuilder(conn *nats.Conn) *FNatsSubscriberFactoryBuilder {
+	return &FNatsSubscriberFactoryBuilder{conn: conn, workerCount: 1, queueLen: defaultWorkQueueLen}
+}
+
+// WithQueue sets the queue group in NATS that the subscriber will join
+func (f *FNatsSubscriberFactoryBuilder) WithQueue(queue string) *FNatsSubscriberFactoryBuilder {
+	f.queue = queue
+	return f
+}
+
+// WithWorkerCount sets the number of workers in goroutines will be created for the
+// subscriber to process messages
+func (f *FNatsSubscriberFactoryBuilder) WithWorkerCount(count uint) *FNatsSubscriberFactoryBuilder {
+	f.workerCount = count
+	return f
+}
+
+// WithQueueLength controls the length of the work queue used to buffer
+// messages.
+func (f *FNatsSubscriberFactoryBuilder) WithQueueLength(len uint) *FNatsSubscriberFactoryBuilder {
+	f.queueLen = len
+	return f
+}
+
+// Build a new NATS subscriber.
+func (f *FNatsSubscriberFactoryBuilder) Build() *FNatsSubscriberTransportFactory {
+	return &FNatsSubscriberTransportFactory{
+		conn:        f.conn,
+		queue:       f.queue,
+		workerCount: f.workerCount,
+		workC:       make(chan *nats.Msg, f.queueLen),
+		quitC:       make(chan struct{}),
+	}
+}
+
 // FNatsSubscriberTransportFactory creates FNatsSubscriberTransports.
 type FNatsSubscriberTransportFactory struct {
-	conn  *nats.Conn
-	queue string
+	conn        *nats.Conn
+	queue       string
+	workerCount uint
+	workC       chan *nats.Msg
+	quitC       chan struct{}
 }
 
 // NewFNatsSubscriberTransportFactory creates an FNatsSubscriberTransportFactory using
 // the provided NATS connection. Subscribers using this transport will not use
 // a queue.
 func NewFNatsSubscriberTransportFactory(conn *nats.Conn) *FNatsSubscriberTransportFactory {
-	return &FNatsSubscriberTransportFactory{conn: conn}
+	return &FNatsSubscriberTransportFactory{conn: conn, workerCount: 1}
 }
 
 // NewFNatsSubscriberTransportFactoryWithQueue creates an FNatsSubscriberTransportFactory
@@ -129,12 +177,18 @@ func NewFNatsSubscriberTransportFactory(conn *nats.Conn) *FNatsSubscriberTranspo
 // subscribe to the provided queue, forming a queue group. When a queue group
 // is formed, only one member receives the message.
 func NewFNatsSubscriberTransportFactoryWithQueue(conn *nats.Conn, queue string) *FNatsSubscriberTransportFactory {
-	return &FNatsSubscriberTransportFactory{conn: conn, queue: queue}
+	return &FNatsSubscriberTransportFactory{conn: conn, queue: queue, workerCount: 1}
 }
 
 // GetTransport creates a new NATS FSubscriberTransport.
 func (n *FNatsSubscriberTransportFactory) GetTransport() FSubscriberTransport {
-	return NewNatsFSubscriberTransportWithQueue(n.conn, n.queue)
+	return &fNatsSubscriberTransport{
+		conn:        n.conn,
+		queue:       n.queue,
+		workerCount: n.workerCount,
+		workC:       make(chan *nats.Msg, defaultWorkQueueLen),
+		quitC:       make(chan struct{}),
+	}
 }
 
 // fNatsSubscriberTransport implements FSubscriberTransport.
@@ -144,12 +198,21 @@ type fNatsSubscriberTransport struct {
 	sub          *nats.Subscription
 	openMu       sync.RWMutex
 	isSubscribed bool
+	workerCount  uint
+	workC        chan *nats.Msg
+	quitC        chan struct{}
 }
 
 // NewNatsFSubscriberTransport creates a new FSubscriberTransport which is used for
 // pub/sub. Subscribers using this transport will not use a queue.
 func NewNatsFSubscriberTransport(conn *nats.Conn) FSubscriberTransport {
-	return &fNatsSubscriberTransport{conn: conn}
+	return &fNatsSubscriberTransport{
+		conn:        conn,
+		workerCount: 1,
+		workC:       make(chan *nats.Msg, defaultWorkQueueLen),
+		quitC:       make(chan struct{}),
+	}
+
 }
 
 // NewNatsFSubscriberTransportWithQueue creates a new FSubscriberTransport which is used
@@ -157,7 +220,13 @@ func NewNatsFSubscriberTransport(conn *nats.Conn) FSubscriberTransport {
 // queue, forming a queue group. When a queue group is formed, only one member
 // receives the message.
 func NewNatsFSubscriberTransportWithQueue(conn *nats.Conn, queue string) FSubscriberTransport {
-	return &fNatsSubscriberTransport{conn: conn, queue: queue}
+	return &fNatsSubscriberTransport{
+		conn:        conn,
+		queue:       queue,
+		workerCount: 1,
+		workC:       make(chan *nats.Msg, defaultWorkQueueLen),
+		quitC:       make(chan struct{}),
+	}
 }
 
 // Subscribe sets the subscribe topic and opens the transport.
@@ -179,7 +248,7 @@ func (n *fNatsSubscriberTransport) Subscribe(topic string, callback FAsyncCallba
 			"cannot subscribe to empty subject")
 	}
 
-	sub, err := n.conn.QueueSubscribe(n.formattedSubject(topic), n.queue, handleMessage(callback))
+	sub, err := n.conn.QueueSubscribe(n.formattedSubject(topic), n.queue, n.putMessageToWorkerQueue)
 	if err != nil {
 		return thrift.NewTTransportExceptionFromError(err)
 	}
@@ -188,20 +257,35 @@ func (n *fNatsSubscriberTransport) Subscribe(topic string, callback FAsyncCallba
 	}
 	n.sub = sub
 	n.isSubscribed = true
+	for i := uint(0); i < n.workerCount; i++ {
+		go n.worker(callback)
+	}
 	return nil
 }
 
-func handleMessage(callback FAsyncCallback) func(*nats.Msg) {
-	return func(msg *nats.Msg) {
-		if len(msg.Data) < 4 {
-			logger().Warn("frugal: Discarding invalid scope message frame")
+// worker should be called as a goroutine. It reads messages off the work
+// channel and calls the user provided callback function.
+func (n *fNatsSubscriberTransport) worker(callback FAsyncCallback) {
+	for {
+		select {
+		case <-n.quitC:
 			return
-		}
-		transport := &thrift.TMemoryBuffer{Buffer: bytes.NewBuffer(msg.Data[4:])}
-		if err := callback(transport); err != nil {
-			logger().Warn("frugal: error executing callback: ", err)
+		case msg := <-n.workC:
+			if len(msg.Data) < 4 {
+				logger().Warn("frugal: Discarding invalid scope message frame")
+				return
+			}
+			transport := &thrift.TMemoryBuffer{Buffer: bytes.NewBuffer(msg.Data[4:])}
+			if err := callback(transport); err != nil {
+				logger().Warn("frugal: error executing callback: ", err)
+			}
 		}
 	}
+}
+
+// putMessageToWorkerQueue puts a received message to the internal work channel.
+func (n *fNatsSubscriberTransport) putMessageToWorkerQueue(msg *nats.Msg) {
+	n.workC <- msg
 }
 
 // IsSubscribed returns true if the transport is subscribed to a topic, false
@@ -235,6 +319,7 @@ func (n *fNatsSubscriberTransport) Unsubscribe() error {
 	}
 	n.sub = nil
 	n.isSubscribed = false
+	close(n.quitC)
 	return nil
 }
 

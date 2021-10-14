@@ -10,8 +10,9 @@
 # limitations under the License.
 
 import base64
-
 import mock
+import socket
+
 from thrift.transport.TTransport import TTransportException
 from tornado.concurrent import Future
 from tornado.httpclient import AsyncHTTPClient
@@ -259,3 +260,19 @@ class TestFHttpTransport(AsyncTestCase):
         self.assertEqual(
             TTransportExceptionType.TIMED_OUT, cm.exception.type)
         self.assertEqual("request timed out", cm.exception.message)
+
+    @gen_test
+    def test_request_service_unavailable(self):
+        self.transport._http = self.http_mock
+
+        self.http_mock.fetch.side_effect = socket.gaierror()
+
+        with self.assertRaises(TTransportException) as e:
+            yield self.transport.request(
+                FContext(), bytearray([0, 0, 0, 3, 1, 2, 3])
+            )
+
+        self.assertEqual(
+            str(e.exception),
+            'service not available: None'
+        )

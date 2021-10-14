@@ -103,9 +103,10 @@ class TestFAsyncTransport(AsyncTestCase):
     def test_request(self):
         ctx = FContext("fooid")
         frame = utils.mock_frame(ctx)
-        transport = FAsyncTransportImpl(response=frame)
+        message = utils.mock_message_with_frame(frame)
+        transport = FAsyncTransportImpl(response=message)
         response_transport = yield transport.request(ctx, frame)
-        self.assertEqual(frame, response_transport.getvalue())
+        self.assertEqual(frame[4:], response_transport.getvalue())
         self.assertEqual(0, len(transport._futures))
         self.assertEqual(frame, transport._payload)
 
@@ -200,26 +201,32 @@ class TestFAsyncTransport(AsyncTestCase):
         ctx = FContext()
         future = Future()
         transport._futures[str(ctx._get_op_id())] = future
-        yield transport.handle_response(None)
-        self.assertFalse(future.done())
+        message = utils.mock_message_with_context(ctx)
+        message.data = None
+        yield transport.handle_response(message)
+        self.assertTrue(future.done())
 
     @gen_test
     def test_handle_response_bad_frame(self):
         transport = FAsyncTransport()
 
         with self.assertRaises(TProtocolException) as cm:
-            yield transport.handle_response(b"foo")
+            message = utils.mock_message_with_frame(b"foobars")
+            yield transport.handle_response(message)
 
         self.assertEquals("Invalid frame size: 3", str(cm.exception))
 
     @gen_test
     def test_handle_response_missing_op_id(self):
         transport = FAsyncTransport()
-        frame = bytearray(b'\x00\x00\x00\x00\x00\x80\x01\x00\x02\x00\x00\x00'
-                          b'\x08basePing\x00\x00\x00\x00\x00')
+        frame = bytearray(
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\x01\x00\x02\x00\x00\x00"
+            b"\x08basePing\x00\x00\x00\x00\x00"
+        )
+        message = utils.mock_message_with_frame(frame)
 
         with self.assertRaises(TProtocolException) as cm:
-            yield transport.handle_response(frame)
+            yield transport.handle_response(message)
 
         self.assertEquals("Frame missing op_id", str(cm.exception))
 
@@ -230,7 +237,7 @@ class TestFAsyncTransport(AsyncTestCase):
         ctx2 = FContext()
         future = Future()
         transport._futures[str(ctx1._get_op_id())] = future
-        yield transport.handle_response(utils.mock_frame(ctx2))
+        yield transport.handle_response(utils.mock_message_with_context(ctx2))
         self.assertFalse(future.done())
 
     @gen_test
@@ -238,3 +245,13 @@ class TestFAsyncTransport(AsyncTestCase):
         transport = FAsyncTransport()
         with self.assertRaises(NotImplementedError):
             yield transport.flush(None)
+
+    @gen_test
+    def test_service_not_available(self):
+        ctx = FContext("fooid")
+        frame = utils.mock_frame(ctx)
+        message = utils.mock_message_with_context(ctx)
+        message.data = []
+        transport = FAsyncTransportImpl(response=message)
+        with self.assertRaises(TTransportException) as te:
+            yield transport.request(ctx, frame)

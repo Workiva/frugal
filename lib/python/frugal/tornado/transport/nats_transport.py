@@ -64,13 +64,14 @@ class FNatsTransport(FAsyncTransport):
 
         cb = self._on_message_callback
         inbox = self._inbox
-        self._sub_id = yield self._nats_client.subscribe_async(inbox, cb=cb)
+        self._sub_id = \
+            yield self._nats_client.subscribe_async(inbox + ".*", cb=cb)
 
         self._is_open = True
 
     @gen.coroutine
     def _on_message_callback(self, msg):
-        yield self.handle_response(msg.data[4:])
+        yield self.handle_response(msg)
 
     @gen.coroutine
     def close(self):
@@ -91,3 +92,9 @@ class FNatsTransport(FAsyncTransport):
         subject = self._subject
         inbox = self._inbox
         yield self._nats_client.publish_request(subject, inbox, payload)
+
+    @gen.coroutine
+    def flush_op(self, op_id, payload):
+        yield self._nats_client.publish_request(
+            self._subject, "%s.%s" % (self._inbox, op_id), payload
+        )

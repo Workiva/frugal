@@ -15,6 +15,8 @@ package frugal
 
 import (
 	"fmt"
+	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
@@ -25,8 +27,9 @@ import (
 )
 
 type mockRegistry struct {
-	frameC chan []byte
-	err    error
+	registered chan uint64
+	frameC     chan []byte
+	err        error
 }
 
 func (m *mockRegistry) AssignOpID(ctx FContext) error {
@@ -34,6 +37,11 @@ func (m *mockRegistry) AssignOpID(ctx FContext) error {
 }
 
 func (m *mockRegistry) Register(ctx FContext, resultC chan []byte) error {
+	opIdStr, _ := ctx.RequestHeader(opIDHeader)
+	opId, _ := strconv.ParseUint(opIdStr, 10, 64)
+	m.registered <- opId
+
+	m.frameC = resultC
 	return nil
 }
 
@@ -41,6 +49,11 @@ func (m *mockRegistry) Unregister(ctx FContext) {
 }
 
 func (m *mockRegistry) Execute(frame []byte) error {
+	m.frameC <- frame
+	return m.err
+}
+
+func (m *mockRegistry) dispatch(opid uint64, frame []byte) error {
 	m.frameC <- frame
 	return m.err
 }
@@ -89,15 +102,16 @@ func TestNatsTransportOpen(t *testing.T) {
 	assert.True(t, tr.IsOpen())
 
 	frame := []byte("helloworld")
-	frameC := make(chan []byte)
+	frameC := make(chan []byte, 1)
 	registry := &mockRegistry{
-		frameC: frameC,
-		err:    fmt.Errorf("foo"),
+		err:        fmt.Errorf("foo"),
+		registered: make(chan uint64, 1),
 	}
+	registry.Register(NewFContext(""), frameC)
 	tr.registry = registry
 
 	sizedFrame := prependFrameSize(frame)
-	assert.Nil(t, conn.Publish(tr.inbox, sizedFrame))
+	assert.Nil(t, conn.Publish(tr.inbox+".1", sizedFrame))
 
 	select {
 	case actual := <-frameC:
@@ -231,6 +245,66 @@ func TestNatsTransportRequestSameOpid(t *testing.T) {
 	opID, opErr := getOpID(ctx)
 	assert.Nil(t, opErr)
 	assert.Equal(t, fmt.Sprintf("frugal: context already registered, opid %d is in-flight for another request", opID), err.Error())
+}
+
+// Ensures empty status messages do not cause panic
+func TestStatusMessage(t *testing.T) {
+	s := runServer(nil)
+	defer s.Shutdown()
+	tr, server, conn := newClientAndServer(t, false)
+
+	defer server.Stop()
+	defer conn.Close()
+	defer tr.Close()
+
+	msg := nats.Msg{
+		Data:    make([]byte, 0),
+		Subject: "subject.1",
+		Header:  map[string][]string{"Status": {"503"}},
+	}
+	tr.handler(&msg)
+}
+
+func TestServiceUnavailable(t *testing.T) {
+	s := runServer(nil)
+	defer s.Shutdown()
+	tr, server, conn := newClientAndServer(t, false)
+	defer server.Stop()
+	defer conn.Close()
+	assert.Nil(t, tr.Open())
+	defer tr.Close()
+	assert.True(t, tr.IsOpen())
+
+	frame := []byte("helloworld")
+	_, err := conn.SubscribeSync(tr.subject)
+	assert.Nil(t, err)
+
+	ctx := NewFContext("")
+	opId, ok := ctx.RequestHeader(opIDHeader)
+	assert.True(t, ok)
+
+	// Wait until the op id registered before calling the handler
+	// the handler does not 
+	go func() {
+		opIdInt, _ := strconv.ParseInt(opId, 10, 64)
+		var found bool
+		for !found {
+			tr.registry.(*fRegistryImpl).mu.RLock()
+			_, found = tr.registry.(*fRegistryImpl).channels[uint64(opIdInt)]
+			tr.registry.(*fRegistryImpl).mu.RUnlock()
+			runtime.Gosched()
+		}
+		tr.handler(&nats.Msg{
+			// Mimic a 503 being returned
+			// Start the request asynchronously so we can mock a response
+			Subject: tr.inbox + "." + opId,
+			Header:  map[string][]string{"Status": {"503"}},
+		})
+	}()
+	_, err = tr.Request(ctx, prependFrameSize(frame))
+	assert.Equal(t, TRANSPORT_EXCEPTION_SERVICE_NOT_AVAILABLE, err.(thrift.TTransportException).TypeId())
+
+	conn.Flush()
 }
 
 // HELPER METHODS

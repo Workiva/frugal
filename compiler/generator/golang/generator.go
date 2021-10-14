@@ -41,6 +41,7 @@ const (
 	useVendorOption           = "use_vendor"
 	slimOption                = "slim"
 	suppressDeprecatedLogging = "suppress_deprecated_logging"
+	shouldOmitServerGen       = "omit_server_service_generation"
 )
 
 // Generator implements the LanguageGenerator interface for Go.
@@ -1809,6 +1810,10 @@ func (g *Generator) generateInternalClientMethod(service *parser.Service, method
 }
 
 func (g *Generator) generateServer(service *parser.Service) string {
+	if g.shouldOmitGeneratedServiceServer() {
+		return ``
+	}
+
 	contents := ""
 	contents += g.generateProcessor(service)
 	for _, method := range service.Methods {
@@ -2188,6 +2193,11 @@ func (g *Generator) qualifiedTypeName(t *parser.Type) string {
 
 func (g *Generator) generateAsync() bool {
 	_, ok := g.Options[asyncOption]
+	return ok
+}
+
+func (g *Generator) shouldOmitGeneratedServiceServer() bool {
+	_, ok := g.Options[shouldOmitServerGen]
 	return ok
 }
 

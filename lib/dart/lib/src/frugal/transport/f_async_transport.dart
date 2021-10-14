@@ -87,19 +87,22 @@ abstract class FAsyncTransport extends FTransport {
     try {
       opId = int.parse(headers[_opidHeader]);
     } catch (e) {
-      _log.warning("frugal: invalid protocol frame: op id not a uint64", e);
+      _log.severe("frugal: invalid protocol frame: op id not a uint64", e);
       return;
     }
 
     Completer<Uint8List> handler = _handlers[opId];
     if (handler == null) {
+      // This is only a warning since it can routinely happen due to network
+      // timeouts / bad network weather
       _log.warning("frugal: no handler found for message, dropping message");
       return;
     }
 
     if (handler.isCompleted) {
-      _log.warning(
+      _log.severe(
           "frugal: handler already called for message, dropping message");
+      return;
     }
     handler.complete(frame);
   }

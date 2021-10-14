@@ -38,6 +38,10 @@ const (
 	// TRANSPORT_EXCEPTION_DISCONNECTED is a TTransportException error type
 	// indicating the transport was disconnected
 	TRANSPORT_EXCEPTION_DISCONNECTED = 102
+
+	// TRANSPORT_EXCEPTION_SERVICE_NOT_AVAILABLE is a TTransportException
+	// error type indicating the service host, subject, etc. was not found.
+	TRANSPORT_EXCEPTION_SERVICE_NOT_AVAILABLE = 103
 )
 
 // TApplicationException types used in frugal instantiated

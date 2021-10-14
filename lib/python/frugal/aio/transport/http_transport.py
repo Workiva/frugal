@@ -11,7 +11,10 @@
 
 import base64
 
-from aiohttp.client import ClientTimeout, ClientSession, ServerTimeoutError
+from aiohttp.client import ClientTimeout
+from aiohttp.client import ClientSession
+from aiohttp.client import ClientConnectorError
+from aiohttp.client import ServerTimeoutError
 from thrift.transport.TTransport import TTransportBase
 from thrift.transport.TTransport import TMemoryBuffer
 from thrift.transport.TTransport import TTransportException
@@ -140,4 +143,9 @@ class FHttpTransport(FTransportBase):
                 raise TTransportException(
                     type=TTransportExceptionType.TIMED_OUT,
                     message='request timed out'
+                )
+            except ClientConnectorError as e:
+                raise TTransportException(
+                    type=TTransportExceptionType.SERVICE_NOT_AVAILABLE,
+                    message=f'service not available: {e.strerror}'
                 )

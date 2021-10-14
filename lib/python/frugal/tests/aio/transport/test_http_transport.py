@@ -11,8 +11,9 @@
 
 from asyncio import Future
 import base64
-
 import mock
+
+from aiohttp.client import ClientConnectorError
 from thrift.transport.TTransport import TTransportException
 
 from frugal.aio.transport import FHttpTransport
@@ -194,4 +195,21 @@ class TestFHttpTransport(utils.AsyncIOTestCase):
             'request errored with code {0} and message {1}'.format(
                 404, str(message)
             )
+        )
+
+    @utils.async_runner
+    async def test_request_service_unavailable(self):
+        transport = FHttpTransport(
+            self.url,
+            request_capacity=self.request_capacity,
+            response_capacity=self.response_capacity
+        )
+
+        with self.assertRaises(TTransportException) as e:
+            await transport.request(
+                FContext(), bytearray([0, 0, 0, 3, 1, 2, 3])
+            )
+
+        self.assertTrue(
+            "service not available: " in str(e.exception)
         )

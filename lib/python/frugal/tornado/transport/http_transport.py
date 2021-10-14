@@ -12,6 +12,7 @@
 import base64
 import httplib
 import logging
+import socket
 
 from thrift.transport.TTransport import TMemoryBuffer
 from thrift.transport.TTransport import TTransportException
@@ -137,6 +138,11 @@ class FHttpTransport(FTransportBase):
             raise TTransportException(
                 type=TTransportExceptionType.UNKNOWN,
                 message=message)
+        except socket.gaierror as e:
+            raise TTransportException(
+                type=TTransportExceptionType.SERVICE_NOT_AVAILABLE,
+                message='service not available: {}'.format(e.strerror)
+            )
 
         decoded = base64.b64decode(response.body)
 

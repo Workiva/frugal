@@ -3,17 +3,22 @@ package com.workiva.frugal.transport;
 import com.workiva.frugal.FContext;
 import com.workiva.frugal.exception.TTransportExceptionType;
 import com.workiva.frugal.protocol.HeaderUtils;
+import com.workiva.frugal.util.Pair;
 import com.workiva.frugal.util.ProtocolUtils;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.transport.TTransportException;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -86,6 +91,68 @@ public class FAsyncTransportTest {
         byte[] request = "hello world".getBytes();
         assertArrayEquals(expectedResponse, transport.request(context, request).getBuffer());
         assertArrayEquals(request, transport.payloads.get(0));
+    }
+
+    /**
+     * Ensures request calls flushOp rather than flush.
+     */
+    @Test
+    public void testFlushOp() throws TException, UnsupportedEncodingException {
+        FContext context = new FContext();
+        byte[] expectedResponse = FAsyncTransportTest.mockFrame(context);
+        List<byte[]> payloads = new ArrayList<>();
+        FAsyncTransport transport = new FAsyncTransport() {
+            @Override
+            protected void flush(byte[] payload) throws TTransportException {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            protected void flushOp(long opId, byte[] payload) throws TTransportException {
+                payloads.add(payload);
+                queueMap.get(opId).add(expectedResponse);
+            }
+        };
+        transport.open();
+
+        byte[] request = "hello world".getBytes();
+        assertArrayEquals(expectedResponse, transport.request(context, request).getBuffer());
+        assertArrayEquals(request, payloads.get(0));
+    }
+
+    /**
+     * Ensures request calls flushOp rather than flush.
+     */
+    @Test
+    public void testServiceNotAvailable() throws TException, UnsupportedEncodingException {
+        FContext context = new FContext();
+        List<byte[]> payloads = new ArrayList<>();
+        FAsyncTransport transport = new FAsyncTransport() {
+            @Override
+            protected void flush(byte[] payload) throws TTransportException {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            protected void flushOp(long opId, byte[] payload) throws TTransportException {
+                payloads.add(payload);
+                try {
+                    handleServiceNotAvailable(opId);
+                } catch (TException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+        transport.open();
+
+        byte[] request = "hello world".getBytes();
+        try {
+            transport.request(context, request);
+            fail();
+        } catch (TTransportException e) {
+            assertEquals(TTransportExceptionType.SERVICE_NOT_AVAILABLE, e.getType());
+        }
+        assertArrayEquals(request, payloads.get(0));
     }
 
     /**

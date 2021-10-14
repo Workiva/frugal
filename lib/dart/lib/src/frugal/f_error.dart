@@ -81,4 +81,8 @@ class FrugalTTransportErrorType extends TTransportErrorType {
 
   /// Indicates the request failed because the transport was disconnected.
   static const int DISCONNECTED = 102;
+
+  /// Indicates the request failed because the service host, subject, etc. was
+  /// not found.
+  static const int SERVICE_NOT_AVAILABLE = 103;
 }

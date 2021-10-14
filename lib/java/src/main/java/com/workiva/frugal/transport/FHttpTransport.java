@@ -39,7 +39,9 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Objects;
 
@@ -287,6 +289,12 @@ public class FHttpTransport extends FTransport {
         CloseableHttpResponse response;
         try {
             response = httpClient.execute(request);
+        } catch (UnknownHostException e) {
+            throw new TTransportException(TTransportExceptionType.SERVICE_NOT_AVAILABLE,
+                    "http request unknown host: " + e.getMessage(), e);
+        } catch (ConnectException e) {
+            throw new TTransportException(TTransportExceptionType.SERVICE_NOT_AVAILABLE,
+                    "http request connect exception: " + e.getMessage(), e);
         } catch (ConnectTimeoutException e) {
             throw new TTransportException(TTransportExceptionType.TIMED_OUT,
                     "http request connection timed out: " + e.getMessage(), e);

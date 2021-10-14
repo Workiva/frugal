@@ -90,7 +90,8 @@ class TestFNatsTransport(AsyncTestCase):
 
         self.assertEquals(1, self.transport._sub_id)
         self.mock_nats_client.subscribe_async.assert_called_with(
-            "new_inbox", cb=self.transport._on_message_callback)
+            "new_inbox.*", cb=self.transport._on_message_callback
+        )
 
     @gen_test
     def test_on_message_callback(self):
@@ -102,7 +103,7 @@ class TestFNatsTransport(AsyncTestCase):
         callback.return_value = future
         self.transport.handle_response = callback
         yield self.transport._on_message_callback(message)
-        callback.assert_called_once_with(message.data[4:])
+        callback.assert_called_once_with(message)
 
     @gen_test
     def test_close_calls_unsubscribe_and_sets_is_open_to_false(self):

@@ -35,7 +35,7 @@ const (
 	defaultOutputDir    = "gen-dart"
 	serviceSuffix       = "_service"
 	scopeSuffix         = "_scope"
-	allowedDartSdkRange = ">=2.4.0 <3.0.0"
+	allowedDartSdkRange = ">=2.11.0 <3.0.0"
 	tab                 = "  "
 	tabtab              = tab + tab
 	tabtabtab           = tab + tab + tab

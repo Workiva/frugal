@@ -18,12 +18,14 @@ import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 
 import static com.workiva.frugal.transport.FAsyncTransportTest.mockFrame;
-import static org.hamcrest.Matchers.containsString;
+import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,10 +66,11 @@ public class FNatsTransportTest {
         transport.open();
 
         verify(mockDispatcher).subscribe(inboxCaptor.capture());
-        assertEquals(inbox, inboxCaptor.getValue());
+        assertEquals(inbox + ".*", inboxCaptor.getValue());
 
         MessageHandler handler = handlerCaptor.getValue();
         FContext context = new FContext();
+        @SuppressWarnings("unchecked")
         BlockingQueue<byte[]> mockQueue = mock(BlockingQueue.class);
         transport.queueMap.put(FAsyncTransport.getOpId(context), mockQueue);
 
@@ -104,7 +107,19 @@ public class FNatsTransportTest {
 
         byte[] buff = "helloworld".getBytes();
         transport.flush(buff);
-        verify(conn).publish(subject, inbox, buff);
+        verify(conn).publish(subject, null, buff);
+    }
+
+    @Test
+    public void testFlushOp() throws TTransportException {
+        when(conn.getStatus()).thenReturn(Status.CONNECTED);
+        Dispatcher mockDispatcher = mock(Dispatcher.class);
+        when(conn.createDispatcher(any(MessageHandler.class))).thenReturn(mockDispatcher);
+        transport.open();
+
+        byte[] buff = "helloworld".getBytes();
+        transport.flushOp(1234L, buff);
+        verify(conn).publish(subject, inbox + ".1234", buff);
     }
 
     @Test
@@ -200,5 +215,57 @@ public class FNatsTransportTest {
             assertEquals(TTransportExceptionType.TIMED_OUT, e.getType());
             assertThat(e.getMessage(), containsString("foo"));
         }
+    }
+
+    @Test
+    public void testRequestServiceNotAvailable() throws TTransportException {
+        when(conn.getStatus()).thenReturn(Status.CONNECTED);
+        Dispatcher mockDispatcher = mock(Dispatcher.class);
+        when(conn.createDispatcher(any(MessageHandler.class))).thenReturn(mockDispatcher);
+        transport.open();
+
+        ArgumentCaptor<MessageHandler> handlerCaptor = ArgumentCaptor.forClass(MessageHandler.class);
+        verify(conn).createDispatcher(handlerCaptor.capture());
+        MessageHandler handler = requireNonNull(handlerCaptor.getValue());
+        doAnswer(inv -> {
+            String replyTo = inv.getArgument(1);
+
+            Message message = mock(Message.class);
+            when(message.getSubject()).thenReturn(replyTo);
+            when(message.isStatusMessage()).thenReturn(true);
+            when(message.getStatus()).thenReturn(new io.nats.client.support.Status(io.nats.client.support.Status.NO_RESPONDERS_CODE, null));
+            when(message.getData()).thenReturn(new byte[0]);
+            handler.onMessage(message);
+
+            return null;
+        }).when(conn).publish(any(), any(), any());
+
+        try {
+            FContext fContext = new FContext();
+            transport.request(fContext, "helloworld".getBytes());
+            fail();
+        } catch (TTransportException e) {
+            assertEquals(TTransportExceptionType.SERVICE_NOT_AVAILABLE, e.getType());
+            assertThat(e.getMessage(), containsString("foo"));
+        }
+    }
+
+    @Test
+    public void testStatusMessage() throws Exception {
+        when(conn.getStatus()).thenReturn(Status.CONNECTED);
+        ArgumentCaptor<MessageHandler> handlerCaptor = ArgumentCaptor.forClass(MessageHandler.class);
+        Dispatcher mockDispatcher = mock(Dispatcher.class);
+        when(conn.createDispatcher(handlerCaptor.capture())).thenReturn(mockDispatcher);
+
+        transport.open();
+
+        MessageHandler handler = handlerCaptor.getValue();
+        Message message = mock(Message.class);
+        when(message.isStatusMessage()).thenReturn(true);
+        when(message.getStatus()).thenReturn(new io.nats.client.support.Status(0, null));
+        when(message.getData()).thenReturn(new byte[0]);
+
+        // Ensure no exception.
+        handler.onMessage(message);
     }
 }

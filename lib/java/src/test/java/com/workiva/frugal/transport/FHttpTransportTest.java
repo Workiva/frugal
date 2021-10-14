@@ -28,7 +28,9 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -355,6 +357,30 @@ public class FHttpTransportTest {
             fail();
         } catch (TTransportException e) {
             assertEquals(e.getType(), TTransportException.UNKNOWN);
+        }
+    }
+
+    @Test
+    public void testSend_requestUnknownHost() throws TTransportException, IOException {
+        byte[] buff = "helloserver".getBytes();
+        when(client.execute(any(HttpPost.class))).thenThrow(new UnknownHostException());
+        try {
+            transport.request(context, buff);
+            fail();
+        } catch (TTransportException e) {
+            assertEquals(e.getType(), TTransportExceptionType.SERVICE_NOT_AVAILABLE);
+        }
+    }
+
+    @Test
+    public void testSend_requestConnectException() throws TTransportException, IOException {
+        byte[] buff = "helloserver".getBytes();
+        when(client.execute(any(HttpPost.class))).thenThrow(new ConnectException());
+        try {
+            transport.request(context, buff);
+            fail();
+        } catch (TTransportException e) {
+            assertEquals(e.getType(), TTransportExceptionType.SERVICE_NOT_AVAILABLE);
         }
     }
 

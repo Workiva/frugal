@@ -16,6 +16,8 @@ package frugal
 import (
 	"bytes"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -26,6 +28,8 @@ const (
 	natsMaxMessageSize = 1024 * 1024
 	frugalPrefix       = "frugal."
 )
+
+var serviceNotAvailable = []byte{}
 
 // NewFNatsTransport returns a new FTransport which uses the NATS messaging
 // system as the underlying transport. This FTransport is stateless in that
@@ -72,7 +76,7 @@ func (f *fNatsTransport) Open() error {
 
 	handler := f.handler
 
-	sub, err := f.conn.Subscribe(f.inbox, handler)
+	sub, err := f.conn.Subscribe(f.inbox + ".*", handler)
 	if err != nil {
 		return thrift.NewTTransportExceptionFromError(err)
 	}
@@ -84,7 +88,29 @@ func (f *fNatsTransport) Open() error {
 
 // handler receives a NATS message and executes the frame
 func (f *fNatsTransport) handler(msg *nats.Msg) {
-	if err := f.fBaseTransport.ExecuteFrame(msg.Data); err != nil {
+	if status := msg.Header.Get("Status"); status != "" {
+		logger().Debug("Received status message: {}", msg)
+		if status == "503" {
+			subject := msg.Subject
+			opIdString := subject[strings.LastIndex(subject, ".") + 1:]
+			opId, err := strconv.ParseUint(opIdString, 10, 64)
+			if err != nil {
+				logger().Warn("Subject did not contain op id")
+				return
+			}
+			f.handleServiceNotAvailable(opId)
+		}
+	} else {
+		f.handleOpResponse(msg.Data)
+	}
+}
+
+func (f *fNatsTransport) handleServiceNotAvailable(opId uint64) {
+	f.registry.dispatch(opId, serviceNotAvailable)
+}
+
+func (f *fNatsTransport) handleOpResponse(frame []byte) {
+	if err := f.fBaseTransport.ExecuteFrame(frame); err != nil {
 		logger().Warn("Could not execute frame", err)
 	}
 }
@@ -159,12 +185,19 @@ func (f *fNatsTransport) Request(ctx FContext, data []byte) (thrift.TTransport, 
 		return nil, err
 	}
 
-	if err := f.conn.PublishRequest(f.subject, f.inbox, data); err != nil {
+	opId, err := getOpID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := f.conn.PublishRequest(f.subject, fmt.Sprintf("%s.%d", f.inbox, opId), data); err != nil {
 		return nil, err
 	}
 
 	select {
 	case result := <-resultC:
+		if bytes.Equal(result, serviceNotAvailable) {
+			return nil, thrift.NewTTransportException(TRANSPORT_EXCEPTION_SERVICE_NOT_AVAILABLE, "frugal: service not available")
+		}
 		return &thrift.TMemoryBuffer{Buffer: bytes.NewBuffer(result)}, nil
 	case <-time.After(ctx.Timeout()):
 		return nil, thrift.NewTTransportException(TRANSPORT_EXCEPTION_TIMED_OUT, "frugal: nats request timed out")

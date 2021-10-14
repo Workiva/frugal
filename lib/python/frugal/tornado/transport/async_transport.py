@@ -10,6 +10,7 @@
 # limitations under the License.
 
 from datetime import timedelta
+import logging
 
 from thrift.protocol.TProtocol import TProtocolException
 from thrift.transport.TTransport import TMemoryBuffer
@@ -21,6 +22,11 @@ from frugal.context import _OPID_HEADER
 from frugal.exceptions import TTransportExceptionType
 from frugal.tornado.transport.transport import FTransportBase
 from frugal.util.headers import _Headers
+
+
+logger = logging.getLogger(__name__)
+
+_STATUS_MESSAGE = []
 
 
 class FAsyncTransport(FTransportBase):
@@ -65,8 +71,13 @@ class FAsyncTransport(FTransportBase):
         try:
             @gen.coroutine
             def flush_and_wait():
-                yield self.flush(payload)
+                yield self.flush_op(op_id, payload)
                 data = yield future
+                if data == _STATUS_MESSAGE:
+                    raise TTransportException(
+                        type=TTransportExceptionType.SERVICE_NOT_AVAILABLE,
+                        message="request: service not available"
+                    )
                 raise gen.Return(data)
 
             data = yield gen.with_timeout(
@@ -89,15 +100,25 @@ class FAsyncTransport(FTransportBase):
         raise NotImplementedError('You must override this')
 
     @gen.coroutine
-    def handle_response(self, frame):
+    def flush_op(self, op_id, payload):
+        """Flush the payload to the server."""
+        yield self.flush(payload)
+
+    @gen.coroutine
+    def handle_response(self, message):
         """
         Complete the future associated with the data frame.
 
         Args:
             frame: The response frame
         """
-        if not frame:
+        if not message.data:
+            logger.debug("Received empty message")
+            op_id = message.subject[message.subject.rindex(".") + 1:]
+            yield self.handle_empty_response(op_id)
             return
+
+        frame = message.data[4:]
         headers = _Headers.decode_from_frame(frame)
         op_id = headers.get(_OPID_HEADER, None)
 
@@ -110,3 +131,12 @@ class FAsyncTransport(FTransportBase):
                 return
 
             future.set_result(frame)
+
+    @gen.coroutine
+    def handle_empty_response(self, op_id):
+        with (yield self._futures_lock.acquire()):
+            future = self._futures.get(op_id, None)
+            if not future:
+                return
+
+            future.set_result(_STATUS_MESSAGE)

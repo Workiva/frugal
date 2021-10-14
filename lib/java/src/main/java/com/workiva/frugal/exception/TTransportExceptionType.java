@@ -44,4 +44,9 @@ public class TTransportExceptionType {
      * TTransportException code that indicates the transport was disconnected.
      */
     public static final int DISCONNECTED = 102;
+
+    /**
+     * TTransportException code that indicates the service host, subject, etc. was not found.
+     */
+    public static final int SERVICE_NOT_AVAILABLE = 103;
 }

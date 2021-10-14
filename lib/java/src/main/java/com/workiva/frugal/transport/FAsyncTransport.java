@@ -37,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 public abstract class FAsyncTransport extends FTransport {
 
     protected static final byte[] POISON_PILL = new byte[0];
+    // Visible for testing
+    static final byte[] SERVICE_NOT_AVAILABLE = new byte[0];
 
     protected Map<Long, BlockingQueue<byte[]>> queueMap = new HashMap<>();
 
@@ -87,15 +89,16 @@ public abstract class FAsyncTransport extends FTransport {
         preflightRequestCheck(payload.length);
 
         BlockingQueue<byte[]> queue = new ArrayBlockingQueue<>(1);
+        long opId = getOpId(context);
         synchronized (this) {
-            if (queueMap.containsKey(getOpId(context))) {
+            if (queueMap.containsKey(opId)) {
                 throw new TTransportException("request already in flight for context");
             }
-            queueMap.put(getOpId(context), queue);
+            queueMap.put(opId, queue);
         }
 
         try {
-            flush(payload);
+            flushOp(opId, payload);
 
             byte[] response;
             try {
@@ -108,6 +111,11 @@ public abstract class FAsyncTransport extends FTransport {
                 throw new TTransportException(TTransportExceptionType.TIMED_OUT, "request: timed out");
             }
 
+            if (response == SERVICE_NOT_AVAILABLE) {
+                throw new TTransportException(TTransportExceptionType.SERVICE_NOT_AVAILABLE,
+                        "request: service not available");
+            }
+
             if (response == POISON_PILL) {
                 throw new TTransportException(TTransportExceptionType.NOT_OPEN,
                         "request: transport closed, request canceled");
@@ -116,18 +124,29 @@ public abstract class FAsyncTransport extends FTransport {
             return new TMemoryInputTransport(response);
         } finally {
             synchronized (this) {
-                queueMap.remove(getOpId(context));
+                queueMap.remove(opId);
             }
         }
     }
 
     /**
-     * Flush the payload to the server. Implementations must not block and must be thread-safe.
+     * Flush a oneway or request payload to the server.
+     * Implementations must not block and must be thread-safe.
+     * This method is not called for requests if {@link #flushOp} is overridden.
      *
      * @param payload framed frugal bytes
      * @throws TTransportException if flushing the transport fails.
+     * @see #flushOp
      */
     protected abstract void flush(byte[] payload) throws TTransportException;
+
+    /**
+     * Flush a request payload to the server.
+     * By default, this method calls {@link #flush}.
+     */
+    protected void flushOp(long opId, byte[] payload) throws TTransportException {
+        flush(payload);
+    }
 
     /**
      * Handles a frugal frame response (NOTE: this frame must NOT include the frame size).
@@ -147,6 +166,21 @@ public abstract class FAsyncTransport extends FTransport {
             throw new TProtocolException("invalid protocol frame: op id not a uint64", e);
         }
 
+        handleOpResponse(opId, frame);
+    }
+
+    /**
+     * Handles a frugal response for
+     * {@link TTransportExceptionType#SERVICE_NOT_AVAILABLE}.
+     */
+    protected void handleServiceNotAvailable(long opId) throws TException {
+        handleOpResponse(opId, SERVICE_NOT_AVAILABLE);
+    }
+
+    /**
+     * Handles a frugal frame response for a specific op.
+     */
+    private void handleOpResponse(long opId, byte[] frame) throws TException {
         BlockingQueue<byte[]> queue;
         synchronized (this) {
             queue = queueMap.get(opId);
