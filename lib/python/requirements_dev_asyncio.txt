@@ -1,5 +1,6 @@
 aiohttp==3.6.3
 aiostomp==1.6.2
 asyncio-nats-client==0.11.4
+async-timeout==3.0.1
 
 -r requirements_dev_common.txt
