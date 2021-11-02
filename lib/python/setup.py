@@ -32,7 +32,7 @@ setup(
             'aiohttp>=3.0.9,<3.8.0',
             'aiostomp==1.6.2',
             'asyncio-nats-client>=0.11.4,<1',
-            'async-timeout>=2.0.1,<4',
+            'async-timeout>=2.0.1,<5',
         ],
         'gae': ['webapp2==2.5.2'],
     }
