@@ -36,7 +36,7 @@ ARG BUILD_ARTIFACTS_RELEASE=/go/src/github.com/Workiva/frugal/frugal
 ARG BUILD_ARTIFACTS_AUDIT=/go/src/github.com/Workiva/frugal/python2_pip_deps.txt:/go/src/github.com/Workiva/frugal/python3_pip_deps.txt:/go/src/github.com/Workiva/frugal/lib/go/go.mod:/go/src/github.com/Workiva/frugal/lib/dart/pubspec.lock:/go/src/github.com/Workiva/frugal/lib/java/pom.xml
 ARG BUILD_ARTIFACTS_GO_LIBRARY=/go/src/github.com/Workiva/frugal/goLib.tar.gz
 ARG BUILD_ARTIFACTS_PYPI=/go/src/github.com/Workiva/frugal/frugal-*.tar.gz
-ARG BUILD_ARTIFACTS_ARTIFACTORY=/go/src/github.com/Workiva/frugal/frugal-*.jar
+ARG BUILD_ARTIFACTS_JAVA=/go/src/github.com/Workiva/frugal/frugal-*.jar
 ARG BUILD_ARTIFACTS_PUB=/go/src/github.com/Workiva/frugal/frugal.pub.tgz
 ARG BUILD_ARTIFACTS_TEST_RESULTS=/go/src/github.com/Workiva/frugal/test_results/*
 
