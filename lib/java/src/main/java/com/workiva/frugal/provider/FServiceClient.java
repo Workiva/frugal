@@ -50,7 +50,7 @@ public class FServiceClient {
 		iprot.readResponseHeader(ctx);
 		TMessage message = iprot.readMessageBegin();
 		if (!message.name.equals(method)) {
-			throw new TApplicationException(TApplicationExceptionType.WRONG_METHOD_NAME, method + " failed: wrong method name");
+			throw new TApplicationException(TApplicationExceptionType.WRONG_METHOD_NAME, method + " failed: wrong method name: " + message.name);
 		}
 		if (message.type == TMessageType.EXCEPTION) {
 			TApplicationException e = TApplicationException.readFrom(iprot);
@@ -62,7 +62,7 @@ public class FServiceClient {
 			throw returnedException;
 		}
 		if (message.type != TMessageType.REPLY) {
-			throw new TApplicationException(TApplicationExceptionType.INVALID_MESSAGE_TYPE, method + " failed: invalid message type");
+			throw new TApplicationException(TApplicationExceptionType.INVALID_MESSAGE_TYPE, method + " failed: invalid message type: " + message.type);
 		}
 		res.read(iprot);
 		iprot.readMessageEnd();
