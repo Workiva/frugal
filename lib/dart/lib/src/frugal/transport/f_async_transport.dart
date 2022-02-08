@@ -106,4 +106,18 @@ abstract class FAsyncTransport extends FTransport {
     }
     handler.complete(frame);
   }
+
+  @override
+  Future close([Error error]) {
+    print('closing transport ${_handlers.length} ');
+    var handlerKeys = _handlers.keys;
+    for (var key in handlerKeys) {
+      _handlers[key].completeError(ClosedException());
+      _handlers.remove(key);
+    }
+    return super.close(error);
+  }
 }
+
+/// ClosedException happens when the transport is closed with open handlers.
+class ClosedException implements Exception {}
