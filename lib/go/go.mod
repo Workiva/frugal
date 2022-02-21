@@ -3,7 +3,7 @@ module github.com/Workiva/frugal/lib/go
 go 1.15
 
 require (
-	github.com/apache/thrift v0.14.2
+	github.com/apache/thrift v0.16.0
 	github.com/go-stomp/stomp v2.1.4+incompatible
 	github.com/nats-io/nats-server/v2 v2.7.2
 	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
