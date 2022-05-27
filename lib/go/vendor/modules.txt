@@ -1,0 +1,57 @@
+# git.apache.org/thrift.git v0.0.0-20161221203622-b2a4d4ae21c7 => github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
+## explicit
+git.apache.org/thrift.git/lib/go/thrift
+# github.com/Sirupsen/logrus v0.11.5
+## explicit
+github.com/Sirupsen/logrus
+# github.com/davecgh/go-spew v1.1.0
+github.com/davecgh/go-spew/spew
+# github.com/go-stomp/stomp v2.0.6+incompatible
+## explicit
+github.com/go-stomp/stomp
+github.com/go-stomp/stomp/frame
+github.com/go-stomp/stomp/server
+github.com/go-stomp/stomp/server/client
+github.com/go-stomp/stomp/server/queue
+github.com/go-stomp/stomp/server/topic
+# github.com/mattrobenolt/gocql v0.0.0-20130828033103-56c5a46b65ee
+## explicit
+github.com/mattrobenolt/gocql/uuid
+# github.com/nats-io/gnatsd v1.4.1
+## explicit
+github.com/nats-io/gnatsd/conf
+github.com/nats-io/gnatsd/logger
+github.com/nats-io/gnatsd/server
+github.com/nats-io/gnatsd/server/pse
+# github.com/nats-io/go-nats v0.0.0-20161120202126-6b6bf392d34d
+## explicit
+github.com/nats-io/go-nats
+github.com/nats-io/go-nats/encoders/builtin
+github.com/nats-io/go-nats/util
+# github.com/nats-io/nats-server/v2 v2.1.8
+## explicit
+# github.com/nats-io/nuid v1.0.1
+github.com/nats-io/nuid
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/stretchr/objx v0.1.0
+github.com/stretchr/objx
+# github.com/stretchr/testify v1.6.1
+## explicit
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/mock
+github.com/stretchr/testify/require
+# golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
+golang.org/x/crypto/bcrypt
+golang.org/x/crypto/blowfish
+# golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+golang.org/x/sys/windows/registry
+golang.org/x/sys/windows/svc
+golang.org/x/sys/windows/svc/debug
+golang.org/x/sys/windows/svc/eventlog
+golang.org/x/sys/windows/svc/mgr
+# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+gopkg.in/yaml.v3
+# git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
