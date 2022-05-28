@@ -109,10 +109,14 @@ public class FNatsSubscriberTransport implements FSubscriberTransport {
         /**
          * Set the number of concurrent workers to use when consuming messages. By default,
          * message are handled one at a time on a single thread.
-         * @param count The number of concurrent workers for consuming messages.
+         * @param count The number of concurrent workers for consuming messages. Must be >= 1.
          * @return The existing Factory
+         * @throws IllegalArgumentException if count < 1
          */
         public Factory withWorkerCount(int count) {
+            if( count < 1) {
+                throw new IllegalArgumentException("Worker count must be 1 or greater, but was " + count);
+            }
             this.workerPool = Executors.newFixedThreadPool(count);
             return this;
         }

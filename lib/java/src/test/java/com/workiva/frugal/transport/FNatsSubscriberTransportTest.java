@@ -247,5 +247,10 @@ public class FNatsSubscriberTransportTest {
         transport.unsubscribe();
         assertFalse(transport.isSubscribed());
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testFactoryWithCountLessThan1() {
+        new FNatsSubscriberTransport.Factory(conn).withWorkerCount(0);
+    }
 }
 
