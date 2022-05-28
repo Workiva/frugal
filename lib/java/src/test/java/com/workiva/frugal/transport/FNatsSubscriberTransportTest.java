@@ -27,6 +27,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+
 /**
  * Tests for {@link FSubscriberTransport}.
  */
@@ -40,14 +45,21 @@ public class FNatsSubscriberTransportTest {
     private Message mockMessage;
 
     private class Handler implements FAsyncCallback {
+        List<TTransport> transports = new ArrayList<>();
         TTransport transport;
         TException exception;
         RuntimeException runtimeException;
         Error error;
+        CountDownLatch messageCompleteLatch;
+        Semaphore messageReceivedSignal;
 
         @Override
         public void onMessage(TTransport transport) throws TException {
+            this.transports.add(transport);
             this.transport = transport;
+            if(messageReceivedSignal != null){
+                messageReceivedSignal.release();
+            }
             if (exception != null) {
                 throw exception;
             }
@@ -56,6 +68,14 @@ public class FNatsSubscriberTransportTest {
             }
             if (error != null) {
                 throw error;
+            }
+
+            if(messageCompleteLatch != null){
+                try {
+                    messageCompleteLatch.await();
+                }catch (InterruptedException e) {
+                    throw new TException(e);
+                }
             }
         }
     }
@@ -66,6 +86,51 @@ public class FNatsSubscriberTransportTest {
         transport = new FNatsSubscriberTransport.Factory(conn).getTransport();
         mockDispatcher = mock(Dispatcher.class);
         mockMessage = mock(Message.class);
+    }
+
+    @Test
+    public void testSubscribeWorkers() throws Exception {
+        when(conn.getStatus()).thenReturn(Status.CONNECTED);
+        ArgumentCaptor<MessageHandler> handlerCaptor = ArgumentCaptor.forClass(MessageHandler.class);
+        when(conn.createDispatcher(handlerCaptor.capture())).thenReturn(mockDispatcher);
+
+        Handler handler = new Handler();
+        // This latch is used to block worker threads from completing
+        // so, we can fill up the thread pool
+        handler.messageCompleteLatch = new CountDownLatch(1);
+        // This signal lets us know if a thread has been started from the thread pool,
+        // start with no permits, each time a thread is started a new permit will be released
+        handler.messageReceivedSignal = new Semaphore(0);
+
+        FNatsSubscriberTransport workerTransport = new FNatsSubscriberTransport.Factory(conn)
+            .withWorkerCount(3).getTransport();
+        workerTransport.subscribe(topic, handler);
+        when(mockDispatcher.isActive()).thenReturn(true);
+
+        // Handle a good frame
+        byte[] frame = new byte[]{0, 0, 0, 4, 1, 2, 3, 4};
+        when(mockMessage.getData()).thenReturn(frame);
+        MessageHandler messageHandler = handlerCaptor.getValue();
+
+        // We set the worker count to 3, so we should be able to process
+        // three messages before we get blocked by the latch.
+        for( int messageIndex = 0; messageIndex < 3; messageIndex++) {
+            messageHandler.onMessage(mockMessage);
+            handler.messageReceivedSignal.acquire();
+            assertEquals(messageIndex + 1, handler.transports.size());
+        }
+
+        // These messages should be blocked by the worker thread pool
+        for (int messageIndex = 0; messageIndex < 2; messageIndex++) {
+            messageHandler.onMessage(mockMessage);
+            assertEquals(3, handler.transports.size());
+        }
+
+        // After releasing the latch we should see all 5
+        handler.messageCompleteLatch.countDown();
+        handler.messageReceivedSignal.acquire(2);
+
+        assertEquals(5, handler.transports.size());
     }
 
     @Test

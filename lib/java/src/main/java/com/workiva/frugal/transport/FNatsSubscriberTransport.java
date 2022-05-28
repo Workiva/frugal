@@ -15,6 +15,8 @@ package com.workiva.frugal.transport;
 
 import com.workiva.frugal.exception.TTransportExceptionType;
 import com.workiva.frugal.protocol.FAsyncCallback;
+import com.workiva.frugal.util.DirectExecutor;
+
 import io.nats.client.Connection;
 
 import io.nats.client.Connection.Status;
@@ -27,6 +29,9 @@ import org.slf4j.LoggerFactory;
 
 import static com.workiva.frugal.transport.FNatsTransport.FRUGAL_PREFIX;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
 /**
  * FNatsSubscriberTransport implements FSubscriberTransport by using NATS as the pub/sub message broker.
  * Messages are limited to 1MB in size.
@@ -34,11 +39,13 @@ import static com.workiva.frugal.transport.FNatsTransport.FRUGAL_PREFIX;
 public class FNatsSubscriberTransport implements FSubscriberTransport {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FNatsSubscriberTransport.class);
+    private static final DirectExecutor directExecutor = new DirectExecutor();
 
     private final Connection conn;
     protected String subject;
     protected final String queue;
     protected Dispatcher dispatcher;
+    protected Executor workerPool;
 
     /**
      * Creates a new FNatsScopeTransport which is used for subscribing. Subscribers using this transport will subscribe
@@ -48,9 +55,13 @@ public class FNatsSubscriberTransport implements FSubscriberTransport {
      * @param conn  NATS connection
      * @param queue subscription queue
      */
-    protected FNatsSubscriberTransport(Connection conn, String queue) {
+    protected FNatsSubscriberTransport(Connection conn, String queue, Executor workerPool) {
         this.conn = conn;
         this.queue = queue;
+        this.workerPool = workerPool;
+        if(this.workerPool == null) {
+            this.workerPool = directExecutor;
+        }
     }
 
     /**
@@ -60,6 +71,7 @@ public class FNatsSubscriberTransport implements FSubscriberTransport {
 
         private final Connection conn;
         private final String queue;
+        private Executor workerPool;
 
         /**
          * Creates a NATS FSubscriberTransportFactory using the provided NATS connection.
@@ -84,12 +96,34 @@ public class FNatsSubscriberTransport implements FSubscriberTransport {
         }
 
         /**
+         * Set an executor to manage concurrent message handling. By default, messages are
+         * handled one at a time on a single thread.
+         * @param workerPool The worker pool strategy to use for consuming messages.
+         * @return The existing Factory
+         */
+        public Factory withWorkerPool(Executor workerPool) {
+            this.workerPool = workerPool;
+            return this;
+        }
+
+        /**
+         * Set the number of concurrent workers to use when consuming messages. By default,
+         * message are handled one at a time on a single thread.
+         * @param count The number of concurrent workers for consuming messages.
+         * @return The existing Factory
+         */
+        public Factory withWorkerCount(int count) {
+            this.workerPool = Executors.newFixedThreadPool(count);
+            return this;
+        }
+
+        /**
          * Get a new FSubscriberTransport instance.
          *
          * @return A new FSubscriberTransport instance.
          */
         public FNatsSubscriberTransport getTransport() {
-            return new FNatsSubscriberTransport(conn, queue);
+            return new FNatsSubscriberTransport(conn, queue, workerPool);
         }
     }
 
@@ -115,13 +149,15 @@ public class FNatsSubscriberTransport implements FSubscriberTransport {
                 LOGGER.warn("discarding invalid scope message frame");
                 return;
             }
-            try {
-                callback.onMessage(
+            workerPool.execute(() -> {
+                try {
+                    callback.onMessage(
                         new TMemoryInputTransport(msg.getData(), 4, msg.getData().length - 4)
-                );
-            } catch (Throwable t) {
-                LOGGER.error("error executing user provided callback", t);
-            }
+                    );
+                } catch (Throwable t) {
+                    LOGGER.error("error executing user provided callback", t);
+                }
+            });
         });
 
         if (queue != null && !queue.isEmpty()) {
