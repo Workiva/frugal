@@ -13,6 +13,7 @@ import asyncio
 from io import BytesIO
 
 import mock
+from nats.aio.subscription import Subscription
 
 from frugal.tests.aio import utils
 from frugal.aio.server import FNatsServer
@@ -37,21 +38,23 @@ class TestFNatsServer(utils.AsyncIOTestCase):
     @utils.async_runner
     async def test_serve(self):
         future = asyncio.Future()
-        future.set_result(235)
-        self.mock_nats_client.subscribe_async.return_value = future
+        mock_sub = mock.Mock(spec=Subscription)
+        future.set_result(mock_sub)
+        self.mock_nats_client.subscribe.return_value = future
         await self.server.serve()
-        self.assertEqual([235], self.server._sub_ids)
-        self.mock_nats_client.subscribe_async.assert_called_once_with(
+        self.assertEqual(mock_sub, self.server._subs[0])
+        self.mock_nats_client.subscribe.assert_called_once_with(
             self.subject, queue='', cb=self.server._on_message_callback)
 
     @utils.async_runner
     async def test_stop(self):
-        self.server._sub_ids = [235]
+        mock_sub = mock.Mock(spec=Subscription)
+        self.server._subs = [mock_sub]
         future = asyncio.Future()
         future.set_result(None)
-        self.mock_nats_client.unsubscribe.return_value = future
+        mock_sub.unsubscribe.return_value = future
         await self.server.stop()
-        self.mock_nats_client.unsubscribe.assert_called_once_with(235)
+        mock_sub.unsubscribe.assert_called_once()
 
     @utils.async_runner
     async def test_on_message_callback_no_reply(self):

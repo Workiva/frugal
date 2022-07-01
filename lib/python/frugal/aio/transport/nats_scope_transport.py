@@ -121,7 +121,7 @@ class FNatsSubscriberTransport(FSubscriberTransport):
         self._nats_client = nats_client
         self._queue = queue
         self._is_subscribed = False
-        self._sub_id = None
+        self._subscription = None
 
     async def subscribe(self, topic: str, callback):
         """
@@ -145,7 +145,7 @@ class FNatsSubscriberTransport(FSubscriberTransport):
                 ret = await ret
             return ret
 
-        self._sub_id = await self._nats_client.subscribe_async(
+        self._subscription = await self._nats_client.subscribe(
             'frugal.{0}'.format(topic),
             queue=self._queue,
             cb=nats_callback,
@@ -156,8 +156,8 @@ class FNatsSubscriberTransport(FSubscriberTransport):
         """
         Unsubscribe from the currently subscribed topic.
         """
-        await self._nats_client.unsubscribe(self._sub_id)
-        self._sub_id = None
+        await self._subscription.unsubscribe()
+        self._subscription = None
         self._is_subscribed = False
 
     def is_subscribed(self) -> bool:
