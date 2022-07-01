@@ -10,7 +10,6 @@
 # limitations under the License.
 
 from nats.aio.client import Client
-from nats.aio.utils import new_inbox
 from thrift.transport.TTransport import TTransportException
 
 from frugal import _NATS_MAX_MESSAGE_SIZE
@@ -35,7 +34,7 @@ class FNatsTransport(FAsyncTransport):
         super().__init__(request_size_limit=_NATS_MAX_MESSAGE_SIZE)
         self._nats_client = nats_client
         self._subject = subject
-        self._inbox = inbox or new_inbox()
+        self._inbox = inbox or Client.new_inbox()
         self._is_open = False
         self._sub_id = None
 
