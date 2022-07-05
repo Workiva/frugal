@@ -12,6 +12,7 @@
 import asyncio
 
 import mock
+from nats.aio.subscription import Subscription
 from thrift.transport.TTransport import TTransportException
 
 from frugal.aio.transport import FNatsPublisherTransport
@@ -72,18 +73,19 @@ class TestFNatsScopeTransport(utils.AsyncIOTestCase):
 
     @utils.async_runner
     async def test_subscribe(self):
+        mock_sub = mock.Mock(spec=Subscription)
         future = asyncio.Future()
-        future.set_result(235)
-        self.mock_nats_client.subscribe_async.return_value = future
+        future.set_result(mock_sub)
+        self.mock_nats_client.subscribe.return_value = future
 
         topic = 'bar'
         await self.sub_trans.subscribe(topic, self.callback)
-        self.mock_nats_client.subscribe_async.assert_called_once_with(
+        self.mock_nats_client.subscribe.assert_called_once_with(
             'frugal.bar',
             queue=self.queue,
             cb=mock.ANY,
         )
-        self.assertEqual(self.sub_trans._sub_id, 235)
+        self.assertEqual(self.sub_trans._subscription, mock_sub)
 
     @utils.async_runner
     async def test_subscribe_nats_not_connected(self):
@@ -102,13 +104,14 @@ class TestFNatsScopeTransport(utils.AsyncIOTestCase):
 
     @utils.async_runner
     async def test_unsubscribe(self):
+        mock_sub = mock.Mock(spec=Subscription)
         self.sub_trans._is_subscribed = True
-        self.sub_trans._sub_id = 235
+        self.sub_trans._subscription = mock_sub
         future = asyncio.Future()
         future.set_result(None)
-        self.mock_nats_client.unsubscribe.return_value = future
+        mock_sub.unsubscribe.return_value = future
         await self.sub_trans.unsubscribe()
 
-        self.assertIsNone(self.sub_trans._sub_id)
+        self.assertIsNone(self.sub_trans._subscription)
         self.assertFalse(self.sub_trans._is_subscribed)
-        self.mock_nats_client.unsubscribe.assert_called_once_with(235)
+        mock_sub.unsubscribe.assert_called_once()

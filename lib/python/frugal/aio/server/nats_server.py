@@ -41,13 +41,13 @@ class FNatsServer(FServer):
         self._processor = processor
         self._protocol_factory = protocol_factory
         self._queue = queue
-        self._sub_ids = []
+        self._subs = []
 
     async def serve(self):
         """Subscribe to the server subject and queue."""
-        self._sub_ids = []
+        self._subs = []
         for subject in self._subjects:
-            self._sub_ids.append(await self._nats_client.subscribe_async(
+            self._subs.append(await self._nats_client.subscribe(
                 subject,
                 queue=self._queue,
                 cb=self._on_message_callback,
@@ -56,8 +56,8 @@ class FNatsServer(FServer):
 
     async def stop(self):
         """Unsubscribe from the server subject."""
-        for sid in self._sub_ids:
-            await self._nats_client.unsubscribe(sid)
+        for sub in self._subs:
+            await sub.unsubscribe()
 
     async def _on_message_callback(self, message):
         """The function to be executed when a message is received."""
