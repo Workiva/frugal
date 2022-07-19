@@ -40,22 +40,13 @@ $ go get github.com/Workiva/frugal
 ```
 
 ### From Source
-**Our usage of godep has been deprecated as we move to glide. Once the deprecation period is over, we will remove both the Godeps/ and vendor/ folder, relying solely on glide for dependency management**
-1.  Install [go](https://golang.org/doc/install) and setup [`GOPATH`](https://github.com/golang/go/wiki/GOPATH).
-1.  Clone the frugal repo
+If go is already installed and setup, you can run the following commands:
+```bash
+$ git clone git@github.com:Workiva/frugal.git
+$ cd frugal
+$ go install
+```
 
-    ```bash
-    $ mkdir -p $GOPATH/src/github.com/Workiva && cd $_
-    $ git clone git@github.com:Workiva/frugal.git
-    ```
-
-1.  Install the CLI binary
-    ```bash
-    $ cd $GOPATH/src/github.com/Workiva/frugal
-    $ curl https://glide.sh/get | sh  # get glide if necessary
-    $ glide install  # get dependencies
-    $ go install
-    ```
 
 When generating go, be aware the frugal go library and the frugal compiler
 have separate dependencies.
