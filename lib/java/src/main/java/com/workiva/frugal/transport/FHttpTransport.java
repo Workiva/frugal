@@ -288,6 +288,7 @@ public class FHttpTransport extends FTransport {
         }
         request.setEntity(requestEntity);
         request.setConfig(RequestConfig.custom()
+                .setConnectionRequestTimeout((int) context.getTimeout())
                 .setConnectTimeout((int) context.getTimeout())
                 .setSocketTimeout((int) context.getTimeout())
                 .build());
