@@ -3,7 +3,12 @@
 
     <groupId>com.workiva.frugal</groupId>
     <artifactId>examples</artifactId>
-    <version>3.16.2</version>
+    <version>3.16.3</version>
+
+
+    <properties>
+        <slf4j.version>1.7.36</slf4j.version>
+    </properties>
 
     <repositories>
         <repository>
@@ -22,7 +27,7 @@
         <dependency>
             <groupId>com.workiva</groupId>
             <artifactId>frugal</artifactId>
-            <version>3.16.2</version>
+            <version>3.16.3</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
@@ -32,12 +37,12 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.0</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>2.0.0</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.activemq</groupId>
