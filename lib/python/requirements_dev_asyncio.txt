@@ -1,4 +1,4 @@
-aiohttp==3.6.3
+aiohttp==3.8.3
 aiostomp==1.6.2
 nats-py>=2,<3
 async-timeout>=2.0.1,<4
