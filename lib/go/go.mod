@@ -1,6 +1,6 @@
 module github.com/Workiva/frugal/lib/go
 
-go 1.15
+go 1.17
 
 require (
 	github.com/apache/thrift v0.14.2
