@@ -1,6 +1,6 @@
 module github.com/Workiva/frugal/test/integration
 
-go 1.15
+go 1.17
 
 require (
 	github.com/Workiva/frugal/lib/go v0.0.0
