@@ -18,7 +18,7 @@ deactivate
 
 virtualenv -p /usr/bin/python3 /tmp/frugal-py3
 source /tmp/frugal-py3/bin/activate
-pip3 install -U pip3 setuptools==39.0.1
+pip3 install -U pip3 setuptools==39.0.1 importlib-metadata==4.13.0
 cd $FRUGAL_HOME/lib/python
 make deps-asyncio
 make xunit-py3
