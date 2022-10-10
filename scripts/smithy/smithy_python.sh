@@ -26,7 +26,7 @@ make flake8-py3
 make install
 # Write dependencies out so that RM is able to track them
 # The name of this file is hard coded into Rosie and RM console
-pip3 freeze > $FRUGAL_HOME/python3_pip_deps.txt
+pip freeze > $FRUGAL_HOME/python3_pip_deps.txt
 mv dist/frugal-*.tar.gz $FRUGAL_HOME
 
 # get coverage report in correct format
