@@ -1,4 +1,4 @@
 six>=1.10.0,<2
 thrift==0.13.0
 requests>=2.12.5,<3
-importlib-metadata==4.13. 0
+importlib-metadata==4.13.0
