@@ -3,7 +3,10 @@ package com.workiva.frugal.server;
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocol;
 import com.workiva.frugal.protocol.FProtocolFactory;
+import com.workiva.frugal.transport.TConfigurationBuilder;
 import com.workiva.frugal.transport.TMemoryOutputBuffer;
+
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
@@ -21,8 +24,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
@@ -50,7 +57,7 @@ public class FServlet extends HttpServlet {
     private final FProcessor processor;
     private final FProtocolFactory inProtocolFactory;
     private final FProtocolFactory outProtocolFactory;
-    private final int maxRequestSize;
+    private final TConfiguration requestConfig;
     private final ExecutorService exec;
     private final FServerEventHandler eventHandler;
 
@@ -102,7 +109,7 @@ public class FServlet extends HttpServlet {
         this.processor = b.processor;
         this.inProtocolFactory = b.inProtocolFactory;
         this.outProtocolFactory = b.outProtocolFactory;
-        this.maxRequestSize = b.maxRequestSize;
+        this.requestConfig = TConfigurationBuilder.custom().setMaxMessageSize(b.maxRequestSize).build();
         this.exec = b.exec;
         this.eventHandler = b.eventHandler != null ? b.eventHandler : new FDefaultServerEventHandler(5000);
     }
@@ -110,6 +117,7 @@ public class FServlet extends HttpServlet {
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Map<Object, Object> ephemeralProperties = new HashMap<>();
+        ephemeralProperties.put("http_request_headers", getHeaders(req));
         eventHandler.onRequestReceived(ephemeralProperties);
         try {
             process(req, resp, ephemeralProperties);
@@ -118,14 +126,23 @@ public class FServlet extends HttpServlet {
         }
     }
 
+    private static Map<String, List<String>> getHeaders(HttpServletRequest req) {
+        Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Enumeration<String> en = req.getHeaderNames(); en.hasMoreElements();) {
+            String name = en.nextElement();
+            headers.put(name, Collections.unmodifiableList(Collections.list(req.getHeaders(name))));
+        }
+        return Collections.unmodifiableMap(headers);
+    }
+
     private void process(HttpServletRequest req, HttpServletResponse resp, Map<Object, Object> ephemeralProperties) throws ServletException, IOException {
         byte[] frame;
         try (InputStream decoderIn = Base64.getDecoder().wrap(req.getInputStream());
                 DataInputStream dataIn = new DataInputStream(decoderIn)) {
             try {
                 long size = dataIn.readInt() & 0xffff_ffffL;
-                if (size > maxRequestSize) {
-                    LOGGER.debug("Request size too large. Received: {}, Limit: {}", size, maxRequestSize);
+                if (size > requestConfig.getMaxMessageSize()) {
+                    LOGGER.debug("Request size too large. Received: {}, Limit: {}", size, requestConfig.getMaxMessageSize());
                     resp.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
                     return;
                 }
@@ -190,10 +207,11 @@ public class FServlet extends HttpServlet {
     private byte[] process(byte[] frame, Map<Object, Object> ephemeralProperties) throws TException {
         eventHandler.onRequestStarted(ephemeralProperties);
 
-        TTransport inTransport = new TMemoryInputTransport(frame);
+        TTransport inTransport = new TMemoryInputTransport(requestConfig, frame);
         TMemoryOutputBuffer outTransport = new TMemoryOutputBuffer();
         try {
             FProtocol inProtocol = inProtocolFactory.getProtocol(inTransport);
+            inProtocol.setEphemeralProperties(ephemeralProperties);
             FProtocol outProtocol = outProtocolFactory.getProtocol(outTransport);
             processor.process(inProtocol, outProtocol);
         } catch (RuntimeException e) {

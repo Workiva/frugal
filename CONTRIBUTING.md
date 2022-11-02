@@ -1,6 +1,10 @@
 Contributing to Frugal
 =======================
 
+## Before you start
+
+Opening a PR doesn't guarantee a feature will be merged. Please discuss with the repo owners ahead of time to discuss a feature request. All features will be evaluated based on their usefulness within the community of users.
+
 Creating Pull Requests
 ----------------------
 

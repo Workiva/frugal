@@ -193,12 +193,12 @@ func (g *Generator) addToPubspec(dir string) error {
 
 	deps := map[interface{}]interface{}{
 		"collection": "^1.14.12",
-		"logging":    "^0.11.2",
+		"logging":    ">=0.11.2 <2.0.0",
 		"thrift": dep{
 			Hosted:  hostedDep{Name: "thrift", URL: "https://pub.workiva.org"},
 			Version: "^0.0.10",
 		},
-		"w_common": "^1.20.2",
+		"w_common": "^2.0.0",
 	}
 
 	if g.Frugal.ContainsFrugalDefinitions() {
@@ -1106,7 +1106,7 @@ func (g *Generator) generateWrite(s *parser.Struct) string {
 func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind string) string {
 	contents := ""
 
-	contents += ignoreDeprecationWarningIfNeeded(tabtab + ind, field.Annotations)
+	contents += ignoreDeprecationWarningIfNeeded(tabtab+ind, field.Annotations)
 
 	fName := toFieldName(field.Name)
 	thisPrefix := ""
@@ -1308,13 +1308,21 @@ func (g *Generator) generateHashCode(s *parser.Struct) string {
 	contents += tab + "int get hashCode {\n"
 	contents += tabtab + "var value = 17;\n"
 	for _, field := range s.Fields {
-		fieldName := toFieldName(field.Name)
 		contents += ignoreDeprecationWarningIfNeeded(tabtab, field.Annotations)
-		contents += fmt.Sprintf(tabtab+"value = (value * 31) ^ this.%s.hashCode;\n", fieldName)
+		contents += tabtab + g.generateFieldHashCode(field)
 	}
 	contents += tabtab + "return value;\n"
 	contents += tab + "}\n\n"
 	return contents
+}
+
+func (g *Generator) generateFieldHashCode(field *parser.Field) string {
+	fieldName := toFieldName(field.Name)
+	if !g.isDartCollection(field.Type) {
+		return fmt.Sprintf("value = (value * 31) ^ this.%s.hashCode;\n", fieldName)
+	}
+
+	return fmt.Sprintf("value = (value * 31) ^ DeepCollectionEquality().hash(this.%s);\n", fieldName)
 }
 
 func (g *Generator) generateClone(s *parser.Struct) string {
@@ -1833,7 +1841,7 @@ func (g *Generator) generateClient(service *parser.Service) string {
 	contents += tabtab + "}\n"
 	contents += tabtab + "return null;\n"
 	contents += tab + "}\n"
-	
+
 	for _, method := range service.Methods {
 		contents += "\n"
 		contents += g.generateClientMethod(service, method)
@@ -1888,7 +1896,7 @@ func (g *Generator) generateClientMethod(service *parser.Service, method *parser
 	}
 
 	contents += fmt.Sprintf(indent+"final message = frugal.prepareMessage(ctx, '%s', args, thrift.TMessageType.%s, _protocolFactory, _transport.requestSizeLimit);\n",
-	nameLower, msgType)
+		nameLower, msgType)
 
 	if method.Oneway {
 		contents += indent + "await _transport.oneway(ctx, message);\n"

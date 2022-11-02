@@ -1,6 +1,7 @@
 package com.workiva.frugal.server;
 
 import com.workiva.frugal.processor.FProcessor;
+import com.workiva.frugal.protocol.FProtocol;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import org.apache.thrift.TException;
 import org.junit.After;
@@ -22,7 +23,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -41,6 +48,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 /**
@@ -101,6 +109,7 @@ public class FServletTest {
 
     private final FProcessor mockProcessor = mock(FProcessor.class);
     private final FProtocolFactory mockProtocolFactory = mock(FProtocolFactory.class);
+    private final FProtocol mockProtocol = mock(FProtocol.class);
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final FServerEventHandler mockEventHandler = mock(FServerEventHandler.class);
     private FServlet servlet = new FServlet(mockProcessor, mockProtocolFactory);
@@ -115,6 +124,9 @@ public class FServletTest {
     public void before() throws Exception {
         doReturn("POST").when(mockRequest).getMethod();
         doReturn("HTTP/1.1").when(mockRequest).getProtocol();
+        doReturn(Collections.enumeration(Collections.emptyList())).when(mockRequest).getHeaderNames();
+
+        doReturn(mockProtocol).when(mockProtocolFactory).getProtocol(any());
 
         doReturn(servletOut).when(mockResponse).getOutputStream();
     }
@@ -334,6 +346,11 @@ public class FServletTest {
     @Test
     public void testOkWithEventHandler() throws Exception {
         setupEventHandler();
+        when(mockRequest.getHeaderNames()).thenAnswer(inv -> Collections.enumeration(Arrays.asList("a", "b")));
+        when(mockRequest.getHeaders(any())).thenAnswer(inv -> Collections.enumeration(Collections.emptyList()));
+        when(mockRequest.getHeaders(eq("a"))).thenAnswer(inv -> Collections.enumeration(Arrays.asList("a1")));
+        when(mockRequest.getHeaders(eq("b"))).thenAnswer(inv -> Collections.enumeration(Arrays.asList("b1", "b2")));
+
         testOk();
 
         InOrder inOrder = inOrder(mockEventHandler, mockProcessor);
@@ -344,6 +361,26 @@ public class FServletTest {
         inOrder.verify(mockEventHandler).onRequestStarted(argThat(sameInstance(props)));
         inOrder.verify(mockProcessor).process(any(), any());
         inOrder.verify(mockEventHandler).onRequestEnded(argThat(sameInstance(props)));
+
+        @SuppressWarnings("unchecked")
+        Map<String, List<String>> headers = (Map<String, List<String>>) props.get("http_request_headers");
+        Map<String, List<String>> expectedHeaders = new HashMap<>();
+        expectedHeaders.put("a", Arrays.asList("a1"));
+        expectedHeaders.put("b", Arrays.asList("b1", "b2"));
+        assertThat(headers, equalTo(expectedHeaders));
+        assertThat(headers.get("doesnotexist"), nullValue());
+        assertThat(headers.get("a"), equalTo(Arrays.asList("a1")));
+        assertThat(headers.get("A"), equalTo(Arrays.asList("a1")));
+        assertThat(headers.keySet(), equalTo(expectedHeaders.keySet()));
+        assertThat(headers.keySet().contains("doesnotexist"), equalTo(false));
+        assertThat(headers.keySet().contains("a"), equalTo(true));
+        assertThat(headers.keySet().contains("A"), equalTo(true));
+        assertThat(headers.entrySet(), equalTo(expectedHeaders.entrySet()));
+        assertThat(headers.entrySet().contains(new AbstractMap.SimpleEntry<>("a", null)), equalTo(false));
+        assertThat(headers.entrySet().contains(new AbstractMap.SimpleEntry<>("a", Arrays.asList("x"))), equalTo(false));
+        assertThat(headers.entrySet().contains(new AbstractMap.SimpleEntry<>("doesnotexist", Arrays.asList("a1"))), equalTo(false));
+        assertThat(headers.entrySet().contains(new AbstractMap.SimpleEntry<>("a", Arrays.asList("a1"))), equalTo(true));
+        assertThat(headers.entrySet().contains(new AbstractMap.SimpleEntry<>("A", Arrays.asList("a1"))), equalTo(true));
     }
 
     @Test

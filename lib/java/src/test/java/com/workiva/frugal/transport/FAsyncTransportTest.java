@@ -5,8 +5,11 @@ import com.workiva.frugal.exception.TTransportExceptionType;
 import com.workiva.frugal.protocol.HeaderUtils;
 import com.workiva.frugal.util.Pair;
 import com.workiva.frugal.util.ProtocolUtils;
+
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TProtocolException;
+import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.junit.After;
 import org.junit.Assert;
@@ -89,8 +92,10 @@ public class FAsyncTransportTest {
         }).when(mockMap).put(eq(FAsyncTransport.getOpId(context)), any());
 
         byte[] request = "hello world".getBytes();
-        assertArrayEquals(expectedResponse, transport.request(context, request).getBuffer());
-        assertArrayEquals(request, transport.payloads.get(0));
+        TTransport transport = this.transport.request(context, request);
+        assertEquals(Integer.MAX_VALUE, transport.getConfiguration().getMaxMessageSize());
+        assertArrayEquals(expectedResponse, transport.getBuffer());
+        assertArrayEquals(request, this.transport.payloads.get(0));
     }
 
     /**

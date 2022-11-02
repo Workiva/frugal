@@ -3,7 +3,7 @@ name: cross-local
 size: large
 
 run:  # local tests only, never run in Skynet
-  on-promotion: false
+  on-tag: false
   on-pull-request: false
 
 contact: messaging@workiva.com
@@ -34,7 +34,7 @@ run:
 
 requires:
   Workiva/frugal:
-    - artifactory
+    - java
     - release
     - pub
     - pypi

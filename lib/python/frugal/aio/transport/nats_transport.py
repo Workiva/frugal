@@ -10,7 +10,6 @@
 # limitations under the License.
 
 from nats.aio.client import Client
-from nats.aio.utils import new_inbox
 from thrift.transport.TTransport import TTransportException
 
 from frugal import _NATS_MAX_MESSAGE_SIZE
@@ -35,9 +34,9 @@ class FNatsTransport(FAsyncTransport):
         super().__init__(request_size_limit=_NATS_MAX_MESSAGE_SIZE)
         self._nats_client = nats_client
         self._subject = subject
-        self._inbox = inbox or new_inbox()
+        self._inbox = inbox or nats_client.new_inbox()
         self._is_open = False
-        self._sub_id = None
+        self._subscription = None
 
     def is_open(self):
         """Check whether the transport is open."""
@@ -53,7 +52,7 @@ class FNatsTransport(FAsyncTransport):
             raise TTransportException(TTransportExceptionType.ALREADY_OPEN,
                                       'Transport is already open')
 
-        self._sub_id = await self._nats_client.subscribe_async(
+        self._subscription = await self._nats_client.subscribe(
             self._inbox + ".*",
             cb=self._on_message_callback
         )
@@ -64,21 +63,21 @@ class FNatsTransport(FAsyncTransport):
 
     async def close(self):
         """Unsubscribe from the inbox subject."""
-        if not self._sub_id:
+        if not self._subscription:
             return
 
-        await self._nats_client.unsubscribe(self._sub_id)
+        await self._subscription.unsubscribe()
         self._is_open = False
-        self._sub_id = None
+        self._subscription = None
 
     async def flush(self, data):
-        await self._nats_client.publish_request(
+        await self._nats_client.publish(
             self._subject,
-            self._inbox,
-            data
+            data,
+            self._inbox
         )
 
     async def flush_op(self, op_id, payload):
-        await self._nats_client.publish_request(self._subject,
-                                                f"{self._inbox}.{op_id}",
-                                                payload)
+        await self._nats_client.publish(self._subject,
+                                        payload,
+                                        f"{self._inbox}.{op_id}")

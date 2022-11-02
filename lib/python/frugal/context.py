@@ -39,6 +39,10 @@ class FContext(object):
     can be used for distributed tracing purposes. A random correlation ID is
     generated for each FContext if one is not provided.
 
+    As a best practice, the request headers of an inbound FContext should not
+    be modified, and outbound FContext instances should not be reused.
+    Instead, the inbound FContext should be cloned before each outbound call.
+
     FContext also plays a key role in Frugal's multiplexing support. A unique,
     per-request operation ID is set on every FContext before a request is made.
     This operation ID is sent in the request and included in the response,

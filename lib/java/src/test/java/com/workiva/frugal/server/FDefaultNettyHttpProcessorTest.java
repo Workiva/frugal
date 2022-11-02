@@ -1,6 +1,7 @@
 package com.workiva.frugal.server;
 
 import com.workiva.frugal.processor.FProcessor;
+import com.workiva.frugal.protocol.FProtocol;
 import com.workiva.frugal.protocol.FProtocolFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -42,6 +43,8 @@ public class FDefaultNettyHttpProcessorTest {
 
     private static FullHttpRequest mockRequest;
     private static HttpHeaders mockRequestHeaders;
+    private static FProtocolFactory mockProtocolFactory;
+    private static FProtocol mockProtocol;
 
     private static FDefaultNettyHttpProcessor httpProcessor;
 
@@ -53,7 +56,10 @@ public class FDefaultNettyHttpProcessorTest {
         doReturn(HTTP_1_1).when(mockRequest).protocolVersion();
 
         FProcessor mockProcessor = mock(FProcessor.class);
-        FProtocolFactory mockProtocolFactory = mock(FProtocolFactory.class);
+        mockProtocol = mock(FProtocol.class);
+        mockProtocolFactory = mock(FProtocolFactory.class);
+        doReturn(mockProtocol).when(mockProtocolFactory).getProtocol(any());
+
         httpProcessor = FDefaultNettyHttpProcessor.of(mockProcessor, mockProtocolFactory);
     }
 
@@ -90,7 +96,7 @@ public class FDefaultNettyHttpProcessorTest {
                 .array();
         ByteBuf inputBytes = Unpooled.copiedBuffer(Base64.encodeBase64(bytes));
 
-        ByteBuf outputBytes = httpProcessor.processFrame(inputBytes);
+        ByteBuf outputBytes = httpProcessor.processFrame(null, inputBytes);
 
         assertThat(outputBytes, notNullValue());
     }
@@ -101,7 +107,7 @@ public class FDefaultNettyHttpProcessorTest {
 
         thrown.expect(IOException.class);
         thrown.expectMessage("Invalid request size 1");
-        httpProcessor.processFrame(inputBytes);
+        httpProcessor.processFrame(null, inputBytes);
     }
 
     @Test
@@ -111,7 +117,7 @@ public class FDefaultNettyHttpProcessorTest {
 
         thrown.expect(IOException.class);
         thrown.expectMessage("Mismatch between expected frame size (1919250805) and actual size (8)");
-        httpProcessor.processFrame(inputBytes);
+        httpProcessor.processFrame(null, inputBytes);
     }
 
     @Test
@@ -137,7 +143,7 @@ public class FDefaultNettyHttpProcessorTest {
 
         FDefaultNettyHttpProcessor spyProcessor = spy(httpProcessor);
         ByteBuf outputBytes = Unpooled.copiedBuffer(Base64.encodeBase64("response_body".getBytes()));
-        doReturn(outputBytes).when(spyProcessor).processFrame(any(ByteBuf.class));
+        doReturn(outputBytes).when(spyProcessor).processFrame(any(), any(ByteBuf.class));
 
         FullHttpResponse response = spyProcessor.process(mockRequest);
 
@@ -156,7 +162,7 @@ public class FDefaultNettyHttpProcessorTest {
         doReturn(inputBytes).when(mockRequest).content();
 
         FDefaultNettyHttpProcessor spyProcessor = spy(httpProcessor);
-        doThrow(new TException()).when(spyProcessor).processFrame(any(ByteBuf.class));
+        doThrow(new TException()).when(spyProcessor).processFrame(any(), any(ByteBuf.class));
 
         FullHttpResponse response = spyProcessor.process(mockRequest);
         assertThat(response.status(), equalTo(INTERNAL_SERVER_ERROR));
@@ -175,7 +181,7 @@ public class FDefaultNettyHttpProcessorTest {
 
         FDefaultNettyHttpProcessor spyProcessor = spy(httpProcessor);
         ByteBuf outputBytes = Unpooled.copiedBuffer(Base64.encodeBase64("response_body".getBytes()));
-        doReturn(outputBytes).when(spyProcessor).processFrame(any(ByteBuf.class));
+        doReturn(outputBytes).when(spyProcessor).processFrame(any(), any(ByteBuf.class));
 
         FullHttpResponse response = spyProcessor.process(mockRequest);
         assertThat(response.status(), equalTo(OK));

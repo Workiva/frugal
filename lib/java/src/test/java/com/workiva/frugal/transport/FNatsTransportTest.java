@@ -8,6 +8,7 @@ import io.nats.client.Dispatcher;
 import io.nats.client.Message;
 import io.nats.client.MessageHandler;
 import io.nats.client.Options;
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.junit.Before;
@@ -52,6 +53,11 @@ public class FNatsTransportTest {
         assertFalse(transport.isOpen());
         when(conn.getStatus()).thenReturn(Status.CLOSED);
         transport.open();
+    }
+
+    @Test
+    public void testMaxRequestSize() {
+        assertEquals(FNatsTransport.NATS_MAX_MESSAGE_SIZE, transport.getRequestSizeLimit());
     }
 
     @Test

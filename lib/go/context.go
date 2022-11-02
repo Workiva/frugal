@@ -43,6 +43,10 @@ const (
 // timeout. The default timeout is five seconds. An FContext is also sent with
 // every publish message which is then received by subscribers.
 //
+// As a best practice, the request headers of an inbound FContext should not be
+// modified, and outbound FContext instances should not be reused.  Instead,
+// the inbound FContext should be cloned before each outbound call.
+//
 // In addition to headers, the FContext also contains a correlation ID which
 // can be used for distributed tracing purposes. A random correlation ID is
 // generated for each FContext if one is not provided.

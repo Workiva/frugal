@@ -122,6 +122,11 @@ public class FProtocol extends TProtocol {
     }
 
     @Override
+    public int getMinSerializedSize(byte type) throws TException {
+        return wrapped.getMinSerializedSize(type);
+    }
+
+    @Override
     public void writeMessageBegin(TMessage tMessage) throws TException {
         wrapped.writeMessageBegin(tMessage);
     }

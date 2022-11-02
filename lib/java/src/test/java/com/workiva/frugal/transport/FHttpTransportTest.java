@@ -75,6 +75,7 @@ public class FHttpTransportTest {
     public void testRequestSizeException() throws TTransportException {
         int requestSizeLimit = 1024 * 4;
         transport = new FHttpTransport.Builder(client, url).withRequestSizeLimit(requestSizeLimit).build();
+        assertEquals(4 * 1024, transport.getRequestSizeLimit());
         transport.request(context, new byte[requestSizeLimit + 1]);
     }
 
@@ -82,6 +83,7 @@ public class FHttpTransportTest {
     public void testOnewaySizeException() throws TTransportException {
         int requestSizeLimit = 1024 * 4;
         transport = new FHttpTransport.Builder(client, url).withRequestSizeLimit(requestSizeLimit).build();
+        assertEquals(4 * 1024, transport.getRequestSizeLimit());
         transport.oneway(context, new byte[requestSizeLimit + 1]);
     }
 
@@ -105,6 +107,7 @@ public class FHttpTransportTest {
         byte[] buff = "helloserver".getBytes();
         TTransport actualResponse = transport.request(context, buff);
 
+        assertEquals(4 * 1024, actualResponse.getConfiguration().getMaxMessageSize());
         assertArrayEquals(responsePayload, actualResponse.getBuffer());
 
         HttpPost actual = topicCaptor.getValue();
@@ -143,6 +146,7 @@ public class FHttpTransportTest {
 
             TTransport actualResponse = transport.request(context, framedRequestPayload);
 
+            assertEquals(4 * 1024, actualResponse.getConfiguration().getMaxMessageSize());
             assertArrayEquals(responsePayload, actualResponse.getBuffer());
 
             HttpPost actualRequest = topicCaptor.getValue();

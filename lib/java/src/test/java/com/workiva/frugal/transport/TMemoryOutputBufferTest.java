@@ -1,6 +1,8 @@
 package com.workiva.frugal.transport;
 
 import com.workiva.frugal.util.ProtocolUtils;
+
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.transport.TTransportException;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,6 +24,14 @@ public class TMemoryOutputBufferTest {
     @Before
     public void setUp() {
         buffer = new TMemoryOutputBuffer(10);
+    }
+
+    @Test
+    public void testDefaultBufferConfiguration() {
+        buffer = new TMemoryOutputBuffer();
+        assertEquals(Integer.MAX_VALUE, buffer.getConfiguration().getMaxMessageSize());
+        assertEquals(TConfiguration.DEFAULT_MAX_FRAME_SIZE, buffer.getConfiguration().getMaxFrameSize());
+        assertEquals(TConfiguration.DEFAULT_RECURSION_DEPTH, buffer.getConfiguration().getRecursionLimit());
     }
 
     @Test
@@ -50,7 +60,6 @@ public class TMemoryOutputBufferTest {
     public void testWrite_sizeException() throws TTransportException {
         assertEquals(4, buffer.size());
         buffer.write(new byte[7]);
-        assertEquals(0, buffer.size());
     }
 
     @Test(expected = TTransportException.class)
@@ -59,7 +68,6 @@ public class TMemoryOutputBufferTest {
         buffer.write(new byte[7], 0, 6);
         assertEquals(10, buffer.size());
         buffer.write(new byte[7], 6, 1);
-        assertEquals(4, buffer.size());
     }
 
 }

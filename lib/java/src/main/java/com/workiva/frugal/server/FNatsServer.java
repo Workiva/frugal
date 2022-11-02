@@ -402,11 +402,12 @@ public class FNatsServer implements FServer {
             eventHandler.onRequestStarted(ephemeralProperties);
 
             try {
-                // Read and process frame (exclude first 4 bytes which represent frame size).
-                TTransport input = new TMemoryInputTransport(frameBytes, 4, frameBytes.length);
                 TMemoryOutputBuffer output = new TMemoryOutputBuffer(NATS_MAX_MESSAGE_SIZE);
 
                 try {
+                    // Read and process frame (exclude first 4 bytes which represent frame size).
+                    TTransport input = new TMemoryInputTransport(frameBytes, 4, frameBytes.length);
+
                     FProtocol inputProto = inputProtoFactory.getProtocol(input);
                     inputProto.setEphemeralProperties(ephemeralProperties);
                     FProtocol outputProto = outputProtoFactory.getProtocol(output);

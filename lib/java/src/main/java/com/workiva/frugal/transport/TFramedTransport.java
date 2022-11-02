@@ -15,6 +15,7 @@ package com.workiva.frugal.transport;
 
 import com.workiva.frugal.util.ProtocolUtils;
 import org.apache.thrift.TByteArrayOutputStream;
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
@@ -123,5 +124,20 @@ class TFramedTransport extends TTransport {
         transport.write(writei32buf, 0, 4);
         transport.write(buf, 0, len);
         transport.flush();
+    }
+
+    @Override
+    public TConfiguration getConfiguration() {
+        return transport.getConfiguration();
+    }
+
+    @Override
+    public void updateKnownMessageSize(long size) throws TTransportException {
+        transport.updateKnownMessageSize(size);
+    }
+
+    @Override
+    public void checkReadBytesAvailable(long numBytes) throws TTransportException {
+        transport.checkReadBytesAvailable(numBytes);
     }
 }

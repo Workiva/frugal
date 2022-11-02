@@ -15,6 +15,8 @@ package com.workiva.frugal.transport;
 
 import com.workiva.frugal.exception.TTransportExceptionType;
 import com.workiva.frugal.util.ProtocolUtils;
+
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
@@ -27,9 +29,9 @@ import java.io.ByteArrayOutputStream;
  */
 public class TMemoryOutputBuffer extends TTransport {
 
-    private ByteArrayOutputStream buffer;
-    private final int limit;
+    private final ByteArrayOutputStream buffer;
     private final byte[] emptyFrameSize = new byte[4];
+    private final TConfiguration configuration;
 
     /**
      * Create an TMemoryOutputBuffer with no buffer size limit.
@@ -41,12 +43,12 @@ public class TMemoryOutputBuffer extends TTransport {
     /**
      * Create an TMemoryOutputBuffer with a buffer size limit.
      *
-     * @param size the size limit of the buffer. Note: If <code>size</code> is non-positive,
-     *             no limit will be enforced on the buffer.
+     * @param maxMessageSize the size limit of the buffer. Note: If <code>size</code> is
+     *             non-positive, no limit will be enforced on the buffer.
      */
-    public TMemoryOutputBuffer(int size) {
+    public TMemoryOutputBuffer(int maxMessageSize) {
         buffer = new ByteArrayOutputStream();
-        limit = size;
+        configuration = TConfigurationBuilder.custom().setMaxMessageSize(maxMessageSize).build();
         init();
     }
 
@@ -80,12 +82,30 @@ public class TMemoryOutputBuffer extends TTransport {
 
     @Override
     public void write(byte[] buf, int off, int len) throws TTransportException {
-        if (limit > 0 && buffer.size() + len > limit) {
+        int maxMessageSize = configuration.getMaxMessageSize();
+        if (maxMessageSize > 0 && buffer.size() + len > maxMessageSize) {
             reset();
             throw new TTransportException(
-                    TTransportExceptionType.REQUEST_TOO_LARGE, String.format("Buffer size reached (%d)", limit));
+                    TTransportExceptionType.REQUEST_TOO_LARGE, String.format("Buffer size reached (%d)", maxMessageSize));
         }
         buffer.write(buf, off, len);
+    }
+
+    @Override
+    public TConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    @Override
+    public void updateKnownMessageSize(long size) {
+        throw new UnsupportedOperationException(
+            "This method is not supported for an out only transport");
+    }
+
+    @Override
+    public void checkReadBytesAvailable(long numBytes) {
+        throw new UnsupportedOperationException(
+            "This method is not supported for an out only transport");
     }
 
     /**

@@ -17,6 +17,7 @@ import com.workiva.frugal.FContext;
 import com.workiva.frugal.exception.TTransportExceptionType;
 import com.workiva.frugal.transport.monitor.FTransportMonitor;
 import com.workiva.frugal.transport.monitor.MonitorRunner;
+
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;

@@ -28,6 +28,7 @@ import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
@@ -210,7 +211,13 @@ public class FHttpTransport extends FTransport {
 
         byte[] response = makeRequest(context, payload);
 
-        return response == null ? null : new TMemoryInputTransport(response);
+        TTransport responseTransport = null;
+        if (response != null) {
+            TConfiguration responseConfig =
+                TConfigurationBuilder.custom().setMaxMessageSize(responseSizeLimit).build();
+            responseTransport = new TMemoryInputTransport(responseConfig, response);
+        }
+        return responseTransport;
     }
 
     private static class Base64EncodingEntity extends AbstractHttpEntity {

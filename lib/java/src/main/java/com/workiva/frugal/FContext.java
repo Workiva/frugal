@@ -27,6 +27,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * An FContext can also contain a map of properties that won't be serialized,
  * called ephemeralProperties.
  * <p>
+ * As a best practice, the request headers of an inbound FContext should not be
+ * modified, and outbound FContext instances should not be reused.  Instead,
+ * FContext instances should be cloned before each outbound call.
+ * <p>
  * In addition to headers, the FContext also contains a correlation ID which can
  * be used for distributed tracing purposes. A random correlation ID is generated
  * for each FContext if one is not provided.
