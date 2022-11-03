@@ -21,6 +21,14 @@ RUN mkdir /root/.ssh && \
 ARG BUILD_ID
 ARG GOPATH=/go/
 ENV PATH $GOPATH/bin:$PATH
+
+#### Run maven deps
+ARG ARTIFACTORY_PRO_USER
+ARG ARTIFACTORY_PRO_PASS
+ENV MAVEN_ROOT /go/src/github.com/Workiva/frugal/lib/java
+
+
+
 RUN git config --global url.git@github.com:.insteadOf https://github.com
 ENV FRUGAL_HOME=/go/src/github.com/Workiva/frugal
 RUN echo "Starting the script section" && \
