@@ -4,6 +4,7 @@ set -ex
 
 export FRUGAL_HOME=$GOPATH/src/github.com/Workiva/frugal
 cd $FRUGAL_HOME/test/integration/go
+go mod tidy
 
 # Create Go binaries
 rm -rf test/integration/go/bin/*
