@@ -1,4 +1,4 @@
-FROM drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.12 as build
+FROM drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.13 as build
 
 RUN yum update -y && \
     yum upgrade -y && \
@@ -17,10 +17,16 @@ RUN mkdir /root/.ssh && \
     chmod 700 /root/.ssh/ && \
     umask 0077 && echo "$GIT_SSH_KEY" >/root/.ssh/id_rsa && \
     eval "$(ssh-agent -s)" && ssh-add /root/.ssh/id_rsa
-
+RUN java -version
 ARG BUILD_ID
 ARG GOPATH=/go/
 ENV PATH $GOPATH/bin:$PATH
+
+#### Run maven deps
+ARG ARTIFACTORY_PRO_USER
+ARG ARTIFACTORY_PRO_PASS
+ENV MAVEN_ROOT /go/src/github.com/Workiva/frugal/lib/java
+
 RUN git config --global url.git@github.com:.insteadOf https://github.com
 ENV FRUGAL_HOME=/go/src/github.com/Workiva/frugal
 RUN echo "Starting the script section" && \
