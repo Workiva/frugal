@@ -79,7 +79,7 @@ updates:
     directory: "/lib/python"
     schedule:
       interval: "weekly"
-     ignore:
+    ignore:
       # ignore all updates for version python2 libraries
       - dependency-name: "coverage"
         versions: [ "5.6b1", "5.5b1" ]
