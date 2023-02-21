@@ -25,6 +25,8 @@ import org.apache.thrift.protocol.TStruct;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+
 import static com.workiva.frugal.FContext.CID_HEADER;
 import static com.workiva.frugal.FContext.OPID_HEADER;
 
@@ -215,6 +217,11 @@ public class FProtocol extends TProtocol {
     }
 
     @Override
+    public void writeUuid(UUID uuid) throws TException {
+        wrapped.writeUuid(uuid);
+    }
+
+    @Override
     public void writeDouble(double v) throws TException {
         wrapped.writeDouble(v);
     }
@@ -312,6 +319,11 @@ public class FProtocol extends TProtocol {
     @Override
     public long readI64() throws TException {
         return wrapped.readI64();
+    }
+
+    @Override
+    public UUID readUuid() throws TException {
+        return wrapped.readUuid();
     }
 
     @Override
