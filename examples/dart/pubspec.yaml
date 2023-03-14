@@ -19,3 +19,9 @@ environment:
   sdk: ^2.11.0
 name: client_example
 version: 0.0.1
+
+dependency_overrides:
+  thrift:
+    git:
+      url: ssh://git@github.com/Workiva/thrift-dart.git
+      ref: null_safety

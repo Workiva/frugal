@@ -11,5 +11,9 @@ dependency_overrides:
   frugal:
     path:  ../../../../lib/dart
 
+  thrift:
+    git:
+      url: ssh://git@github.com/Workiva/thrift-dart.git
+      ref: null_safety
 environment:
   sdk: '>=2.11.0 <3.0.0'
