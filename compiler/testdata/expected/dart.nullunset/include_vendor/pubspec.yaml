@@ -24,9 +24,3 @@ dependencies:
       url: https://pub.workiva.org
     version: ^0.0.10
   w_common: ^2.0.0
-
-dependency_overrides:
-  thrift:
-    git:
-      url: ssh://git@github.com/Workiva/thrift-dart.git
-      ref: null_safety
