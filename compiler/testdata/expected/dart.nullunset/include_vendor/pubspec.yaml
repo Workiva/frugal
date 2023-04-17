@@ -23,4 +23,4 @@ dependencies:
       name: thrift
       url: https://pub.workiva.org
     version: ^0.0.10
-  w_common: ^2.0.0
+  w_common: '>=2.0.0 <4.0.0'

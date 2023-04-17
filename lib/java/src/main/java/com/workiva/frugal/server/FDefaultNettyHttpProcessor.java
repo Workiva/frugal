@@ -16,6 +16,7 @@ package com.workiva.frugal.server;
 import com.workiva.frugal.processor.FProcessor;
 import com.workiva.frugal.protocol.FProtocol;
 import com.workiva.frugal.protocol.FProtocolFactory;
+import com.workiva.frugal.transport.TConfigurationBuilder;
 import com.workiva.frugal.transport.TMemoryOutputBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -28,6 +29,7 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.thrift.TConfiguration;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TMemoryInputTransport;
 import org.apache.thrift.transport.TTransport;
@@ -57,6 +59,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static org.apache.thrift.TConfiguration.DEFAULT_MAX_MESSAGE_SIZE;
 
 /**
  * Default processor implementation for {@link FNettyHttpProcessor}.
@@ -77,15 +80,18 @@ public class FDefaultNettyHttpProcessor implements FNettyHttpProcessor {
     private final FProcessor processor;
     private final FProtocolFactory inProtocolFactory;
     private final FProtocolFactory outProtocolFactory;
+    private final TConfiguration configuration;
     private final Collection<Map.Entry<String, String>> customHeaders;
 
     private FDefaultNettyHttpProcessor(
             FProcessor processor,
             FProtocolFactory inProtocolFactory,
-            FProtocolFactory outProtocolFactory) {
+            FProtocolFactory outProtocolFactory,
+            int maxRequestSize) {
         this.processor = processor;
         this.inProtocolFactory = inProtocolFactory;
         this.outProtocolFactory = outProtocolFactory;
+        this.configuration = TConfigurationBuilder.custom().setMaxMessageSize(maxRequestSize).build();
         this.customHeaders = new ArrayList<>();
     }
 
@@ -97,7 +103,7 @@ public class FDefaultNettyHttpProcessor implements FNettyHttpProcessor {
      * @return a new processor
      */
     public static FDefaultNettyHttpProcessor of(FProcessor processor, FProtocolFactory protocolFactory) {
-        return new FDefaultNettyHttpProcessor(processor, protocolFactory, protocolFactory);
+        return new FDefaultNettyHttpProcessor(processor, protocolFactory, protocolFactory, DEFAULT_MAX_MESSAGE_SIZE);
     }
 
     /**
@@ -112,7 +118,25 @@ public class FDefaultNettyHttpProcessor implements FNettyHttpProcessor {
             FProcessor processor,
             FProtocolFactory inProtocolFactory,
             FProtocolFactory outProtocolFactory) {
-        return new FDefaultNettyHttpProcessor(processor, inProtocolFactory, outProtocolFactory);
+        return new FDefaultNettyHttpProcessor(processor, inProtocolFactory, outProtocolFactory, DEFAULT_MAX_MESSAGE_SIZE);
+    }
+
+    /**
+     * Create a new HTTP processor, setting the input and output protocol.
+     *
+     * @param processor          Frugal request processor
+     * @param inProtocolFactory  input protocol
+     * @param outProtocolFactory output protocol
+     * @param maxRequestSize the size limit of the request. Note: If <code>size</code>
+     *                       is non-positive, no limit will be enforced.
+     * @return a new processor
+     */
+    public static FDefaultNettyHttpProcessor of(
+            FProcessor processor,
+            FProtocolFactory inProtocolFactory,
+            FProtocolFactory outProtocolFactory,
+            int maxRequestSize) {
+        return new FDefaultNettyHttpProcessor(processor, inProtocolFactory, outProtocolFactory, maxRequestSize);
     }
 
     /**
@@ -180,7 +204,7 @@ public class FDefaultNettyHttpProcessor implements FNettyHttpProcessor {
         // Process a frame, exclude frame length (first 4 bytes)
         // TODO: use TByteBuffer that wraps buff once Thrift 0.10.0 is released to avoid this copy.
         byte[] inputFrame = Arrays.copyOfRange(inputBytes, 4, inputBytes.length);
-        TTransport inTransport = new TMemoryInputTransport(inputFrame);
+        TTransport inTransport = new TMemoryInputTransport(configuration, inputFrame);
         TMemoryOutputBuffer outTransport = new TMemoryOutputBuffer();
         FProtocol inProtocol = inProtocolFactory.getProtocol(inTransport);
         inProtocol.setEphemeralProperties(ephemeralProperties);
