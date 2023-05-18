@@ -48,6 +48,5 @@ ARG BUILD_ARTIFACTS_TEST_RESULTS=/go/src/github.com/Workiva/frugal/test_results/
 
 FROM scratch
 COPY --from=build /go/src/github.com/Workiva/frugal/frugal /bin/frugal
-COPY --from=build /passwd.minimal /etc/passwd
 
 ENTRYPOINT ["frugal"]
