@@ -12,7 +12,7 @@ dependencies:
       name: frugal
       url: https://pub.workiva.org
     version: ^3.9.7
-  logging: '>=0.11.2 <2.0.0'
+  logging: ^1.0.0
   some_vendored_place:
     hosted:
       name: some_vendored_place

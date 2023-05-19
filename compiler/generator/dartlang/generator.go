@@ -193,7 +193,7 @@ func (g *Generator) addToPubspec(dir string) error {
 
 	deps := map[interface{}]interface{}{
 		"collection": "^1.14.12",
-		"logging":    ">=0.11.2 <2.0.0",
+		"logging":    "^1.0.0",
 		"thrift": dep{
 			Hosted:  hostedDep{Name: "thrift", URL: "https://pub.workiva.org"},
 			Version: "^0.0.10",
