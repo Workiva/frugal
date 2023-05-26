@@ -1,4 +1,4 @@
-name: CI for Frugal Libraries
+name: Libraries
 on: push
 
 permissions:
@@ -39,7 +39,7 @@ jobs:
           cache: 'maven'
 
       - name: Verify
-        run: mvn --batch-mode --update-snapshots clean verify -q
+        run: mvn clean verify -q
 
   lib-python:
     runs-on: ubuntu-latest
