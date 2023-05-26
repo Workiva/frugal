@@ -11,6 +11,7 @@ jobs:
     defaults:
       run:
         working-directory: lib/go
+
     steps:
       - uses: actions/checkout@v3
 
@@ -38,5 +39,31 @@ jobs:
           cache: 'maven'
 
       - name: Verify
-        run: mvn checkstyle:check -q
         run: mvn --batch-mode --update-snapshots clean verify -q
+
+  lib-python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+    defaults:
+      run:
+        working-directory: lib/python
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements_python_3.txt ]; then pip install -r requirements_python_3.txt; fi
+
+      - name: Lint
+        run: flake8 --exclude=tests,frugal/tornado
+
+      - name: Test
+        run: nosetests --exclude-dir=frugal/tornado --exclude-dir=frugal/tests/tornado --exclude-dir=frugal/gae --exclude-dir=frugal/tests/gae --logging-level=ERROR
