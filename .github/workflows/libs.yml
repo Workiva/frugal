@@ -1,11 +1,5 @@
 name: CI for Frugal Libraries
-
-on:
-  push:
-    branches: [ "*" ]
-    tags: [ "*" ]
-  pull_request:
-    branches: [ "develop", "master" ]
+on: push
 
 permissions:
   contents: read
@@ -13,17 +7,18 @@ permissions:
 
 jobs:
   lib-go:
-    runs-on: [self-hosted, small]
-    container: golang:1.20.4
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: lib/go
     steps:
       - uses: actions/checkout@v3
-      - uses: Workiva/gha-setup-credentials@refs/tags/v1.0.15
-      - name: Install dependencies
-        run: |
-          go mod vendor
-      - name: Run tests
-        run: |
-          go test -race
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.4'
+
+      - name: Test
+        working-directory: ./lib/go
+        run: go test -v -race
