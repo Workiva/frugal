@@ -24,7 +24,7 @@ setup(
     install_requires=[
         'six>=1.10.0,<2',
         'thrift==0.13.0',
-        'requests>=2.12.5,<2.31.0',
+        'requests>=2.12.5,<2.32.0',
     ],
     extras_require={
         'tornado': ['nats-client==0.8.4'],
