@@ -5,6 +5,9 @@ all: unit
 clean:
 	@rm -rf /tmp/frugal
 
+check-cli:
+	go vet ./...
+
 unit: clean unit-cli unit-go unit-java unit-py2 unit-py3
 
 unit-cli:

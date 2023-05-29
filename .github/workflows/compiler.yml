@@ -1,0 +1,23 @@
+name: Compiler
+on: push
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.4'
+
+      - name: Check
+        run: make check-cli
+
+      - name: Test
+        run: make test-cli
