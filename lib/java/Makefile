@@ -5,8 +5,8 @@ clean-local:
 deps-local:
 	@:  # pass
 
-check-local: clean
+check-local: clean-local
 	mvn checkstyle:checkstyle
 
-test-local: clean
+test-local: clean-local
 	mvn verify -q -Dcheckstyle.skip

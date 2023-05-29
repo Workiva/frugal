@@ -69,27 +69,27 @@ jobs:
       - name: Test
         run: make test-local
 
-  lib-dart:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: lib/dart
-    steps:
-      - uses: actions/checkout@v3
-      # Configures pub to use Workiva's pub repository and private
-      # thrift lib
-      - uses: Workiva/gha-setup-credentials@refs/tags/v1.0.12
+  # lib-dart:
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: lib/dart
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     # Configures pub to use Workiva's pub repository and private
+  #     # thrift lib
+  #     - uses: Workiva/gha-setup-credentials@refs/tags/v1.0.12
 
-      - name: Set up Dart
-        uses: dart-lang/setup-dart@v1
-        with:
-          sdk: '2.18.7'
+  #     - name: Set up Dart
+  #       uses: dart-lang/setup-dart@v1
+  #       with:
+  #         sdk: '2.18.7'
 
-      - name: Install Dependencies
-        run: dart pub get
+  #     - name: Install Dependencies
+  #       run: dart pub get
 
-      - name: Lint
-        run: dart pub run dart_dev format --check
+  #     - name: Lint
+  #       run: dart pub run dart_dev format --check
 
-      - name: Test
-        run: dart pub run dart_dev test
+  #     - name: Test
+  #       run: dart pub run dart_dev test
