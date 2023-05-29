@@ -76,13 +76,13 @@ jobs:
       - name: Set up Dart
         uses: dart-lang/setup-dart@v1
         with:
-          sdk: '2.19.6'
+          sdk: '2.18.7'
 
       - name: Install Dependencies
-        run: pub get
+        run: dart pub get
 
       - name: Lint
-        run: pub run dart_dev format --check
+        run: dart pub run dart_dev format --check
 
       - name: Test
-        run: pub run dart_dev test
+        run: dart pub run dart_dev test
