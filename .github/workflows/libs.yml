@@ -65,3 +65,24 @@ jobs:
       - name: Test
         run: nosetests --exclude-dir=frugal/tornado --exclude-dir=frugal/tests/tornado --exclude-dir=frugal/gae --exclude-dir=frugal/tests/gae --exclude-dir=frugal/aio --exclude-dir=frugal/tests/aio --logging-level=ERROR
 
+  lib-dart:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lib/dart
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '2.19.6'
+
+      - name: Install Dependencies
+        run: pub get
+
+      - name: Lint
+        run: pub run dart_dev format --check
+
+      - name: Test
+        run: pub run dart_dev test
