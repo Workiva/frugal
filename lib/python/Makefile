@@ -51,6 +51,7 @@ clean-local:
 	find . -name "*.py[co]" -delete
 
 deps-local:
+	$(PIP) install --upgrade pip
 	$(PIP) install -Ur requirements_python_3.txt
 
 check-local:

@@ -65,9 +65,7 @@ jobs:
           cache: 'pip' # caching pip dependencies
 
       - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          make deps-local
+        run: make deps-local
 
       - name: Check
         run: make check-local
