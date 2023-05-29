@@ -79,6 +79,9 @@ jobs:
           sdk: '2.18.7'
 
       - name: Install Dependencies
+        # Configures pub to use Workiva's pub repository and private
+        # thrift lib
+        uses: Workiva/gha-setup-credentials@refs/tags/v1.0.12
         run: dart pub get
 
       - name: Lint
