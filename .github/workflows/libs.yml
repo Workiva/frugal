@@ -38,8 +38,11 @@ jobs:
           distribution: 'corretto'
           cache: 'maven'
 
-      - name: Verify
-        run: mvn clean verify -q
+      - name: Lint
+        run: make check-local
+
+      - name: Test
+        run: make test-local
 
   lib-python:
     runs-on: ubuntu-latest
