@@ -52,9 +52,6 @@ clean-local:
 
 deps-local:
 	$(PIP) install -Ur requirements_python_3.txt
-	$(PIP) install -Ur requirements_dev_tornado.txt
-	$(PIP) install -Ur requirements_dev_gae.txt
-	$(PIP) install -Ur requirements_dev_asyncio.txt
 
 check-local:
 	flake8 --exclude=tests,frugal/tornado
