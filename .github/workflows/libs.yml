@@ -55,15 +55,13 @@ jobs:
           python-version: '3.8'
 
       - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements_python_3.txt ]; then pip install -r requirements_python_3.txt; fi
+        run: make deps-local
 
       - name: Lint
-        run: flake8 --exclude=tests,frugal/tornado
+        run: make check-local
 
       - name: Test
-        run: nosetests --exclude-dir=frugal/tornado --exclude-dir=frugal/tests/tornado --exclude-dir=frugal/gae --exclude-dir=frugal/tests/gae --exclude-dir=frugal/aio --exclude-dir=frugal/tests/aio --logging-level=ERROR
+        run: make test-local
 
   lib-dart:
     runs-on: ubuntu-latest
