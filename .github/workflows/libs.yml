@@ -23,7 +23,7 @@ jobs:
       - name: Install Dependencies
         run: make deps-local
 
-      - name: Lint
+      - name: Check
         run: make check-local
 
       - name: Test
@@ -44,7 +44,7 @@ jobs:
           distribution: 'corretto'
           cache: 'maven'
 
-      - name: Lint
+      - name: Check
         run: make check-local
 
       - name: Test
@@ -69,7 +69,7 @@ jobs:
           python -m pip install --upgrade pip
           make deps-local
 
-      - name: Lint
+      - name: Check
         run: make check-local
 
       - name: Test
@@ -92,10 +92,10 @@ jobs:
   #         sdk: '2.18.7'
 
   #     - name: Install Dependencies
-  #       run: dart pub get
+  #       run: make deps-local
 
-  #     - name: Lint
-  #       run: dart pub run dart_dev format --check
+  #     - name: Check
+  #       run: make check-local
 
   #     - name: Test
-  #       run: dart pub run dart_dev test
+  #       run: make test-local
