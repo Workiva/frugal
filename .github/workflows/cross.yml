@@ -1,0 +1,45 @@
+name: Compiler
+on: push
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  cross:
+    runs-on: ubuntu-latest
+    services:
+      nats:
+        # port 4222
+        image: nats:2.1.2-linux
+      activmq:
+        # port 61613
+        image: symptoma/activemq:5.15.13
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.4'
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'corretto'
+          cache: 'maven'
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+          cache: 'pip' # caching pip dependencies
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '2.18.7'
+
+      - name: Install Frugal
+        run: go install
