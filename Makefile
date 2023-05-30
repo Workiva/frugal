@@ -29,6 +29,9 @@ unit-py:
 	$(MAKE) -C $(PWD)/lib/python deps-local check-local test-local && \
 	deactivate
 
+install:
+	go install
+
 .PHONY: \
 	all \
 	clean \

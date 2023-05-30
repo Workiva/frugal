@@ -43,3 +43,11 @@ jobs:
 
       - name: Install Frugal
         run: go install
+
+      - name: Generate client/server stubs
+        run: make generate
+        working-directory: test/integration
+
+      - name: Precross go
+        run: make precross
+        working-directory: test/integration/go
