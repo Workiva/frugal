@@ -63,3 +63,6 @@ unit_tests_py3.xml
 
 # Cross-compiled code
 pkg/
+
+# macos
+.DS_Store

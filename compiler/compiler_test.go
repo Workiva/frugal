@@ -72,6 +72,41 @@ func TestValidDartFrugalCompiler(t *testing.T) {
 	suite.Run(t, options)
 }
 
+func TestValidDartUseInt64(t *testing.T) {
+	options := compiler.Options{
+		File:    frugalGenFile,
+		Gen:     "dart:use_int64",
+		Out:     outputDir + "/int64",
+		Delim:   delim,
+		Recurse: true,
+	}
+	suite := ComparisonList{
+		{"dart.int64/variety/f_awesome_exception.dart", "int64/variety/lib/src/f_awesome_exception.dart"},
+		{"dart.int64/variety/f_event.dart", "int64/variety/lib/src/f_event.dart"},
+		{"dart.int64/variety/f_event_wrapper.dart", "int64/variety/lib/src/f_event_wrapper.dart"},
+		{"dart.int64/variety/f_its_an_enum.dart", "int64/variety/lib/src/f_its_an_enum.dart"},
+		{"dart.int64/variety/f_test_base.dart", "int64/variety/lib/src/f_test_base.dart"},
+		{"dart.int64/variety/f_testing_defaults.dart", "int64/variety/lib/src/f_testing_defaults.dart"},
+		{"dart.int64/variety/f_testing_unions.dart", "int64/variety/lib/src/f_testing_unions.dart"},
+		{"dart.int64/variety/f_health_condition.dart", "int64/variety/lib/src/f_health_condition.dart"},
+		{"dart.int64/variety/f_test_lowercase.dart", "int64/variety/lib/src/f_test_lowercase.dart"},
+		{"dart.int64/variety/f_foo_args.dart", "int64/variety/lib/src/f_foo_args.dart"},
+		{"dart.int64/variety/f_variety_constants.dart", "int64/variety/lib/src/f_variety_constants.dart"},
+		{"dart.int64/variety/f_events_scope.dart", "int64/variety/lib/src/f_events_scope.dart"},
+		{"dart.int64/variety/f_foo_service.dart", "int64/variety/lib/src/f_foo_service.dart"},
+		{"dart.int64/variety/variety.dart", "int64/variety/lib/variety.dart"},
+
+		{"dart.int64/actual_base/f_actual_base_dart_constants.dart", "int64/actual_base_dart/lib/src/f_actual_base_dart_constants.dart"},
+		{"dart.int64/actual_base/f_api_exception.dart", "int64/actual_base_dart/lib/src/f_api_exception.dart"},
+		{"dart.int64/actual_base/f_thing.dart", "int64/actual_base_dart/lib/src/f_thing.dart"},
+		{"dart.int64/actual_base/f_base_health_condition.dart", "int64/actual_base_dart/lib/src/f_base_health_condition.dart"},
+		{"dart.int64/actual_base/f_base_foo_service.dart", "int64/actual_base_dart/lib/src/f_base_foo_service.dart"},
+		{"dart.int64/actual_base/f_nested_thing.dart", "int64/actual_base_dart/lib/src/f_nested_thing.dart"},
+		{"dart.int64/actual_base/actual_base_dart.dart", "int64/actual_base_dart/lib/actual_base_dart.dart"},
+	}
+	suite.Run(t, options)
+}
+
 func TestValidDartUseNullForUnset(t *testing.T) {
 	options := compiler.Options{
 		File:    frugalGenFile,

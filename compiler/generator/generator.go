@@ -75,6 +75,7 @@ var Languages = LanguageOptions{
 		"library_prefix": "Generate code that can be used within an existing library. " +
 			"Use a dot-separated string, e.g. \"my_parent_lib.src.gen\"",
 		"use_enums":          "Generate enums as enums rather than a class with numerical constants",
+		"use_int64":          "Use fixnum.Int64 for i64 fields",
 		"use_null_for_unset": "Use null for unset fields, which disallows null-but-set fields",
 		"use_vendor":         "Use specified import references for vendored includes and do not generate code for them",
 	},

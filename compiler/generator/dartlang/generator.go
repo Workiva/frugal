@@ -43,6 +43,7 @@ const (
 	tabtabtabtabtab     = tab + tab + tab + tab + tab
 	tabtabtabtabtabtab  = tab + tab + tab + tab + tab + tab
 	libraryPrefixOption = "library_prefix"
+	useInt64            = "use_int64"
 	useVendorOption     = "use_vendor"
 )
 
@@ -65,6 +66,11 @@ func (g *Generator) getLibraryName() string {
 		return parser.LowercaseFirstLetter(toLibraryName(ns.Value))
 	}
 	return parser.LowercaseFirstLetter(g.Frugal.Name)
+}
+
+func (g *Generator) useInt64() bool {
+	_, ok := g.BaseGenerator.Options[useInt64]
+	return ok
 }
 
 // SetupGenerator performs any setup logic before generation.
@@ -196,7 +202,7 @@ func (g *Generator) addToPubspec(dir string) error {
 		"logging":    "^1.0.0",
 		"thrift": dep{
 			Hosted:  hostedDep{Name: "thrift", URL: "https://pub.workiva.org"},
-			Version: "^0.0.10",
+			Version: "^0.0.14",
 		},
 		"w_common": ">=2.0.0 <4.0.0",
 	}
@@ -206,6 +212,10 @@ func (g *Generator) addToPubspec(dir string) error {
 			Hosted:  hostedDep{Name: "frugal", URL: "https://pub.workiva.org"},
 			Version: fmt.Sprintf("^%s", globals.Version),
 		}
+	}
+
+	if g.useInt64() {
+		deps["fixnum"] = "^1.0.0"
 	}
 
 	includesSet := make(map[string]bool) // include.Name ---> include.Annotations.Vendor()
@@ -400,6 +410,13 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 		return err
 	}
 
+	if g.useInt64() {
+		_, err = file.WriteString("import 'package:fixnum/fixnum.dart' as fixnum;\n")
+		if err != nil {
+			return err
+		}
+	}
+
 	if err = g.writeThriftImports(file); err != nil {
 		return err
 	}
@@ -459,7 +476,18 @@ func (g *Generator) generateConstantValue(t *parser.Type, value interface{}, ind
 
 	if underlyingType.IsPrimitive() || underlyingType.IsContainer() {
 		switch underlyingType.Name {
-		case "bool", "i8", "byte", "i16", "i32", "i64", "double":
+		case "bool", "i8", "byte", "i16", "i32", "double":
+			return fmt.Sprintf("%v", value), true
+		case "i64":
+			if g.useInt64() {
+				i := value.(int64)
+				if i <= -1<<53 || i >= 1<<53 {
+					top := i >> 32
+					bottom := i & 0xffff_ffff
+					return fmt.Sprintf("fixnum.Int64.fromInts(%d, %d)", top, bottom), false
+				}
+				return fmt.Sprintf("fixnum.Int64(%d)", i), false
+			}
 			return fmt.Sprintf("%v", value), true
 		case "string":
 			return fmt.Sprintf("%s", strconv.Quote(value.(string))), true
@@ -778,7 +806,12 @@ func (g *Generator) generateInitValue(field *parser.Field) string {
 	switch underlyingType.Name {
 	case "bool":
 		return " = false"
-	case "byte", "i8", "i16", "i32", "i64":
+	case "byte", "i8", "i16", "i32":
+		return " = 0"
+	case "i64":
+		if g.useInt64() {
+			return " = fixnum.Int64.ZERO"
+		}
 		return " = 0"
 	case "double":
 		return " = 0.0"
@@ -970,7 +1003,11 @@ func (g *Generator) generateReadFieldRec(field *parser.Field, first bool, ind st
 		case "i32":
 			thriftType = "I32"
 		case "i64":
-			thriftType = "I64"
+			if g.useInt64() {
+				thriftType = "Int64"
+			} else {
+				thriftType = "I64"
+			}
 		case "double":
 			thriftType = "Double"
 		case "string":
@@ -1127,7 +1164,11 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 		case "i32":
 			write += "I32(%s%s);\n"
 		case "i64":
-			write += "I64(%s%s);\n"
+			if g.useInt64() {
+				write += "Int64(%s%s);\n"
+			} else {
+				write += "I64(%s%s);\n"
+			}
 		case "double":
 			write += "Double(%s%s);\n"
 		case "string":
@@ -1427,6 +1468,9 @@ func (g *Generator) GenerateThriftImports() (string, error) {
 	imports := "import 'dart:typed_data' show Uint8List;\n\n"
 
 	imports += "import 'package:collection/collection.dart';\n"
+	if g.useInt64() {
+		imports += "import 'package:fixnum/fixnum.dart' as fixnum;\n"
+	}
 	imports += "import 'package:thrift/thrift.dart' as thrift;\n"
 	// Import the current package
 	imports += g.getImportDeclaration(g.getNamespaceOrName(), g.getPackagePrefix())
@@ -1466,6 +1510,9 @@ func (g *Generator) GenerateServiceImports(file *os.File, s *parser.Service) err
 	imports += "import 'dart:typed_data' show Uint8List;\n\n"
 
 	imports += "import 'package:collection/collection.dart';\n"
+	if g.useInt64() {
+		imports += "import 'package:fixnum/fixnum.dart' as fixnum;\n"
+	}
 	imports += "import 'package:logging/logging.dart' as logging;\n"
 	imports += "import 'package:thrift/thrift.dart' as thrift;\n"
 	imports += "import 'package:frugal/frugal.dart' as frugal;\n"
@@ -2035,6 +2082,9 @@ func (g *Generator) getDartTypeFromThriftType(t *parser.Type) string {
 	case "i32":
 		return "int"
 	case "i64":
+		if g.useInt64() {
+			return "fixnum.Int64"
+		}
 		return "int"
 	case "double":
 		return "double"

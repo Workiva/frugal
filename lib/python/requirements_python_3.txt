@@ -1,4 +1,4 @@
-coverage==7.2.5
+coverage==7.2.6
 mock==5.0.2
 
 -r requirements_dev_common.txt

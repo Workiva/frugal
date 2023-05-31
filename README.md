@@ -79,60 +79,9 @@ supported.
 $ frugal -gen=go event.frugal
 ```
 
-By default, generated code is placed in a `gen-*` directory. This code can then
-be used as such:
-
-```go
-// publisher.go
-func main() {
-    conn, err := nats.Connect(nats.DefaultURL)
-    if err != nil {
-        panic(err)
-    }
-
-    var (
-        protocolFactory  = frugal.NewFProtocolFactory(thrift.NewTBinaryProtocolFactoryDefault())
-        transportFactory = frugal.NewFNatsScopeTransportFactory(conn)
-        provider         = frugal.NewFScopeProvider(transportFactory, protocolFactory)
-        publisher        = event.NewEventsPublisher(provider)
-    )
-    publisher.Open()
-    defer publisher.Close()
-
-    event := &event.Event{ID: 42, Message: "Hello, World!"}
-    if err := publisher.PublishEventCreated(frugal.NewFContext(""), event); err != nil {
-        panic(err)
-    }
-}
-```
-
-```go
-// subscriber.go
-func main() {
-    conn, err := nats.Connect(nats.DefaultURL)
-    if err != nil {
-        panic(err)
-    }
-
-    var (
-        protocolFactory  = frugal.NewFProtocolFactory(thrift.NewTBinaryProtocolFactoryDefault())
-        transportFactory = frugal.NewFNatsScopeTransportFactory(conn)
-        provider         = frugal.NewFScopeProvider(transportFactory, protocolFactory)
-        subscriber       = event.NewEventsSubscriber(provider)
-    )
-
-    _, err = subscriber.SubscribeEventCreated(func(ctx *frugal.FContext, e *event.Event) {
-        fmt.Println("Received event:", e.Message)
-    })
-    if err != nil {
-        panic(err)
-    }
-
-    wait := make(chan bool)
-    log.Println("Subscriber started...")
-    <-wait
-}
-```
+By default, generated code is placed in a `gen-*` directory. This code
+can then be used in your application. Example code is avaliable in the
+[examples/](examples/) directory for supported languages.
 
 ### Prefixes
 
