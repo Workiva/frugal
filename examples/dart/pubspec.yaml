@@ -3,7 +3,7 @@ dependencies:
     hosted:
       name: frugal
       url: https://pub.workiva.org
-    version: ^3.16.21
+    version: ^3.16.22
   logging: ^1.0.0
   thrift:
     hosted:
