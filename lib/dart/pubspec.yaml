@@ -24,3 +24,9 @@ homepage: https://github.com/Workiva/frugal/lib/dart
 name: frugal
 publish_to: https://pub.workiva.org
 version: 3.16.24
+
+dependency_overrides:
+  w_transport:
+    git:
+      url: ssh://git@github.com/Workiva/w_transport.git
+      ref: FEDX-60-null-safety
