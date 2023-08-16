@@ -6,7 +6,7 @@ import "package:test/test.dart";
 /// Test class.
 class MiddlewareTestingService {
   /// A field.
-  String str;
+  String? str;
 
   /// Handle something.
   Future<int> handleSomething(int first, int second, String str) {
@@ -18,23 +18,23 @@ class MiddlewareTestingService {
 /// Test struct.
 class MiddlewareDataStruct {
   /// An arg.
-  int arg;
+  int? arg;
 
   /// A method name.
-  String methodName;
+  String? methodName;
 
   /// A service name.
-  String serviceName;
+  String? serviceName;
 }
 
 void main() {
   Middleware newMiddleware(MiddlewareDataStruct mds) {
     return (InvocationHandler next) {
-      return (String serviceName, String methodName, List<Object> args) {
-        mds.arg = args[0];
+      return (String? serviceName, String? methodName, List<Object> args) {
+        mds.arg = args[0] as int;
         mds.serviceName = serviceName;
         mds.methodName = methodName;
-        args[0] = mds.arg + 1;
+        args[0] = mds.arg! + 1;
         return next(serviceName, methodName, args);
       };
     };
@@ -43,7 +43,7 @@ void main() {
   test('no middleware', () async {
     MiddlewareTestingService service = new MiddlewareTestingService();
     FMethod method = new FMethod(service.handleSomething,
-        'MiddlewareTestingService', 'handleSomething', null);
+        'MiddlewareTestingService', 'handleSomething', []);
     expect(await method([3, 64, 'foo']), equals(67));
     expect(service.str, equals('foo'));
   });
@@ -73,7 +73,7 @@ void main() {
     test('Prints method, args, and return value', () async {
       bool handlerRan = false;
       InvocationHandler handler =
-          (String serviceName, String methodName, List<Object> args) {
+          (String? serviceName, String? methodName, List<Object> args) {
         handlerRan = true;
         print('hello world');
       };

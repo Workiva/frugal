@@ -28,9 +28,9 @@ class BaseFTransportMonitor extends FTransportMonitor {
   /// Default maximum amount of milliseconds to wait between reopen attempts.
   static const int DEFAULT_MAX_WAIT = 2000;
 
-  int _maxReopenAttempts;
-  int _initialWait;
-  int _maxWait;
+  late int _maxReopenAttempts;
+  int? _initialWait;
+  late int _maxWait;
 
   StreamController _onConnectController = new StreamController.broadcast();
   StreamController _onDisconnectController = new StreamController.broadcast();
@@ -66,20 +66,25 @@ class BaseFTransportMonitor extends FTransportMonitor {
   }
 
   @override
-  int onClosedUncleanly(Object cause) {
+  int? onClosedUncleanly(Object cause) {
     _isConnected = false;
-    _onDisconnectController.add(cause);
+
+    if(cause != null) {
+      _onDisconnectController.add(cause);
+    } else {
+      _onDisconnectController.add(null);
+    }
 
     return _maxReopenAttempts > 0 ? _initialWait : -1;
   }
 
   @override
-  int onReopenFailed(int prevAttempts, int prevWait) {
-    if (prevAttempts >= _maxReopenAttempts) {
+  int onReopenFailed(int? prevAttempts, int? prevWait) {
+    if (prevAttempts! >= _maxReopenAttempts) {
       return -1;
     }
 
-    return (prevWait * 2).clamp(0, _maxWait);
+    return (prevWait! * 2).clamp(0, _maxWait);
   }
 
   @override

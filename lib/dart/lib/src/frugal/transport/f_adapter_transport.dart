@@ -21,7 +21,7 @@ class FAdapterTransport extends FAsyncTransport {
   final Logger _adapterTransportLog = new Logger('FAdapterTransport');
   _TFramedTransport _framedTransport;
 
-  StreamSubscription<_FrameWrapper> _onFrameSub;
+  StreamSubscription<_FrameWrapper>? _onFrameSub;
 
   /// Create an [FAdapterTransport] with the given [TSocketTransport].
   FAdapterTransport(TSocketTransport transport)
@@ -29,10 +29,10 @@ class FAdapterTransport extends FAsyncTransport {
         super() {
     // If there is an error on the socket, close the transport pessimistically.
     // This error is already logged upstream in TSocketTransport.
-    listenToStream(transport.socket.onError, (e) => close(e));
+    listenToStream(transport.socket.onError, (dynamic e) => close(e));
     // Forward state changes on to the transport monitor.
     // Note: Just forwarding OPEN on for the time-being.
-    listenToStream(transport.socket.onState, (state) {
+    listenToStream(transport.socket.onState, (dynamic state) {
       if (state == TSocketState.OPEN) _monitor?.signalOpen();
     });
 
@@ -57,20 +57,22 @@ class FAdapterTransport extends FAsyncTransport {
       _adapterTransportLog.severe(
           "FAsyncCallback had a fatal error ${e.toString()}." +
               "Closing transport.");
-      close(e);
+      close(e as Error?);
     }
   }
 
   @override
-  Future close([Error error]) async {
-    await _framedTransport?.close();
+  Future close([Error? error]) async {
+    await _framedTransport.close();
     await _onFrameSub?.cancel();
     await super.close(error);
   }
 
   @override
-  Future<Null> flush(Uint8List payload) {
-    _framedTransport.socket.send(payload);
+  Future<Null> flush(Uint8List? payload) {
+    if(payload != null) {
+      _framedTransport.socket.send(payload);
+    }
     return new Future.value();
   }
 

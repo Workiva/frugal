@@ -16,8 +16,8 @@ part of frugal.src.frugal;
 /// Processes a method invocation on a proxied method and returns the result.
 /// The arguments should match the arity of the proxied method, and have the
 /// same types. The first argument will always be the [FContext].
-typedef Future InvocationHandler(
-    String serviceName, String methodName, List<Object> args);
+typedef Future? InvocationHandler(
+    String? serviceName, String? methodName, List<Object> args);
 
 /// Implements interceptor logic around API calls. This can be used, for
 /// example, to implement retry policies on service calls, logging, telemetry,
@@ -29,9 +29,9 @@ typedef InvocationHandler Middleware(InvocationHandler handler);
 /// Contains an [InvocationHandler] used to proxy the given service method
 /// This should only be used by generated code.
 class FMethod {
-  String _serviceName;
-  String _methodName;
-  InvocationHandler _handler;
+  String? _serviceName;
+  String? _methodName;
+  late InvocationHandler _handler;
 
   /// Creates an [FMethod] with the given function, service name, and method
   /// name.
@@ -44,15 +44,15 @@ class FMethod {
 
   /// Invokes the proxied [InvocationHandler] with the given arguments and
   /// returns the results.
-  Future call(List<Object> args) {
+  Future? call(List<Object> args) {
     return this._handler(this._serviceName, this._methodName, args);
   }
 
   /// Applies the [Middleware] to the provided method.
   InvocationHandler _composeMiddleware(dynamic f, List<Middleware> middleware) {
     InvocationHandler handler =
-        (String serviceName, String methodName, List<Object> args) {
-      Future actual = Function.apply(f, args);
+        (String? serviceName, String? methodName, List<Object> args) {
+      Future? actual = Function.apply(f, args);
       return actual;
     };
 
@@ -66,8 +66,8 @@ class FMethod {
 
 /// [Middleware] for debugging that logs the requests and responses in json
 /// format.
-InvocationHandler debugMiddleware(InvocationHandler next) {
-  return (String serviceName, String methodName, List<Object> args) async {
+InvocationHandler debugMiddleware(InvocationHandler? next) {
+  return (String? serviceName, String? methodName, List<Object> args) async {
     // Logging the request in one block and the request + response in another
     // block so that it's easier to see what is happening. Indented for visual
     // clarity.
@@ -85,11 +85,18 @@ InvocationHandler debugMiddleware(InvocationHandler next) {
       responseLog.add(argString);
     }
     print(requestLog.join('\n'));
-    Object ret = await next(serviceName, methodName, args);
-    String type = ret.runtimeType.toString();
-    String json = fObjToJson(ret);
-    responseLog.add('response: $type: $json');
-    print(responseLog.join('\n'));
-    return ret;
+    if (next != null) {
+      dynamic ret = await next(serviceName, methodName, args);
+      if(ret != null){
+        String type = ret.runtimeType.toString();
+        String json = fObjToJson(ret);
+        responseLog.add('response: $type: $json');
+        print(responseLog.join('\n'));
+      }
+      return ret;
+
+    } else {
+      return null;
+    }
   };
 }

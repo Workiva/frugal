@@ -36,7 +36,7 @@ class FHttpTransport extends FTransport {
   /// No limit will be enforced if set to a non-positive value (i.e. <1).
   final int responseSizeLimit;
 
-  Map<String, String> _headers;
+  late Map<String, String> _headers;
 
   /// Function that accepts an FContext that should return a Map<String, String>
   /// of headers to be added to every request
@@ -58,8 +58,8 @@ class FHttpTransport extends FTransport {
   FHttpTransport(this.client, this.uri,
       {int requestSizeLimit: 0,
       this.responseSizeLimit: 0,
-      Map<String, String> additionalHeaders,
-      GetHeadersWithContext getRequestHeaders: null})
+      Map<String, String>? additionalHeaders,
+      GetHeadersWithContext? getRequestHeaders: null})
       : _getRequestHeaders = getRequestHeaders ?? ((_) => {}),
         super(requestSizeLimit: requestSizeLimit) {
     _headers = additionalHeaders ?? {};
@@ -81,7 +81,7 @@ class FHttpTransport extends FTransport {
   Future open() => new Future.value();
 
   @override
-  Future close([Error error]) => new Future.value();
+  Future close([Error? error]) => new Future.value();
 
   @override
   Future<Null> oneway(FContext ctx, Uint8List payload) async {
@@ -89,7 +89,7 @@ class FHttpTransport extends FTransport {
   }
 
   @override
-  Future<TTransport> request(FContext ctx, Uint8List payload) async {
+  Future<TTransport?> request(FContext ctx, Uint8List payload) async {
     _preflightRequestCheck(payload);
 
     // append dynamic headers first
@@ -123,20 +123,21 @@ class FHttpTransport extends FTransport {
         throw new TTransportError(
             FrugalTTransportErrorType.UNKNOWN, ex.message);
       }
-      if (ex.response.status == UNAUTHORIZED) {
+      if (ex.response?.status == UNAUTHORIZED) {
         throw new TTransportError(FrugalTTransportErrorType.UNKNOWN,
             'Frugal http request failed - unauthorized ${ex.message}');
       }
-      if (ex.response.status == REQUEST_ENTITY_TOO_LARGE) {
+      if (ex.response?.status == REQUEST_ENTITY_TOO_LARGE) {
         throw new TTransportError(FrugalTTransportErrorType.RESPONSE_TOO_LARGE);
       }
       throw new TTransportError(FrugalTTransportErrorType.UNKNOWN, ex.message);
     }
 
     // Attempt to decode the response payload
-    Uint8List data;
+    late Uint8List data;
     try {
-      data = new Uint8List.fromList(base64.decode(response.body.asString()));
+      var strBody = response.body.asString();
+      if(strBody != null) data = new Uint8List.fromList(base64.decode(strBody));
     } on FormatException catch (_) {
       throw new TProtocolError(TProtocolErrorType.INVALID_DATA,
           'Expected a Base 64 encoded string.');

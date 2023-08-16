@@ -49,8 +49,8 @@ final Duration _defaultTimeout = new Duration(seconds: 5);
 class FContext {
   static int _globalOpId = 0;
 
-  Map<String, String> _requestHeaders;
-  Map<String, String> _responseHeaders;
+  late Map<String, String?> _requestHeaders;
+  late Map<String, String?> _responseHeaders;
 
   /// Create a new [FContext] with the optionally specified [correlationId].
   FContext({String correlationId: ""}) {
@@ -67,7 +67,7 @@ class FContext {
   }
 
   /// Create a new [FContext] with the given request headers.
-  FContext.withRequestHeaders(Map<String, String> headers) {
+  FContext.withRequestHeaders(Map<String, String?> headers) {
     if (!headers.containsKey(_cidHeader) || headers[_cidHeader] == "") {
       headers[_cidHeader] = _generateCorrelationId();
     }
@@ -86,7 +86,7 @@ class FContext {
   /// The default is 5 seconds.
   Duration get timeout {
     return new Duration(
-        milliseconds: int.parse(_requestHeaders[_timeoutHeader]));
+        milliseconds: int.parse(_requestHeaders[_timeoutHeader]!));
   }
 
   /// Set the request timeout for any method call using this context.
@@ -95,11 +95,11 @@ class FContext {
   }
 
   /// Correlation id for the context.
-  String get correlationId => _requestHeaders[_cidHeader];
+  String? get correlationId => _requestHeaders[_cidHeader];
 
   /// The operation id for the context.
   int get _opId {
-    var opIdStr = _requestHeaders[_opidHeader];
+    var opIdStr = _requestHeaders[_opidHeader]!;
     return int.parse(opIdStr);
   }
 
@@ -126,12 +126,12 @@ class FContext {
   }
 
   /// Get the named request header.
-  String requestHeader(String name) {
+  String? requestHeader(String name) {
     return _requestHeaders[name];
   }
 
   /// Get requests headers map.
-  Map<String, String> requestHeaders() {
+  Map<String, String?> requestHeaders() {
     return new UnmodifiableMapView(_requestHeaders);
   }
 
@@ -143,7 +143,7 @@ class FContext {
 
   /// Add given response headers to the context. Will overwrite existing
   /// pre-existing headers with the same names as the given headers.
-  void addResponseHeaders(Map<String, String> headers) {
+  void addResponseHeaders(Map<String, String?> headers) {
     if (headers == null || headers.length == 0) {
       return;
     }
@@ -153,12 +153,12 @@ class FContext {
   }
 
   /// Get the named response header.
-  String responseHeader(String name) {
+  String? responseHeader(String name) {
     return _responseHeaders[name];
   }
 
   /// Get response headers map.
-  Map<String, String> responseHeaders() {
+  Map<String, String?> responseHeaders() {
     return new UnmodifiableMapView(_responseHeaders);
   }
 

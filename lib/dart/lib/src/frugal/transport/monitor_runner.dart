@@ -29,16 +29,16 @@ class MonitorRunner extends Disposable {
   FTransportMonitor _monitor;
   FTransport _transport;
   int _attempts = 0;
-  int _wait = 0;
+  int? _wait = 0;
   bool _failed = false;
-  Completer _reopenCompleter;
-  Timer _reopenTimer;
+  Completer? _reopenCompleter;
+  Timer? _reopenTimer;
 
   /// Indicates if the monitor is waiting to run or gave up.
   bool get _sleeping => (_reopenTimer != null || _failed);
 
   /// Handle close event.
-  Future onClose(Object cause) async {
+  Future onClose(Object? cause) async {
     if (cause == null) {
       _handleCleanClose();
     } else {
@@ -83,19 +83,19 @@ class MonitorRunner extends Disposable {
 
     _log.log(Level.WARNING, 'transport was closed uncleanly because: $cause');
     _wait = _monitor.onClosedUncleanly(cause);
-    if (_wait < 0) {
+    if (_wait! < 0) {
       _log.log(Level.WARNING, 'instructed not to reopen');
       _stop(failed: true);
       return;
     }
     _reopenCompleter = new Completer();
     _startReopenTimer();
-    await _reopenCompleter.future;
+    await _reopenCompleter!.future;
   }
 
   void _startReopenTimer() {
     _log.log(Level.INFO, 'attempting to reopen after $_wait ms');
-    _reopenTimer = new Timer(new Duration(milliseconds: _wait), _attemptReopen);
+    _reopenTimer = new Timer(new Duration(milliseconds: _wait!), _attemptReopen);
   }
 
   Future _attemptReopen() async {
@@ -108,7 +108,7 @@ class MonitorRunner extends Disposable {
       _log.log(Level.WARNING, 'failed to reopen transport due to: $e');
       _attempts++;
       _wait = _monitor.onReopenFailed(_attempts, _wait);
-      if (_wait >= 0) {
+      if (_wait! >= 0) {
         _startReopenTimer();
         return;
       }

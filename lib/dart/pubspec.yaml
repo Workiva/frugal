@@ -5,7 +5,7 @@ dependencies:
       name: thrift
       url: https://pub.workiva.org
     version: ^0.0.10
-  uuid: '>=0.5.0 <4.0.0'
+  uuid: ^3.0.0
   w_common: '>=2.0.0 <4.0.0'
   w_transport: ^4.0.0
 dependency_validator:
@@ -13,14 +13,20 @@ dependency_validator:
   - mockito
 description: A frugal client for Dart
 dev_dependencies:
-  dart_dev: '>=3.0.0 <5.0.0'
-  dart_style: '>=1.3.1 <3.0.0'
+  dart_dev: ^4.0.0
+  dart_style: ^2.0.0
   meta: ^1.6.0
   mockito: '>=5.0.0 <5.3.0'
-  test: ^1.15.7
+  test: ^1.16.0
 environment:
-  sdk: '>=2.11.0 <3.0.0'
-homepage: https://github.com/Workiva/frugal/lib/dart
+  sdk: '>=2.12.0 <3.0.0'
+#homepage: https://github.com/Workiva/frugal/lib/dart
 name: frugal
-publish_to: https://pub.workiva.org
+#publish_to: https://pub.workiva.org
 version: 3.16.24
+
+dependency_overrides:
+  w_transport:
+    git:
+      url: https://git@github.com/Workiva/w_transport.git
+      ref: FEDX-60-null-safety--evan

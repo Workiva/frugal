@@ -29,14 +29,14 @@ class Headers {
   static const _v0 = 0x00;
 
   /// Encode the headers
-  static Uint8List encode(Map<String, String> headers) {
+  static Uint8List encode(Map<String, String?>? headers) {
     var size = 0;
     // Get total frame size headers
-    List<_Pair<List<int>, List<int>>> utf8Headers = new List();
+    List<_Pair<List<int>, List<int>>> utf8Headers = [];
     if (headers != null && headers.length > 0) {
       for (var name in headers.keys) {
         List<int> keyBytes = _encoder.convert(name);
-        List<int> valueBytes = _encoder.convert(headers[name]);
+        List<int> valueBytes = _encoder.convert(headers[name]!);
         utf8Headers.add(new _Pair(keyBytes, valueBytes));
 
         // 4 bytes each for name, value length
@@ -77,7 +77,7 @@ class Headers {
   }
 
   /// Reads the headers from a TTransport
-  static Map<String, String> read(TTransport transport) {
+  static Map<String, String?> read(TTransport transport) {
     // Buffer version
     var buff = new Uint8List(5);
     transport.readAll(buff, 0, 1);
@@ -96,7 +96,7 @@ class Headers {
   }
 
   /// Returns the headers from Frugal frame
-  static Map<String, String> decodeFromFrame(Uint8List frame) {
+  static Map<String, String?> decodeFromFrame(Uint8List frame) {
     if (frame.length < 5) {
       throw new TProtocolError(TProtocolErrorType.INVALID_DATA,
           "invalid frame size ${frame.length}");
@@ -107,8 +107,8 @@ class Headers {
     return _readPairs(frame, 5, _readInt(frame, 1) + 5);
   }
 
-  static Map<String, String> _readPairs(Uint8List buff, int start, int end) {
-    Map<String, String> headers = {};
+  static Map<String, String?> _readPairs(Uint8List buff, int start, int end) {
+    Map<String, String?> headers = {};
     for (var i = start; i < end; i) {
       // Read header name
       var nameSize = _readInt(buff, i);

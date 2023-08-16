@@ -22,7 +22,7 @@ class FScopeProvider {
   /// Creates a new [FScopeProvider].
   FScopeProvider(this.publisherTransportFactory,
       this.subscriberTransportFactory, this.protocolFactory,
-      {List<Middleware> middleware})
+      {List<Middleware>? middleware})
       : _middleware = middleware ?? [];
 
   /// [FPublisherTransportFactory] used by the scope.
@@ -47,7 +47,7 @@ class FScopeProvider {
 class FServiceProvider extends Disposable {
   /// Creates a new [FServiceProvider].
   FServiceProvider(this.transport, this.protocolFactory,
-      {List<Middleware> middleware})
+      {List<Middleware>? middleware})
       : _middleware = middleware ?? [];
 
   @override

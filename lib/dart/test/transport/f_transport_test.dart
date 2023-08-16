@@ -9,7 +9,7 @@ import 'package:mockito/mockito.dart';
 void main() {
   group('FTransport', () {
     int requestSizeLimit = 5;
-    _FTransportImpl transport;
+    _FTransportImpl? transport;
 
     setUp(() {
       transport = new _FTransportImpl(requestSizeLimit);
@@ -19,22 +19,22 @@ void main() {
         'test closeWithException adds the exeption to the onClose stream and properly triggers the transport monitor',
         () async {
       var monitor = new MockTransportMonitor();
-      transport.monitor = monitor;
-      transport.errors = [null, new TError(0, 'reopen failed'), null];
+      transport?.monitor = monitor;
+      transport?.errors = [null, new TError(0, 'reopen failed'), null];
 
       var completer = new Completer<Error>();
       var err = new TTransportError();
-      transport.onClose.listen((e) {
-        completer.complete(e);
+      transport?.onClose.listen((e) {
+        completer.complete(e as FutureOr<Error>?);
       });
 
       // Open the transport
-      await transport.open();
+      await transport?.open();
 
       // Close the transport with an error
-      when(monitor.onClosedUncleanly(any)).thenReturn(1);
+      when(monitor.onClosedUncleanly(any ?? '')).thenReturn(1);
       when(monitor.onReopenFailed(any, any)).thenReturn(1);
-      await transport.close(err);
+      await transport?.close(err);
 
       var timeout = new Duration(seconds: 1);
       expect(await completer.future.timeout(timeout), equals(err));
@@ -50,7 +50,7 @@ class _FTransportImpl extends FTransport {
   String get disposableTypeName => '_FTransportImpl';
 
   // Default implementations of non-implemented methods
-  List<Error> errors = [];
+  List<Error?> errors = [];
   int openCalls = 0;
 
   _FTransportImpl(int requestSizeLimit)

@@ -18,14 +18,14 @@ part of frugal.src.frugal;
 /// data and call [handleResponse] when asynchronous responses are received.
 abstract class FAsyncTransport extends FTransport {
   final Logger _log = new Logger('FAsyncTransport');
-  Map<int, Completer<Uint8List>> _handlers = {};
+  Map<int?, Completer<Uint8List>> _handlers = {};
 
   /// Instantiate an [FAsyncTransport].
-  FAsyncTransport({int requestSizeLimit})
+  FAsyncTransport({int? requestSizeLimit})
       : super(requestSizeLimit: requestSizeLimit);
 
   /// Flush the payload to the server. Implementations must be threadsafe.
-  Future<Null> flush(Uint8List payload);
+  Future<Null> flush(Uint8List? payload);
 
   @override
   Future<Null> oneway(FContext ctx, Uint8List payload) async {
@@ -37,17 +37,17 @@ abstract class FAsyncTransport extends FTransport {
   }
 
   @override
-  Future<TTransport> request(FContext ctx, Uint8List payload) async {
+  Future<TTransport> request(FContext? ctx, Uint8List? payload) async {
     _preflightRequestCheck(payload);
 
     Completer<Uint8List> resultCompleter = new Completer();
 
-    if (_handlers.containsKey(ctx._opId)) {
+    if (_handlers.containsKey(ctx?._opId)) {
       throw new StateError("frugal: context already registered");
     }
-    _handlers[ctx._opId] = resultCompleter;
+    _handlers[ctx?._opId] = resultCompleter;
     Completer<Uint8List> closedCompleter = new Completer();
-    StreamSubscription<Object> closedSub = onClose.listen((_) {
+    StreamSubscription<Object?> closedSub = onClose.listen((_) {
       closedCompleter.completeError(
           new TTransportError(FrugalTTransportErrorType.NOT_OPEN));
     });
@@ -55,7 +55,7 @@ abstract class FAsyncTransport extends FTransport {
     try {
       await flush(payload);
       Future<Uint8List> resultFuture =
-          resultCompleter.future.timeout(ctx.timeout);
+          resultCompleter.future.timeout(ctx!.timeout);
 
       // Bail early if the transport is closed
       Uint8List response =
@@ -63,9 +63,9 @@ abstract class FAsyncTransport extends FTransport {
       return new TMemoryTransport.fromUint8List(response);
     } on TimeoutException catch (_) {
       throw new TTransportError(FrugalTTransportErrorType.TIMED_OUT,
-          "request timed out after ${ctx.timeout}");
+          "request timed out after ${ctx?.timeout}");
     } finally {
-      _handlers.remove(ctx._opId);
+      _handlers.remove(ctx?._opId);
 
       // don't wait until this is disposed to cancel these
       await closedSub.cancel();
@@ -85,13 +85,13 @@ abstract class FAsyncTransport extends FTransport {
     var headers = Headers.decodeFromFrame(frame);
     var opId;
     try {
-      opId = int.parse(headers[_opidHeader]);
+      opId = int.parse(headers[_opidHeader]!);
     } catch (e) {
       _log.severe("frugal: invalid protocol frame: op id not a uint64", e);
       return;
     }
 
-    Completer<Uint8List> handler = _handlers[opId];
+    Completer<Uint8List>? handler = _handlers[opId];
     if (handler == null) {
       // This is only a warning since it can routinely happen due to network
       // timeouts / bad network weather
