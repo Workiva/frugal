@@ -20,7 +20,7 @@ dev_dependencies:
   test: ^1.16.0
 environment:
   sdk: '>=2.12.0 <3.0.0'
-#homepage: https://github.com/Workiva/frugal/lib/dart
+homepage: https://github.com/Workiva/frugal/tree/FEDX-142/lib/dart
 name: frugal
 #publish_to: https://pub.workiva.org
 version: 3.16.24
