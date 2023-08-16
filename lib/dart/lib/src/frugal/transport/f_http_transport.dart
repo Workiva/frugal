@@ -137,7 +137,8 @@ class FHttpTransport extends FTransport {
     late Uint8List data;
     try {
       var strBody = response.body.asString();
-      if(strBody != null) data = new Uint8List.fromList(base64.decode(strBody));
+      if (strBody != null)
+        data = new Uint8List.fromList(base64.decode(strBody));
     } on FormatException catch (_) {
       throw new TProtocolError(TProtocolErrorType.INVALID_DATA,
           'Expected a Base 64 encoded string.');

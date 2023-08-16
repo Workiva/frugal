@@ -95,7 +95,8 @@ class MonitorRunner extends Disposable {
 
   void _startReopenTimer() {
     _log.log(Level.INFO, 'attempting to reopen after $_wait ms');
-    _reopenTimer = new Timer(new Duration(milliseconds: _wait!), _attemptReopen);
+    _reopenTimer =
+        new Timer(new Duration(milliseconds: _wait!), _attemptReopen);
   }
 
   Future _attemptReopen() async {

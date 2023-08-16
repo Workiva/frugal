@@ -70,7 +70,7 @@ class FAdapterTransport extends FAsyncTransport {
 
   @override
   Future<Null> flush(Uint8List? payload) {
-    if(payload != null) {
+    if (payload != null) {
       _framedTransport.socket.send(payload);
     }
     return new Future.value();

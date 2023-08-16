@@ -49,7 +49,8 @@ void main() {
     });
 
     test('Test transport sends body and receives response', () async {
-      MockTransports.http.when(transport!.uri, (FinalizedRequest request) async {
+      MockTransports.http.when(transport!.uri,
+          (FinalizedRequest request) async {
         if (request.method == 'POST') {
           HttpBody body = request.body as HttpBody;
           if (body == null || body.asString() != transportRequestB64)
@@ -73,7 +74,8 @@ void main() {
 
     test('Transport times out if request is not received within the timeout',
         () async {
-      MockTransports.http.when(transport!.uri, (FinalizedRequest request) async {
+      MockTransports.http.when(transport!.uri,
+          (FinalizedRequest request) async {
         if (request.method == 'POST') {
           throw new TimeoutException("wat");
         }
@@ -90,7 +92,8 @@ void main() {
     });
 
     test('Multiple writes are not coalesced', () async {
-      MockTransports.http.when(transport!.uri, (FinalizedRequest request) async {
+      MockTransports.http.when(transport!.uri,
+          (FinalizedRequest request) async {
         if (request.method == 'POST') {
           HttpBody body = request.body as HttpBody;
           if (body == null || body.asString() != transportRequestB64)
@@ -143,8 +146,8 @@ void main() {
         }
       });
 
-      var response = await transportWithContext!.request(
-          newContext, transportRequest) as TMemoryTransport;
+      var response = await transportWithContext!
+          .request(newContext, transportRequest) as TMemoryTransport;
       expect(response.buffer, transportResponse);
     });
 
@@ -193,12 +196,10 @@ void main() {
     });
 
     test('Test transport receives error', () {
-
       List<int> requestData = utf8Codec.encode('my really long request');
       Uint8List requestDataUint8 = Uint8List.fromList(requestData);
 
-      expect(
-          transport?.request(new FContext(), requestDataUint8),
+      expect(transport?.request(new FContext(), requestDataUint8),
           throwsA(new isInstanceOf<TTransportError>()));
     });
   });

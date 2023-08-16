@@ -123,7 +123,8 @@ class _TFramedTransport extends TTransport with Disposable {
     }
 
     // Grab up to the frame size in bytes
-    var bytesToGet = min(_frameSize! - _readBuffer.length, list.length - offset);
+    var bytesToGet =
+        min(_frameSize! - _readBuffer.length, list.length - offset);
     _readBuffer.addAll(list.getRange(offset, offset + bytesToGet));
 
     // Have an entire frame. Fire it off and reset.

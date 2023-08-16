@@ -69,7 +69,7 @@ class BaseFTransportMonitor extends FTransportMonitor {
   int? onClosedUncleanly(Object cause) {
     _isConnected = false;
 
-    if(cause != null) {
+    if (cause != null) {
       _onDisconnectController.add(cause);
     } else {
       _onDisconnectController.add(null);

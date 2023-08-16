@@ -66,6 +66,7 @@ class _FTransportImpl extends FTransport {
   @override
   Future open() async {
     if (openCalls <= errors.length) {
+      print(openCalls);
       if (errors[openCalls] != null) {
         openCalls++;
         throw errors[openCalls];

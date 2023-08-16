@@ -87,14 +87,13 @@ InvocationHandler debugMiddleware(InvocationHandler? next) {
     print(requestLog.join('\n'));
     if (next != null) {
       dynamic ret = await next(serviceName, methodName, args);
-      if(ret != null){
+      if (ret != null) {
         String type = ret.runtimeType.toString();
         String json = fObjToJson(ret);
         responseLog.add('response: $type: $json');
         print(responseLog.join('\n'));
       }
       return ret;
-
     } else {
       return null;
     }
