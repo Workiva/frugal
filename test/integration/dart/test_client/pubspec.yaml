@@ -11,5 +11,7 @@ dependency_overrides:
   frugal:
     path:  ../../../../lib/dart
 
+  w_module: ^3.0.0
+  w_transport: ^5.0.0
 environment:
   sdk: '>=2.11.0 <3.0.0'

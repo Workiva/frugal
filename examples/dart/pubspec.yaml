@@ -19,3 +19,7 @@ environment:
   sdk: ^2.11.0
 name: client_example
 version: 0.0.1
+
+dependency_overrides:
+  w_module: ^3.0.0
+  w_transport: ^5.0.0
