@@ -27,4 +27,7 @@ version: 3.16.24
 
 dependency_overrides:
   w_module: ^3.0.0
-  w_transport: ^5.0.0
+  w_transport: 
+    git:
+      url: git@github.com:Workiva/w_transport.git
+      ref: tweak_collection_dep
