@@ -1,7 +1,7 @@
-import "package:test/test.dart";
-import "package:thrift/thrift.dart";
+import 'package:test/test.dart';
+import 'package:thrift/thrift.dart';
 
-import "../../lib/src/frugal.dart";
+import '../../lib/src/frugal.dart';
 
 void main() {
   group('fObjToJson', () {

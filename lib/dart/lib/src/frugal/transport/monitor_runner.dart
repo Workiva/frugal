@@ -113,8 +113,7 @@ class MonitorRunner extends Disposable {
         return;
       }
       _stop(failed: true);
-      _log.log(Level.WARNING,
-          'ReopenFailed callback instructed not to reopen, terminating');
+      _log.log(Level.WARNING, 'ReopenFailed callback instructed not to reopen, terminating');
     }
   }
 }

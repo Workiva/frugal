@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:typed_data' show Uint8List;
 
 import 'package:frugal/frugal.dart';
+import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 import 'package:thrift/thrift.dart';
-import 'package:mockito/mockito.dart';
 
 void main() {
   group('FTransport', () {
@@ -15,8 +15,7 @@ void main() {
       transport = _FTransportImpl(requestSizeLimit);
     });
 
-    test(
-        'test closeWithException adds the exeption to the onClose stream and properly triggers the transport monitor',
+    test('test closeWithException adds the exeption to the onClose stream and properly triggers the transport monitor',
         () async {
       var monitor = MockTransportMonitor();
       transport?.monitor = monitor;
@@ -53,8 +52,7 @@ class _FTransportImpl extends FTransport {
   List<Error?> errors = [];
   int openCalls = 0;
 
-  _FTransportImpl(int requestSizeLimit)
-      : super(requestSizeLimit: requestSizeLimit);
+  _FTransportImpl(int requestSizeLimit) : super(requestSizeLimit: requestSizeLimit);
 
   @override
   Future<Null> oneway(FContext ctx, Uint8List payload) => Future.value();

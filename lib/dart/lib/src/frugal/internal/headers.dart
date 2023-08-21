@@ -98,8 +98,7 @@ class Headers {
   /// Returns the headers from Frugal frame
   static Map<String, String?> decodeFromFrame(Uint8List frame) {
     if (frame.length < 5) {
-      throw TProtocolError(TProtocolErrorType.INVALID_DATA,
-          "invalid frame size ${frame.length}");
+      throw TProtocolError(TProtocolErrorType.INVALID_DATA, "invalid frame size ${frame.length}");
     }
 
     _checkVersion(frame);
@@ -114,8 +113,7 @@ class Headers {
       var nameSize = _readInt(buff, i);
       i += 4;
       if (i > end || i + nameSize > end) {
-        throw TProtocolError(
-            TProtocolErrorType.INVALID_DATA, "invalid protocol header name");
+        throw TProtocolError(TProtocolErrorType.INVALID_DATA, "invalid protocol header name");
       }
       var name = _decoder.convert(buff, i, i + nameSize);
       i += nameSize;
@@ -124,8 +122,7 @@ class Headers {
       var valueSize = _readInt(buff, i);
       i += 4;
       if (i > end || i + valueSize > end) {
-        throw TProtocolError(
-            TProtocolErrorType.INVALID_DATA, "invalid protocol header value");
+        throw TProtocolError(TProtocolErrorType.INVALID_DATA, "invalid protocol header value");
       }
       var value = _decoder.convert(buff, i, i + valueSize);
       i += valueSize;
@@ -137,10 +134,7 @@ class Headers {
   }
 
   static int _readInt(Uint8List buff, int i) {
-    return ((buff[i] & 0xff) << 24) |
-        ((buff[i + 1] & 0xff) << 16) |
-        ((buff[i + 2] & 0xff) << 8) |
-        (buff[i + 3] & 0xff);
+    return ((buff[i] & 0xff) << 24) | ((buff[i + 1] & 0xff) << 16) | ((buff[i + 2] & 0xff) << 8) | (buff[i + 3] & 0xff);
   }
 
   static void _writeInt(int i, Uint8List buff, int i1) {
@@ -158,8 +152,7 @@ class Headers {
   // Support more versions when available
   static void _checkVersion(Uint8List frame) {
     if (frame[0] != _v0) {
-      throw TProtocolError(TProtocolErrorType.BAD_VERSION,
-          "unsupported header version ${frame[0]}");
+      throw TProtocolError(TProtocolErrorType.BAD_VERSION, "unsupported header version ${frame[0]}");
     }
   }
 }

@@ -1,0 +1,258 @@
+<testsuites name="All tests" tests="10" errors="10" failures="0" skipped="0">
+  <testsuite name="root tests" tests="10" errors="10">
+    <testcase name="errorLoadingFile" time="0.0">
+      <error message="">
+        Failed to load &quot;test/f_context_test.dart&quot;:
+        Unable to spawn isolate: /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/.packages: [31mError: Problem in packages configuration file: Unexpected character[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/bootstrap/vm.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_context_test.dart.vm_test.dart:4:18: [31mError: Not found: &apos;package:test/bootstrap/vm.dart&apos;[39;49m
+                  import &quot;package:test/bootstrap/vm.dart&quot;;
+                         ^
+        [31mError: Couldn&apos;t resolve the package &apos;frugal&apos; in &apos;package:frugal/frugal.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/test.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_context_test.dart:1:8: [31mError: Not found: &apos;package:frugal/frugal.dart&apos;[39;49m
+        import &apos;package:frugal/frugal.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_context_test.dart:2:8: [31mError: Not found: &apos;package:test/test.dart&apos;[39;49m
+        import &apos;package:test/test.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_context_test.dart.vm_test.dart:9:13: [31mError: Method not found: &apos;internalBootstrapVmTest&apos;.[39;49m
+                    internalBootstrapVmTest(() =&gt; test.main, message);
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_context_test.dart:6:19: [31mError: Undefined name &apos;FContext&apos;.[39;49m
+            var context = FContext.withRequestHeaders({&quot;Something&quot;: &quot;Value&quot;});
+                          ^^^^^^^^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_context_test.dart:7:29: [31mError: Method not found: &apos;equals&apos;.[39;49m
+            expect(context.timeout, equals(Duration(seconds: 5)));
+                                    ^^^^^^
+      </error>
+    </testcase>
+    <testcase name="errorLoadingFile" time="0.0">
+      <error message="">
+        Failed to load &quot;test/transport/f_http_transport_test.dart&quot;:
+        Unable to spawn isolate: /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/.packages: [31mError: Problem in packages configuration file: Unexpected character[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/bootstrap/vm.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/f_http_transport_test.dart.vm_test.dart:4:18: [31mError: Not found: &apos;package:test/bootstrap/vm.dart&apos;[39;49m
+                  import &quot;package:test/bootstrap/vm.dart&quot;;
+                         ^
+        [31mError: Couldn&apos;t resolve the package &apos;frugal&apos; in &apos;package:frugal/frugal.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/test.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;thrift&apos; in &apos;package:thrift/thrift.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;w_transport&apos; in &apos;package:w_transport/mock.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;w_transport&apos; in &apos;package:w_transport/w_transport.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/f_http_transport_test.dart:5:8: [31mError: Not found: &apos;package:frugal/frugal.dart&apos;[39;49m
+        import &apos;package:frugal/frugal.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/f_http_transport_test.dart:6:8: [31mError: Not found: &apos;package:test/test.dart&apos;[39;49m
+        import &apos;package:test/test.dart&apos;;
+               ^
+      </error>
+    </testcase>
+    <testcase name="errorLoadingFile" time="0.0">
+      <error message="">
+        Failed to load &quot;test/transport/f_transport_test.dart&quot;:
+        Unable to spawn isolate: /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/.packages: [31mError: Problem in packages configuration file: Unexpected character[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/bootstrap/vm.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/f_transport_test.dart.vm_test.dart:4:18: [31mError: Not found: &apos;package:test/bootstrap/vm.dart&apos;[39;49m
+                  import &quot;package:test/bootstrap/vm.dart&quot;;
+                         ^
+        [31mError: Couldn&apos;t resolve the package &apos;frugal&apos; in &apos;package:frugal/frugal.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;mockito&apos; in &apos;package:mockito/mockito.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/test.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;thrift&apos; in &apos;package:thrift/thrift.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/f_transport_test.dart:4:8: [31mError: Not found: &apos;package:frugal/frugal.dart&apos;[39;49m
+        import &apos;package:frugal/frugal.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/f_transport_test.dart:5:8: [31mError: Not found: &apos;package:mockito/mockito.dart&apos;[39;49m
+        import &apos;package:mockito/mockito.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/f_transport_test.dart:6:8: [31mError: Not found: &apos;package:test/test.dart&apos;[39;49m
+        import &apos;package:test/test.dart&apos;;
+               ^
+      </error>
+    </testcase>
+    <testcase name="errorLoadingFile" time="0.0">
+      <error message="">
+        Failed to load &quot;test/transport/base_f_transport_monitor_test.dart&quot;:
+        Unable to spawn isolate: /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/.packages: [31mError: Problem in packages configuration file: Unexpected character[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/bootstrap/vm.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/base_f_transport_monitor_test.dart.vm_test.dart:4:18: [31mError: Not found: &apos;package:test/bootstrap/vm.dart&apos;[39;49m
+                  import &quot;package:test/bootstrap/vm.dart&quot;;
+                         ^
+        [31mError: Couldn&apos;t resolve the package &apos;frugal&apos; in &apos;package:frugal/frugal.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/test.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/base_f_transport_monitor_test.dart:3:8: [31mError: Not found: &apos;package:frugal/frugal.dart&apos;[39;49m
+        import &apos;package:frugal/frugal.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/base_f_transport_monitor_test.dart:4:8: [31mError: Not found: &apos;package:test/test.dart&apos;[39;49m
+        import &apos;package:test/test.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/base_f_transport_monitor_test.dart.vm_test.dart:9:13: [31mError: Method not found: &apos;internalBootstrapVmTest&apos;.[39;49m
+                    internalBootstrapVmTest(() =&gt; test.main, message);
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/base_f_transport_monitor_test.dart:8:5: [31mError: &apos;FTransportMonitor&apos; isn&apos;t a type.[39;49m
+            FTransportMonitor monitor = BaseFTransportMonitor(maxReopenAttempts: 0, initialWait: 0, maxWait: 0);
+            ^^^^^^^^^^^^^^^^^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/base_f_transport_monitor_test.dart:8:33: [31mError: Method not found: &apos;BaseFTransportMonitor&apos;.[39;49m
+            FTransportMonitor monitor = BaseFTransportMonitor(maxReopenAttempts: 0, initialWait: 0, maxWait: 0);
+                                        ^^^^^^^^^^^^^^^^^^^^^
+      </error>
+    </testcase>
+    <testcase name="errorLoadingFile" time="0.0">
+      <error message="">
+        Failed to load &quot;test/transport/f_adapter_transport_test.dart&quot;:
+        Unable to spawn isolate: /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/.packages: [31mError: Problem in packages configuration file: Unexpected character[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/bootstrap/vm.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/f_adapter_transport_test.dart.vm_test.dart:4:18: [31mError: Not found: &apos;package:test/bootstrap/vm.dart&apos;[39;49m
+                  import &quot;package:test/bootstrap/vm.dart&quot;;
+                         ^
+        [31mError: Couldn&apos;t resolve the package &apos;frugal&apos; in &apos;package:frugal/frugal.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;mockito&apos; in &apos;package:mockito/annotations.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;mockito&apos; in &apos;package:mockito/mockito.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/test.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;thrift&apos; in &apos;package:thrift/thrift.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/f_adapter_transport_test.dart:4:8: [31mError: Not found: &apos;package:frugal/frugal.dart&apos;[39;49m
+        import &apos;package:frugal/frugal.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/transport/f_adapter_transport_test.dart:5:8: [31mError: Not found: &apos;package:mockito/annotations.dart&apos;[39;49m
+        import &apos;package:mockito/annotations.dart&apos;;
+               ^
+      </error>
+    </testcase>
+    <testcase name="errorLoadingFile" time="0.0">
+      <error message="">
+        Failed to load &quot;test/internal/f_byte_buffer_test.dart&quot;:
+        Unable to spawn isolate: /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/.packages: [31mError: Problem in packages configuration file: Unexpected character[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/bootstrap/vm.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_byte_buffer_test.dart.vm_test.dart:4:18: [31mError: Not found: &apos;package:test/bootstrap/vm.dart&apos;[39;49m
+                  import &quot;package:test/bootstrap/vm.dart&quot;;
+                         ^
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/test.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_byte_buffer_test.dart:3:8: [31mError: Not found: &apos;package:test/test.dart&apos;[39;49m
+        import &apos;package:test/test.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_byte_buffer_test.dart:5:8: [31mError: Error when reading &apos;/var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/lib/src/frugal.dart&apos;: No such file or directory[39;49m
+        import &apos;../../lib/src/frugal.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_byte_buffer_test.dart.vm_test.dart:9:13: [31mError: Method not found: &apos;internalBootstrapVmTest&apos;.[39;49m
+                    internalBootstrapVmTest(() =&gt; test.main, message);
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_byte_buffer_test.dart:47:16: [31mError: Method not found: &apos;FByteBuffer&apos;.[39;49m
+            var buff = FByteBuffer(10);
+                       ^^^^^^^^^^^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_byte_buffer_test.dart:48:5: [31mError: Method not found: &apos;expect&apos;.[39;49m
+            expect(10, buff.writeRemaining);
+            ^^^^^^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_byte_buffer_test.dart:50:5: [31mError: Method not found: &apos;expect&apos;.[39;49m
+            expect(n, 10);
+            ^^^^^^
+      </error>
+    </testcase>
+    <testcase name="errorLoadingFile" time="0.0">
+      <error message="">
+        Failed to load &quot;test/f_middleware_test.dart&quot;:
+        Unable to spawn isolate: /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/.packages: [31mError: Problem in packages configuration file: Unexpected character[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/bootstrap/vm.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_middleware_test.dart.vm_test.dart:4:18: [31mError: Not found: &apos;package:test/bootstrap/vm.dart&apos;[39;49m
+                  import &quot;package:test/bootstrap/vm.dart&quot;;
+                         ^
+        [31mError: Couldn&apos;t resolve the package &apos;frugal&apos; in &apos;package:frugal/frugal.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/test.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_middleware_test.dart:3:8: [31mError: Not found: &apos;package:frugal/frugal.dart&apos;[39;49m
+        import &apos;package:frugal/frugal.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_middleware_test.dart:4:8: [31mError: Not found: &apos;package:test/test.dart&apos;[39;49m
+        import &apos;package:test/test.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_middleware_test.dart.vm_test.dart:9:13: [31mError: Method not found: &apos;internalBootstrapVmTest&apos;.[39;49m
+                    internalBootstrapVmTest(() =&gt; test.main, message);
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_middleware_test.dart:31:3: [31mError: &apos;Middleware&apos; isn&apos;t a type.[39;49m
+          Middleware newMiddleware(MiddlewareDataStruct mds) {
+          ^^^^^^^^^^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/f_middleware_test.dart:32:13: [31mError: &apos;InvocationHandler&apos; isn&apos;t a type.[39;49m
+            return (InvocationHandler next) {
+                    ^^^^^^^^^^^^^^^^^
+      </error>
+    </testcase>
+    <testcase name="errorLoadingFile" time="0.0">
+      <error message="">
+        Failed to load &quot;test/internal/headers_test.dart&quot;:
+        Unable to spawn isolate: /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/.packages: [31mError: Problem in packages configuration file: Unexpected character[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/bootstrap/vm.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/headers_test.dart.vm_test.dart:4:18: [31mError: Not found: &apos;package:test/bootstrap/vm.dart&apos;[39;49m
+                  import &quot;package:test/bootstrap/vm.dart&quot;;
+                         ^
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/test.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;thrift&apos; in &apos;package:thrift/thrift.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/headers_test.dart:3:8: [31mError: Not found: &apos;package:test/test.dart&apos;[39;49m
+        import &apos;package:test/test.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/headers_test.dart:4:8: [31mError: Not found: &apos;package:thrift/thrift.dart&apos;[39;49m
+        import &apos;package:thrift/thrift.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/headers_test.dart:6:8: [31mError: Error when reading &apos;/var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/lib/src/frugal.dart&apos;: No such file or directory[39;49m
+        import &apos;../../lib/src/frugal.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/headers_test.dart.vm_test.dart:9:13: [31mError: Method not found: &apos;internalBootstrapVmTest&apos;.[39;49m
+                    internalBootstrapVmTest(() =&gt; test.main, message);
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/headers_test.dart:49:21: [31mError: Undefined name &apos;TMemoryTransport&apos;.[39;49m
+            var transport = TMemoryTransport.fromUint8List(encodedHeaders);
+                            ^^^^^^^^^^^^^^^^
+      </error>
+    </testcase>
+    <testcase name="errorLoadingFile" time="0.0">
+      <error message="">
+        Failed to load &quot;test/protocol/f_protocol_test.dart&quot;:
+        Unable to spawn isolate: /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/.packages: [31mError: Problem in packages configuration file: Unexpected character[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/bootstrap/vm.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/protocol/f_protocol_test.dart.vm_test.dart:4:18: [31mError: Not found: &apos;package:test/bootstrap/vm.dart&apos;[39;49m
+                  import &quot;package:test/bootstrap/vm.dart&quot;;
+                         ^
+        [31mError: Couldn&apos;t resolve the package &apos;frugal&apos; in &apos;package:frugal/frugal.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/test.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;thrift&apos; in &apos;package:thrift/thrift.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/protocol/f_protocol_test.dart:1:8: [31mError: Not found: &apos;package:frugal/frugal.dart&apos;[39;49m
+        import &apos;package:frugal/frugal.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/protocol/f_protocol_test.dart:2:8: [31mError: Not found: &apos;package:test/test.dart&apos;[39;49m
+        import &apos;package:test/test.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/protocol/f_protocol_test.dart:3:8: [31mError: Not found: &apos;package:thrift/thrift.dart&apos;[39;49m
+        import &apos;package:thrift/thrift.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/protocol/f_protocol_test.dart.vm_test.dart:9:13: [31mError: Method not found: &apos;internalBootstrapVmTest&apos;.[39;49m
+                    internalBootstrapVmTest(() =&gt; test.main, message);
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+      </error>
+    </testcase>
+    <testcase name="errorLoadingFile" time="0.0">
+      <error message="">
+        Failed to load &quot;test/internal/f_obj_to_json_test.dart&quot;:
+        Unable to spawn isolate: /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/.packages: [31mError: Problem in packages configuration file: Unexpected character[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/bootstrap/vm.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_obj_to_json_test.dart.vm_test.dart:4:18: [31mError: Not found: &apos;package:test/bootstrap/vm.dart&apos;[39;49m
+                  import &quot;package:test/bootstrap/vm.dart&quot;;
+                         ^
+        [31mError: Couldn&apos;t resolve the package &apos;test&apos; in &apos;package:test/test.dart&apos;.[39;49m
+        [31mError: Couldn&apos;t resolve the package &apos;thrift&apos; in &apos;package:thrift/thrift.dart&apos;.[39;49m
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_obj_to_json_test.dart:1:8: [31mError: Not found: &apos;package:test/test.dart&apos;[39;49m
+        import &apos;package:test/test.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_obj_to_json_test.dart:2:8: [31mError: Not found: &apos;package:thrift/thrift.dart&apos;[39;49m
+        import &apos;package:thrift/thrift.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_obj_to_json_test.dart:4:8: [31mError: Error when reading &apos;/var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/lib/src/frugal.dart&apos;: No such file or directory[39;49m
+        import &apos;../../lib/src/frugal.dart&apos;;
+               ^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_obj_to_json_test.dart:27:24: [31mError: Type &apos;TBase&apos; not found.[39;49m
+        class _Edge implements TBase {
+                               ^^^^^
+        /var/folders/qq/9yt1xr8541jbjdyjns641bg80000gs/T/build_runner_testBCWyPE/test/internal/f_obj_to_json_test.dart:28:16: [31mError: Type &apos;TStruct&apos; not found.[39;49m
+          static final TStruct _STRUCT_DESC = TStruct(&quot;Edge&quot;);
+                       ^^^^^^^
+      </error>
+    </testcase>
+  </testsuite>
+</testsuites>

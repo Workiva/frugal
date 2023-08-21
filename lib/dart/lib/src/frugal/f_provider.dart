@@ -20,8 +20,7 @@ part of frugal.src.frugal;
 /// publisher or subscriber.
 class FScopeProvider {
   /// Creates a new [FScopeProvider].
-  FScopeProvider(this.publisherTransportFactory,
-      this.subscriberTransportFactory, this.protocolFactory,
+  FScopeProvider(this.publisherTransportFactory, this.subscriberTransportFactory, this.protocolFactory,
       {List<Middleware>? middleware})
       : _middleware = middleware ?? [];
 
@@ -46,8 +45,7 @@ class FScopeProvider {
 /// this is to provide a shim for adding middleware to a client.
 class FServiceProvider extends Disposable {
   /// Creates a new [FServiceProvider].
-  FServiceProvider(this.transport, this.protocolFactory,
-      {List<Middleware>? middleware})
+  FServiceProvider(this.transport, this.protocolFactory, {List<Middleware>? middleware})
       : _middleware = middleware ?? [];
 
   @override

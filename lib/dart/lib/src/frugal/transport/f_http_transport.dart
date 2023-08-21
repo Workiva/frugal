@@ -112,19 +112,17 @@ class FHttpTransport extends FTransport {
     try {
       response = await request.post();
     } on StateError catch (ex) {
-      throw TTransportError(FrugalTTransportErrorType.UNKNOWN,
-          'Malformed request ${ex.toString()}');
+      throw TTransportError(FrugalTTransportErrorType.UNKNOWN, 'Malformed request ${ex.toString()}');
     } on wt.RequestException catch (ex) {
       if (ex.error != null && ex.error.runtimeType == TimeoutException) {
-        throw TTransportError(FrugalTTransportErrorType.TIMED_OUT,
-            "http request timed out after ${ctx.timeout}");
+        throw TTransportError(FrugalTTransportErrorType.TIMED_OUT, "http request timed out after ${ctx.timeout}");
       }
       if (ex.response == null) {
         throw TTransportError(FrugalTTransportErrorType.UNKNOWN, ex.message);
       }
       if (ex.response?.status == UNAUTHORIZED) {
-        throw TTransportError(FrugalTTransportErrorType.UNKNOWN,
-            'Frugal http request failed - unauthorized ${ex.message}');
+        throw TTransportError(
+            FrugalTTransportErrorType.UNKNOWN, 'Frugal http request failed - unauthorized ${ex.message}');
       }
       if (ex.response?.status == REQUEST_ENTITY_TOO_LARGE) {
         throw TTransportError(FrugalTTransportErrorType.RESPONSE_TOO_LARGE);
@@ -137,22 +135,19 @@ class FHttpTransport extends FTransport {
     try {
       data = Uint8List.fromList(base64.decode(response.body.asString()));
     } on FormatException catch (_) {
-      throw TProtocolError(TProtocolErrorType.INVALID_DATA,
-          'Expected a Base 64 encoded string.');
+      throw TProtocolError(TProtocolErrorType.INVALID_DATA, 'Expected a Base 64 encoded string.');
     }
 
     // If not enough data, throw a protocol error
     if (data.length < 4) {
-      throw TProtocolError(
-          TProtocolErrorType.INVALID_DATA, 'Expected frugal data to be framed');
+      throw TProtocolError(TProtocolErrorType.INVALID_DATA, 'Expected frugal data to be framed');
     }
 
     // If there are only 4 bytes, this is a one-way request
     if (data.length == 4) {
       var bData = ByteData.view(data.buffer);
       if (bData.getUint32(0) != 0) {
-        throw TTransportError(
-            FrugalTTransportErrorType.UNKNOWN, "invalid frame size");
+        throw TTransportError(FrugalTTransportErrorType.UNKNOWN, "invalid frame size");
       }
       return null;
     }

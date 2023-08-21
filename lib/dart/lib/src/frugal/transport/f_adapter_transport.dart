@@ -54,9 +54,7 @@ class FAdapterTransport extends FAsyncTransport {
       handleResponse(frame.frameBytes);
     } catch (e) {
       // Fatal error. Close the transport.
-      _adapterTransportLog.severe(
-          "FAsyncCallback had a fatal error ${e.toString()}." +
-              "Closing transport.");
+      _adapterTransportLog.severe("FAsyncCallback had a fatal error ${e.toString()}." + "Closing transport.");
       close(e as Error?);
     }
   }

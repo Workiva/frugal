@@ -1,11 +1,9 @@
-import "package:test/test.dart";
-import "package:frugal/frugal.dart";
-import "package:thrift/thrift.dart";
+import 'package:frugal/frugal.dart';
+import 'package:test/test.dart';
+import 'package:thrift/thrift.dart';
 
 void main() {
-  test(
-      "writeRequestHeader writes the request headers and readRequestHeader reads the headers",
-      () {
+  test("writeRequestHeader writes the request headers and readRequestHeader reads the headers", () {
     var transport = TMemoryTransport();
     var tProtocol = TBinaryProtocol(transport);
     var fProtocol = FProtocol(tProtocol);

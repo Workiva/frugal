@@ -13,12 +13,11 @@
 
 library frugal;
 
-export 'src/frugal.dart'
+export 'package:frugal/src/frugal.dart'
     show
         BaseFTransportMonitor,
         FAdapterTransport,
         FAsyncCallback,
-        FAdapterTransport,
         FAsyncTransport,
         FContext,
         FHttpTransport,
@@ -42,5 +41,5 @@ export 'src/frugal.dart'
         TMemoryOutputBuffer,
         TMemoryTransport,
         debugMiddleware;
-export 'src/frugal/f_generated.dart' show FGeneratedArgsResultBase;
-export 'src/frugal/f_packers.dart' show prepareMessage, processReply;
+export 'package:frugal/src/frugal/f_generated.dart' show FGeneratedArgsResultBase;
+export 'package:frugal/src/frugal/f_packers.dart' show prepareMessage, processReply;

@@ -21,8 +21,7 @@ abstract class FAsyncTransport extends FTransport {
   Map<int, Completer<Uint8List>> _handlers = {};
 
   /// Instantiate an [FAsyncTransport].
-  FAsyncTransport({int? requestSizeLimit})
-      : super(requestSizeLimit: requestSizeLimit);
+  FAsyncTransport({int? requestSizeLimit}) : super(requestSizeLimit: requestSizeLimit);
 
   /// Flush the payload to the server. Implementations must be threadsafe.
   Future<Null> flush(Uint8List payload);
@@ -31,14 +30,13 @@ abstract class FAsyncTransport extends FTransport {
   Future<Null> oneway(FContext ctx, Uint8List payload) async {
     _preflightRequestCheck(payload);
     await flush(payload).timeout(ctx.timeout, onTimeout: () {
-      throw TTransportError(FrugalTTransportErrorType.TIMED_OUT,
-          'request timed out after ${ctx.timeout}');
+      throw TTransportError(FrugalTTransportErrorType.TIMED_OUT, 'request timed out after ${ctx.timeout}');
     });
   }
 
   @override
-  Future<TTransport> request(FContext? ctx, Uint8List? payload) async {
-    _preflightRequestCheck(payload as Uint8List);
+  Future<TTransport> request(FContext? ctx, Uint8List payload) async {
+    _preflightRequestCheck(payload);
 
     Completer<Uint8List> resultCompleter = Completer();
 
@@ -48,32 +46,28 @@ abstract class FAsyncTransport extends FTransport {
     _handlers[ctx!._opId] = resultCompleter;
     Completer<Uint8List> closedCompleter = Completer();
     StreamSubscription<Object?> closedSub = onClose.listen((_) {
-      closedCompleter
-          .completeError(TTransportError(FrugalTTransportErrorType.NOT_OPEN));
+      closedCompleter.completeError(TTransportError(FrugalTTransportErrorType.NOT_OPEN));
     });
 
     try {
       await flush(payload);
-      Future<Uint8List> resultFuture =
-          resultCompleter.future.timeout(ctx.timeout);
+      Future<Uint8List> resultFuture = resultCompleter.future.timeout(ctx.timeout);
 
       // Bail early if the transport is closed
-      Uint8List response =
-          await Future.any([resultFuture, closedCompleter.future]);
+      Uint8List response = await Future.any([resultFuture, closedCompleter.future]);
       return TMemoryTransport.fromUint8List(response);
     } on TimeoutException catch (_) {
-      throw TTransportError(FrugalTTransportErrorType.TIMED_OUT,
-          "request timed out after ${ctx.timeout}");
+      throw TTransportError(FrugalTTransportErrorType.TIMED_OUT, "request timed out after ${ctx.timeout}");
     } finally {
       _handlers.remove(ctx._opId);
 
       // don't wait until this is disposed to cancel these
       await closedSub.cancel();
       if (!closedCompleter.isCompleted) {
-        closedCompleter.complete();
+        closedCompleter.complete(Uint8List(0));
       }
       if (!resultCompleter.isCompleted) {
-        resultCompleter.complete();
+        resultCompleter.complete(Uint8List(0));
       }
     }
   }
@@ -100,8 +94,7 @@ abstract class FAsyncTransport extends FTransport {
     }
 
     if (handler.isCompleted) {
-      _log.severe(
-          "frugal: handler already called for message, dropping message");
+      _log.severe("frugal: handler already called for message, dropping message");
       return;
     }
     handler.complete(frame);

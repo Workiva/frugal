@@ -16,8 +16,7 @@ part of frugal.src.frugal;
 /// Processes a method invocation on a proxied method and returns the result.
 /// The arguments should match the arity of the proxied method, and have the
 /// same types. The first argument will always be the [FContext].
-typedef InvocationHandler = Future Function(
-    String serviceName, String methodName, List<Object> args);
+typedef InvocationHandler = Future Function(String serviceName, String methodName, List<Object> args);
 
 /// Implements interceptor logic around API calls. This can be used, for
 /// example, to implement retry policies on service calls, logging, telemetry,
@@ -35,8 +34,7 @@ class FMethod {
 
   /// Creates an [FMethod] with the given function, service name, and method
   /// name.
-  FMethod(dynamic f, String serviceName, String methodName,
-      List<Middleware>? middleware)
+  FMethod(dynamic f, String serviceName, String methodName, List<Middleware>? middleware)
       : _serviceName = serviceName,
         _methodName = methodName,
         _handler = _composeMiddleware(f, middleware);
@@ -48,10 +46,8 @@ class FMethod {
   }
 
   /// Applies the [Middleware] to the provided method.
-  static InvocationHandler _composeMiddleware(
-      dynamic f, List<Middleware>? middleware) {
-    InvocationHandler handler =
-        (String serviceName, String methodName, List<Object> args) {
+  static InvocationHandler _composeMiddleware(dynamic f, List<Middleware>? middleware) {
+    InvocationHandler handler = (String serviceName, String methodName, List<Object> args) {
       Future actual = Function.apply(f, args);
       return actual;
     };

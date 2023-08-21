@@ -13,8 +13,7 @@
 
 part of frugal.src.frugal;
 
-final TSerializer _serializer =
-    TSerializer(protocolFactory: TJsonProtocolFactory());
+final TSerializer _serializer = TSerializer(protocolFactory: TJsonProtocolFactory());
 
 /// Convert the given frugal object to string.
 String fObjToJson(Object obj) {

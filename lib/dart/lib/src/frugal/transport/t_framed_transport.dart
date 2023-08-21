@@ -93,8 +93,7 @@ class _TFramedTransport extends TTransport with Disposable {
   /// Direct reading is not allowed. To consume read data listen to [onFrame].
   @override
   int read(Uint8List buffer, int offset, int length) {
-    throw TTransportError(FrugalTTransportErrorType.UNKNOWN,
-        'frugal: cannot read directly from _TFramedSocket.');
+    throw TTransportError(FrugalTTransportErrorType.UNKNOWN, 'frugal: cannot read directly from _TFramedSocket.');
   }
 
   /// Handler for messages received on the [TSocket].
@@ -118,19 +117,16 @@ class _TFramedTransport extends TTransport with Disposable {
 
     if (_frameSize! < 0) {
       // TODO: Put this error on an error stream and bubble it up.
-      throw TTransportError(FrugalTTransportErrorType.UNKNOWN,
-          'Read a negative frame size: $_frameSize');
+      throw TTransportError(FrugalTTransportErrorType.UNKNOWN, 'Read a negative frame size: $_frameSize');
     }
 
     // Grab up to the frame size in bytes
-    var bytesToGet =
-        min(_frameSize! - _readBuffer.length, list.length - offset);
+    var bytesToGet = min(_frameSize! - _readBuffer.length, list.length - offset);
     _readBuffer.addAll(list.getRange(offset, offset + bytesToGet));
 
     // Have an entire frame. Fire it off and reset.
     if (_readBuffer.length == _frameSize) {
-      _frameStream
-          .add(_FrameWrapper(Uint8List.fromList(_readBuffer), DateTime.now()));
+      _frameStream.add(_FrameWrapper(Uint8List.fromList(_readBuffer), DateTime.now()));
       _readBuffer.clear();
       _frameSize = null;
     }

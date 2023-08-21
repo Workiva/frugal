@@ -161,6 +161,5 @@ class FContext {
     return UnmodifiableMapView(_responseHeaders);
   }
 
-  static String _generateCorrelationId() =>
-      Uuid().v4().toString().replaceAll('-', '');
+  static String _generateCorrelationId() => Uuid().v4().toString().replaceAll('-', '');
 }

@@ -35,8 +35,7 @@ void processReply(
     final error = TApplicationError.read(iprot);
     iprot.readMessageEnd();
     if (error.type == FrugalTTransportErrorType.REQUEST_TOO_LARGE) {
-      throw TTransportError(
-          FrugalTTransportErrorType.RESPONSE_TOO_LARGE, error.message);
+      throw TTransportError(FrugalTTransportErrorType.RESPONSE_TOO_LARGE, error.message);
     }
     throw error;
   }

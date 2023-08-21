@@ -48,8 +48,7 @@ class FByteBuffer {
     return n;
   }
 
-  int _transfer(Uint8List source, Uint8List dest, int sourceOffset,
-      int destOffset, int length) {
+  int _transfer(Uint8List source, Uint8List dest, int sourceOffset, int destOffset, int length) {
     // Can write at most what's left destination buffer
     var bytesInDest = dest.length - destOffset;
     var amtToCopy = length > bytesInDest ? bytesInDest : length;

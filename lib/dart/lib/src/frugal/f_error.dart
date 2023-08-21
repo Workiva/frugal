@@ -23,8 +23,7 @@ class FrugalTApplicationErrorType extends TApplicationErrorType {
   static const int UNKNOWN_METHOD = TApplicationErrorType.UNKNOWN_METHOD;
 
   /// Inherited from thrift.
-  static const int INVALID_MESSAGE_TYPE =
-      TApplicationErrorType.INVALID_MESSAGE_TYPE;
+  static const int INVALID_MESSAGE_TYPE = TApplicationErrorType.INVALID_MESSAGE_TYPE;
 
   /// Inherited from thrift.
   static const int WRONG_METHOD_NAME = TApplicationErrorType.WRONG_METHOD_NAME;
@@ -48,8 +47,7 @@ class FrugalTApplicationErrorType extends TApplicationErrorType {
   static const int INVALID_PROTOCOL = TApplicationErrorType.INVALID_PROTOCOL;
 
   /// Inherited from thrift.
-  static const int UNSUPPORTED_CLIENT_TYPE =
-      TApplicationErrorType.UNSUPPORTED_CLIENT_TYPE;
+  static const int UNSUPPORTED_CLIENT_TYPE = TApplicationErrorType.UNSUPPORTED_CLIENT_TYPE;
 
   /// Indicates the response was too large for the transport.
   static const int RESPONSE_TOO_LARGE = 100;

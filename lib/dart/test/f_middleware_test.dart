@@ -1,7 +1,7 @@
-import "dart:async";
+import 'dart:async';
 
-import "package:frugal/frugal.dart";
-import "package:test/test.dart";
+import 'package:frugal/frugal.dart';
+import 'package:test/test.dart';
 
 /// Test class.
 class MiddlewareTestingService {
@@ -42,8 +42,7 @@ void main() {
 
   test('no middleware', () async {
     MiddlewareTestingService service = MiddlewareTestingService();
-    FMethod method = FMethod(service.handleSomething,
-        'MiddlewareTestingService', 'handleSomething', []);
+    FMethod method = FMethod(service.handleSomething, 'MiddlewareTestingService', 'handleSomething', []);
     expect(await method([3, 64, 'foo']), equals(67));
     expect(service.str, equals('foo'));
   });
@@ -55,11 +54,8 @@ void main() {
     MiddlewareTestingService service = MiddlewareTestingService();
     Middleware middleware1 = newMiddleware(mds1);
     Middleware middleware2 = newMiddleware(mds2);
-    FMethod method = FMethod(
-        service.handleSomething,
-        'MiddlewareTestingService',
-        'handleSomething',
-        [middleware1, middleware2]);
+    FMethod method =
+        FMethod(service.handleSomething, 'MiddlewareTestingService', 'handleSomething', [middleware1, middleware2]);
     expect(await method([3, 64, 'foo']), equals(69));
     expect(mds1.arg, equals(4));
     expect(mds2.arg, equals(3));
@@ -72,14 +68,12 @@ void main() {
   group('msgDebugMiddleware', () {
     test('Prints method, args, and return value', () async {
       bool handlerRan = false;
-      InvocationHandler handler =
-          (String serviceName, String methodName, List<Object> args) {
+      InvocationHandler handler = (String serviceName, String methodName, List<Object> args) {
         handlerRan = true;
         print('hello world');
         return Future.value({});
       };
-      await debugMiddleware(handler)(
-          'Service', 'method', [FContext(correlationId: 'cid'), 1]);
+      await debugMiddleware(handler)('Service', 'method', [FContext(correlationId: 'cid'), 1]);
       // It would be nice to expect that print ...hello world... was called, but that does not seem possible
       // Next best thing is to just see that the handler was called without throwing an error
       expect(handlerRan, true);

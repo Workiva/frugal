@@ -1,8 +1,9 @@
-import "dart:typed_data";
-import "package:test/test.dart";
-import "package:thrift/thrift.dart";
+import 'dart:typed_data';
 
-import "../../lib/src/frugal.dart";
+import 'package:test/test.dart';
+import 'package:thrift/thrift.dart';
+
+import '../../lib/src/frugal.dart';
 
 var _headers = {"foo": "bar", "blah": "baz"};
 var _list = [
@@ -53,8 +54,7 @@ void main() {
   test("read throws error for unsupported version", () {
     var encodedHeaders = Uint8List.fromList([0x01]);
     var transport = TMemoryTransport.fromUint8List(encodedHeaders);
-    expect(
-        () => Headers.read(transport), throwsA(isInstanceOf<TProtocolError>()));
+    expect(() => Headers.read(transport), throwsA(isInstanceOf<TProtocolError>()));
   });
 
   test("decodeFromFrame decodes headers from a fixed frame", () {
@@ -92,13 +92,11 @@ void main() {
   });
 
   test("decodFromFrame throws error for bad frame", () {
-    expect(() => Headers.decodeFromFrame(Uint8List(3)),
-        throwsA(isInstanceOf<TProtocolError>()));
+    expect(() => Headers.decodeFromFrame(Uint8List(3)), throwsA(isInstanceOf<TProtocolError>()));
   });
 
   test("decodeHeadersFromeFrame throws error for unsupported version", () {
     var encodedHeaders = Uint8List.fromList([0x01, 0, 0, 0, 0]);
-    expect(() => Headers.decodeFromFrame(encodedHeaders),
-        throwsA(isInstanceOf<TProtocolError>()));
+    expect(() => Headers.decodeFromFrame(encodedHeaders), throwsA(isInstanceOf<TProtocolError>()));
   });
 }
