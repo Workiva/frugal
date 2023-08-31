@@ -9,7 +9,8 @@ dev_dependencies:
   test: ^1.15.7
 dependency_overrides:
   frugal:
-    path:  ../../../../lib/dart
-
-environment:
+    git:
+      url: git@github.com:Workiva/frugal.git
+      ref: FEDX-142
+      path: lib/dartenvironment:
   sdk: '>=2.11.0 <3.0.0'
