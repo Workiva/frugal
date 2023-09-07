@@ -1,4 +1,4 @@
 six>=1.10.0,<2
-thrift==0.14.0
+thrift==0.14.1
 requests>=2.12.5,<3
 urllib3>=1.26.2,<2
