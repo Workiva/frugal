@@ -28,14 +28,14 @@ class TestSimpleServer(unittest.TestCase):
         mock_processor = mock.Mock()
         processor_factory.get_processor.return_value = mock_processor
         proto_factory = FProtocolFactory(TJSONProtocolFactory())
-        server_trans = TServerSocket(host='localhost', port=5536)
+        server_trans = TServerSocket(host='localhost', port=5592)
         server = FSimpleServer(processor_factory, server_trans, proto_factory)
 
         thread = Thread(target=lambda: server.serve())
         thread.start()
         time.sleep(0.1)
 
-        transport = TSocket(host='localhost', port=5536)
+        transport = TSocket(host='localhost', port=5592)
         transport.open()
         transport.write(bytearray([0, 0, 0, 3, 1, 2, 3]))
         transport.flush()
