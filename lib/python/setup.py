@@ -35,7 +35,7 @@ setup(
             'nats-py>=2,<3',
             'async-timeout>=4.0.0a3,<5.0'
         ],
-        'gae': ['WebTest==2.0.35',
-                'webapp2==2.5.2',],
+        'gae': ['WebTest==2.0.35', 
+                'webapp2==2.5.2'],
     }
 )
