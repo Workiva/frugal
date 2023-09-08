@@ -25,7 +25,6 @@ setup(
         'six>=1.10.0,<2',
         'thrift==0.16.0',
         'requests>=2.12.5,<3',
-        'urllib3>=1.26.2,<2',
     ],
     extras_require={
         'tornado': ['nats-client==0.8.4'],
