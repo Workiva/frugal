@@ -54,14 +54,9 @@ def check_for_failure(actual, expected):
     # TApplicationException doesn't implement __eq__ operator
     if isinstance(expected, TApplicationException):
         try:
-            print(actual)
-            # Py2 and Py3 versions of thrift slightly differ in how the attribute is assigned...
-            if sys.version_info[0] == 3 and actual.message.find(expected.message) == -1 or actual.type != expected.type:
-                failed = True
-            if sys.version_info[0] == 2 and actual.message.find(expected.message) == -1 or actual.type != expected.type:
+            if actual.message.find(expected.message) == -1 or actual.type != expected.type:
                 failed = True
         except Exception:
-            print("catch block")
             failed = True
     elif isinstance(expected, TTransportException):
         if not isinstance(actual, TTransportException):

@@ -58,7 +58,7 @@ def main():
     elif args.transport_type == HTTP_NAME:
         # Set request and response capacity to 1mb
         max_size = 1048576
-        transport = FHttpTransport("http://127.0.0.1:" + str(args.port),
+        transport = FHttpTransport("http://localhost:" + str(args.port),
                                    request_capacity=max_size,
                                    response_capacity=max_size)
     else:
