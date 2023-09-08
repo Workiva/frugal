@@ -30,7 +30,7 @@ def main():
     if args.transport_type == "http":
         # Set request and response capacity to 1mb
         max_size = 1048576
-        transport = THttpTransport("http://localhost:" + str(args.port),
+        transport = THttpTransport("http://127.0.0.1:" + str(args.port),
                                    request_capacity=max_size,
                                    response_capacity=max_size)
     else:
