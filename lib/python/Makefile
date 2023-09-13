@@ -47,13 +47,13 @@ unit-py2:
 	nosetests $(EXCLUDE_AIO) $(LEVEL) $(COVER_PY2)
 
 unit-py3:
-	pytest --ignore=messaging_sdk/tornado --ignore=messaging_sdk/tests/tornado --ignore=messaging_sdk/gae --ignore=messaging_sdk/tests/gae
+	pytest --ignore=frugal/tests/tornado --ignore=frugal/tests/gae
 
 xunit-py2:
 	nosetests $(EXCLUDE_AIO) $(LEVEL) $(COVER_PY2) --with-xunit --xunit-file=unit_tests_py2.xml
 
 xunit-py3:
-	pytest --ignore=messaging_sdk/tornado --ignore=messaging_sdk/tests/tornado --ignore=messaging_sdk/gae --ignore=messaging_sdk/tests/gae --junitxml=unit_tests.xml
+	pytest --ignore=frugal/tests/tornado --ignore=frugal/tests/gae --junitxml=unit_tests.xml
 
 xunit-std-py2:
 
