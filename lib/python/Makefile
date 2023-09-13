@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 PYTHON := python
 PIP := pip
+PIP3 := pip3
 EXCLUDE_GAE := --exclude-dir=frugal/gae --exclude-dir=frugal/tests/gae
 EXCLUDE_TORNADO := --exclude-dir=frugal/tornado --exclude-dir=frugal/tests/tornado
 EXCLUDE_AIO := --exclude-dir=frugal/aio --exclude-dir=frugal/tests/aio
@@ -23,16 +24,16 @@ deps-py2:
 	$(PIP) install -Ur ../python2/requirements_python_2.txt
 
 deps-py3:
-	$(PIP) install -Ur requirements_python_3.txt
+	$(PIP3) install -Ur requirements_python_3.txt
 	
 deps-tornado:
-	$(PIP) install -Ur requirements_dev_tornado.txt
+	$(PIP3) install -Ur requirements_dev_tornado.txt
 
 deps-gae:
-	$(PIP) install -Ur requirements_dev_gae.txt
+	$(PIP3) install -Ur requirements_dev_gae.txt
 
 deps-asyncio:
-	$(PIP) install -Ur requirements_dev_asyncio.txt
+	$(PIP3) install -Ur requirements_dev_asyncio.txt
 
 sniffer:
 	sniffer -x--with-doctest -x--logging-level=ERROR -x--with-coverage -x--cover-package=frugal
