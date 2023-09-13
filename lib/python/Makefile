@@ -27,10 +27,10 @@ deps-py3:
 	$(PIP3) install -Ur requirements_python_3.txt
 	
 deps-tornado:
-	$(PIP3) install -Ur requirements_dev_tornado.txt
+	$(PIP) install -Ur requirements_dev_tornado.txt
 
 deps-gae:
-	$(PIP3) install -Ur requirements_dev_gae.txt
+	$(PIP) install -Ur requirements_dev_gae.txt
 
 deps-asyncio:
 	$(PIP3) install -Ur requirements_dev_asyncio.txt
