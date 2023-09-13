@@ -33,7 +33,7 @@ deps-gae:
 	$(PIP) install -Ur requirements_dev_gae.txt
 
 deps-asyncio:
-	$(PIP3) install -Ur requirements_dev_asyncio.txt
+	$(PIP) install -Ur requirements_dev_asyncio.txt
 
 sniffer:
 	sniffer -x--with-doctest -x--logging-level=ERROR -x--with-coverage -x--cover-package=frugal
