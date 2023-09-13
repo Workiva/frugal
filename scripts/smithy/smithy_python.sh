@@ -2,12 +2,12 @@
 set -e
 
 # Python
-virtualenv -p /usr/bin/python /tmp/frugal
+virtualenv -p /usr/bin/python2 /tmp/frugal
 source /tmp/frugal/bin/activate
 pip install -U pip setuptools==39.0.1
 cd $FRUGAL_HOME/lib/python
 make deps-tornado
-#all dependent packages that are tied to the python2 environment can be refernced here
+#all dependent packages that are tied to the python2 environment can be referenced here
 make deps-py2
 
 make deps-gae
@@ -19,7 +19,7 @@ pip freeze > $FRUGAL_HOME/python2_pip_deps.txt
 make flake8-py2
 deactivate
 
-virtualenv -p /usr/bin/python3 /tmp/frugal-py3
+virtualenv -p /usr/bin/python /tmp/frugal-py3
 source /tmp/frugal-py3/bin/activate
 pip install -U pip setuptools==39.0.1 importlib-metadata==4.13.0
 cd $FRUGAL_HOME/lib/python
