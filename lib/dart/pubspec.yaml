@@ -19,3 +19,6 @@ homepage: https://github.com/Workiva/frugal/lib/dart
 name: frugal
 publish_to: https://pub.workiva.org
 version: 3.17.0
+
+dependency_overrides:
+  mockito: ^5.3.2
