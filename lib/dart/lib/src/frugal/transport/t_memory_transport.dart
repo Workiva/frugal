@@ -20,7 +20,7 @@ class TMemoryTransport extends TTransport {
   final FByteBuffer _buff;
 
   /// Create a new [TMemoryTransport] instance with the optional size capacity.
-  TMemoryTransport([int capacity])
+  TMemoryTransport([int? capacity])
       : _buff = FByteBuffer(capacity ?? _defaultBufferLength);
 
   /// Create a new [TMemoryTransport] instance from the given buffer.

@@ -28,15 +28,15 @@ class _Edge implements TBase {
   static final TStruct _STRUCT_DESC = TStruct("Edge");
   static final TField _LABEL_FIELD_DESC = TField("label", TType.STRING, 1);
 
-  String _label;
+  String? _label;
   static const int LABEL = 1;
 
   Edge() {}
 
   // label
-  String get label => this._label;
+  String? get label => this._label;
 
-  set label(String label) {
+  set label(String? label) {
     this._label = label;
   }
 
@@ -61,7 +61,7 @@ class _Edge implements TBase {
         if (value == null) {
           unsetLabel();
         } else {
-          this.label = value;
+          this.label = value as String?;
         }
         break;
       default:

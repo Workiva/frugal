@@ -29,27 +29,27 @@ typedef Middleware = InvocationHandler Function(InvocationHandler handler);
 /// Contains an [InvocationHandler] used to proxy the given service method
 /// This should only be used by generated code.
 class FMethod {
-  String _serviceName;
-  String _methodName;
-  InvocationHandler _handler;
+  final String _serviceName;
+  final String _methodName;
+  final InvocationHandler _handler;
 
   /// Creates an [FMethod] with the given function, service name, and method
   /// name.
   FMethod(dynamic f, String serviceName, String methodName,
-      List<Middleware> middleware) {
-    this._serviceName = serviceName;
-    this._methodName = methodName;
-    this._handler = _composeMiddleware(f, middleware);
-  }
+      List<Middleware>? middleware)
+      : _serviceName = serviceName,
+        _methodName = methodName,
+        _handler = _composeMiddleware(f, middleware);
 
   /// Invokes the proxied [InvocationHandler] with the given arguments and
   /// returns the results.
   Future call(List<Object> args) {
-    return this._handler(this._serviceName, this._methodName, args);
+    return _handler(_serviceName, _methodName, args);
   }
 
   /// Applies the [Middleware] to the provided method.
-  InvocationHandler _composeMiddleware(dynamic f, List<Middleware> middleware) {
+  static InvocationHandler _composeMiddleware(
+      dynamic f, List<Middleware>? middleware) {
     InvocationHandler handler =
         (String serviceName, String methodName, List<Object> args) {
       Future actual = Function.apply(f, args);

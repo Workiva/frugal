@@ -7,9 +7,9 @@ tar -C lib/dart -czf $FRUGAL_HOME/frugal.pub.tgz .
 
 # Compile library code
 cd $FRUGAL_HOME/lib/dart
-timeout 5m pub get
+timeout 5m dart pub get
 
 # Run the tests
-pub run dart_dev test
+dart test
 
-pub run dart_dev format --check
+dart format --set-exit-if-changed -o none lib test

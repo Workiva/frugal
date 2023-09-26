@@ -78,6 +78,7 @@ var Languages = LanguageOptions{
 		"use_int64":          "Use fixnum.Int64 for i64 fields",
 		"use_null_for_unset": "Use null for unset fields, which disallows null-but-set fields",
 		"use_vendor":         "Use specified import references for vendored includes and do not generate code for them",
+		"nullsafe":           "Generate nullsafe Dart code",
 	},
 	"py": Options{
 		"tornado":        "Generate code for use with Tornado (compatible with Python 2.7)",

@@ -72,6 +72,43 @@ func TestValidDartFrugalCompiler(t *testing.T) {
 	suite.Run(t, options)
 }
 
+func TestValidDartNullsafe(t *testing.T) {
+	options := compiler.Options{
+		File:    frugalGenFile,
+		Gen:     "dart:nullsafe",
+		Out:     outputDir,
+		Delim:   delim,
+		Recurse: true,
+	}
+	suite := ComparisonList{
+		{"dart.nullsafe/variety/f_awesome_exception.dart", "variety/lib/src/f_awesome_exception.dart"},
+		{"dart.nullsafe/variety/f_event.dart", "variety/lib/src/f_event.dart"},
+		{"dart.nullsafe/variety/f_event_wrapper.dart", "variety/lib/src/f_event_wrapper.dart"},
+		{"dart.nullsafe/variety/f_its_an_enum.dart", "variety/lib/src/f_its_an_enum.dart"},
+		{"dart.nullsafe/variety/f_test_base.dart", "variety/lib/src/f_test_base.dart"},
+		{"dart.nullsafe/variety/f_testing_defaults.dart", "variety/lib/src/f_testing_defaults.dart"},
+		{"dart.nullsafe/variety/f_testing_unions.dart", "variety/lib/src/f_testing_unions.dart"},
+		{"dart.nullsafe/variety/f_health_condition.dart", "variety/lib/src/f_health_condition.dart"},
+		{"dart.nullsafe/variety/f_test_lowercase.dart", "variety/lib/src/f_test_lowercase.dart"},
+		{"dart.nullsafe/variety/f_foo_args.dart", "variety/lib/src/f_foo_args.dart"},
+		{"dart.nullsafe/variety/f_variety_constants.dart", "variety/lib/src/f_variety_constants.dart"},
+		{"dart.nullsafe/variety/f_events_scope.dart", "variety/lib/src/f_events_scope.dart"},
+		{"dart.nullsafe/variety/f_foo_service.dart", "variety/lib/src/f_foo_service.dart"},
+		{"dart.nullsafe/variety/variety.dart", "variety/lib/variety.dart"},
+		{"dart.nullsafe/variety/pubspec.yaml", "variety/pubspec.yaml"},
+
+		{"dart.nullsafe/actual_base/f_actual_base_dart_constants.dart", "actual_base_dart/lib/src/f_actual_base_dart_constants.dart"},
+		{"dart.nullsafe/actual_base/f_api_exception.dart", "actual_base_dart/lib/src/f_api_exception.dart"},
+		{"dart.nullsafe/actual_base/f_thing.dart", "actual_base_dart/lib/src/f_thing.dart"},
+		{"dart.nullsafe/actual_base/f_base_health_condition.dart", "actual_base_dart/lib/src/f_base_health_condition.dart"},
+		{"dart.nullsafe/actual_base/f_base_foo_service.dart", "actual_base_dart/lib/src/f_base_foo_service.dart"},
+		{"dart.nullsafe/actual_base/f_nested_thing.dart", "actual_base_dart/lib/src/f_nested_thing.dart"},
+		{"dart.nullsafe/actual_base/actual_base_dart.dart", "actual_base_dart/lib/actual_base_dart.dart"},
+		{"dart.nullsafe/actual_base/pubspec.yaml", "actual_base_dart/pubspec.yaml"},
+	}
+	suite.Run(t, options)
+}
+
 func TestValidDartUseInt64(t *testing.T) {
 	options := compiler.Options{
 		File:    frugalGenFile,

@@ -31,14 +31,14 @@ class MonitorRunner extends Disposable {
   int _attempts = 0;
   int _wait = 0;
   bool _failed = false;
-  Completer _reopenCompleter;
-  Timer _reopenTimer;
+  Completer? _reopenCompleter;
+  Timer? _reopenTimer;
 
   /// Indicates if the monitor is waiting to run or gave up.
   bool get _sleeping => (_reopenTimer != null || _failed);
 
   /// Handle close event.
-  Future onClose(Object cause) async {
+  Future onClose(Object? cause) async {
     if (cause == null) {
       _handleCleanClose();
     } else {
@@ -75,7 +75,7 @@ class MonitorRunner extends Disposable {
 
   Future _handleUncleanClose(cause) async {
     if (_reopenCompleter != null) {
-      // TODO: Should we reset _attemps/_wait? Or does this indicate something
+      // TODO: Should we reset _attemps/_wait Or does this indicate something
       // bigger is wrong?
       _log.log(Level.WARNING, 'received multiple unclean close calls!');
       return;
@@ -90,7 +90,7 @@ class MonitorRunner extends Disposable {
     }
     _reopenCompleter = Completer();
     _startReopenTimer();
-    await _reopenCompleter.future;
+    await _reopenCompleter!.future;
   }
 
   void _startReopenTimer() {
@@ -107,7 +107,7 @@ class MonitorRunner extends Disposable {
     } catch (e) {
       _log.log(Level.WARNING, 'failed to reopen transport due to: $e');
       _attempts++;
-      _wait = _monitor.onReopenFailed(_attempts, _wait);
+      _wait = _monitor.onReopenFailed(_attempts, _wait) ?? -1;
       if (_wait >= 0) {
         _startReopenTimer();
         return;

@@ -25,7 +25,7 @@ class TMemoryOutputBuffer extends TTransport {
   ///
   /// [size] is size limit of the buffer. Note: If [size] is non-positive,
   /// no limit will be enforced on the buffer.
-  TMemoryOutputBuffer([int size]) : _limit = size ?? 0;
+  TMemoryOutputBuffer([int? size]) : _limit = size ?? 0;
 
   @override
   bool get isOpen => true;

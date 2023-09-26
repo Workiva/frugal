@@ -35,7 +35,7 @@ abstract class FTransportMonitor extends Disposable {
   /// Called when an attempt to reopen the transport fails. Returns the number
   /// of milliseconds to wait before attempting to reopen the transport. A
   /// negative value means the transport will not attempt to be reopened.
-  int onReopenFailed(int prevAttempts, int prevWait);
+  int? onReopenFailed(int? prevAttempts, int? prevWait);
 
   /// Called after the transport has been successfully reopened.
   void onReopenSucceeded();

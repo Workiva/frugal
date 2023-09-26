@@ -51,12 +51,12 @@ class _TFramedTransport extends TTransport with Disposable {
   final List<int> _writeBuffer = [];
   final List<int> _readBuffer = [];
   final List<int> _readHeaderBytes = [];
-  int _frameSize;
+  int? _frameSize;
   bool _isOpen = false;
 
   StreamController<_FrameWrapper> _frameStream = StreamController();
   final Uint8List _headerBytes = Uint8List(_headerByteCount);
-  StreamSubscription _messageSub;
+  StreamSubscription? _messageSub;
 
   void _reset({bool isOpen = false}) {
     _isOpen = isOpen;
@@ -116,14 +116,15 @@ class _TFramedTransport extends TTransport with Disposable {
       offset += headerBytesToGet;
     }
 
-    if (_frameSize < 0) {
+    if (_frameSize! < 0) {
       // TODO: Put this error on an error stream and bubble it up.
       throw TTransportError(FrugalTTransportErrorType.UNKNOWN,
           'Read a negative frame size: $_frameSize');
     }
 
     // Grab up to the frame size in bytes
-    var bytesToGet = min(_frameSize - _readBuffer.length, list.length - offset);
+    var bytesToGet =
+        min(_frameSize! - _readBuffer.length, list.length - offset);
     _readBuffer.addAll(list.getRange(offset, offset + bytesToGet));
 
     // Have an entire frame. Fire it off and reset.

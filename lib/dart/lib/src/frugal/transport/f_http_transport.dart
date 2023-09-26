@@ -36,7 +36,7 @@ class FHttpTransport extends FTransport {
   /// No limit will be enforced if set to a non-positive value (i.e. <1).
   final int responseSizeLimit;
 
-  Map<String, String> _headers;
+  final Map<String, String> _headers;
 
   /// Function that accepts an FContext that should return a Map<String, String>
   /// of headers to be added to every request
@@ -58,21 +58,19 @@ class FHttpTransport extends FTransport {
   FHttpTransport(this.client, this.uri,
       {int requestSizeLimit = 0,
       this.responseSizeLimit = 0,
-      Map<String, String> additionalHeaders,
-      GetHeadersWithContext getRequestHeaders = null})
+      Map<String, String>? additionalHeaders,
+      GetHeadersWithContext? getRequestHeaders})
       : _getRequestHeaders = getRequestHeaders ?? ((_) => {}),
-        super(requestSizeLimit: requestSizeLimit) {
-    _headers = additionalHeaders ?? {};
-    // add and potentially overwrite with default headers
-    _headers.addAll({
-      'content-type': 'application/x-frugal',
-      'content-transfer-encoding': 'base64',
-      'accept': 'application/x-frugal'
-    });
-    if (responseSizeLimit > 0) {
-      _headers['x-frugal-payload-limit'] = responseSizeLimit.toString();
-    }
-  }
+        // Initialize the _headers field here
+        _headers = {
+          ...?additionalHeaders,
+          'content-type': 'application/x-frugal',
+          'content-transfer-encoding': 'base64',
+          'accept': 'application/x-frugal',
+          if (responseSizeLimit > 0)
+            'x-frugal-payload-limit': responseSizeLimit.toString(),
+        },
+        super(requestSizeLimit: requestSizeLimit);
 
   @override
   bool get isOpen => true;
@@ -81,7 +79,7 @@ class FHttpTransport extends FTransport {
   Future open() => Future.value();
 
   @override
-  Future close([Error error]) => Future.value();
+  Future close([Error? error]) => Future.value();
 
   @override
   Future<Null> oneway(FContext ctx, Uint8List payload) async {
@@ -89,7 +87,7 @@ class FHttpTransport extends FTransport {
   }
 
   @override
-  Future<TTransport> request(FContext ctx, Uint8List payload) async {
+  Future<TTransport?> request(FContext ctx, Uint8List payload) async {
     _preflightRequestCheck(payload);
 
     // append dynamic headers first
@@ -122,11 +120,11 @@ class FHttpTransport extends FTransport {
       if (ex.response == null) {
         throw TTransportError(FrugalTTransportErrorType.UNKNOWN, ex.message);
       }
-      if (ex.response.status == UNAUTHORIZED) {
+      if (ex.response?.status == UNAUTHORIZED) {
         throw TTransportError(FrugalTTransportErrorType.UNKNOWN,
             'Frugal http request failed - unauthorized ${ex.message}');
       }
-      if (ex.response.status == REQUEST_ENTITY_TOO_LARGE) {
+      if (ex.response?.status == REQUEST_ENTITY_TOO_LARGE) {
         throw TTransportError(FrugalTTransportErrorType.RESPONSE_TOO_LARGE);
       }
       throw TTransportError(FrugalTTransportErrorType.UNKNOWN, ex.message);

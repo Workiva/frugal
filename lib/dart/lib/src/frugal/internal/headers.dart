@@ -29,14 +29,14 @@ class Headers {
   static const _v0 = 0x00;
 
   /// Encode the headers
-  static Uint8List encode(Map<String, String> headers) {
+  static Uint8List encode(Map<String, String>? headers) {
     var size = 0;
     // Get total frame size headers
-    List<_Pair<List<int>, List<int>>> utf8Headers = List();
+    List<_Pair<List<int>, List<int>>> utf8Headers = [];
     if (headers != null && headers.length > 0) {
       for (var name in headers.keys) {
         List<int> keyBytes = _encoder.convert(name);
-        List<int> valueBytes = _encoder.convert(headers[name]);
+        List<int> valueBytes = _encoder.convert(headers[name]!);
         utf8Headers.add(_Pair(keyBytes, valueBytes));
 
         // 4 bytes each for name, value length

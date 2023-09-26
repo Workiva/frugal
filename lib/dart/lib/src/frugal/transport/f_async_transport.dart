@@ -17,12 +17,12 @@ part of frugal.src.frugal;
 /// can implement. Implementations need only implement [flush] to send request
 /// data and call [handleResponse] when asynchronous responses are received.
 abstract class FAsyncTransport extends FTransport {
+  /// Instantiate an [FAsyncTransport].
+  FAsyncTransport({int? requestSizeLimit})
+      : super(requestSizeLimit: requestSizeLimit);
+
   final Logger _log = Logger('FAsyncTransport');
   Map<int, Completer<Uint8List>> _handlers = {};
-
-  /// Instantiate an [FAsyncTransport].
-  FAsyncTransport({int requestSizeLimit})
-      : super(requestSizeLimit: requestSizeLimit);
 
   /// Flush the payload to the server. Implementations must be threadsafe.
   Future<Null> flush(Uint8List payload);
@@ -47,7 +47,7 @@ abstract class FAsyncTransport extends FTransport {
     }
     _handlers[ctx._opId] = resultCompleter;
     Completer<Uint8List> closedCompleter = Completer();
-    StreamSubscription<Object> closedSub = onClose.listen((_) {
+    StreamSubscription<Object?> closedSub = onClose.listen((_) {
       closedCompleter
           .completeError(TTransportError(FrugalTTransportErrorType.NOT_OPEN));
     });
@@ -70,10 +70,10 @@ abstract class FAsyncTransport extends FTransport {
       // don't wait until this is disposed to cancel these
       await closedSub.cancel();
       if (!closedCompleter.isCompleted) {
-        closedCompleter.complete();
+        closedCompleter.complete(Uint8List(0));
       }
       if (!resultCompleter.isCompleted) {
-        resultCompleter.complete();
+        resultCompleter.complete(Uint8List(0));
       }
     }
   }
@@ -85,13 +85,13 @@ abstract class FAsyncTransport extends FTransport {
     var headers = Headers.decodeFromFrame(frame);
     var opId;
     try {
-      opId = int.parse(headers[_opidHeader]);
+      opId = int.parse(headers[_opidHeader] ?? '');
     } catch (e) {
       _log.severe("frugal: invalid protocol frame: op id not a uint64", e);
       return;
     }
 
-    Completer<Uint8List> handler = _handlers[opId];
+    Completer<Uint8List>? handler = _handlers[opId];
     if (handler == null) {
       // This is only a warning since it can routinely happen due to network
       // timeouts / bad network weather

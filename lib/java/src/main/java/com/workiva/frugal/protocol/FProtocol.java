@@ -14,6 +14,7 @@
 package com.workiva.frugal.protocol;
 
 import com.workiva.frugal.FContext;
+import java.util.UUID;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TField;
 import org.apache.thrift.protocol.TList;
@@ -215,6 +216,11 @@ public class FProtocol extends TProtocol {
     }
 
     @Override
+    public void writeUuid(UUID uuid) throws TException {
+        wrapped.writeUuid(uuid);
+    }
+
+    @Override
     public void writeDouble(double v) throws TException {
         wrapped.writeDouble(v);
     }
@@ -312,6 +318,11 @@ public class FProtocol extends TProtocol {
     @Override
     public long readI64() throws TException {
         return wrapped.readI64();
+    }
+
+    @Override
+    public UUID readUuid() throws TException {
+        return wrapped.readUuid();
     }
 
     @Override

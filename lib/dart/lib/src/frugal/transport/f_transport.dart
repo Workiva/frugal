@@ -19,12 +19,12 @@ part of frugal.src.frugal;
 /// transport has a simple [oneway] and [request] methods that send framed
 /// frugal requests.
 abstract class FTransport extends Disposable {
-  MonitorRunner _monitor;
+  MonitorRunner? _monitor;
   StreamController _closeController = StreamController.broadcast();
 
   /// Limits the size of requests to the server.
   /// No limit will be enforced if set to a non-positive value (i.e. <1).
-  final int requestSizeLimit;
+  final int? requestSizeLimit;
 
   /// Create an [FTransport] with the optional [requestSizeLimit].
   FTransport({this.requestSizeLimit}) {
@@ -32,13 +32,13 @@ abstract class FTransport extends Disposable {
   }
 
   /// Listen to close events on the transport.
-  Stream<Object> get onClose => _closeController.stream;
+  Stream<Object?> get onClose => _closeController.stream;
 
   /// Set an [FTransportMonitor] on the transport.
   @Deprecated('3.0.0')
   set monitor(FTransportMonitor monitor) {
     _monitor = MonitorRunner(monitor, this);
-    manageDisposable(_monitor);
+    manageDisposable(_monitor!);
   }
 
   /// Queries whether the transport is open.
@@ -50,12 +50,12 @@ abstract class FTransport extends Disposable {
   Future open();
 
   /// Closes the transport.
-  Future close([Error error]) => _signalClose(error);
+  Future close([Error? error]) => _signalClose(error);
 
   /// Send the given framed frugal payload over the transport and return a
   /// future containing the response. Throws [TTransportError] if problems
   /// are encountered with the request.
-  Future<TTransport> request(FContext ctx, Uint8List payload);
+  Future<TTransport?> request(FContext ctx, Uint8List payload);
 
   /// Send the given framed frugal payload over the transport and don't
   /// expect a response.
@@ -74,6 +74,7 @@ abstract class FTransport extends Disposable {
           FrugalTTransportErrorType.NOT_OPEN, 'transport not open');
     }
 
+    final requestSizeLimit = this.requestSizeLimit;
     if (requestSizeLimit != null &&
         requestSizeLimit > 0 &&
         payload.length > requestSizeLimit) {

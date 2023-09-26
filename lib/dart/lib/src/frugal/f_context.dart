@@ -49,43 +49,46 @@ final Duration _defaultTimeout = Duration(seconds: 5);
 class FContext {
   static int _globalOpId = 0;
 
-  Map<String, String> _requestHeaders;
-  Map<String, String> _responseHeaders;
+  final Map<String, String> _requestHeaders;
+  final Map<String, String> _responseHeaders;
 
   /// Create a new [FContext] with the optionally specified [correlationId].
-  FContext({String correlationId = ""}) {
+  FContext({String correlationId = ""})
+      : _requestHeaders = {},
+        _responseHeaders = {} {
     if (correlationId == "") {
       correlationId = _generateCorrelationId();
     }
     _globalOpId++;
-    _requestHeaders = {
-      _cidHeader: correlationId,
-      _opidHeader: _globalOpId.toString(),
-      _timeoutHeader: _defaultTimeout.inMilliseconds.toString(),
-    };
-    _responseHeaders = {};
+    _requestHeaders[_cidHeader] = correlationId;
+    _requestHeaders[_opidHeader] = _globalOpId.toString();
+    _requestHeaders[_timeoutHeader] = _defaultTimeout.inMilliseconds.toString();
   }
 
   /// Create a new [FContext] with the given request headers.
-  FContext.withRequestHeaders(Map<String, String> headers) {
-    if (!headers.containsKey(_cidHeader) || headers[_cidHeader] == "") {
-      headers[_cidHeader] = _generateCorrelationId();
+  FContext.withRequestHeaders(Map<String, String> headers)
+      : _requestHeaders = Map.from(headers),
+        _responseHeaders = {} {
+    if (!_requestHeaders.containsKey(_cidHeader) ||
+        _requestHeaders[_cidHeader] == "") {
+      _requestHeaders[_cidHeader] = _generateCorrelationId();
     }
-    if (!headers.containsKey(_opidHeader) || headers[_opidHeader] == "") {
+    if (!_requestHeaders.containsKey(_opidHeader) ||
+        _requestHeaders[_opidHeader] == "") {
       _globalOpId++;
-      headers[_opidHeader] = _globalOpId.toString();
+      _requestHeaders[_opidHeader] = _globalOpId.toString();
     }
-    if (!headers.containsKey(_timeoutHeader) || headers[_timeoutHeader] == "") {
-      headers[_timeoutHeader] = _defaultTimeout.inMilliseconds.toString();
+    if (!_requestHeaders.containsKey(_timeoutHeader) ||
+        _requestHeaders[_timeoutHeader] == "") {
+      _requestHeaders[_timeoutHeader] =
+          _defaultTimeout.inMilliseconds.toString();
     }
-    _requestHeaders = headers;
-    _responseHeaders = {};
   }
 
   /// The request timeout for any method call using this context.
   /// The default is 5 seconds.
   Duration get timeout {
-    return Duration(milliseconds: int.parse(_requestHeaders[_timeoutHeader]));
+    return Duration(milliseconds: int.parse(_requestHeaders[_timeoutHeader]!));
   }
 
   /// Set the request timeout for any method call using this context.
@@ -94,11 +97,11 @@ class FContext {
   }
 
   /// Correlation id for the context.
-  String get correlationId => _requestHeaders[_cidHeader];
+  String? get correlationId => _requestHeaders[_cidHeader];
 
   /// The operation id for the context.
   int get _opId {
-    var opIdStr = _requestHeaders[_opidHeader];
+    var opIdStr = _requestHeaders[_opidHeader]!;
     return int.parse(opIdStr);
   }
 
@@ -119,13 +122,11 @@ class FContext {
     if (headers == null || headers.length == 0) {
       return;
     }
-    for (var name in headers.keys) {
-      _requestHeaders[name] = headers[name];
-    }
+    _requestHeaders.addAll(headers);
   }
 
   /// Get the named request header.
-  String requestHeader(String name) {
+  String? requestHeader(String name) {
     return _requestHeaders[name];
   }
 
@@ -146,13 +147,11 @@ class FContext {
     if (headers == null || headers.length == 0) {
       return;
     }
-    for (var name in headers.keys) {
-      _responseHeaders[name] = headers[name];
-    }
+    _responseHeaders.addAll(headers);
   }
 
   /// Get the named response header.
-  String responseHeader(String name) {
+  String? responseHeader(String name) {
     return _responseHeaders[name];
   }
 

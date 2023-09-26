@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:typed_data' show Uint8List;
-
+import 'package:w_common/disposable.dart';
 import 'package:frugal/frugal.dart';
 import 'package:test/test.dart';
 import 'package:thrift/thrift.dart';
 import 'package:mockito/mockito.dart';
 import 'f_transport_test.dart' show MockTransportMonitor;
+import 'package:mockito/annotations.dart';
+import 'f_adapter_transport_test.mocks.dart';
 
 Uint8List mockFrame(FContext ctx, String message) {
   TMemoryOutputBuffer trans = TMemoryOutputBuffer();
@@ -15,25 +17,34 @@ Uint8List mockFrame(FContext ctx, String message) {
   return trans.writeBytes;
 }
 
+@GenerateNiceMocks([
+  MockSpec<TSocketTransport>(),
+  MockSpec<TSocket>(),
+  MockSpec<FTransportMonitor>(fallbackGenerators: {
+    #manageAndReturnTypedDisposable: shim_manageAndReturnTypedDisposable,
+  }),
+])
+T? shim_manageAndReturnTypedDisposable<T extends Disposable>(T? disposable) {}
+
 void main() {
   group('FAdapterTransport', () {
-    StreamController<TSocketState> stateStream;
-    StreamController<Object> errorStream;
-    StreamController<Uint8List> messageStream;
-    MockSocket socket;
-    MockSocketTransport socketTransport;
-    FAdapterTransport transport;
+    late StreamController<TSocketState> stateStream;
+    late StreamController<Object> errorStream;
+    late StreamController<Uint8List> messageStream;
+    late MockTSocket socket;
+    late MockTSocketTransport socketTransport;
+    late FAdapterTransport transport;
 
     setUp(() {
       stateStream = StreamController.broadcast();
       errorStream = StreamController.broadcast();
       messageStream = StreamController.broadcast();
 
-      socket = MockSocket();
+      socket = MockTSocket();
       when(socket.onState).thenAnswer((_) => stateStream.stream);
       when(socket.onError).thenAnswer((_) => errorStream.stream);
       when(socket.onMessage).thenAnswer((_) => messageStream.stream);
-      socketTransport = MockSocketTransport();
+      socketTransport = MockTSocketTransport();
       when(socketTransport.socket).thenAnswer((_) => socket);
       transport = FAdapterTransport(socketTransport);
     });
@@ -79,7 +90,10 @@ void main() {
 
     test('request transport not open', () async {
       try {
-        await transport.request(null, null);
+        FContext reqCtx = FContext();
+        var frame = mockFrame(reqCtx, "request");
+        var respFrame = mockFrame(reqCtx, "response");
+        await transport.request(reqCtx, respFrame);
         fail('Should have thrown an exception');
       } on TTransportError catch (e) {
         expect(e.type, FrugalTTransportErrorType.NOT_OPEN);
@@ -130,7 +144,7 @@ void main() {
       when(socket.isClosed).thenAnswer((_) => true);
       when(socket.open()).thenAnswer((_) => Future.value());
       await transport.open();
-      var monitor = MockTransportMonitor();
+      var monitor = MockFTransportMonitor();
       transport.monitor = monitor;
       expect(transport.isOpen, equals(true));
 
@@ -163,9 +177,3 @@ void main() {
     });
   });
 }
-
-/// Mock socket transport.
-class MockSocketTransport extends Mock implements TSocketTransport {}
-
-/// Mock socket.
-class MockSocket extends Mock implements TSocket {}
