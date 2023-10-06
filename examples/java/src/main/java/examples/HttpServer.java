@@ -33,7 +33,7 @@ public class HttpServer {
         // Create a new server processor.
         // Incoming requests to the server are passed to the processor.
         // Results from the processor are returned back to the client.
-        FStore.Processor processor = new FStore.Processor(new FStoreHandler(), new LoggingMiddleware());
+        FStore.Processor processor = new FStore.Processor(new FStoreHandler(), new ExceptionHandlerServerMiddleware());
 
         // Configure the server.
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);

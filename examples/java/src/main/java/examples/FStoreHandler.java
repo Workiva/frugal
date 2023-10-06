@@ -25,6 +25,12 @@ public class FStoreHandler implements FStore.Iface {
      */
     @Override
     public Album buyAlbum(FContext ctx, String ASIN, String acct) throws TException, PurchasingError {
+        // simulate server error
+        if (ThreadLocalRandom.current().nextInt(0, 3) == 2) {
+            System.out.println("Will throw");
+            throw new PurchasingError("Out of stock", (short) 402);
+        }
+
         Album album = new Album();
         album.setASIN(UUID.randomUUID().toString());
         album.setDuration(ThreadLocalRandom.current().nextDouble(MIN_DURATION, MAX_DURATION));
