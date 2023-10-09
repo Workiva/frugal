@@ -432,7 +432,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 	// Add ignores to make lints less noisy in dart consumers
 	ignores := "// ignore_for_file: unused_import\n"
 	ignores += "// ignore_for_file: unused_field\n"
-	
+
 	if _, err = file.WriteString(ignores); err != nil {
 		return err
 	}
@@ -687,7 +687,7 @@ func (g *Generator) GenerateStruct(s *parser.Struct) error {
 	// Add ignores to make lints less noisy in dart consumers
 	ignores := "// ignore_for_file: unused_import\n"
 	ignores += "// ignore_for_file: unused_field\n"
-	
+
 	if _, err = file.WriteString(ignores); err != nil {
 		return err
 	}
@@ -1390,7 +1390,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 			contents += tabtab + ind + "oprot.writeSetEnd();\n"
 		case "map":
 			keyEnumType := g.getEnumFromThriftType(underlyingType.KeyType)
-			
+
 			keyField := parser.FieldFromType(underlyingType.KeyType, "entry.key")
 			valField := parser.FieldFromType(underlyingType.ValueType, "entry.value")
 			contents += fmt.Sprintf(tabtab+ind+"oprot.writeMapBegin(thrift.TMap(%s, %s, %s.length));\n", keyEnumType, valEnumType, localVar)
@@ -2038,11 +2038,19 @@ func (g *Generator) generateClient(service *parser.Service) string {
 			"// Dart versions before 2.8.0 need this ignore to analyze properly.\n")
 		contents += fmt.Sprint("// ignore: private_collision_in_mixin_application\n")
 
-		contents += fmt.Sprintf("class %s extends %sClient with disposable.Disposable implements F%s {\n",
-			clientClassname, g.getServiceExtendsName(service), servTitle)
+		disposableExtensionStr := " with disposable.Disposable"
+		if g.genNullsafe {
+			disposableExtensionStr = ""
+		}
+		contents += fmt.Sprintf("class %s extends %sClient%s implements F%s {\n",
+			clientClassname, g.getServiceExtendsName(service), disposableExtensionStr, servTitle)
 	} else {
-		contents += fmt.Sprintf("class %s extends disposable.Disposable implements F%s {\n",
-			clientClassname, servTitle)
+		disposableExtensionStr := " extends disposable.Disposable"
+		if g.genNullsafe {
+			disposableExtensionStr = ""
+		}
+		contents += fmt.Sprintf("class %s%s implements F%s {\n",
+			clientClassname, disposableExtensionStr, servTitle)
 	}
 	contents += fmt.Sprintf(tab+"static final logging.Logger _frugalLog = logging.Logger('%s');\n", servTitle)
 

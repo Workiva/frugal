@@ -63,7 +63,7 @@ FFooClient fFooClientFactory(frugal.FServiceProvider provider, {List<frugal.Midd
 // The below ignore statement is only needed to workaround https://github.com/dart-lang/sdk/issues/29751, which is fixed on Dart 2.8.0 and later.
 // Dart versions before 2.8.0 need this ignore to analyze properly.
 // ignore: private_collision_in_mixin_application
-class FFooClient extends t_actual_base_dart.FBaseFooClient with disposable.Disposable implements FFoo {
+class FFooClient extends t_actual_base_dart.FBaseFooClient implements FFoo {
   static final logging.Logger _frugalLog = logging.Logger('Foo');
   Map<String, frugal.FMethod> _methods = {};
 
