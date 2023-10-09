@@ -2045,12 +2045,8 @@ func (g *Generator) generateClient(service *parser.Service) string {
 		contents += fmt.Sprintf("class %s extends %sClient%s implements F%s {\n",
 			clientClassname, g.getServiceExtendsName(service), disposableExtensionStr, servTitle)
 	} else {
-		disposableExtensionStr := " extends disposable.Disposable"
-		if g.genNullsafe {
-			disposableExtensionStr = ""
-		}
-		contents += fmt.Sprintf("class %s%s implements F%s {\n",
-			clientClassname, disposableExtensionStr, servTitle)
+		contents += fmt.Sprintf("class %s extends disposable.Disposable implements F%s {\n",
+        			clientClassname, servTitle)
 	}
 	contents += fmt.Sprintf(tab+"static final logging.Logger _frugalLog = logging.Logger('%s');\n", servTitle)
 
