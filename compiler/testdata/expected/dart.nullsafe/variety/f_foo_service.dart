@@ -418,7 +418,7 @@ class blah_args extends frugal.FGeneratedArgsResultBase {
     validate();
 
     oprot.writeStructBegin(_STRUCT_DESC);
-    final elem143 = num;
+    final elem143 = num!;
     oprot.writeFieldBegin(_NUM_FIELD_DESC);
     oprot.writeI32(elem143);
     oprot.writeFieldEnd();
@@ -509,7 +509,7 @@ class oneWay_args extends frugal.FGeneratedArgsResultBase {
     validate();
 
     oprot.writeStructBegin(_STRUCT_DESC);
-    final elem148 = id;
+    final elem148 = id!;
     oprot.writeFieldBegin(_ID_FIELD_DESC);
     oprot.writeI64(elem148);
     oprot.writeFieldEnd();
@@ -625,15 +625,15 @@ class param_modifiers_args extends frugal.FGeneratedArgsResultBase {
     validate();
 
     oprot.writeStructBegin(_STRUCT_DESC);
-    final elem153 = opt_num;
+    final elem153 = opt_num!;
     oprot.writeFieldBegin(_OPT_NUM_FIELD_DESC);
     oprot.writeI32(elem153);
     oprot.writeFieldEnd();
-    final elem154 = default_num;
+    final elem154 = default_num!;
     oprot.writeFieldBegin(_DEFAULT_NUM_FIELD_DESC);
     oprot.writeI32(elem154);
     oprot.writeFieldEnd();
-    final elem155 = req_num;
+    final elem155 = req_num!;
     oprot.writeFieldBegin(_REQ_NUM_FIELD_DESC);
     oprot.writeI32(elem155);
     oprot.writeFieldEnd();

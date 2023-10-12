@@ -432,7 +432,7 @@ func (g *Generator) GenerateConstantsContents(constants []*parser.Constant) erro
 	// Add ignores to make lints less noisy in dart consumers
 	ignores := "// ignore_for_file: unused_import\n"
 	ignores += "// ignore_for_file: unused_field\n"
-	
+
 	if _, err = file.WriteString(ignores); err != nil {
 		return err
 	}
@@ -687,7 +687,7 @@ func (g *Generator) GenerateStruct(s *parser.Struct) error {
 	// Add ignores to make lints less noisy in dart consumers
 	ignores := "// ignore_for_file: unused_import\n"
 	ignores += "// ignore_for_file: unused_field\n"
-	
+
 	if _, err = file.WriteString(ignores); err != nil {
 		return err
 	}
@@ -1257,7 +1257,6 @@ func (g *Generator) generateWrite(s *parser.Struct, kind structKind) string {
 
 		tmpElem := g.GetElem()
 		tmpField := parser.FieldFromType(field.Type, tmpElem)
-		contents += tabtab + fmt.Sprintf("final %s = %s;\n", tmpElem, fName)
 
 		var isSet bool
 		var isNull bool
@@ -1282,6 +1281,11 @@ func (g *Generator) generateWrite(s *parser.Struct, kind structKind) string {
 			isNull = !g.isDartPrimitive(g.Frugal.UnderlyingType(field.Type))
 		}
 
+		if isNull {
+			contents += tabtab + fmt.Sprintf("final %s = %s;\n", tmpElem, fName)
+		} else {
+			contents += tabtab + fmt.Sprintf("final %s = %s%s;\n", tmpElem, fName, g.notNullOperator)
+		}
 		ind := ""
 		if isSet || isNull {
 			ind = tab
@@ -1390,7 +1394,7 @@ func (g *Generator) generateWriteFieldRec(field *parser.Field, first bool, ind s
 			contents += tabtab + ind + "oprot.writeSetEnd();\n"
 		case "map":
 			keyEnumType := g.getEnumFromThriftType(underlyingType.KeyType)
-			
+
 			keyField := parser.FieldFromType(underlyingType.KeyType, "entry.key")
 			valField := parser.FieldFromType(underlyingType.ValueType, "entry.value")
 			contents += fmt.Sprintf(tabtab+ind+"oprot.writeMapBegin(thrift.TMap(%s, %s, %s.length));\n", keyEnumType, valEnumType, localVar)

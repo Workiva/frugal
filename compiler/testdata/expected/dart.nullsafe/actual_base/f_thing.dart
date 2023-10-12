@@ -126,7 +126,7 @@ class thing implements thrift.TBase {
     validate();
 
     oprot.writeStructBegin(_STRUCT_DESC);
-    final elem180 = an_id;
+    final elem180 = an_id!;
     oprot.writeFieldBegin(_AN_ID_FIELD_DESC);
     oprot.writeI32(elem180);
     oprot.writeFieldEnd();
