@@ -353,7 +353,7 @@ class TestingUnions implements thrift.TBase {
     validate();
 
     oprot.writeStructBegin(_STRUCT_DESC);
-    final elem132 = anID;
+    final elem132 = anID!;
     if (isSetAnID()) {
       oprot.writeFieldBegin(_AN_ID_FIELD_DESC);
       oprot.writeI64(elem132);
@@ -365,13 +365,13 @@ class TestingUnions implements thrift.TBase {
       oprot.writeString(elem133);
       oprot.writeFieldEnd();
     }
-    final elem134 = someotherthing;
+    final elem134 = someotherthing!;
     if (isSetSomeotherthing()) {
       oprot.writeFieldBegin(_SOMEOTHERTHING_FIELD_DESC);
       oprot.writeI32(elem134);
       oprot.writeFieldEnd();
     }
-    final elem135 = anInt16;
+    final elem135 = anInt16!;
     if (isSetAnInt16()) {
       oprot.writeFieldBegin(_AN_INT16_FIELD_DESC);
       oprot.writeI16(elem135);
@@ -394,14 +394,14 @@ class TestingUnions implements thrift.TBase {
       oprot.writeBinary(elem137);
       oprot.writeFieldEnd();
     }
-    final elem138 = depr;
+    final elem138 = depr!;
     // ignore: deprecated_member_use
     if (isSetDepr()) {
       oprot.writeFieldBegin(_DEPR_FIELD_DESC);
       oprot.writeBool(elem138);
       oprot.writeFieldEnd();
     }
-    final elem139 = wHOA_BUDDY;
+    final elem139 = wHOA_BUDDY!;
     if (isSetWHOA_BUDDY()) {
       oprot.writeFieldBegin(_WHO_A__BUDDY_FIELD_DESC);
       oprot.writeBool(elem139);

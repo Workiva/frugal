@@ -1257,7 +1257,6 @@ func (g *Generator) generateWrite(s *parser.Struct, kind structKind) string {
 
 		tmpElem := g.GetElem()
 		tmpField := parser.FieldFromType(field.Type, tmpElem)
-		contents += tabtab + fmt.Sprintf("final %s = %s;\n", tmpElem, fName)
 
 		var isSet bool
 		var isNull bool
@@ -1282,6 +1281,11 @@ func (g *Generator) generateWrite(s *parser.Struct, kind structKind) string {
 			isNull = !g.isDartPrimitive(g.Frugal.UnderlyingType(field.Type))
 		}
 
+		if isNull {
+			contents += tabtab + fmt.Sprintf("final %s = %s;\n", tmpElem, fName)
+		} else {
+			contents += tabtab + fmt.Sprintf("final %s = %s%s;\n", tmpElem, fName, g.notNullOperator)
+		}
 		ind := ""
 		if isSet || isNull {
 			ind = tab

@@ -674,7 +674,7 @@ class EventWrapper implements thrift.TBase {
     validate();
 
     oprot.writeStructBegin(_STRUCT_DESC);
-    final elem100 = iD;
+    final elem100 = iD!;
     if (isSetID()) {
       oprot.writeFieldBegin(_ID_FIELD_DESC);
       oprot.writeI64(elem100);
@@ -741,7 +741,7 @@ class EventWrapper implements thrift.TBase {
       oprot.writeListEnd();
       oprot.writeFieldEnd();
     }
-    final elem112 = aBoolField;
+    final elem112 = aBoolField!;
     oprot.writeFieldBegin(_A_BOOL_FIELD_FIELD_DESC);
     oprot.writeBool(elem112);
     oprot.writeFieldEnd();
@@ -757,7 +757,7 @@ class EventWrapper implements thrift.TBase {
       oprot.writeString(elem114);
       oprot.writeFieldEnd();
     }
-    final elem115 = depr;
+    final elem115 = depr!;
     oprot.writeFieldBegin(_DEPR_FIELD_DESC);
     oprot.writeBool(elem115);
     oprot.writeFieldEnd();

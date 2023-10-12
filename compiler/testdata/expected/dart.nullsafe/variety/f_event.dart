@@ -180,7 +180,7 @@ class Event implements thrift.TBase {
     validate();
 
     oprot.writeStructBegin(_STRUCT_DESC);
-    final elem3 = iD;
+    final elem3 = iD!;
     oprot.writeFieldBegin(_ID_FIELD_DESC);
     oprot.writeI64(elem3);
     oprot.writeFieldEnd();
@@ -190,7 +190,7 @@ class Event implements thrift.TBase {
       oprot.writeString(elem4);
       oprot.writeFieldEnd();
     }
-    final elem5 = yES_NO;
+    final elem5 = yES_NO!;
     oprot.writeFieldBegin(_YE_S__NO_FIELD_DESC);
     oprot.writeBool(elem5);
     oprot.writeFieldEnd();

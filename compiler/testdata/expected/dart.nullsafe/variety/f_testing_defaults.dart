@@ -702,7 +702,7 @@ class TestingDefaults implements thrift.TBase {
     validate();
 
     oprot.writeStructBegin(_STRUCT_DESC);
-    final elem29 = iD2;
+    final elem29 = iD2!;
     if (isSetID2()) {
       oprot.writeFieldBegin(_I_D2_FIELD_DESC);
       oprot.writeI64(elem29);
@@ -720,7 +720,7 @@ class TestingDefaults implements thrift.TBase {
       elem31.write(oprot);
       oprot.writeFieldEnd();
     }
-    final elem32 = iD;
+    final elem32 = iD!;
     oprot.writeFieldBegin(_ID_FIELD_DESC);
     oprot.writeI64(elem32);
     oprot.writeFieldEnd();
@@ -746,7 +746,7 @@ class TestingDefaults implements thrift.TBase {
       oprot.writeListEnd();
       oprot.writeFieldEnd();
     }
-    final elem37 = iD3;
+    final elem37 = iD3!;
     oprot.writeFieldBegin(_I_D3_FIELD_DESC);
     oprot.writeI64(elem37);
     oprot.writeFieldEnd();
@@ -815,11 +815,11 @@ class TestingDefaults implements thrift.TBase {
       oprot.writeMapEnd();
       oprot.writeFieldEnd();
     }
-    final elem49 = status;
+    final elem49 = status!;
     oprot.writeFieldBegin(_STATUS_FIELD_DESC);
     oprot.writeI32(elem49);
     oprot.writeFieldEnd();
-    final elem50 = base_status;
+    final elem50 = base_status!;
     oprot.writeFieldBegin(_BASE_STATUS_FIELD_DESC);
     oprot.writeI32(elem50);
     oprot.writeFieldEnd();
