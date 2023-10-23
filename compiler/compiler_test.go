@@ -109,6 +109,34 @@ func TestValidDartNullsafe(t *testing.T) {
 	suite.Run(t, options)
 }
 
+func TestValidDartAddDartComment(t *testing.T) {
+	options := compiler.Options{
+		File:    frugalGenFile,
+		Gen:     "dart:adddartcomment",
+		Out:     outputDir,
+		Delim:   delim,
+		Recurse: true,
+	}
+	suite := ComparisonList{
+		{"dart.adddartcomment/variety/f_event.dart", "variety/lib/src/f_event.dart"},
+	}
+	suite.Run(t, options)
+}
+
+func TestValidDartNullsafeAddDartComment(t *testing.T) {
+	options := compiler.Options{
+		File:    frugalGenFile,
+		Gen:     "dart:adddartcomment,nullsafe",
+		Out:     outputDir,
+		Delim:   delim,
+		Recurse: true,
+	}
+	suite := ComparisonList{
+		{"dart.nullsafe.adddartcomment/variety/f_event.dart", "variety/lib/src/f_event.dart"},
+	}
+	suite.Run(t, options)
+}
+
 func TestValidDartUseInt64(t *testing.T) {
 	options := compiler.Options{
 		File:    frugalGenFile,
