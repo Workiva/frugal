@@ -79,6 +79,7 @@ var Languages = LanguageOptions{
 		"use_null_for_unset": "Use null for unset fields, which disallows null-but-set fields",
 		"use_vendor":         "Use specified import references for vendored includes and do not generate code for them",
 		"nullsafe":           "Generate nullsafe Dart code",
+		"adddartcomment":     "Adds unsound null-safety `// @dart=2.11` comment at the beginning of files, or `// @dart=2.12` if nullsafe option is also present",
 	},
 	"py": Options{
 		"tornado":        "Generate code for use with Tornado (compatible with Python 2.7)",
