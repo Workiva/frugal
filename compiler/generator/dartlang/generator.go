@@ -47,12 +47,14 @@ const (
 	useInt64              = "use_int64"
 	useVendorOption       = "use_vendor"
 	nullsafe              = "nullsafe"
-	addDartComment        = false // Enable this when debugging Dart generated code
+	addDartCommentOption  = "adddartcomment" // Useful when generating unsound null-safe code (pubspec.yaml sdk >= 2.12, some files annotated at 2.11)
 	thriftVer             = "^0.0.14"
 	collectionVer         = "^1.14.12"
 	nullsafeThriftVer     = "^0.0.15"
 	nullsafeCollectionVer = "^1.15.0"
 )
+
+var addDartComment = false // Enable this when debugging Dart generated code
 
 // Generator implements the LanguageGenerator interface for Dart.
 type Generator struct {
@@ -76,6 +78,10 @@ func NewGenerator(options map[string]string) generator.LanguageGenerator {
 	generator.thriftVer = thriftVer
 	generator.collectionVer = collectionVer
 	generator.dartComment = "// @dart=2.11"
+
+	if _, ok := options[addDartCommentOption]; ok {
+		addDartComment = true
+	}
 	if _, ok := options[nullsafe]; ok {
 		generator.genNullsafe = true
 		generator.nullableOperator = "?"
