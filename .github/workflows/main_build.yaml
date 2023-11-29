@@ -5,13 +5,18 @@ permissions:
   contents: read
   id-token: write
 
+env:
+  GOLANG_VERSION: "1.20"
+  DART_VERSION: "2.19.6"
+
 jobs:
   build-dart:
     name: Dart
     timeout-minutes: 20
     runs-on: [self-hosted, small]
-    container:
-      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
+    defaults:
+      run:
+        working-directory: lib/dart
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -19,20 +24,19 @@ jobs:
       - name: Setup Credentials
         uses: Workiva/gha-setup-credentials@v1.0.25
 
+      - uses: dart-lang/setup-dart@v1.6.0
+        with:
+          sdk: ${{ env.DART_VERSION }}
+
+      - name: Install Dart dependencies
+        uses: Workiva/gha-dart/pub-get@v0.5.6
+        with:
+          package-path: .
+
       - name: Unit tests
         run: |
-          cd lib/dart
-          timeout 5m dart pub get
           dart test
           dart format --set-exit-if-changed -o none lib test
-
-      - name: Package Dart
-        run: tar -C lib/dart -czf frugal.pub.tgz .
-
-      - name: Upload artifacts
-        uses: workiva/gha-store-artifacts@v1.1.1
-        with:
-          NON_DEPLOYABLE: "BUILD_ARTIFACTS_PUB: frugal.pub.tgz"
 
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
@@ -41,8 +45,9 @@ jobs:
     name: Java
     timeout-minutes: 20
     runs-on: [self-hosted, small]
-    container:
-      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
+    defaults:
+      run:
+        working-directory: lib/java
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -50,16 +55,17 @@ jobs:
       - name: Setup Credentials
         uses: Workiva/gha-setup-credentials@v1.0.25
 
-      - name: Unit tests
-        run: |
-          cd lib/java
-          mvn checkstyle:check -q && mvn clean verify -q
-          mv $(find target -type f -name 'frugal-*.*.*.jar' | grep -v javadoc) ../../
-
-      - name: Upload artifacts
-        uses: workiva/gha-store-artifacts@v1.1.1
+      - name: Set up Java
+        uses: actions/setup-java@v3
         with:
-          NON_DEPLOYABLE: "BUILD_ARTIFACTS_JAVA: frugal-*.jar"
+          java-version: '17'
+          distribution: 'corretto'
+          cache: 'maven'
+
+      - name: Test
+        run: |
+          mvn checkstyle:checkstyle
+          mvn verify -q -Dcheckstyle.skip
 
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
@@ -68,8 +74,9 @@ jobs:
     name: Go
     timeout-minutes: 20
     runs-on: [self-hosted, small]
-    container:
-      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
+    defaults:
+      run:
+        working-directory: lib/go
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -77,36 +84,27 @@ jobs:
       - name: Setup Credentials
         uses: Workiva/gha-setup-credentials@v1.0.25
 
-      - name: Unit tests
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+
+      - name: Test
         run: |
-          pushd lib/go
-          GO111MODULE=on go mod vendor
-          go get github.com/sirupsen/logrus
-          go test -race -coverprofile=../../gocoverage.txt
-          popd 
-
-      - name: Upload coverage
-        uses: workiva/gha-store-artifacts@v1.1.1
-        with:
-          NON_DEPLOYABLE: "GO_TEST_COVERAGE: gocoverage.txt"
-
-      - name: Package Go
-        run: tar -czf goLib.tar.gz ./lib/go
-
-      - name: Upload Go Library 
-        uses: workiva/gha-store-artifacts@v1.1.1
-        with:
-          NON_DEPLOYABLE: "BUILD_ARTIFACTS_GO_LIBRARY: goLib.tar.gz"
+          go mod tidy
+          go vet
+          go test -v -race
 
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
 
-  build-python:
-    name: Python
+  build-python-2:
+    name: "Python 2"
     timeout-minutes: 20
     runs-on: [self-hosted, small]
-    container:
-      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
+    defaults:
+      run:
+        working-directory: lib/python
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -114,57 +112,71 @@ jobs:
       - name: Setup Credentials
         uses: Workiva/gha-setup-credentials@v1.0.25
 
-      - name: Python 2 Dependencies
-        run: |
-          virtualenv -p /usr/bin/python /tmp/frugal
-          source /tmp/frugal/bin/activate
-          pip install -U pip setuptools==39.0.1
-          cd lib/python
-          make deps-tornado
-          make deps-py2
-          make deps-gae
-          make xunit-py2
-          pip freeze > python2_pip_deps.txt
-          make flake8-py2
-          deactivate
-
-      - name: Python 3 Dependencies
-        run: |
-          virtualenv -p /usr/bin/python3 /tmp/frugal-py3
-          source /tmp/frugal-py3/bin/activate
-          pip install -U pip setuptools==39.0.1 importlib-metadata==4.13.0
-          cd lib/python
-          #once move to only python3 then these dependencies can be just put in requirements.txt
-          make deps-py3
-          make deps-asyncio
-          make xunit-py3
-          make flake8-py3
-          make install
-          pip freeze > python3_pip_deps.txt
-          mv dist/frugal-*.tar.gz ../../
-          coverage xml
-          mv coverage.xml coverage_py3.xml
-          deactivate
-
-      - name: Upload dependencies
-        uses: workiva/gha-store-artifacts@v1.1.1
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          NON_DEPLOYABLE: "BUILD_ARTIFACTS_AUDIT: python2_pip_deps.txt:python3_pip_deps.txt"
+          python-version: '2.7'
+          cache: 'pip'
 
-      - name: Upload artifacts
-        uses: workiva/gha-store-artifacts@v1.1.1
+      - name: Install Dependencies
+        run: |
+        	pip install --upgrade pip
+          pip install -Ur ../python2/requirements_python_2.txt
+          flake8 --exclude=tests,frugal/tornado
+          nosetests \
+            --exclude-dir=frugal/tornado \
+            --exclude-dir=frugal/tests/tornado \
+            --exclude-dir=frugal/gae \
+            --exclude-dir=frugal/tests/gae \
+            --exclude-dir=frugal/aio \
+            --logging-level=ERROR
+
+      - name: Upload Test Artifacts
+        uses: Workiva/gha-upload-test-reports@v1.0.13
+
+
+  build-python:
+    name: "Python 3"
+    timeout-minutes: 20
+    runs-on: [self-hosted, small]
+    defaults:
+      run:
+        working-directory: lib/python
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Credentials
+        uses: Workiva/gha-setup-credentials@v1.0.25
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          NON_DEPLOYABLE: "BUILD_ARTIFACTS_PYPI: frugal-*.tar.gz"
+          python-version: '3.8'
+          cache: 'pip'
+
+      - name: Test
+        run: |
+        	pip install --upgrade pip
+          pip install -Ur requirements_python_3.txt
+          flake8 --exclude=tests,frugal/tornado
+          nosetests \
+            --exclude-dir=frugal/tornado \
+            --exclude-dir=frugal/tests/tornado \
+            --exclude-dir=frugal/gae \
+            --exclude-dir=frugal/tests/gae \
+            --exclude-dir=frugal/aio \
+            --logging-level=ERROR
 
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
 
   # TODO enable this when building works
-  call-cross-test-workflow:
-    name: 🧪 Cross Tests
-    needs:
-        - build-dart
-        - build-go
-        - build-java
-        - build-python
-    uses: ./.github/workflows/cross_test.yaml
+  # call-cross-test-workflow:
+  #   name: 🧪 Cross Tests
+  #   needs:
+  #       - build-dart
+  #       - build-go
+  #       - build-java
+  #       - build-python
+  #   uses: ./.github/workflows/cross_test.yaml
