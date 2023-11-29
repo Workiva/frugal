@@ -33,7 +33,7 @@ jobs:
         with:
           package-path: .
 
-      - name: Unit tests
+      - name: Test
         run: |
           dart test
           dart format --set-exit-if-changed -o none lib test
@@ -99,7 +99,7 @@ jobs:
         uses: Workiva/gha-upload-test-reports@v1.0.13
 
   build-python-2:
-    name: "Python 2"
+    name: Python 2
     timeout-minutes: 20
     runs-on: [self-hosted, small]
     defaults:
@@ -120,7 +120,7 @@ jobs:
 
       - name: Test
         run: |
-        	pip install --upgrade pip
+          pip install --upgrade pip
           pip install -Ur ../python2/requirements_python_2.txt
           flake8 --exclude=tests,frugal/tornado
           nosetests \
@@ -156,7 +156,7 @@ jobs:
 
       - name: Test
         run: |
-        	pip install --upgrade pip
+          pip install --upgrade pip
           pip install -Ur requirements_python_3.txt
           flake8 --exclude=tests,frugal/tornado
           nosetests \
