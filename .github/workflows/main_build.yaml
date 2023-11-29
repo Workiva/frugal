@@ -182,4 +182,4 @@ jobs:
         - build-go
         - build-java
         - build-python
-    uses: ./.github/workflows/cross_test.yaml
+    uses: .github/workflows/cross_test.yaml
