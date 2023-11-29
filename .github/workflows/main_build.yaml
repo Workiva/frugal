@@ -22,7 +22,7 @@ env:
 
 jobs:
   build:
-    name: Build
+    name: Build Go
     timeout-minutes: 20
     runs-on: [self-hosted, small]
     container:
@@ -35,14 +35,25 @@ jobs:
         uses: Workiva/gha-setup-credentials@v1.0.25
 
       - name: Unit tests in parallel
-        run: ./scripts/smithy.sh
+        run: |
+          pushd lib/go
+          GO111MODULE=on go mod vendor
+          go get github.com/sirupsen/logrus
+          go test -race -coverprofile=../../gocoverage.txt
+          popd 
+          tar -czf goLib.tar.gz ./lib/go
 
-
-      - name: Upload unit test results
+      - name: Upload coverage
         uses: workiva/gha-store-artifacts@v1.1.1
         if: always()    # run this step even if previous step failed
         with:
-          NON_DEPLOYABLE: "UNIT_TEST_LOGS: test_results/"
+          NON_DEPLOYABLE: "GO_TEST_COVERAGE: gocoverage.txt"
+
+      - name: Upload coverage
+        uses: workiva/gha-store-artifacts@v1.1.1
+        if: always()    # run this step even if previous step failed
+        with:
+          NON_DEPLOYABLE: "BUILD_ARTIFACTS_GO_LIBRARY: goLib.tar.gz"
 
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
