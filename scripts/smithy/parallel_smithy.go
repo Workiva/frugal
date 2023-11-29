@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"sync"
@@ -40,7 +39,7 @@ func runTestScript(script string, scriptDir string, wg *sync.WaitGroup) {
 		log.Errorf("Script '%s' failed with output:\n%s", script, out)
 	}
 
-	logFile := os.ExpandEnv("${FRUGAL_HOME}/test_results/" + script + "_out.txt")
+	logFile := os.ExpandEnv("test_results/" + script + "_out.txt")
 	err2 := writeFile(logFile, out)
 
 	if err2 != nil {
@@ -58,6 +57,6 @@ func runTestScript(script string, scriptDir string, wg *sync.WaitGroup) {
 
 func writeFile(logFile string, commandData []byte) error {
 
-	return ioutil.WriteFile(logFile, commandData, 0644)
+	return os.WriteFile(logFile, commandData, 0644)
 
 }

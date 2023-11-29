@@ -1,0 +1,62 @@
+name: "Cross Test"
+on:
+  workflow_call: {}
+
+permissions:
+  pull-requests: write
+  contents: write
+  id-token: write
+  checks: write
+
+jobs:
+  cross_test:
+    name: Cross Test
+    timeout-minutes: 20
+    runs-on: [self-hosted, large]
+    container:
+      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
+      env:
+        - PYTHONIOENCODING: utf-8
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Credentials
+        uses: Workiva/gha-setup-credentials@v1.0.25
+
+      - name: Download Dependencies
+        run: go mod verify
+
+      - name: Install Frugal CLI
+        run: go install
+
+      - name: Start Brokers
+        run: |
+        # these need to be installed first
+        nats-server &
+        /opt/activemq/bin/activemq start
+
+      - name: Generate integration files from IDL
+        run: ./scripts/integration/generate.sh
+
+      - name: Run setup
+        run: |
+          # integration tests use logrus, but frugal does not so it won't be in /vendor
+          go get github.com/sirupsen/logrus
+
+          # Set everything up in parallel (code generation is fast enough to not require in parallel)
+          go run scripts/skynet/cross/cross_setup.go
+
+      - name: Run tests
+        run: |
+        cd test/integration
+        go run main.go --tests tests.json --outDir "/testing/artifacts/cross-runner.log"
+
+      - name: Upload Logs
+        uses: workiva/gha-store-artifacts@v1.1.1
+        if: always()    # run this step even if previous step failed
+        with:
+          NON_DEPLOYABLE: "INTEGRATION_TEST_LOGS: /testing/artifacts"
+
+      - name: Upload Test Artifacts
+        uses: Workiva/gha-upload-test-reports@v1.0.13

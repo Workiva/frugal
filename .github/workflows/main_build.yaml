@@ -1,0 +1,54 @@
+name: "Build"
+on:
+  pull_request:
+    branches:
+      - "master"
+  push:
+    branches:
+      - "master"
+      - "qa/*"
+    tags:
+      - "*"
+
+permissions:
+  pull-requests: write
+  contents: write
+  id-token: write
+  checks: write
+
+env:
+  GOLANG_VERSION: "1.20"
+
+jobs:
+  build:
+    name: Build
+    timeout-minutes: 20
+    runs-on: [self-hosted, small]
+    container:
+      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Credentials
+        uses: Workiva/gha-setup-credentials@v1.0.25
+
+      - name: Unit tests in parallel
+        run: ./scripts/smithy.sh
+
+
+      - name: Upload unit test results
+        uses: workiva/gha-store-artifacts@v1.1.1
+        if: always()    # run this step even if previous step failed
+        with:
+          NON_DEPLOYABLE: "UNIT_TEST_LOGS: test_results/"
+
+      - name: Upload Test Artifacts
+        uses: Workiva/gha-upload-test-reports@v1.0.13
+
+
+  # TODO enable this when building works
+  # call-cross-test-workflow:
+  #   name: 🧪 Cross Tests
+  #   needs: [build]
+  #   uses: ./.github/workflows/cross_test.yaml

@@ -5,7 +5,8 @@ set -e
 virtualenv -p /usr/bin/python /tmp/frugal
 source /tmp/frugal/bin/activate
 pip install -U pip setuptools==39.0.1
-cd $FRUGAL_HOME/lib/python
+
+pushd lib/python
 make deps-tornado
 #all dependent packages that are tied to the python2 environment can be refernced here
 make deps-py2
@@ -15,14 +16,16 @@ make xunit-py2
 
 # Write dependencies out so that RM is able to track them
 # The name of this file is hard coded into Rosie and RM console
-pip freeze > $FRUGAL_HOME/python2_pip_deps.txt
+pip freeze > python2_pip_deps.txt
 make flake8-py2
 deactivate
+popd
 
 virtualenv -p /usr/bin/python3 /tmp/frugal-py3
 source /tmp/frugal-py3/bin/activate
 pip install -U pip setuptools==39.0.1 importlib-metadata==4.13.0
-cd $FRUGAL_HOME/lib/python
+
+pushd lib/python
 #all dependent packages that are seperate from python2 and python3... 
 #once move to only python3 then these dependencies can be just put in requirements.txt
 make deps-py3
@@ -32,11 +35,12 @@ make flake8-py3
 make install
 # Write dependencies out so that RM is able to track them
 # The name of this file is hard coded into Rosie and RM console
-pip freeze > $FRUGAL_HOME/python3_pip_deps.txt
-mv dist/frugal-*.tar.gz $FRUGAL_HOME
+pip freeze > python3_pip_deps.txt
+mv dist/frugal-*.tar.gz ../../
 
 # get coverage report in correct format
 coverage xml
-mv $FRUGAL_HOME/lib/python/coverage.xml $FRUGAL_HOME/lib/python/coverage_py3.xml
+popd
+mv lib/python/coverage.xml lib/python/coverage_py3.xml
 
 deactivate

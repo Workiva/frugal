@@ -93,3 +93,13 @@ updates:
       - "Workiva/service-platform"
     commit-message:
       prefix: "py-lib: "
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      gha-dependencies:
+        patterns:
+          - "*"  # groups all GHA deps into 1 update PR
+        exclude-patterns:
+          - "actions/checkout" # self-hosted runners don't support latest update yet

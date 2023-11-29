@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"sync"
@@ -52,6 +51,6 @@ func runSetupScript(script string, scriptDir string, wg *sync.WaitGroup) {
 
 func writeFile(logFile string, commandData []byte) error {
 
-	return ioutil.WriteFile(logFile, commandData, 0644)
+	return os.WriteFile(logFile, commandData, 0644)
 
 }
