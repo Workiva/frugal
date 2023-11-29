@@ -21,7 +21,35 @@ env:
   GOLANG_VERSION: "1.20"
 
 jobs:
-  build:
+  build-java:
+    name: Build Java
+    timeout-minutes: 20
+    runs-on: [self-hosted, small]
+    container:
+      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Credentials
+        uses: Workiva/gha-setup-credentials@v1.0.25
+
+      - name: Unit tests
+        run: |
+          cd lib/java
+          mvn checkstyle:check -q && mvn clean verify -q
+          mv $(find target -type f -name 'frugal-*.*.*.jar' | grep -v javadoc) ../../
+
+      - name: Upload artifacts
+        uses: workiva/gha-store-artifacts@v1.1.1
+        if: always()    # run this step even if previous step failed
+        with:
+          NON_DEPLOYABLE: "BUILD_ARTIFACTS_JAVA: frugal-*.jar"
+
+      - name: Upload Test Artifacts
+        uses: Workiva/gha-upload-test-reports@v1.0.13
+
+  build-go:
     name: Build Go
     timeout-minutes: 20
     runs-on: [self-hosted, small]
@@ -34,14 +62,13 @@ jobs:
       - name: Setup Credentials
         uses: Workiva/gha-setup-credentials@v1.0.25
 
-      - name: Unit tests in parallel
+      - name: Unit tests
         run: |
           pushd lib/go
           GO111MODULE=on go mod vendor
           go get github.com/sirupsen/logrus
           go test -race -coverprofile=../../gocoverage.txt
           popd 
-          tar -czf goLib.tar.gz ./lib/go
 
       - name: Upload coverage
         uses: workiva/gha-store-artifacts@v1.1.1
@@ -49,9 +76,11 @@ jobs:
         with:
           NON_DEPLOYABLE: "GO_TEST_COVERAGE: gocoverage.txt"
 
-      - name: Upload coverage
+      - name: Package Go
+        run: tar -czf goLib.tar.gz ./lib/go
+
+      - name: Upload Go library 
         uses: workiva/gha-store-artifacts@v1.1.1
-        if: always()    # run this step even if previous step failed
         with:
           NON_DEPLOYABLE: "BUILD_ARTIFACTS_GO_LIBRARY: goLib.tar.gz"
 
