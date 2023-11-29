@@ -182,4 +182,7 @@ jobs:
         - build-go
         - build-java
         - build-python
+    runs-on: [self-hosted, small]
+    container:
+      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
     uses: .github/workflows/cross_test.yaml

@@ -12,10 +12,6 @@ jobs:
   cross_test:
     name: Cross Test
     timeout-minutes: 20
-    container:
-      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
-      env:
-        - PYTHONIOENCODING: utf-8
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
