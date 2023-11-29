@@ -24,8 +24,8 @@ jobs:
 
       - name: Start Brokers
         run: |
-        nats-server &
-        /opt/activemq/bin/activemq start
+          nats-server &
+          /opt/activemq/bin/activemq start
 
       - name: Generate integration files from IDL
         run: ./scripts/integration/generate.sh
@@ -38,8 +38,8 @@ jobs:
 
       - name: Run tests
         run: |
-        cd test/integration
-        go run main.go --tests tests.json --outDir "testing/artifacts/cross-runner.log"
+          cd test/integration
+          go run main.go --tests tests.json --outDir "testing/artifacts/cross-runner.log"
 
       - name: Upload Logs
         uses: workiva/gha-store-artifacts@v1.1.1
