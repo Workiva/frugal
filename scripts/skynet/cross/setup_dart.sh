@@ -29,10 +29,6 @@ mkdir -p ~/.pub-cache/hosted/pub.workiva.org/frugal-${frugal_version}/
 
 pub_extract_target=~/.pub-cache/hosted/pub.workiva.org/frugal-${frugal_version}/
 
-if [ -z "${IN_SKYNET_CLI+yes}" ]; then
-    tar -xzf ${SKYNET_APPLICATION_FRUGAL_PUB} -C $pub_extract_target
-else
-    cp -r $FRUGAL_HOME/lib/dart/* $pub_extract_target
-fi
+cp -r $FRUGAL_HOME/lib/dart/* $pub_extract_target
 
 dart pub get --offline

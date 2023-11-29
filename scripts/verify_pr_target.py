@@ -62,7 +62,7 @@ def main():
 
 if __name__ == '__main__':
 
-    # TEST=true python scripts/smithy/verify_pr_target.py
+    # TEST=true python scripts/verify_pr_target.py
     if 'TEST' in os.environ:
         test_regex()
     else:

@@ -34,7 +34,7 @@ func runSetupScript(script string, scriptDir string, wg *sync.WaitGroup) {
 		log.Errorf("Script '%s' failed with output:%s", script, out)
 	}
 
-	logFile := "/testing/artifacts/" + script + "_out.txt"
+	logFile := "testing/artifacts/" + script + "_out.txt"
 	err2 := writeFile(logFile, out)
 	if err2 != nil {
 		log.Errorf("Writing log file '%s' failed with error:%s", logFile, err2)
