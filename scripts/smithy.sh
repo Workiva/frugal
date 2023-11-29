@@ -3,10 +3,10 @@
 # This is so `tee` doesn't absorb a non-zero exit code
 set -eo pipefail
 
-python scripts/verify_pr_target.py
+python $FRUGAL_HOME/scripts/smithy/verify_pr_target.py
 
-mkdir -p test_results/
+mkdir -p $FRUGAL_HOME/test_results/
 
 # Run each language build and tests in parallel
 go get github.com/sirupsen/logrus
-go run scripts/smithy/parallel_smithy.go
+cd $FRUGAL_HOME && go run scripts/smithy/parallel_smithy.go

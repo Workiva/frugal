@@ -2,12 +2,10 @@
 set -e
 
 # Compile library code
-pushd lib/go
-GO111MODULE=on go mod vendor
+cd $FRUGAL_HOME/lib/go && GO111MODULE=on go mod vendor
 
 # Run the tests
-go test -race -coverprofile=../../gocoverage.txt
+go test -race -coverprofile=$FRUGAL_HOME/gocoverage.txt
 
 # Build artifact
-popd
-tar -czf goLib.tar.gz ./lib/go
+cd $FRUGAL_HOME && tar -czf $FRUGAL_HOME/goLib.tar.gz ./lib/go

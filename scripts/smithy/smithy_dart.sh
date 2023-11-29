@@ -2,10 +2,11 @@
 set -e
 
 # Wrap up package for pub
-tar -C lib/dart -czf frugal.pub.tgz .
+cd $FRUGAL_HOME
+tar -C lib/dart -czf $FRUGAL_HOME/frugal.pub.tgz .
 
 # Compile library code
-cd lib/dart
+cd $FRUGAL_HOME/lib/dart
 timeout 5m dart pub get
 
 # Run the tests
