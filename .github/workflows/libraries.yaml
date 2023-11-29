@@ -1,4 +1,4 @@
-name: "Build"
+name: Libraries
 on: push
 
 permissions:
@@ -10,7 +10,7 @@ env:
   DART_VERSION: "2.19.6"
 
 jobs:
-  build-dart:
+  dart:
     name: Dart
     timeout-minutes: 20
     runs-on: [self-hosted, small]
@@ -49,7 +49,7 @@ jobs:
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
 
-  build-java:
+  java:
     name: Java
     timeout-minutes: 20
     runs-on: [self-hosted, small]
@@ -87,7 +87,7 @@ jobs:
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
 
-  build-go:
+  go:
     name: Go
     timeout-minutes: 20
     runs-on: [self-hosted, small]
@@ -115,7 +115,7 @@ jobs:
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
 
-  build-python-2:
+  python-2:
     name: Python 2
     timeout-minutes: 20
     runs-on: [self-hosted, small]
@@ -163,7 +163,7 @@ jobs:
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
 
-  build-python:
+  python:
     name: Python
     timeout-minutes: 20
     runs-on: [self-hosted, small]
@@ -214,8 +214,8 @@ jobs:
   # call-cross-test-workflow:
   #   name: 🧪 Cross Tests
   #   needs:
-  #       - build-dart
-  #       - build-go
-  #       - build-java
-  #       - build-python
+  #       - dart
+  #       - go
+  #       - java
+  #       - python
   #   uses: ./.github/workflows/cross_test.yaml
