@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-go@v4
 
       - name: Check
-        run: make check-cli
+        run: go vet ./...
 
       - name: Test
-        run: make unit-cli
+        run: go test ./... --race
