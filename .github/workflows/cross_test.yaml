@@ -12,7 +12,6 @@ jobs:
   cross_test:
     name: Cross Test
     timeout-minutes: 20
-    runs-on: [self-hosted, large]
     container:
       image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
       env:
