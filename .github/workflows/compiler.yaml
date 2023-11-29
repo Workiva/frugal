@@ -7,12 +7,12 @@ permissions:
 
 jobs:
   cli:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
       - name: Set up Go
         uses: actions/setup-go@v4
-        with:
 
       - name: Check
         run: make check-cli
