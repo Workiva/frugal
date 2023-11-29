@@ -108,7 +108,7 @@ jobs:
       - name: Package Go
         run: tar -czf goLib.tar.gz ./lib/go
 
-      - name: Upload Go library 
+      - name: Upload Go Library 
         uses: workiva/gha-store-artifacts@v1.1.1
         with:
           NON_DEPLOYABLE: "BUILD_ARTIFACTS_GO_LIBRARY: goLib.tar.gz"
@@ -116,6 +116,63 @@ jobs:
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
 
+  build-python:
+    name: Build Python
+    timeout-minutes: 20
+    runs-on: [self-hosted, small]
+    container:
+      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Credentials
+        uses: Workiva/gha-setup-credentials@v1.0.25
+
+      - name: Python 2 Dependencies
+        run: |
+          virtualenv -p /usr/bin/python /tmp/frugal
+          source /tmp/frugal/bin/activate
+          pip install -U pip setuptools==39.0.1
+          cd lib/python
+          make deps-tornado
+          make deps-py2
+          make deps-gae
+          make xunit-py2
+          pip freeze > python2_pip_deps.txt
+          make flake8-py2
+          deactivate
+
+      - name: Python 3 Dependencies
+        run: |
+          virtualenv -p /usr/bin/python3 /tmp/frugal-py3
+          source /tmp/frugal-py3/bin/activate
+          pip install -U pip setuptools==39.0.1 importlib-metadata==4.13.0
+          cd lib/python
+          #once move to only python3 then these dependencies can be just put in requirements.txt
+          make deps-py3
+          make deps-asyncio
+          make xunit-py3
+          make flake8-py3
+          make install
+          pip freeze > python3_pip_deps.txt
+          mv dist/frugal-*.tar.gz ../../
+          coverage xml
+          mv coverage.xml coverage_py3.xml
+          deactivate
+
+      - name: Upload dependencies
+        uses: workiva/gha-store-artifacts@v1.1.1
+        with:
+          NON_DEPLOYABLE: "BUILD_ARTIFACTS_AUDIT: python2_pip_deps.txt:python3_pip_deps.txt"
+
+      - name: Upload artifacts
+        uses: workiva/gha-store-artifacts@v1.1.1
+        with:
+          NON_DEPLOYABLE: "BUILD_ARTIFACTS_PYPI: frugal-*.tar.gz"
+
+      - name: Upload Test Artifacts
+        uses: Workiva/gha-upload-test-reports@v1.0.13
 
   # TODO enable this when building works
   # call-cross-test-workflow:

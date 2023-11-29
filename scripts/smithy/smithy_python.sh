@@ -8,7 +8,7 @@ pip install -U pip setuptools==39.0.1
 
 pushd lib/python
 make deps-tornado
-#all dependent packages that are tied to the python2 environment can be refernced here
+#all dependent packages that are tied to the python2 environment can be referenced here
 make deps-py2
 
 make deps-gae
