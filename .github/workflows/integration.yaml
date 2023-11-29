@@ -1,4 +1,4 @@
-name: "Cross Test"
+name: Integration
 on:
   workflow_call: {}
 
@@ -9,8 +9,8 @@ permissions:
   checks: write
 
 jobs:
-  cross_test:
-    name: 🧪 Cross Tests
+  Integration:
+    name: 🧪 Integration Test
     timeout-minutes: 20
     runs-on: [self-hosted, small]
     container:

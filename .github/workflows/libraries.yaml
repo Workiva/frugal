@@ -211,11 +211,11 @@ jobs:
         uses: Workiva/gha-upload-test-reports@v1.0.13
 
   # TODO enable this when building works
-  # call-cross-test-workflow:
-  #   name: 🧪 Cross Tests
+  # call-integration-test:
+  #   name: 🧪 Integration Test
   #   needs:
   #       - dart
   #       - go
   #       - java
   #       - python
-  #   uses: ./.github/workflows/cross_test.yaml
+  #   uses: ./.github/workflows/integration.yaml
