@@ -38,6 +38,14 @@ jobs:
           dart test
           dart format --set-exit-if-changed -o none lib test
 
+      - name: Package library
+        run: tar -czf frugal.pub.tgz .
+
+      - name: Publish artifacts
+        uses: Workiva/gha-store-artifacts@v1.1.1
+        with:
+          PUB: frugal.pub.tgz
+
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
 
@@ -66,6 +74,15 @@ jobs:
         run: |
           mvn checkstyle:checkstyle
           mvn verify -q -Dcheckstyle.skip
+
+      - name: Package library
+        run: mv $(find target -type f -name 'frugal-*.*.*.jar' | grep -v javadoc) .
+
+
+      - name: Publish artifacts
+        uses: Workiva/gha-store-artifacts@v1.1.1
+        with:
+          JAVA: frugal-*.*.*.jar
 
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
@@ -121,7 +138,11 @@ jobs:
       - name: Test
         run: |
           pip install --upgrade pip
-          pip install -Ur ../python2/requirements_python_2.txt
+          pip install -Ur
+            ../python2/requirements_python_2.txt \
+            requirements_python_3.txt \
+            requirements_dev_gae.txt \
+            requirements_dev_tornado.txt
           flake8 --exclude=tests,frugal/tornado
           nosetests \
             --exclude-dir=frugal/tornado \
@@ -130,6 +151,14 @@ jobs:
             --exclude-dir=frugal/tests/gae \
             --exclude-dir=frugal/aio \
             --logging-level=ERROR
+
+      - name: Package library
+        run: python setup.py sdist
+
+      - name: Publish artifacts
+        uses: Workiva/gha-store-artifacts@v1.1.1
+        with:
+          PYPI: dist/frugal-*.tar.gz
 
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
@@ -157,7 +186,10 @@ jobs:
       - name: Test
         run: |
           pip install --upgrade pip
-          pip install -Ur requirements_python_3.txt
+          pip install -Ur \
+            requirements_python_3.txt \
+            requirements_dev_gae.txt \
+            requirements_dev_tornado.txt
           flake8 --exclude=tests,frugal/tornado
           nosetests \
             --exclude-dir=frugal/tornado \
@@ -166,6 +198,14 @@ jobs:
             --exclude-dir=frugal/tests/gae \
             --exclude-dir=frugal/aio \
             --logging-level=ERROR
+
+      - name: Package library
+        run: python setup.py sdist
+
+      - name: Publish artifacts
+        uses: Workiva/gha-store-artifacts@v1.1.1
+        with:
+          PYPI: dist/frugal-*.tar.gz
 
       - name: Upload Test Artifacts
         uses: Workiva/gha-upload-test-reports@v1.0.13
