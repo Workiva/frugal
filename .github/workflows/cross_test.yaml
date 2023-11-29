@@ -10,8 +10,11 @@ permissions:
 
 jobs:
   cross_test:
-    name: Cross Test
+    name: 🧪 Cross Tests
     timeout-minutes: 20
+    runs-on: [self-hosted, small]
+    container:
+      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
