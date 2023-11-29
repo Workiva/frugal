@@ -5,12 +5,6 @@ permissions:
   contents: read
   id-token: write
 
-permissions:
-  pull-requests: write
-  contents: write
-  id-token: write
-  checks: write
-
 jobs:
   build-dart:
     name: Dart
