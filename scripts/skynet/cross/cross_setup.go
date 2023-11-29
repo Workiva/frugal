@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"sync"
@@ -34,7 +35,7 @@ func runSetupScript(script string, scriptDir string, wg *sync.WaitGroup) {
 		log.Errorf("Script '%s' failed with output:%s", script, out)
 	}
 
-	logFile := "testing/artifacts/" + script + "_out.txt"
+	logFile := "/testing/artifacts/" + script + "_out.txt"
 	err2 := writeFile(logFile, out)
 	if err2 != nil {
 		log.Errorf("Writing log file '%s' failed with error:%s", logFile, err2)
@@ -51,6 +52,6 @@ func runSetupScript(script string, scriptDir string, wg *sync.WaitGroup) {
 
 func writeFile(logFile string, commandData []byte) error {
 
-	return os.WriteFile(logFile, commandData, 0644)
+	return ioutil.WriteFile(logFile, commandData, 0644)
 
 }
