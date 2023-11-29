@@ -12,9 +12,7 @@ jobs:
   Integration:
     name: 🧪 Integration Test
     timeout-minutes: 20
-    runs-on: [self-hosted, small]
-    container:
-      image: drydock-prod.workiva.net/workiva/messaging-docker-images:0.1.16
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -25,6 +23,7 @@ jobs:
       - name: Install Frugal binary
         run: go install
 
+      # TODO because base image change, these brokers need to be installed another way
       - name: Start Brokers
         run: |
           nats-server &

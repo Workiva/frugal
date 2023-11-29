@@ -13,7 +13,7 @@ jobs:
   dart:
     name: Dart
     timeout-minutes: 20
-    runs-on: [self-hosted, small]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: lib/dart
@@ -52,7 +52,7 @@ jobs:
   java:
     name: Java
     timeout-minutes: 20
-    runs-on: [self-hosted, small]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: lib/java
@@ -90,7 +90,7 @@ jobs:
   go:
     name: Go
     timeout-minutes: 20
-    runs-on: [self-hosted, small]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: lib/go
@@ -118,7 +118,7 @@ jobs:
   python-2:
     name: Python 2
     timeout-minutes: 20
-    runs-on: [self-hosted, small]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: lib/python
@@ -166,7 +166,7 @@ jobs:
   python:
     name: Python
     timeout-minutes: 20
-    runs-on: [self-hosted, small]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: lib/python
