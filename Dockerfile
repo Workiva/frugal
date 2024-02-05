@@ -21,6 +21,8 @@ ENV PATH $GOPATH/bin:$PATH
 ARG ARTIFACTORY_PRO_USER
 ARG ARTIFACTORY_PRO_PASS
 ENV MAVEN_ROOT /go/src/github.com/Workiva/frugal/lib/java
+RUN python --version
+RUN ls -alrt /usr/bin/
 
 RUN git config --global url.git@github.com:.insteadOf https://github.com
 ENV FRUGAL_HOME=/go/src/github.com/Workiva/frugal
