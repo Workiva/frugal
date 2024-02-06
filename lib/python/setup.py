@@ -30,7 +30,7 @@ setup(
     extras_require={
         'tornado': ['nats-client==0.8.4'],
         'asyncio': [
-            'aiohttp>=3.0.9,<3.9.0',
+            'aiohttp>=3.0.9',
             'aiostomp==1.7.3',
             'nats-py>=2,<3',
             'async-timeout>=4.0.0a3,<5.0'
