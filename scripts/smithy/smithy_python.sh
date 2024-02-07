@@ -27,7 +27,7 @@ which python
 python --version
 which python3
 python3 --version
-#pip3 install -U pip setuptools==39.0.1 importlib-metadata==4.13.0
+pip install --upgrade setuptools
 cd $FRUGAL_HOME/lib/python
 #all dependent packages that are seperate from python2 and python3... 
 #once move to only python3 then these dependencies can be just put in requirements.txt
