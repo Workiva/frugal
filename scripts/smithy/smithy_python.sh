@@ -27,7 +27,12 @@ which python
 python --version
 which python3
 python3 --version
+which pip
+pip --version
+which pip3
+pip3 --version
 pip install --upgrade setuptools
+echo "Installing python3 dependencies"
 cd $FRUGAL_HOME/lib/python
 #all dependent packages that are seperate from python2 and python3... 
 #once move to only python3 then these dependencies can be just put in requirements.txt
