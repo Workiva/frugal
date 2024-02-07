@@ -5,6 +5,7 @@ set -e
 virtualenv -p /usr/bin/python /tmp/frugal
 source /tmp/frugal/bin/activate
 which python
+python --version
 pip install -U pip setuptools==39.0.1
 cd $FRUGAL_HOME/lib/python
 make deps-tornado
@@ -23,7 +24,9 @@ deactivate
 virtualenv -p /usr/local/bin/python3 /tmp/frugal-py3
 source /tmp/frugal-py3/bin/activate
 which python
+python --version
 which python3
+python3 --version
 pip3 install -U pip setuptools==39.0.1 importlib-metadata==4.13.0
 cd $FRUGAL_HOME/lib/python
 #all dependent packages that are seperate from python2 and python3... 
