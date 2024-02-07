@@ -21,7 +21,7 @@ pip freeze > $FRUGAL_HOME/python2_pip_deps.txt
 make flake8-py2
 deactivate
 
-virtualenv -p /usr/local/bin/python3 /tmp/frugal-py3
+virtualenv -p /usr/local/bin/python3 /tmp/frugal-py3 --python=python3.12
 source /tmp/frugal-py3/bin/activate
 which python
 python --version
@@ -31,7 +31,7 @@ which pip
 pip --version
 which pip3
 pip3 --version
-pip install --upgrade setuptools
+python -m pip install --upgrade setuptools
 echo "Installing python3 dependencies"
 cd $FRUGAL_HOME/lib/python
 #all dependent packages that are seperate from python2 and python3... 
