@@ -4,6 +4,7 @@ set -e
 # Python
 virtualenv -p /usr/bin/python /tmp/frugal
 source /tmp/frugal/bin/activate
+which python
 pip install -U pip setuptools==39.0.1
 cd $FRUGAL_HOME/lib/python
 make deps-tornado
@@ -21,7 +22,9 @@ deactivate
 
 virtualenv -p /usr/local/bin/python3 /tmp/frugal-py3
 source /tmp/frugal-py3/bin/activate
-pip install -U pip setuptools==39.0.1 importlib-metadata==4.13.0
+which python
+which python3
+pip3 install -U pip setuptools==39.0.1 importlib-metadata==4.13.0
 cd $FRUGAL_HOME/lib/python
 #all dependent packages that are seperate from python2 and python3... 
 #once move to only python3 then these dependencies can be just put in requirements.txt
