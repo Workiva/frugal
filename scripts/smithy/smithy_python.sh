@@ -4,6 +4,8 @@ set -e
 # Python
 virtualenv -p /usr/bin/python /tmp/frugal
 source /tmp/frugal/bin/activate
+which python
+python --version
 pip install -U pip setuptools==39.0.1
 cd $FRUGAL_HOME/lib/python
 make deps-tornado
@@ -19,9 +21,18 @@ pip freeze > $FRUGAL_HOME/python2_pip_deps.txt
 make flake8-py2
 deactivate
 
-virtualenv -p /usr/bin/python3 /tmp/frugal-py3
+virtualenv -p /usr/local/bin/python3 /tmp/frugal-py3 --python=python3.12
 source /tmp/frugal-py3/bin/activate
-pip install -U pip setuptools==39.0.1 importlib-metadata==4.13.0
+which python
+python --version
+which python3
+python3 --version
+which pip
+pip --version
+which pip3
+pip3 --version
+python -m pip install --upgrade setuptools
+echo "Installing python3 dependencies"
 cd $FRUGAL_HOME/lib/python
 #all dependent packages that are seperate from python2 and python3... 
 #once move to only python3 then these dependencies can be just put in requirements.txt
