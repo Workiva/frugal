@@ -19,7 +19,7 @@ pip freeze > $FRUGAL_HOME/python2_pip_deps.txt
 make flake8-py2
 deactivate
 
-virtualenv -p /usr/bin/python3 /tmp/frugal-py3
+virtualenv -p /usr/bin/python /tmp/frugal-py3
 source /tmp/frugal-py3/bin/activate
 pip install -U pip setuptools==39.0.1 importlib-metadata==4.13.0
 cd $FRUGAL_HOME/lib/python
