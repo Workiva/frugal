@@ -41,11 +41,7 @@ ARG BUILD_ARTIFACTS_JAVA=/go/src/github.com/Workiva/frugal/frugal-*.jar
 ARG BUILD_ARTIFACTS_PUB=/go/src/github.com/Workiva/frugal/frugal.pub.tgz
 ARG BUILD_ARTIFACTS_TEST_RESULTS=/go/src/github.com/Workiva/frugal/test_results/*
 
-# make a simple etc/passwd file so the scratch image can run as nobody (not root)
-RUN echo "nobody:x:65534:65534:Nobody:/:" > /passwd.minimal
-
 FROM scratch
 COPY --from=build /go/src/github.com/Workiva/frugal/frugal /bin/frugal
-COPY --from=build /passwd.minimal /etc/passwd
-USER nobody
+
 ENTRYPOINT ["frugal"]
