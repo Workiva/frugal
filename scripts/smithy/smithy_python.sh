@@ -2,7 +2,7 @@
 set -e
 
 # Python
-virtualenv -p /usr/bin/python /tmp/frugal
+virtualenv -p /usr/bin/python2 /tmp/frugal
 source /tmp/frugal/bin/activate
 pip install -U pip setuptools==39.0.1
 cd $FRUGAL_HOME/lib/python
@@ -15,7 +15,7 @@ make xunit-py2
 
 # Write dependencies out so that RM is able to track them
 # The name of this file is hard coded into Rosie and RM console
-pip freeze > $FRUGAL_HOME/python2_pip_deps.txt
+pip2 freeze > $FRUGAL_HOME/python2_pip_deps.txt
 make flake8-py2
 deactivate
 
