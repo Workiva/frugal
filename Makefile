@@ -28,7 +28,7 @@ unit-py2:
 	deactivate
 
 unit-py3:
-	python3 -m venv /tmp/frugal-py3 && \
+	python -m venv /tmp/frugal-py3 && \
 	. /tmp/frugal-py3/bin/activate && \
 	$(MAKE) -C $(PWD)/lib/python deps-py3 deps-asyncio xunit-py3 flake8-py3 && \
 	deactivate

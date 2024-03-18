@@ -93,20 +93,20 @@
     "name": "py:asyncio",
     "client": {
       "timeout": 7,
-      "command": ["python3", "-u", "client.py" ]
+      "command": ["python", "-u", "client.py" ]
     },
     "server": {
       "timeout": 7,
-      "command": [ "python3", "-u", "server.py" ]
+      "command": [ "python", "-u", "server.py" ]
     },
     "publisher": {
       "timeout": 20,
-      "command": ["python3", "-u", "publisher.py"],
+      "command": ["python", "-u", "publisher.py"],
       "transports": ["activemq"]
     },
     "subscriber": {
       "timeout": 20,
-      "command": ["python3", "-u", "subscriber.py"],
+      "command": ["python", "-u", "subscriber.py"],
       "transports": ["activemq"]
     },
     "rpcTransports": [ "nats", "http" ],
