@@ -4,7 +4,7 @@ set -e
 # Python
 virtualenv -p /usr/bin/python2 /tmp/frugal
 source /tmp/frugal/bin/activate
-pip install -U pip setuptools==39.0.1
+pip2 install -U pip setuptools==39.0.1
 cd $FRUGAL_HOME/lib/python
 make deps-tornado
 #all dependent packages that are tied to the python2 environment can be refernced here
