@@ -1,0 +1,99 @@
+name: Libraries
+on: push
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  lib-go:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lib/go
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.4'
+
+      - name: Install Dependencies
+        run: make deps-local
+
+      - name: Check
+        run: make check-local
+
+      - name: Test
+        run: make test-local
+
+  lib-java:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lib/java
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'corretto'
+          cache: 'maven'
+
+      - name: Check
+        run: make check-local
+
+      - name: Test
+        run: make test-local
+
+  lib-python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lib/python
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+          cache: 'pip' # caching pip dependencies
+
+      - name: Install Dependencies
+        run: make deps-local
+
+      - name: Check
+        run: make check-local
+
+      - name: Test
+        run: make test-local
+
+  # lib-dart:
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: lib/dart
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     # Configures pub to use Workiva's pub repository and private
+  #     # thrift lib
+  #     - uses: Workiva/gha-setup-credentials@refs/tags/v1.0.12
+
+  #     - name: Set up Dart
+  #       uses: dart-lang/setup-dart@v1
+  #       with:
+  #         sdk: '2.18.7'
+
+  #     - name: Install Dependencies
+  #       run: make deps-local
+
+  #     - name: Check
+  #       run: make check-local
+
+  #     - name: Test
+  #       run: make test-local

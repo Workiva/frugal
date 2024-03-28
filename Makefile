@@ -4,7 +4,9 @@ all: unit
 
 clean:
 	@rm -rf /tmp/frugal
-	@rm -rf /tmp/frugal-py3
+
+check-cli:
+	go vet ./...
 
 unit: clean unit-cli unit-go unit-java unit-py2 unit-py3
 
@@ -16,22 +18,19 @@ unit-cli-copy:
 	go test ./compiler -copy-files
 
 unit-go:
-	cd lib/go && go test -v -race
+	$(MAKE) -C $(PWD)/lib/go check-local test-local
 
 unit-java:
-	mvn -f lib/java/pom.xml clean verify
+	$(MAKE) -C $(PWD)/lib/java check-local test-local
 
-unit-py2:
-	python2 -m virtualenv /tmp/frugal && \
+unit-py:
+	python -m venv /tmp/frugal && \
 	. /tmp/frugal/bin/activate && \
-	$(MAKE) -C $(PWD)/lib/python deps-py2 deps-tornado deps-gae xunit-py2 flake8-py2 &&\
+	$(MAKE) -C $(PWD)/lib/python deps-local check-local test-local && \
 	deactivate
 
-unit-py3:
-	python3 -m venv /tmp/frugal-py3 && \
-	. /tmp/frugal-py3/bin/activate && \
-	$(MAKE) -C $(PWD)/lib/python deps-py3 deps-asyncio xunit-py3 flake8-py3 && \
-	deactivate
+install:
+	go install
 
 .PHONY: \
 	all \
@@ -40,5 +39,4 @@ unit-py3:
 	unit-cli \
 	unit-go \
 	unit-java \
-	unit-py2 \
-	unit-py3
+	unit-py
