@@ -203,9 +203,16 @@ public class FServlet extends HttpServlet {
 
         resp.setContentType("application/x-frugal");
         resp.setHeader("Content-Transfer-Encoding", "base64");
-        try (OutputStream out = Base64.getEncoder().wrap(resp.getOutputStream())) {
-            out.write(data);
-        }
+
+        // Don't use try-with-resources: we don't need to close the servlet
+        // OutputStream since the servlet container is responsible for that, and
+        // we don't want to close the Base64 OutputStream if an error occurred
+        // since it will attempt to write padding bytes, which will just lead to
+        // additional errors.
+        OutputStream out = Base64.getEncoder().wrap(resp.getOutputStream());
+        out.write(data);
+        // Ensure padding bytes are written in success case.
+        out.close();
     }
 
     private byte[] process(byte[] frame, Map<Object, Object> ephemeralProperties) throws TException {

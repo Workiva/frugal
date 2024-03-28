@@ -32,10 +32,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -388,6 +390,28 @@ public class FJakartaServletTest {
         doReturn("4").when(mockRequest).getHeader("x-frugal-payload-limit");
 
         servlet.service(mockRequest, mockResponse);
+
+        verify(mockResponse).setContentType("application/x-frugal");
+        verify(mockResponse).setHeader("Content-Transfer-Encoding", "base64");
+        verify(mockResponse).getOutputStream();
+    }
+
+    @Test
+    public void testWriteException() throws Exception {
+        ServletOutputStream servletOut = new ProxyServletOutputStream(new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                throw new IOException("test");
+            }
+        });
+        doReturn(servletOut).when(mockResponse).getOutputStream();
+
+        byte[] bytes = Base64.getEncoder().encode(withLength(new byte[0]));
+        ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+        doReturn(new ProxyServletInputStream(in)).when(mockRequest).getInputStream();
+
+        IOException e = assertThrows(IOException.class, () -> servlet.service(mockRequest, mockResponse));
+        assertThat(e.getSuppressed(), emptyArray());
 
         verify(mockResponse).setContentType("application/x-frugal");
         verify(mockResponse).setHeader("Content-Transfer-Encoding", "base64");
